@@ -2,6 +2,7 @@ namespace Dungnz.Engine;
 using Dungnz.Models;
 using Dungnz.Display;
 using Dungnz.Systems;
+using Dungnz.Systems.Enemies;
 
 public class CombatEngine : ICombatEngine
 {
@@ -41,6 +42,15 @@ public class CombatEngine : ICombatEngine
             
             player.RestoreMana(10);
             _abilities.TickCooldowns();
+
+            // Boss Phase 2: check enrage
+            if (enemy is DungeonBoss boss)
+            {
+                var wasEnraged = boss.IsEnraged;
+                boss.CheckEnrage();
+                if (!wasEnraged && boss.IsEnraged)
+                    _display.ShowCombatMessage("⚠ The boss ENRAGES! Its attack has increased by 50%!");
+            }
             
             if (enemy.HP <= 0)
             {
@@ -214,6 +224,22 @@ public class CombatEngine : ICombatEngine
             _display.ShowCombatMessage($"{enemy.Name} is stunned and cannot act!");
             return;
         }
+
+        // Boss telegraphed charge: resolve previous charge or set new one
+        if (enemy is DungeonBoss boss)
+        {
+            if (boss.IsCharging)
+            {
+                boss.IsCharging = false;
+                boss.ChargeActive = true;
+            }
+            else if (_rng.Next(100) < 30)
+            {
+                boss.IsCharging = true;
+                _display.ShowCombatMessage($"⚠ {enemy.Name} is charging a powerful attack! Prepare to defend!");
+                return; // warn turn — no damage this turn
+            }
+        }
         
         if (RollDodge(player.Defense))
         {
@@ -222,6 +248,15 @@ public class CombatEngine : ICombatEngine
         else
         {
             var enemyDmg = Math.Max(1, enemy.Attack - player.Defense);
+
+            // Apply charge multiplier (3x)
+            if (enemy is DungeonBoss chargeBoss && chargeBoss.ChargeActive)
+            {
+                chargeBoss.ChargeActive = false;
+                enemyDmg *= 3;
+                _display.ShowCombatMessage($"⚡ {enemy.Name} unleashes the charged attack!");
+            }
+
             var isCrit = RollCrit();
             if (isCrit)
             {
@@ -246,7 +281,7 @@ public class CombatEngine : ICombatEngine
     
     private void HandleLootAndXP(Player player, Enemy enemy)
     {
-        var loot = enemy.LootTable.RollDrop(enemy);
+        var loot = enemy.LootTable.RollDrop(enemy, player.Level);
         if (loot.Gold > 0)
         {
             player.AddGold(loot.Gold);

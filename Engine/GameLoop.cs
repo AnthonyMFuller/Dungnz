@@ -156,6 +156,12 @@ public class GameLoop
             _display.ShowMessage("You escaped the dungeon! You win!");
             return;
         }
+
+        // Prompt for shrine if present and not yet used
+        if (_currentRoom.HasShrine && !_currentRoom.ShrineUsed)
+        {
+            _display.ShowMessage("✨ There is a Shrine in this room. Type USE SHRINE to interact.");
+        }
     }
 
     private void HandleLook()
@@ -228,6 +234,13 @@ public class GameLoop
         if (string.IsNullOrWhiteSpace(itemName))
         {
             _display.ShowError("Use what?");
+            return;
+        }
+
+        // Special: USE SHRINE
+        if (itemName.Equals("shrine", StringComparison.OrdinalIgnoreCase))
+        {
+            HandleShrine();
             return;
         }
 
@@ -362,6 +375,68 @@ public class GameLoop
         else
         {
             _display.ShowMessage("Accessory: (empty)");
+        }
+    }
+
+    private void HandleShrine()
+    {
+        if (!_currentRoom.HasShrine)
+        {
+            _display.ShowError("There is no shrine here.");
+            return;
+        }
+        if (_currentRoom.ShrineUsed)
+        {
+            _display.ShowMessage("The shrine has already been used.");
+            return;
+        }
+
+        _display.ShowMessage("=== Shrine ===");
+        _display.ShowMessage($"[H]eal fully       - 30g  (Your gold: {_player.Gold})");
+        _display.ShowMessage("[B]less            - 50g  (+2 ATK/DEF for 5 rooms)");
+        _display.ShowMessage("[F]ortify          - 75g  (MaxHP +10, permanent)");
+        _display.ShowMessage("[M]editate         - 75g  (MaxMana +10, permanent)");
+        _display.ShowMessage("[L]eave");
+        _display.ShowCommandPrompt();
+
+        var choice = _input.ReadLine()?.Trim().ToUpperInvariant() ?? "";
+        switch (choice)
+        {
+            case "H":
+                if (_player.Gold < 30) { _display.ShowError("Not enough gold (need 30g)."); return; }
+                _player.SpendGold(30);
+                _player.Heal(_player.MaxHP);
+                _display.ShowMessage($"The shrine heals you fully! HP: {_player.HP}/{_player.MaxHP}");
+                _currentRoom.ShrineUsed = true;
+                break;
+            case "B":
+                if (_player.Gold < 50) { _display.ShowError("Not enough gold (need 50g)."); return; }
+                _player.SpendGold(50);
+                _player.ModifyAttack(2);
+                _player.ModifyDefense(2);
+                _display.ShowMessage("The shrine blesses you! +2 ATK/DEF.");
+                _currentRoom.ShrineUsed = true;
+                break;
+            case "F":
+                if (_player.Gold < 75) { _display.ShowError("Not enough gold (need 75g)."); return; }
+                _player.SpendGold(75);
+                _player.FortifyMaxHP(10);
+                _display.ShowMessage($"The shrine fortifies you! MaxHP permanently +10. ({_player.MaxHP} MaxHP)");
+                _currentRoom.ShrineUsed = true;
+                break;
+            case "M":
+                if (_player.Gold < 75) { _display.ShowError("Not enough gold (need 75g)."); return; }
+                _player.SpendGold(75);
+                _player.FortifyMaxMana(10);
+                _display.ShowMessage($"The shrine expands your mind! MaxMana permanently +10. ({_player.MaxMana} MaxMana)");
+                _currentRoom.ShrineUsed = true;
+                break;
+            case "L":
+                _display.ShowMessage("You leave the shrine.");
+                break;
+            default:
+                _display.ShowError("Invalid choice.");
+                break;
         }
     }
 }

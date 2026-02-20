@@ -16,4 +16,5 @@ public abstract class Enemy
     public float LifestealPercent { get; protected set; }
     public bool AppliesPoisonOnHit { get; protected set; }
     public bool IsAmbush { get; set; } // first-turn surprise
+    public bool IsElite { get; set; }  // boosted stats, guaranteed tier-2 drop
 }

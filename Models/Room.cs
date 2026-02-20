@@ -10,4 +10,6 @@ public class Room
     public bool IsExit { get; set; }
     public bool Visited { get; set; }
     public bool Looted { get; set; }
+    public bool HasShrine { get; set; }
+    public bool ShrineUsed { get; set; }
 }
