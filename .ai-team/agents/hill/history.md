@@ -108,3 +108,65 @@
 **Participants:** Coulson (facilitator), Hill, Barton, Romanoff
 
 **Impact:** Hill owns DisplayService interface extraction and Player encapsulation. Coordinate with Barton on IDisplayService updates across CombatEngine.
+
+### 2026-02-20: v2 C# Implementation Proposal
+
+**Context:** Boss requested C#-specific refactoring, engine features, and model improvements for v2 planning.
+
+**Deliverable:** Comprehensive proposal document covering:
+1. **C# Refactoring** — Player encapsulation (private setters + validation methods), IDisplayService interface extraction, nullable reference improvements, record types for DTOs
+2. **Engine Features** — Save/load with System.Text.Json (handles circular Room references via Guid hydration/dehydration), procedural generation v2 (graph-based instead of grid), Random dependency injection
+3. **Model Improvements** — Serialization-ready patterns (IReadOnlyList exposure, internal Guid for save/load), Enemy encapsulation consistency
+4. **NET Idioms** — Collection expressions (C# 12), primary constructors, file-scoped namespaces, required members
+
+**Key Technical Decisions:**
+- **Save/Load Architecture:** Serialize to SaveData DTOs (RoomSaveData with Guid IDs for exits, not Room references), hydrate back to runtime object graph. Async System.Text.Json with JsonSerializerOptions (WriteIndented, WhenWritingNull). Avoids Newtonsoft.Json dependency.
+- **Player Encapsulation Pattern:** Private setters + public methods (TakeDamage, Heal, ModifyAttack, LevelUp) with validation (Math.Clamp, ArgumentException guards). IReadOnlyList<Item> for Inventory exposure. Uses C# 9 init-only setters for Name.
+- **IDisplayService Contract:** Extract interface from DisplayService, rename concrete impl to ConsoleDisplayService. Zero breaking changes (constructors already inject). Enables NullDisplayService for headless testing.
+- **Serialization Strategy:** Two-pass hydration (create all Rooms, then wire Exits), BFS room graph traversal for dehydration. SaveData models use init-only properties and required keyword.
+
+**Priority Matrix:**
+- HIGH: Player encapsulation (2-3h), IDisplayService (1-2h), Save/Load (6-8h)
+- MEDIUM: Nullable improvements (30m), Procedural gen v2 (8-10h)
+- LOW: Record types (2h), Random injection (2h), Enemy encapsulation (3h), .NET idioms (1-2h)
+
+**Recommended Implementation Order:**
+1. Testing foundation (IDisplayService, Random injection)
+2. Encapsulation refactors (Player, Enemy)
+3. Persistence (Save/Load system)
+4. Polish (procedural gen, idioms)
+
+**File Paths:**
+- Proposal written to `.ai-team/decisions/inbox/hill-v2-csharp-proposal.md` (21KB)
+- Current models: `Models/Player.cs`, `Models/Room.cs`, `Models/Enemy.cs`
+- Display layer: `Display/DisplayService.cs` (to become ConsoleDisplayService)
+- Engine: `Engine/DungeonGenerator.cs`, `Engine/GameLoop.cs`
+
+**Coordinate With:**
+- Barton: IDisplayService updates in CombatEngine constructor
+- Romanoff: Test harness setup (xUnit/NUnit), mock IDisplayService implementations
+- Scribe: Merge proposal to main decisions.md after review
+
+**Architecture Patterns Used:**
+- Dependency Inversion (interfaces for display, combat)
+- Encapsulation (private state, public methods)
+- Immutability where appropriate (init-only, readonly records)
+- Async/await for file I/O
+- Graph traversal (BFS) for room serialization
+
+**C# Features Leveraged:**
+- System.Text.Json (native, no external deps)
+- Nullable reference types (already enabled in csproj)
+- C# 9: init-only setters
+- C# 10: record struct
+- C# 11: required members
+- C# 12: collection expressions, primary constructors (proposed)
+- .NET 9 target framework (modern APIs)
+
+## 📌 Team Update (2026-02-20): Decisions Merged
+**From Scribe** — 4 inbox decision files merged into canonical decisions.md:
+- **Domain Model Encapsulation Pattern (consolidated):** Coulson + Hill approaches merged. Confirmed: private setters with validation methods (TakeDamage, Heal, LevelUp) using Math.Clamp and Math.Max guards. Hill's detailed Player/Enemy implementation included.
+- **Interface Extraction Pattern for Testability (consolidated):** Coulson + Hill approaches merged. Confirmed: IDisplayService with ConsoleDisplayService + NullDisplayService test implementations. All injection sites updated (GameLoop, CombatEngine, Program.cs).
+- **Injectable Random (consolidated):** Direct System.Random injection (not IRandom interface). Optional constructor parameter with Random.Shared default for testable, deterministic seeds.
+
+**Impact on Hill:** Encapsulation patterns confirmed align with WI-2 Player model. Interface extraction unblocks testing infrastructure (Romanoff). Random injection required for DungeonGenerator and GameLoop seeding.

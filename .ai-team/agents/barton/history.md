@@ -61,3 +61,54 @@
 **Participants:** Coulson (facilitator), Hill, Barton, Romanoff
 
 **Impact:** Barton coordinates with Hill on IDisplayService updates. Random injection strategy needed for CombatEngine deterministic testing.
+
+### 2026-02-20: V2 Systems Design Proposal
+
+**Context:** Boss requested v2 planning from game systems perspective (features, content, balance).
+
+**Deliverable:** Comprehensive v2 proposal covering:
+1. **5 New Gameplay Features** (ranked by impact/effort)
+   - Status Effects System (Poison, Bleed, Stun, Regen, etc.) — HIGH priority
+   - Skill System with cooldowns and mana resource — HIGH priority
+   - Enhanced Consumables (buff potions, antidotes, tactical items) — MEDIUM priority
+   - Equipment Slots with unequip mechanics — LOW priority
+   - Critical Hits & Dodge RNG variance — MEDIUM priority
+
+2. **Content Expansions**
+   - 5 new enemy archetypes (Goblin Shaman, Wraith, Stone Golem, Vampire Lord, Mimic)
+   - Boss Phase 2 mechanic (enrage at 40% HP)
+   - Elite enemy variants (5% rare spawn, +50% stats)
+   - 15+ new items across weapon/armor/accessory tiers
+
+3. **Balance Improvements**
+   - Dynamic enemy scaling formula (base stats + 12% per player level)
+   - Loot tier progression (scales with player level)
+   - Difficulty curve fixes (Troll regen, boss telegraphs, level-up nerf)
+   - Gold sink systems (Shrines or Merchant rooms)
+
+**Key Design Decisions:**
+- Status effects as foundation for all future mechanics (DOTs, buffs, debuffs)
+- Mana resource prevents skill spam, creates resource management gameplay
+- Enemy scaling maintains challenge throughout dungeon (no trivial encounters)
+- Loot progression prevents "vendor trash" feeling in late game
+- Milestone rewards (skills unlocked at L3/5/8/10) create aspirational goals
+
+**Implementation Priority:**
+1. Sprint 1: Test infrastructure (blocks all features)
+2. Sprint 2: Status effects + consumables + crit/dodge
+3. Sprint 3: Skill system + boss phase 2
+4. Sprint 4: New enemies + scaling + loot tiers
+5. Sprint 5: Equipment slots + economy sinks
+
+**Coordination Required:**
+- Hill: Player model changes (Mana, MaxMana, ActiveEffects, EquipmentSlots), enemy spawning logic for new types
+- Romanoff: Test coverage for status effects, skill cooldowns, loot scaling
+- All: Design review ceremony before Sprint 2 to lock contracts
+
+**File Created:** `.ai-team/decisions/inbox/barton-v2-systems-proposal.md`
+
+**Design Philosophy Applied:**
+- Systems should be data-driven (loot tables, enemy stats, skill configs)
+- Combat should feel decisive (avoid endless attrition via burst mechanics)
+- Enemy variety over quantity (5 new types with unique mechanics > 20 stat clones)
+- Every mechanic has counter-play (Poison counters Troll regen, Weakened counters Vampire lifesteal)

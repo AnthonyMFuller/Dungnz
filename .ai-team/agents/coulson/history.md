@@ -70,3 +70,37 @@
 - Testability blocked by tight Console coupling
 
 **Outcome:** Team aligned on v2 priorities. Test infrastructure and encapsulation refactors must precede new features. Ceremony summary written to `.ai-team/log/2026-02-20-retrospective.md`. Decisions written to inbox for Scribe merge.
+
+---
+
+### 2026-02-20: v2 Architecture Planning
+**Objective:** Produce comprehensive v2 plan covering refactoring priorities, architecture improvements, and work decomposition.
+
+**Key Architectural Patterns Established:**
+- Interface extraction for testability (IDisplayService, IRandom, IInputService)
+- Encapsulation over public setters for domain models
+- Constructor dependency injection (avoid service locator)
+- Result enums over exceptions for expected failures
+- Event-driven architecture for extensibility (GameEvents)
+- Configuration-driven balance tuning (appsettings.json)
+
+**Phase Structure:**
+- **Phase 0 (Critical Refactoring):** 8 work items, 14.5 hours — Must complete before any v2 features
+- **Phase 1 (Test Infrastructure):** 7 work items, 16.5 hours — xUnit framework, >70% coverage target
+- **Phase 2 (Architecture):** 7 work items, 22 hours — GameState model, save/load, event system, config system
+- **Phase 3 (Features):** 6 work items, 25 hours — Save/load commands, equipment slots, status effects, multi-floor dungeons
+
+**Critical Path Identified:**
+1. IDisplayService extraction (R1) enables test mocking and CombatEngine input fix
+2. Player encapsulation (R3) blocks save/load and equipment slot features
+3. Injectable Random (R4) enables deterministic testing of combat/loot
+4. All Phase 0 refactors must complete before Phase 1 testing begins
+
+**Work Allocation:**
+- Hill: 36 hours (Models, GameLoop, persistence, configuration)
+- Barton: 25.5 hours (Combat, inventory, systems)
+- Romanoff: 16.5 hours (Test infrastructure, all test coverage)
+
+**Deliverable:** `.ai-team/plans/v2-architecture-plan.md` — 28 work items tracked, full dependency graph, acceptance criteria for each phase
+
+**Next Actions:** Present to team for approval, kickoff Phase 0 design review ceremony
