@@ -1,2 +1,17 @@
-// TextGame — entry point (wired up in WI-4)
-Console.WriteLine("TextGame starting...");
+using TextGame.Display;
+using TextGame.Engine;
+using TextGame.Models;
+
+var display = new DisplayService();
+display.ShowTitle();
+
+Console.Write("Enter your name, adventurer: ");
+var name = Console.ReadLine() ?? "Hero";
+
+var player = new Player { Name = name };
+var generator = new DungeonGenerator();
+var (startRoom, _) = generator.Generate();
+
+var combat = new CombatEngine(display);
+var gameLoop = new GameLoop(display, combat);
+gameLoop.Run(player, startRoom);
