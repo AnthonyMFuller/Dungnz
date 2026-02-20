@@ -281,3 +281,35 @@
 📌 Team update (2026-02-20): Two-Pass Serialization for Circular Object Graphs established — Guid-based serialization for Room.Exits circular references in save/load system.
 
 📌 Team update (2026-02-20): AppData Save Location standardized — saves stored in Environment.GetFolderPath(SpecialFolder.ApplicationData)/Dungnz/saves/
+
+### 2026-02-20: Equipment Slot System (GitHub Issue #20, PR #34)
+
+**Files Modified:**
+- `Models/ItemType.cs` — Added Accessory to ItemType enum
+- `Models/Item.cs` — Updated IsEquippable to include Accessory type
+- `Models/Player.cs` — Added 3 equipment slots (EquippedWeapon, EquippedArmor, EquippedAccessory) with EquipItem/UnequipItem methods
+- `Engine/CommandParser.cs` — Added Equip, Unequip, Equipment command types and parsing
+- `Engine/GameLoop.cs` — Added HandleEquip, HandleUnequip, HandleShowEquipment methods; updated HandleUse to direct equippable items to EQUIP command
+- `Dungnz.Tests/EquipmentSystemTests.cs` — Created comprehensive test suite with 16 test cases
+
+**Design Decisions:**
+1. **Equipment slots:** Three private properties (EquippedWeapon, EquippedArmor, EquippedAccessory) following encapsulation pattern
+2. **Swap logic:** EquipItem removes old item from slot, applies/removes stat bonuses, manages inventory transfers automatically
+3. **Stat bonus application:** ApplyStatBonuses/RemoveStatBonuses private methods handle Attack/Defense/MaxHP modifications
+4. **HP management:** MaxHP increases heal proportionally, MaxHP decreases clamp current HP to new maximum
+5. **Error handling:** ArgumentException for invalid operations (not in inventory, not equippable), InvalidOperationException for empty slot unequip
+6. **Command interface:** EQUIP <item name>, UNEQUIP WEAPON/ARMOR/ACCESSORY, EQUIPMENT (show all equipped)
+7. **Save persistence:** Equipment slots automatically persisted by existing SaveSystem (serializes entire Player object)
+
+**Implementation Pattern:**
+- Equipment slots use nullable Item? with private setters
+- EquipItem checks IsEquippable, validates inventory, handles occupied slots via swap
+- UnequipItem uses string slot name ("weapon"/"armor"/"accessory") for flexibility
+- Stat bonuses validated with Math.Max(1, ...) for Attack, Math.Max(0, ...) for Defense, minimum MaxHP of 1
+
+**Lessons:**
+- Encapsulation pattern (private setters + public methods) prevents invalid state mutations
+- Stat bonus apply/remove must be symmetric to ensure correct cumulative effects
+- HP management requires careful handling when MaxHP changes (proportional heal on increase, clamp on decrease)
+- Swap logic simplifies player experience (no manual unequip required)
+- Existing SaveSystem handles new properties automatically via full Player serialization

@@ -4,7 +4,7 @@ using Dungnz.Systems;
 
 public class Goblin : Enemy
 {
-    public Goblin(EnemyStats? stats = null)
+    public Goblin(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         if (stats != null)
         {

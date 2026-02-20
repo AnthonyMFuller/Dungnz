@@ -151,3 +151,5 @@
 - Add active effects display during combat
 
 📌 Team update (2026-02-20): Status Effects System consolidated — Barton + Coulson. Finalized design: Enum-based types, duration tracking, dictionary storage, on-demand stat modifiers. 6 core effects (Poison, Bleed, Stun, Regen, Fortified, Weakened).
+
+📌 Team update (2026-02-20): Ability System Architecture decision merged — Barton. Confirmed in-memory data structure approach (List<Ability>) for 4 fixed abilities with hardcoded definitions in AbilityManager constructor. Migration to JSON config flagged as future consideration if ability count exceeds 10 or balance tuning becomes non-developer responsibility.
