@@ -27,7 +27,7 @@ public class GameLoop
 
         while (true)
         {
-            Console.Write("> ");
+            _display.ShowCommandPrompt();
             var input = Console.ReadLine() ?? string.Empty;
             var cmd = CommandParser.Parse(input);
 
@@ -127,10 +127,15 @@ public class GameLoop
                 _display.ShowMessage("You have been defeated. Game over.");
                 return;
             }
+            
+            if (result == CombatResult.Won)
+            {
+                _currentRoom.Enemy = null;
+            }
         }
 
         // Check win condition
-        if (_currentRoom.IsExit && (_currentRoom.Enemy == null || _currentRoom.Enemy.HP <= 0))
+        if (_currentRoom.IsExit && _currentRoom.Enemy == null)
         {
             _display.ShowMessage("You escaped the dungeon! You win!");
             return;

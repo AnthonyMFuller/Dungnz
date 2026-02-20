@@ -121,4 +121,20 @@ public class DisplayService
         Console.WriteLine("  quit                          - Exit game");
         Console.WriteLine();
     }
+
+    public void ShowCommandPrompt()
+    {
+        Console.Write("> ");
+    }
+
+    public void ShowCombatPrompt()
+    {
+        Console.Write("[A]ttack or [F]lee? ");
+    }
+
+    public string ReadPlayerName()
+    {
+        Console.Write("Enter your name, adventurer: ");
+        return Console.ReadLine() ?? "Hero";
+    }
 }

@@ -19,7 +19,7 @@ public class CombatEngine : ICombatEngine
         while (true)
         {
             _display.ShowCombatStatus(player, enemy);
-            Console.Write("[A]ttack or [F]lee? ");
+            _display.ShowCombatPrompt();
             var choice = (Console.ReadLine() ?? string.Empty).Trim().ToUpperInvariant();
             
             if (choice == "F" || choice == "FLEE")

@@ -5,8 +5,7 @@ using TextGame.Models;
 var display = new DisplayService();
 display.ShowTitle();
 
-Console.Write("Enter your name, adventurer: ");
-var name = Console.ReadLine() ?? "Hero";
+var name = display.ReadPlayerName();
 
 var player = new Player { Name = name };
 var generator = new DungeonGenerator();
