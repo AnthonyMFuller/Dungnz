@@ -17,6 +17,7 @@ public enum CommandType
     Save,
     Load,
     ListSaves,
+    Descend,
     Unknown
 }
 
@@ -61,6 +62,7 @@ public static class CommandParser
             "save" => new ParsedCommand { Type = CommandType.Save, Argument = argument },
             "load" => new ParsedCommand { Type = CommandType.Load, Argument = argument },
             "list" or "saves" => new ParsedCommand { Type = CommandType.ListSaves },
+            "descend" or "down" => new ParsedCommand { Type = CommandType.Descend },
             _ => new ParsedCommand { Type = CommandType.Unknown }
         };
     }

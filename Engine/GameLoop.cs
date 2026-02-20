@@ -11,22 +11,32 @@ public class GameLoop
     private readonly ICombatEngine _combat;
     private readonly IInputReader _input;
     private readonly GameEvents? _events;
+    private readonly int? _seed;
     private Player _player = null!;
     private Room _currentRoom = null!;
+    private RunStats _stats = null!;
+    private DateTime _runStart;
+    private readonly AchievementSystem _achievements = new();
+    private int _currentFloor = 1;
 
-    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null)
+    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null)
     {
         _display = display;
         _combat = combat;
         _input = input ?? new ConsoleInputReader();
         _events = events;
+        _seed = seed;
     }
 
     public void Run(Player player, Room startRoom)
     {
         _player = player;
         _currentRoom = startRoom;
+        _stats = new RunStats();
+        _runStart = DateTime.UtcNow;
+        _currentFloor = 1;
         _display.ShowTitle();
+        _display.ShowMessage($"Floor {_currentFloor}");
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
 
@@ -35,6 +45,7 @@ public class GameLoop
             _display.ShowCommandPrompt();
             var input = _input.ReadLine() ?? string.Empty;
             var cmd = CommandParser.Parse(input);
+            _stats.TurnsTaken++;
 
             switch (cmd.Type)
             {
@@ -74,6 +85,9 @@ public class GameLoop
                 case CommandType.Quit:
                     _display.ShowMessage("Thanks for playing!");
                     return;
+                case CommandType.Descend:
+                    HandleDescend();
+                    break;
                 default:
                     _display.ShowError("Unknown command. Type HELP for commands.");
                     break;
@@ -141,20 +155,46 @@ public class GameLoop
             if (result == CombatResult.PlayerDied)
             {
                 _display.ShowMessage("You have been defeated. Game over.");
+                if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
+                _stats.FinalLevel = _player.Level;
+                _stats.TimeElapsed = DateTime.UtcNow - _runStart;
+                _stats.Display(_display.ShowMessage);
+                RunStats.AppendToHistory(_stats, won: false);
                 return;
             }
             
             if (result == CombatResult.Won)
             {
                 _currentRoom.Enemy = null;
+                _stats.EnemiesDefeated++;
             }
         }
 
-        // Check win condition
+        // Check win/floor condition
         if (_currentRoom.IsExit && _currentRoom.Enemy == null)
         {
-            _display.ShowMessage("You escaped the dungeon! You win!");
-            return;
+            const int finalFloor = 5;
+            if (_currentFloor >= finalFloor)
+            {
+                _display.ShowMessage("You escaped the dungeon! You win!");
+                if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
+                _stats.FinalLevel = _player.Level;
+                _stats.TimeElapsed = DateTime.UtcNow - _runStart;
+                _stats.Display(_display.ShowMessage);
+                RunStats.AppendToHistory(_stats, won: true);
+                var unlocked = _achievements.Evaluate(_stats, _player, won: true);
+                if (unlocked.Count > 0)
+                {
+                    _display.ShowMessage("=== ACHIEVEMENTS UNLOCKED ===");
+                    foreach (var a in unlocked)
+                        _display.ShowMessage($"🏆 {a.Name} — {a.Description}");
+                }
+                return;
+            }
+            else
+            {
+                _display.ShowMessage($"You cleared Floor {_currentFloor}! Type DESCEND to go deeper.");
+            }
         }
 
         // Prompt for shrine if present and not yet used
@@ -227,6 +267,8 @@ public class GameLoop
         _player.Inventory.Add(item);
         _display.ShowMessage($"You take the {item.Name}.");
         _events?.RaiseItemPicked(_player, item, _currentRoom);
+        _stats.ItemsFound++;
+        if (item.Type == ItemType.Gold) _stats.GoldCollected += item.StatModifier;
     }
 
     private void HandleUse(string itemName)
@@ -376,6 +418,26 @@ public class GameLoop
         {
             _display.ShowMessage("Accessory: (empty)");
         }
+    }
+
+    private void HandleDescend()
+    {
+        if (!_currentRoom.IsExit || _currentRoom.Enemy != null)
+        {
+            _display.ShowError("You can only descend at a cleared exit room.");
+            return;
+        }
+
+        _currentFloor++;
+        _display.ShowMessage($"You descend deeper into the dungeon... Floor {_currentFloor}");
+
+        float floorMult = 1.0f + (_currentFloor - 1) * 0.5f;
+        var gen = new DungeonGenerator(_seed);
+        var (newStart, _) = gen.Generate(floorMultiplier: floorMult);
+        _currentRoom = newStart;
+        _currentRoom.Visited = true;
+        _display.ShowMessage($"Floor {_currentFloor}");
+        _display.ShowRoom(_currentRoom);
     }
 
     private void HandleShrine()

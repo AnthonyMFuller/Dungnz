@@ -24,7 +24,7 @@ public class DungeonGenerator
         _rng = seed.HasValue ? new Random(seed.Value) : new Random();
     }
 
-    public (Room startRoom, Room exitRoom) Generate(int width = 5, int height = 4, int playerLevel = 1)
+    public (Room startRoom, Room exitRoom) Generate(int width = 5, int height = 4, int playerLevel = 1, float floorMultiplier = 1.0f)
     {
         // Create grid of rooms
         var grid = new Room[height, width];
@@ -71,7 +71,7 @@ public class DungeonGenerator
         exitRoom.Description = "A grand chamber with ornate pillars and a massive stone door leading to freedom.";
 
         // Place boss in exit room
-        exitRoom.Enemy = EnemyFactory.CreateScaled("dungeonboss", playerLevel);
+        exitRoom.Enemy = EnemyFactory.CreateScaled("dungeonboss", playerLevel, floorMultiplier);
 
         // Place enemies in ~60% of non-start, non-exit rooms
         var enemyTypes = new[] { "goblin", "skeleton", "troll", "darkknight" };
@@ -85,7 +85,7 @@ public class DungeonGenerator
                 if (_rng.NextDouble() < 0.6)
                 {
                     var enemyType = enemyTypes[_rng.Next(enemyTypes.Length)];
-                    room.Enemy = EnemyFactory.CreateScaled(enemyType, playerLevel);
+                    room.Enemy = EnemyFactory.CreateScaled(enemyType, playerLevel, floorMultiplier);
                 }
             }
         }
