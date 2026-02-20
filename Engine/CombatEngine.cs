@@ -4,11 +4,11 @@ using Dungnz.Display;
 
 public class CombatEngine : ICombatEngine
 {
-    private readonly DisplayService _display;
+    private readonly IDisplayService _display;
     private readonly IInputReader _input;
     private readonly Random _rng;
     
-    public CombatEngine(DisplayService display, IInputReader? input = null, Random? rng = null)
+    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null)
     {
         _display = display;
         _input = input ?? new ConsoleInputReader();

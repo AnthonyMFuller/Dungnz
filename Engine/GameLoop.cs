@@ -6,13 +6,13 @@ using Dungnz.Models;
 
 public class GameLoop
 {
-    private readonly DisplayService _display;
+    private readonly IDisplayService _display;
     private readonly ICombatEngine _combat;
     private readonly IInputReader _input;
     private Player _player = null!;
     private Room _currentRoom = null!;
 
-    public GameLoop(DisplayService display, ICombatEngine combat, IInputReader? input = null)
+    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null)
     {
         _display = display;
         _combat = combat;
