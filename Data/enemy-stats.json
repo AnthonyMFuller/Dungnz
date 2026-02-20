@@ -1,0 +1,47 @@
+{
+  "Goblin": {
+    "Name": "Goblin",
+    "MaxHP": 20,
+    "Attack": 8,
+    "Defense": 2,
+    "XPValue": 15,
+    "MinGold": 2,
+    "MaxGold": 8
+  },
+  "Skeleton": {
+    "Name": "Skeleton",
+    "MaxHP": 30,
+    "Attack": 12,
+    "Defense": 5,
+    "XPValue": 25,
+    "MinGold": 5,
+    "MaxGold": 15
+  },
+  "Troll": {
+    "Name": "Troll",
+    "MaxHP": 60,
+    "Attack": 10,
+    "Defense": 8,
+    "XPValue": 40,
+    "MinGold": 10,
+    "MaxGold": 25
+  },
+  "DarkKnight": {
+    "Name": "Dark Knight",
+    "MaxHP": 45,
+    "Attack": 18,
+    "Defense": 12,
+    "XPValue": 55,
+    "MinGold": 20,
+    "MaxGold": 40
+  },
+  "DungeonBoss": {
+    "Name": "Dungeon Boss",
+    "MaxHP": 100,
+    "Attack": 22,
+    "Defense": 15,
+    "XPValue": 100,
+    "MinGold": 50,
+    "MaxGold": 100
+  }
+}
