@@ -18,9 +18,9 @@ public static class EnemyFactory
     public static Enemy CreateRandom(Random rng)
     {
         var type = rng.Next(9);
-        return type switch
+        var enemy = type switch
         {
-            0 => new Goblin(_enemyConfig?.GetValueOrDefault("Goblin"), _itemConfig),
+            0 => (Enemy)new Goblin(_enemyConfig?.GetValueOrDefault("Goblin"), _itemConfig),
             1 => new Skeleton(_enemyConfig?.GetValueOrDefault("Skeleton"), _itemConfig),
             2 => new Troll(_enemyConfig?.GetValueOrDefault("Troll"), _itemConfig),
             3 => new DarkKnight(_enemyConfig?.GetValueOrDefault("DarkKnight"), _itemConfig),
@@ -30,6 +30,18 @@ public static class EnemyFactory
             7 => new VampireLord(_enemyConfig?.GetValueOrDefault("VampireLord"), _itemConfig),
             _ => new Mimic(_enemyConfig?.GetValueOrDefault("Mimic"), _itemConfig)
         };
+
+        // 5% chance to spawn as Elite variant
+        if (rng.Next(100) < 5)
+        {
+            enemy.HP = enemy.MaxHP = (int)(enemy.MaxHP * 1.5);
+            enemy.Attack = (int)(enemy.Attack * 1.5);
+            enemy.Defense = (int)(enemy.Defense * 1.5);
+            enemy.Name = $"Elite {enemy.Name}";
+            enemy.IsElite = true;
+        }
+
+        return enemy;
     }
 
     public static Enemy CreateBoss(Random rng)

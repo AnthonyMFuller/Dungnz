@@ -68,6 +68,29 @@ public class Player
         Gold += amount;
     }
 
+    public void SpendGold(int amount)
+    {
+        if (amount < 0) throw new ArgumentException("Amount cannot be negative.", nameof(amount));
+        if (Gold < amount) throw new InvalidOperationException("Not enough gold.");
+        Gold -= amount;
+    }
+
+    public void FortifyMaxHP(int amount)
+    {
+        if (amount <= 0) throw new ArgumentException("Amount must be positive.", nameof(amount));
+        MaxHP += amount;
+        var oldHP = HP;
+        HP = Math.Min(MaxHP, HP + amount);
+        if (HP != oldHP) OnHealthChanged?.Invoke(this, new HealthChangedEventArgs(oldHP, HP));
+    }
+
+    public void FortifyMaxMana(int amount)
+    {
+        if (amount <= 0) throw new ArgumentException("Amount must be positive.", nameof(amount));
+        MaxMana += amount;
+        Mana = Math.Min(MaxMana, Mana + amount);
+    }
+
     public void AddXP(int amount)
     {
         if (amount < 0)

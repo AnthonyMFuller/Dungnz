@@ -9,6 +9,10 @@ public class Item
     public int AttackBonus { get; set; }
     public int DefenseBonus { get; set; }
     public int HealAmount { get; set; }
-    
-    public bool IsEquippable => Type is ItemType.Weapon or ItemType.Armor;
+    public bool AppliesBleedOnHit { get; set; }
+    public bool PoisonImmunity { get; set; }
+    public int MaxManaBonus { get; set; }
+    public float DodgeBonus { get; set; }
+
+    public bool IsEquippable { get; set; }
 }

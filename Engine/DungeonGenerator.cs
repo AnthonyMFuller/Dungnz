@@ -103,6 +103,18 @@ public class DungeonGenerator
             }
         }
 
+        // Place shrines in 15% of non-start, non-exit rooms
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                var room = grid[y, x];
+                if (room == startRoom || room == exitRoom) continue;
+                if (_rng.NextDouble() < 0.15)
+                    room.HasShrine = true;
+            }
+        }
+
         // Verify path exists using BFS
         if (!PathExists(startRoom, exitRoom))
         {
