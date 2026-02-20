@@ -1,6 +1,6 @@
-namespace TextGame.Engine;
-using TextGame.Models;
-using TextGame.Display;
+namespace Dungnz.Engine;
+using Dungnz.Models;
+using Dungnz.Display;
 
 public class CombatEngine : ICombatEngine
 {

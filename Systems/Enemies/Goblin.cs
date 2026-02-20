@@ -1,5 +1,5 @@
-namespace TextGame.Systems.Enemies;
-using TextGame.Models;
+namespace Dungnz.Systems.Enemies;
+using Dungnz.Models;
 
 public class Goblin : Enemy
 {

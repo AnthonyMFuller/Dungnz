@@ -1,6 +1,6 @@
-namespace TextGame.Systems;
-using TextGame.Models;
-using TextGame.Display;
+namespace Dungnz.Systems;
+using Dungnz.Models;
+using Dungnz.Display;
 
 public class InventoryManager
 {

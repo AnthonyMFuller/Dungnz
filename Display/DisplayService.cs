@@ -1,6 +1,6 @@
-using TextGame.Models;
+using Dungnz.Models;
 
-namespace TextGame.Display;
+namespace Dungnz.Display;
 
 public class DisplayService
 {

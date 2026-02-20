@@ -1,7 +1,7 @@
-namespace TextGame.Engine;
+namespace Dungnz.Engine;
 
-using TextGame.Models;
-using TextGame.Systems.Enemies;
+using Dungnz.Models;
+using Dungnz.Systems.Enemies;
 
 public static class EnemyFactory
 {

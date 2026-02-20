@@ -1,6 +1,6 @@
-using TextGame.Display;
-using TextGame.Engine;
-using TextGame.Models;
+using Dungnz.Display;
+using Dungnz.Engine;
+using Dungnz.Models;
 
 var display = new DisplayService();
 display.ShowTitle();

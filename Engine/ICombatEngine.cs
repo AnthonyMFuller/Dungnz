@@ -1,5 +1,5 @@
-namespace TextGame.Engine;
-using TextGame.Models;
+namespace Dungnz.Engine;
+using Dungnz.Models;
 
 public interface ICombatEngine
 {

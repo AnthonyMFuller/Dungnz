@@ -1,6 +1,6 @@
-namespace TextGame.Engine;
+namespace Dungnz.Engine;
 
-using TextGame.Models;
+using Dungnz.Models;
 
 // Temporary stub — replaced when Barton delivers CombatEngine
 internal class StubCombatEngine : ICombatEngine

@@ -1,8 +1,8 @@
-namespace TextGame.Engine;
+namespace Dungnz.Engine;
 
 using System;
-using TextGame.Display;
-using TextGame.Models;
+using Dungnz.Display;
+using Dungnz.Models;
 
 public class GameLoop
 {

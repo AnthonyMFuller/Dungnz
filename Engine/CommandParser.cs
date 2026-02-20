@@ -1,4 +1,4 @@
-namespace TextGame.Engine;
+namespace Dungnz.Engine;
 
 public enum CommandType
 {

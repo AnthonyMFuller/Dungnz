@@ -1,4 +1,4 @@
-# TextGame
+# Dungnz
 
 A classic dungeon-crawling roguelike written in C# — explore procedurally generated dungeons, fight enemies, collect loot, level up, and defeat the boss to escape.
 
@@ -28,7 +28,7 @@ You navigate a randomised dungeon grid, room by room. Each room may contain enem
 ## Architecture
 
 ```
-TextGame/
+Dungnz/
 ├── Program.cs              # Entry point — bootstraps the game
 ├── Engine/
 │   ├── GameLoop.cs         # Main state machine; command handling and win/loss logic
@@ -61,8 +61,8 @@ TextGame/
 
 ```bash
 # Clone
-git clone https://github.com/AnthonyMFuller/TextGame.git
-cd TextGame
+git clone https://github.com/AnthonyMFuller/Dungnz.git
+cd Dungnz
 
 # Build & run
 dotnet run

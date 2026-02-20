@@ -1,4 +1,4 @@
-namespace TextGame.Models;
+namespace Dungnz.Models;
 
 public class Item
 {

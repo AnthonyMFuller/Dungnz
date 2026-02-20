@@ -1,0 +1,15 @@
+/home/anthony/RiderProjects/TextGame/bin/Debug/net9.0/Dungnz
+/home/anthony/RiderProjects/TextGame/bin/Debug/net9.0/Dungnz.deps.json
+/home/anthony/RiderProjects/TextGame/bin/Debug/net9.0/Dungnz.runtimeconfig.json
+/home/anthony/RiderProjects/TextGame/bin/Debug/net9.0/Dungnz.dll
+/home/anthony/RiderProjects/TextGame/bin/Debug/net9.0/Dungnz.pdb
+/home/anthony/RiderProjects/TextGame/obj/Debug/net9.0/Dungnz.GeneratedMSBuildEditorConfig.editorconfig
+/home/anthony/RiderProjects/TextGame/obj/Debug/net9.0/Dungnz.AssemblyInfoInputs.cache
+/home/anthony/RiderProjects/TextGame/obj/Debug/net9.0/Dungnz.AssemblyInfo.cs
+/home/anthony/RiderProjects/TextGame/obj/Debug/net9.0/Dungnz.csproj.CoreCompileInputs.cache
+/home/anthony/RiderProjects/TextGame/obj/Debug/net9.0/Dungnz.sourcelink.json
+/home/anthony/RiderProjects/TextGame/obj/Debug/net9.0/Dungnz.dll
+/home/anthony/RiderProjects/TextGame/obj/Debug/net9.0/refint/Dungnz.dll
+/home/anthony/RiderProjects/TextGame/obj/Debug/net9.0/Dungnz.pdb
+/home/anthony/RiderProjects/TextGame/obj/Debug/net9.0/Dungnz.genruntimeconfig.cache
+/home/anthony/RiderProjects/TextGame/obj/Debug/net9.0/ref/Dungnz.dll
