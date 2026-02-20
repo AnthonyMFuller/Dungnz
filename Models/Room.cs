@@ -2,6 +2,7 @@ namespace Dungnz.Models;
 
 public class Room
 {
+    public Guid Id { get; set; } = Guid.NewGuid();
     public string Description { get; set; } = string.Empty;
     public Dictionary<Direction, Room> Exits { get; set; } = new();
     public Enemy? Enemy { get; set; }
