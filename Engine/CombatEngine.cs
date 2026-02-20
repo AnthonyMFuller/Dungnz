@@ -36,7 +36,7 @@ public class CombatEngine : ICombatEngine
                 {
                     _display.ShowMessage("You failed to flee!");
                     var fleeDmg = Math.Max(1, enemy.Attack - player.Defense);
-                    player.HP -= fleeDmg;
+                    player.TakeDamage(fleeDmg);
                     _display.ShowCombatMessage($"{enemy.Name} hits you for {fleeDmg} damage!");
                     if (player.HP <= 0) return CombatResult.PlayerDied;
                     continue;
@@ -54,7 +54,7 @@ public class CombatEngine : ICombatEngine
                 var loot = enemy.LootTable.RollDrop(enemy);
                 if (loot.Gold > 0)
                 {
-                    player.Gold += loot.Gold;
+                    player.AddGold(loot.Gold);
                     _display.ShowMessage($"You found {loot.Gold} gold!");
                 }
                 if (loot.Item != null)
@@ -63,14 +63,14 @@ public class CombatEngine : ICombatEngine
                     _display.ShowLootDrop(loot.Item);
                 }
                 
-                player.XP += enemy.XPValue;
+                player.AddXP(enemy.XPValue);
                 _display.ShowMessage($"You gained {enemy.XPValue} XP. (Total: {player.XP})");
                 CheckLevelUp(player);
                 return CombatResult.Won;
             }
             
             var enemyDmg = Math.Max(1, enemy.Attack - player.Defense);
-            player.HP -= enemyDmg;
+            player.TakeDamage(enemyDmg);
             _display.ShowCombatMessage($"{enemy.Name} hits you for {enemyDmg} damage!");
             
             if (player.HP <= 0) return CombatResult.PlayerDied;
@@ -82,11 +82,7 @@ public class CombatEngine : ICombatEngine
         var newLevel = player.XP / 100 + 1;
         if (newLevel > player.Level)
         {
-            player.Level = newLevel;
-            player.Attack += 2;
-            player.Defense += 1;
-            player.MaxHP += 10;
-            player.HP = player.MaxHP;
+            player.LevelUp();
             _display.ShowMessage($"LEVEL UP! You are now level {player.Level}!");
         }
     }

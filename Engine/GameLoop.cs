@@ -230,8 +230,9 @@ public class GameLoop
             case ItemType.Consumable:
                 if (item.HealAmount > 0)
                 {
-                    var healedAmount = Math.Min(item.HealAmount, _player.MaxHP - _player.HP);
-                    _player.HP += healedAmount;
+                    var oldHP = _player.HP;
+                    _player.Heal(item.HealAmount);
+                    var healedAmount = _player.HP - oldHP;
                     _player.Inventory.Remove(item);
                     _display.ShowMessage($"You use {item.Name} and restore {healedAmount} HP. Current HP: {_player.HP}/{_player.MaxHP}");
                 }
@@ -243,8 +244,8 @@ public class GameLoop
 
             case ItemType.Weapon:
             case ItemType.Armor:
-                _player.Attack += item.AttackBonus;
-                _player.Defense += item.DefenseBonus;
+                _player.ModifyAttack(item.AttackBonus);
+                _player.ModifyDefense(item.DefenseBonus);
                 _player.Inventory.Remove(item);
                 _display.ShowMessage($"You equip {item.Name}. Attack: {_player.Attack}, Defense: {_player.Defense}");
                 break;
