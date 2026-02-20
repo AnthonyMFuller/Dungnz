@@ -151,3 +151,61 @@
 - Add active effects display during combat
 
 📌 Team update (2026-02-20): Status Effects System consolidated — Barton + Coulson. Finalized design: Enum-based types, duration tracking, dictionary storage, on-demand stat modifiers. 6 core effects (Poison, Bleed, Stun, Regen, Fortified, Weakened).
+
+### 2026-02-20: Combat Abilities System (#13)
+
+**Files Created:**
+- `Models/Ability.cs` — Ability class with Name, ManaCost, CooldownTurns, UnlockLevel, Type
+- `Systems/AbilityManager.cs` — Manages ability unlocking, cooldowns, and execution
+- `Dungnz.Tests/AbilityManagerTests.cs` — Comprehensive tests for ability mechanics
+- `Dungnz.Tests/PlayerManaTests.cs` — Tests for mana system
+
+**Files Modified:**
+- `Models/Player.cs` — Added Mana/MaxMana properties (starts 30, +10/level), SpendMana/RestoreMana methods
+- `Engine/CombatEngine.cs` — Integrated AbilityManager, added mana regen (+10/turn), ability menu, status effect processing per turn
+- `Engine/EnemyFactory.cs` — Fixed Goblin constructor call (no itemConfig parameter)
+
+**Ability Specifications:**
+- Power Strike (L1): 10mp, 2-turn CD, 2x normal damage
+- Defensive Stance (L3): 8mp, 3-turn CD, applies Fortified for 2 turns (+50% DEF via StatusEffectManager)
+- Poison Dart (L5): 12mp, 4-turn CD, applies Poison status effect
+- Second Wind (L7): 15mp, 5-turn CD, heals 30% MaxHP
+
+**Combat Loop Changes:**
+- Menu expanded from [A]ttack [F]lee to [A]ttack [B]ability [I]tem [F]lee
+- Added mana display (Mana: X/Y) when player has unlocked abilities
+- Ability submenu shows unlocked abilities with availability (grayed out if on cooldown or insufficient mana)
+- Cooldowns tick at start of each combat turn
+- Mana regenerates +10 at start of each turn
+- Status effects process at turn start for both player and enemy
+- Stun effect blocks player/enemy action for that turn
+
+**Architecture Decisions:**
+- Abilities stored in AbilityManager as List<Ability> rather than config files (simpler for initial implementation)
+- Cooldowns tracked per-ability-type in dictionary, persist across combat (lifetime of AbilityManager instance)
+- UseAbilityResult enum returns success/failure states (InvalidAbility, NotUnlocked, OnCooldown, InsufficientMana, Success)
+- AbilityManager injected into CombatEngine constructor (optional, defaults to new instance)
+- Ability effects directly call StatusEffectManager, Player methods, or Enemy HP modification
+
+**Integration with Existing Systems:**
+- Status effects already implemented (#12) — Defensive Stance uses Fortified, Poison Dart uses Poison
+- CombatEngine already processes status effects at turn start
+- Player.LevelUp() now restores mana to full and increases MaxMana by 10
+
+**Testing:**
+- 23 unit tests covering:
+  - Mana spending/restoring/leveling (10 tests)
+  - Ability unlocking by level (4 tests)
+  - Cooldown tracking and ticking (2 tests)
+  - Ability execution and effects (4 tests)
+  - Failure cases: insufficient mana, on cooldown, not unlocked (3 tests)
+
+**Build Status:**
+- Build succeeded with 1 warning (SaveSystem nullability)
+- All new tests pass
+- PR created: #35
+
+**Next Steps:**
+- Combat loop could be further refactored to extract ability/item menu logic into separate classes
+- Ability costs/cooldowns could be moved to JSON config for easier balance tuning
+- Consider adding ability descriptions to combat menu (currently only shown in submenu)
