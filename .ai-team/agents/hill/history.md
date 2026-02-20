@@ -199,3 +199,43 @@
 - Dead code removal requires grep verification across all file types (tests, coverage, docs)
 - GameLoop's inline implementation is more maintainable than delegating to separate manager for simple CRUD operations
 - .NET target framework must match installed SDK version
+
+### 2026-02-20: Player Encapsulation Refactor (GitHub Issue #2, PR #26)
+
+**Files Modified:**
+- `Models/Player.cs` — All setters made private; added TakeDamage, Heal, AddGold, AddXP, ModifyAttack, ModifyDefense, LevelUp methods; added OnHealthChanged event with HealthChangedEventArgs
+- `Engine/CombatEngine.cs` — Updated to use player.TakeDamage(), player.AddGold(), player.AddXP(), player.LevelUp()
+- `Engine/GameLoop.cs` — Updated HandleUse() to use player.Heal(), player.ModifyAttack(), player.ModifyDefense()
+
+**Design Decisions:**
+1. **Private setters:** All Player properties (HP, MaxHP, Attack, Defense, Gold, XP, Level, Inventory) use private set to prevent direct mutation
+2. **Validation pattern:** TakeDamage and Heal throw ArgumentException on negative amounts (fail-fast)
+3. **Clamping pattern:** HP clamped to [0, MaxHP] using Math.Max/Math.Min
+4. **Event-driven:** OnHealthChanged event fires when HP changes (OldHP, NewHP, Delta) — enables future UI updates, analytics, achievements
+5. **LevelUp encapsulation:** All level-up logic (stats, MaxHP, HP restoration) moved into Player.LevelUp() method
+6. **Stat modification guards:** ModifyAttack clamps to minimum 1, ModifyDefense clamps to minimum 0
+
+**Caller Updates:**
+- CombatEngine: 4 call sites updated (flee damage, combat damage, gold loot, XP gain, level-up)
+- GameLoop: 3 call sites updated (heal consumable, equip weapon/armor stat bonuses)
+
+**Build Status:**
+- Clean build with zero warnings (dotnet build)
+- All Player state mutations now go through validated methods
+
+**Branch/PR:**
+- Branch: squad/2-player-encapsulation
+- PR #26: https://github.com/AnthonyMFuller/Dungnz/pull/26
+- Commit: b40cab6
+
+**Benefits:**
+- Prevents invalid state (negative HP, exceeding MaxHP)
+- Enables save/load (controlled state changes)
+- Supports analytics/achievements (OnHealthChanged event)
+- Clean API for game systems
+
+**Pattern Established:**
+- Model encapsulation with private setters + public methods
+- Math.Clamp for boundary enforcement
+- ArgumentException for invalid input
+- Events for state change notifications
