@@ -43,9 +43,22 @@ public class CombatEngine : ICombatEngine
                 }
             }
             
-            var playerDmg = Math.Max(1, player.Attack - enemy.Defense);
-            enemy.HP -= playerDmg;
-            _display.ShowCombatMessage($"You hit {enemy.Name} for {playerDmg} damage!");
+            if (RollDodge(enemy.Defense))
+            {
+                _display.ShowCombatMessage($"{enemy.Name} dodged your attack!");
+            }
+            else
+            {
+                var playerDmg = Math.Max(1, player.Attack - enemy.Defense);
+                var isCrit = RollCrit();
+                if (isCrit)
+                {
+                    playerDmg *= 2;
+                    _display.ShowCombatMessage("Critical hit!");
+                }
+                enemy.HP -= playerDmg;
+                _display.ShowCombatMessage($"You hit {enemy.Name} for {playerDmg} damage!");
+            }
             
             if (enemy.HP <= 0)
             {
@@ -69,9 +82,22 @@ public class CombatEngine : ICombatEngine
                 return CombatResult.Won;
             }
             
-            var enemyDmg = Math.Max(1, enemy.Attack - player.Defense);
-            player.TakeDamage(enemyDmg);
-            _display.ShowCombatMessage($"{enemy.Name} hits you for {enemyDmg} damage!");
+            if (RollDodge(player.Defense))
+            {
+                _display.ShowCombatMessage("You dodged the attack!");
+            }
+            else
+            {
+                var enemyDmg = Math.Max(1, enemy.Attack - player.Defense);
+                var isCrit = RollCrit();
+                if (isCrit)
+                {
+                    enemyDmg *= 2;
+                    _display.ShowCombatMessage("Critical hit!");
+                }
+                player.TakeDamage(enemyDmg);
+                _display.ShowCombatMessage($"{enemy.Name} hits you for {enemyDmg} damage!");
+            }
             
             if (player.HP <= 0) return CombatResult.PlayerDied;
         }
@@ -85,5 +111,16 @@ public class CombatEngine : ICombatEngine
             player.LevelUp();
             _display.ShowMessage($"LEVEL UP! You are now level {player.Level}!");
         }
+    }
+    
+    private bool RollDodge(int defense)
+    {
+        var dodgeChance = defense / (double)(defense + 20);
+        return _rng.NextDouble() < dodgeChance;
+    }
+    
+    private bool RollCrit()
+    {
+        return _rng.NextDouble() < 0.15;
     }
 }
