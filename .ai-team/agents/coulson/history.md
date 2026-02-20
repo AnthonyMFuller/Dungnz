@@ -141,3 +141,33 @@
 - CombatEngine can now be tested headlessly (WI-2 unblocked)
 - GameLoop can now be tested without Console coupling (existing tests already use this pattern)
 - Alternative UI implementations (WI-XX future) can now be plugged in via DI
+
+---
+
+### 2026-02-20: IDisplayService Integration Complete (GitHub #1, PR #27)
+**Context:** Final integration fix for IDisplayService extraction — Program.cs still referenced old DisplayService class name
+
+**Root Cause:**
+- IDisplayService interface extraction was completed in commit 32184c6 (test infrastructure work)
+- DisplayService renamed to ConsoleDisplayService implementing IDisplayService
+- GameLoop/CombatEngine constructors already updated to accept IDisplayService
+- TestDisplayService test double already created
+- BUT: Program.cs still instantiated `new DisplayService()` instead of `new ConsoleDisplayService()`
+- This caused build failure: "DisplayService not found" — the class was renamed but entrypoint wasn't updated
+
+**Fix:**
+- Updated Program.cs line 5: `var display = new ConsoleDisplayService();`
+- Clean build, all 125 tests pass
+- PR #27 created against master branch
+
+**Lesson Learned:**
+- Interface extraction completed incrementally across multiple commits can leave integration points inconsistent
+- Entrypoint files (Program.cs, Main methods) are often overlooked during refactoring sweeps
+- Always verify build from clean state after interface extraction, not just test suite
+- Commit 32184c6 did the heavy lifting but didn't update the production entrypoint
+
+**Files:**
+- `/Program.cs` — Fixed instantiation to use ConsoleDisplayService
+- `/Display/IDisplayService.cs` — Interface contract (14 methods)
+- `/Display/DisplayService.cs` — Renamed to ConsoleDisplayService (commit 32184c6)
+- `/Dungnz.Tests/Helpers/TestDisplayService.cs` — Test double for headless testing
