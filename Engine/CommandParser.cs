@@ -11,6 +11,12 @@ public enum CommandType
     Stats,
     Help,
     Quit,
+    Equip,
+    Unequip,
+    Equipment,
+    Save,
+    Load,
+    ListSaves,
     Unknown
 }
 
@@ -49,6 +55,12 @@ public static class CommandParser
             "stats" or "status" => new ParsedCommand { Type = CommandType.Stats },
             "help" or "?" or "h" => new ParsedCommand { Type = CommandType.Help },
             "quit" or "exit" or "q" => new ParsedCommand { Type = CommandType.Quit },
+            "equip" => new ParsedCommand { Type = CommandType.Equip, Argument = argument },
+            "unequip" => new ParsedCommand { Type = CommandType.Unequip, Argument = argument },
+            "equipment" or "gear" => new ParsedCommand { Type = CommandType.Equipment },
+            "save" => new ParsedCommand { Type = CommandType.Save, Argument = argument },
+            "load" => new ParsedCommand { Type = CommandType.Load, Argument = argument },
+            "list" or "saves" => new ParsedCommand { Type = CommandType.ListSaves },
             _ => new ParsedCommand { Type = CommandType.Unknown }
         };
     }

@@ -20,7 +20,7 @@ public static class EnemyFactory
         var type = rng.Next(9);
         return type switch
         {
-            0 => new Goblin(_enemyConfig?.GetValueOrDefault("Goblin")),
+            0 => new Goblin(_enemyConfig?.GetValueOrDefault("Goblin"), _itemConfig),
             1 => new Skeleton(_enemyConfig?.GetValueOrDefault("Skeleton"), _itemConfig),
             2 => new Troll(_enemyConfig?.GetValueOrDefault("Troll"), _itemConfig),
             3 => new DarkKnight(_enemyConfig?.GetValueOrDefault("DarkKnight"), _itemConfig),
@@ -61,9 +61,8 @@ public static class EnemyFactory
             throw new InvalidOperationException("Enemy configuration not loaded. Call Initialize() first.");
         }
 
-        var scaledStats = new EnemyStats
+        var scaledStats = baseStats with
         {
-            Name = baseStats.Name,
             MaxHP = (int)Math.Round(baseStats.MaxHP * scalar),
             Attack = (int)Math.Round(baseStats.Attack * scalar),
             Defense = (int)Math.Round(baseStats.Defense * scalar),

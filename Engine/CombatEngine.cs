@@ -25,6 +25,14 @@ public class CombatEngine : ICombatEngine
     public CombatResult RunCombat(Player player, Enemy enemy)
     {
         _display.ShowCombat($"A {enemy.Name} attacks!");
+
+        // Ambush: Mimic gets a free first strike before the player can act
+        if (enemy.IsAmbush)
+        {
+            _display.ShowCombatMessage($"It's a {enemy.Name}! You've been ambushed!");
+            PerformEnemyTurn(player, enemy);
+            if (player.HP <= 0) return CombatResult.PlayerDied;
+        }
         
         while (true)
         {
@@ -172,7 +180,12 @@ public class CombatEngine : ICombatEngine
     
     private void PerformPlayerAttack(Player player, Enemy enemy)
     {
-        if (RollDodge(enemy.Defense))
+        // Use flat dodge chance for enemies like Wraith, otherwise DEF-based
+        bool dodged = enemy.FlatDodgeChance >= 0
+            ? _rng.NextDouble() < enemy.FlatDodgeChance
+            : RollDodge(enemy.Defense);
+
+        if (dodged)
         {
             _display.ShowCombatMessage($"{enemy.Name} dodged your attack!");
         }
@@ -187,6 +200,10 @@ public class CombatEngine : ICombatEngine
             }
             enemy.HP -= playerDmg;
             _display.ShowCombatMessage($"You hit {enemy.Name} for {playerDmg} damage!");
+
+            // Poison on hit (e.g. Goblin Shaman)
+            if (enemy.AppliesPoisonOnHit && !enemy.IsImmuneToEffects)
+                _statusEffects.Apply(player, StatusEffect.Poison, 3);
         }
     }
     
@@ -213,6 +230,17 @@ public class CombatEngine : ICombatEngine
             }
             player.TakeDamage(enemyDmg);
             _display.ShowCombatMessage($"{enemy.Name} hits you for {enemyDmg} damage!");
+
+            // Lifesteal (e.g. Vampire Lord)
+            if (enemy.LifestealPercent > 0)
+            {
+                var heal = (int)(enemyDmg * enemy.LifestealPercent);
+                if (heal > 0)
+                {
+                    enemy.HP = Math.Min(enemy.MaxHP, enemy.HP + heal);
+                    _display.ShowCombatMessage($"{enemy.Name} drains {heal} HP!");
+                }
+            }
         }
     }
     

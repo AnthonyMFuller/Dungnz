@@ -11,6 +11,9 @@ public class StatusEffectManager
     
     public void Apply(object target, StatusEffect effect, int duration)
     {
+        // Stone Golem and other immune enemies cannot receive effects
+        if (target is Enemy enemy && enemy.IsImmuneToEffects) return;
+
         if (!_activeEffects.ContainsKey(target)) _activeEffects[target] = new List<ActiveEffect>();
         var existing = _activeEffects[target].FirstOrDefault(e => e.Effect == effect);
         if (existing != null) existing.RemainingTurns = Math.Max(existing.RemainingTurns, duration);
