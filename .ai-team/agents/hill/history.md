@@ -170,3 +170,32 @@
 - **Injectable Random (consolidated):** Direct System.Random injection (not IRandom interface). Optional constructor parameter with Random.Shared default for testable, deterministic seeds.
 
 **Impact on Hill:** Encapsulation patterns confirmed align with WI-2 Player model. Interface extraction unblocks testing infrastructure (Romanoff). Random injection required for DungeonGenerator and GameLoop seeding.
+
+### 2026-02-20: Dead Code Removal — InventoryManager
+
+**Files Modified:**
+- `Dungnz.csproj` — Fixed TargetFramework from net10.0 → net9.0 (SDK compatibility)
+- `Systems/InventoryManager.cs` — DELETED (zero production callers)
+
+**Analysis:**
+- Grepped entire codebase for InventoryManager references
+- Only usage: test files (`InventoryManagerTests.cs`) and coverage reports
+- GameLoop already has complete inventory logic in HandleTake() and HandleUse() methods
+- InventoryManager was redundant duplication from initial architecture
+
+**Design Decision:**
+- **Consolidated ownership:** GameLoop is sole owner of inventory interactions
+- Item pickup: GameLoop.HandleTake() (lines 189-209) removes from room, adds to player inventory
+- Item usage: GameLoop.HandleUse() (lines 211-256) handles consumables (heal), weapons (attack bonus), armor (defense bonus)
+- No delegation pattern needed for simple item operations
+
+**Build Verification:**
+- Deleted InventoryManager.cs
+- Fixed .NET target framework mismatch (net10.0 → net9.0)
+- Build passed cleanly with zero errors
+- Commit: 8389f76
+
+**Lessons:**
+- Dead code removal requires grep verification across all file types (tests, coverage, docs)
+- GameLoop's inline implementation is more maintainable than delegating to separate manager for simple CRUD operations
+- .NET target framework must match installed SDK version

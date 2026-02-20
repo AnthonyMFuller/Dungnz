@@ -1,10 +1,10 @@
 # Interface Extraction for External Dependencies
 
-**Confidence:** medium  
+**Confidence:** high  
 **Source:** earned  
 **Domain:** testing, architecture, dependency-inversion
 
-**Updated:** 2026-02-20 — Confirmed in Dungnz v2 architecture plan. Pattern successfully used for IDisplayService (Console I/O), IRandom (deterministic testing), and IInputService (UI decoupling).  
+**Updated:** 2026-02-20 — Confirmed in Dungnz v2 Phase 0. Pattern successfully implemented for IDisplayService extraction, passing 125 tests with zero regressions. Key learning: Favor composition-based test doubles (TestDisplayService implementing IDisplayService) over inheritance-based mocks (FakeDisplayService extending DisplayService) for cleaner test isolation.  
 
 ## Pattern
 
@@ -100,8 +100,10 @@ mockDisplay.Verify(d => d.ShowMessage(It.Is<string>(s => s.Contains("LEVEL UP"))
 1. **Extract interface** from existing concrete class
 2. **Rename concrete class** to implementation-specific name (e.g., `DisplayService` → `ConsoleDisplayService`)
 3. **Update all consumers** to depend on interface type (change constructor parameters, field types)
-4. **Create test implementation** (e.g., `TestDisplayService`) that captures output
+4. **Create test implementation** (e.g., `TestDisplayService`) that captures output — prefer direct interface implementation over extending concrete class
 5. **Verify no breaking changes** (production code should work unchanged, just different variable types)
+
+**Key Insight:** Test doubles should implement the interface directly, not extend the concrete class. This provides cleaner isolation and avoids inheriting production behavior that may interfere with test assertions. Replace inheritance-based test fakes (e.g., `class FakeDisplayService : DisplayService`) with composition-based implementations (e.g., `class TestDisplayService : IDisplayService`).
 
 ## Anti-Patterns to Avoid
 

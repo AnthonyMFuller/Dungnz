@@ -104,3 +104,40 @@
 **Deliverable:** `.ai-team/plans/v2-architecture-plan.md` — 28 work items tracked, full dependency graph, acceptance criteria for each phase
 
 **Next Actions:** Present to team for approval, kickoff Phase 0 design review ceremony
+
+---
+
+### 2026-02-20: IDisplayService Interface Extraction (Phase 0 Gate)
+**Context:** First critical refactor from v2 planning — extract testability layer for display subsystem
+
+**Implementation:**
+- Created `IDisplayService` interface with 14 public methods (all operations from DisplayService)
+- Renamed `DisplayService` → `ConsoleDisplayService : IDisplayService` (removed virtual modifiers, now concrete implementation)
+- Updated `GameLoop` and `CombatEngine` constructors to accept `IDisplayService` instead of concrete class
+- Created `TestDisplayService` in test project — headless stub capturing output for assertions
+- Replaced obsolete `FakeDisplayService` (inheritance-based test double) with composition-based `TestDisplayService`
+- Fixed test project targeting .NET 10 (SDK only supports .NET 9)
+- Removed orphaned `InventoryManagerTests.cs` (InventoryManager no longer exists)
+
+**Key Files:**
+- `/Display/IDisplayService.cs` — New interface contract
+- `/Display/DisplayService.cs` — Renamed to ConsoleDisplayService
+- `/Engine/GameLoop.cs` — Constructor now accepts IDisplayService
+- `/Engine/CombatEngine.cs` — Constructor now accepts IDisplayService
+- `/Program.cs` — Updated to instantiate ConsoleDisplayService
+- `/Dungnz.Tests/Helpers/TestDisplayService.cs` — New test double
+
+**Build Verification:**
+- Clean build: ✅ No errors, no warnings
+- Test suite: ✅ All 125 tests pass (0.8s runtime)
+- No regressions introduced
+
+**Architecture Decision:**
+- Favor interface-based dependency injection over inheritance-based test doubles
+- TestDisplayService implements IDisplayService directly rather than extending concrete class
+- This unblocks future DisplayService implementations (JSON logger, TUI, web sockets) without breaking existing consumers
+
+**Blockers Removed:**
+- CombatEngine can now be tested headlessly (WI-2 unblocked)
+- GameLoop can now be tested without Console coupling (existing tests already use this pattern)
+- Alternative UI implementations (WI-XX future) can now be plugged in via DI
