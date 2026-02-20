@@ -11,6 +11,7 @@ var player = new Player { Name = name };
 var generator = new DungeonGenerator();
 var (startRoom, _) = generator.Generate();
 
-var combat = new CombatEngine(display);
-var gameLoop = new GameLoop(display, combat);
+var inputReader = new ConsoleInputReader();
+var combat = new CombatEngine(display, inputReader);
+var gameLoop = new GameLoop(display, combat, inputReader);
 gameLoop.Run(player, startRoom);

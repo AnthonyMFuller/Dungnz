@@ -8,13 +8,15 @@ public class GameLoop
 {
     private readonly DisplayService _display;
     private readonly ICombatEngine _combat;
+    private readonly IInputReader _input;
     private Player _player = null!;
     private Room _currentRoom = null!;
 
-    public GameLoop(DisplayService display, ICombatEngine combat)
+    public GameLoop(DisplayService display, ICombatEngine combat, IInputReader? input = null)
     {
         _display = display;
         _combat = combat;
+        _input = input ?? new ConsoleInputReader();
     }
 
     public void Run(Player player, Room startRoom)
@@ -28,7 +30,7 @@ public class GameLoop
         while (true)
         {
             _display.ShowCommandPrompt();
-            var input = Console.ReadLine() ?? string.Empty;
+            var input = _input.ReadLine() ?? string.Empty;
             var cmd = CommandParser.Parse(input);
 
             switch (cmd.Type)

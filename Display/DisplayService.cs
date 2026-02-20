@@ -4,7 +4,7 @@ namespace Dungnz.Display;
 
 public class DisplayService
 {
-    public void ShowTitle()
+    public virtual void ShowTitle()
     {
         Console.Clear();
         Console.WriteLine("╔═══════════════════════════════════════╗");
@@ -14,7 +14,7 @@ public class DisplayService
         Console.WriteLine();
     }
 
-    public void ShowRoom(Room room)
+    public virtual void ShowRoom(Room room)
     {
         Console.WriteLine();
         Console.WriteLine(room.Description);
@@ -39,24 +39,24 @@ public class DisplayService
         Console.WriteLine();
     }
 
-    public void ShowCombat(string message)
+    public virtual void ShowCombat(string message)
     {
         Console.WriteLine($"⚔ {message}");
     }
 
-    public void ShowCombatStatus(Player player, Enemy enemy)
+    public virtual void ShowCombatStatus(Player player, Enemy enemy)
     {
         Console.WriteLine();
         Console.WriteLine($"[You: {player.HP}/{player.MaxHP} HP] vs [{enemy.Name}: {enemy.HP}/{enemy.MaxHP} HP]");
         Console.WriteLine();
     }
 
-    public void ShowCombatMessage(string message)
+    public virtual void ShowCombatMessage(string message)
     {
         Console.WriteLine($"  {message}");
     }
 
-    public void ShowPlayerStats(Player player)
+    public virtual void ShowPlayerStats(Player player)
     {
         Console.WriteLine();
         Console.WriteLine("═══ PLAYER STATS ═══");
@@ -70,7 +70,7 @@ public class DisplayService
         Console.WriteLine();
     }
 
-    public void ShowInventory(Player player)
+    public virtual void ShowInventory(Player player)
     {
         Console.WriteLine();
         Console.WriteLine("═══ INVENTORY ═══");
@@ -90,22 +90,22 @@ public class DisplayService
         Console.WriteLine();
     }
 
-    public void ShowLootDrop(Item item)
+    public virtual void ShowLootDrop(Item item)
     {
         Console.WriteLine($"✦ Dropped: {item.Name}");
     }
 
-    public void ShowMessage(string message)
+    public virtual void ShowMessage(string message)
     {
         Console.WriteLine(message);
     }
 
-    public void ShowError(string message)
+    public virtual void ShowError(string message)
     {
         Console.WriteLine($"✗ {message}");
     }
 
-    public void ShowHelp()
+    public virtual void ShowHelp()
     {
         Console.WriteLine();
         Console.WriteLine("═══ COMMANDS ═══");
@@ -122,12 +122,12 @@ public class DisplayService
         Console.WriteLine();
     }
 
-    public void ShowCommandPrompt()
+    public virtual void ShowCommandPrompt()
     {
         Console.Write("> ");
     }
 
-    public void ShowCombatPrompt()
+    public virtual void ShowCombatPrompt()
     {
         Console.Write("[A]ttack or [F]lee? ");
     }

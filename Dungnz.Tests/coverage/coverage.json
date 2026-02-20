@@ -1,0 +1,3878 @@
+{
+  "Dungnz.dll": {
+    "/home/anthony/RiderProjects/TextGame/Program.cs": {
+      "Program": {
+        "System.Void Program::<Main>$(System.String[])": {
+          "Lines": {
+            "5": 0,
+            "6": 0,
+            "8": 0,
+            "10": 0,
+            "11": 0,
+            "12": 0,
+            "14": 0,
+            "15": 0,
+            "16": 0,
+            "17": 0
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Systems/InventoryManager.cs": {
+      "Dungnz.Systems.InventoryManager": {
+        "System.Boolean Dungnz.Systems.InventoryManager::TakeItem(Dungnz.Models.Player,Dungnz.Models.Room,System.String)": {
+          "Lines": {
+            "15": 2,
+            "16": 3,
+            "17": 2,
+            "18": 1,
+            "19": 1,
+            "20": 1,
+            "23": 1,
+            "24": 1,
+            "25": 1,
+            "26": 1,
+            "27": 2
+          },
+          "Branches": [
+            {
+              "Line": 17,
+              "Offset": 44,
+              "EndOffset": 46,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 17,
+              "Offset": 44,
+              "EndOffset": 84,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 1
+            }
+          ]
+        },
+        "Dungnz.Models.UseResult Dungnz.Systems.InventoryManager::UseItem(Dungnz.Models.Player,System.String)": {
+          "Lines": {
+            "30": 6,
+            "31": 11,
+            "32": 7,
+            "34": 5,
+            "37": 2,
+            "38": 2,
+            "39": 2,
+            "40": 2,
+            "43": 1,
+            "44": 1,
+            "45": 1,
+            "46": 1,
+            "49": 1,
+            "50": 1,
+            "51": 1,
+            "52": 1,
+            "55": 1,
+            "57": 6
+          },
+          "Branches": [
+            {
+              "Line": 32,
+              "Offset": 44,
+              "EndOffset": 46,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 32,
+              "Offset": 44,
+              "EndOffset": 53,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 5
+            },
+            {
+              "Line": 34,
+              "Offset": 67,
+              "EndOffset": 89,
+              "Path": 3,
+              "Ordinal": 5,
+              "Hits": 2
+            },
+            {
+              "Line": 34,
+              "Offset": 67,
+              "EndOffset": 263,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 1
+            },
+            {
+              "Line": 34,
+              "Offset": 67,
+              "EndOffset": 399,
+              "Path": 2,
+              "Ordinal": 4,
+              "Hits": 1
+            },
+            {
+              "Line": 34,
+              "Offset": 67,
+              "EndOffset": 532,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 1
+            }
+          ]
+        },
+        "System.Void Dungnz.Systems.InventoryManager::.ctor(Dungnz.Display.DisplayService)": {
+          "Lines": {
+            "9": 8,
+            "10": 8,
+            "11": 8,
+            "12": 8
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Systems/Enemies/DarkKnight.cs": {
+      "Dungnz.Systems.Enemies.DarkKnight": {
+        "System.Void Dungnz.Systems.Enemies.DarkKnight::.ctor()": {
+          "Lines": {
+            "6": 53,
+            "7": 53,
+            "8": 53,
+            "9": 53,
+            "10": 53,
+            "11": 53,
+            "12": 53,
+            "13": 53,
+            "14": 53,
+            "15": 53,
+            "16": 53,
+            "17": 53,
+            "18": 53,
+            "19": 53,
+            "20": 53,
+            "21": 53,
+            "22": 53,
+            "23": 53,
+            "24": 53,
+            "25": 53,
+            "26": 53,
+            "27": 53,
+            "28": 53
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Systems/Enemies/DungeonBoss.cs": {
+      "Dungnz.Systems.Enemies.DungeonBoss": {
+        "System.Void Dungnz.Systems.Enemies.DungeonBoss::.ctor()": {
+          "Lines": {
+            "6": 13,
+            "7": 13,
+            "8": 13,
+            "9": 13,
+            "10": 13,
+            "11": 13,
+            "12": 13,
+            "13": 13,
+            "14": 13,
+            "15": 13,
+            "16": 13,
+            "17": 13,
+            "18": 13,
+            "19": 13,
+            "20": 13,
+            "21": 13
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Systems/Enemies/Goblin.cs": {
+      "Dungnz.Systems.Enemies.Goblin": {
+        "System.Void Dungnz.Systems.Enemies.Goblin::.ctor()": {
+          "Lines": {
+            "6": 42,
+            "7": 42,
+            "8": 42,
+            "9": 42,
+            "10": 42,
+            "11": 42,
+            "12": 42,
+            "13": 42,
+            "14": 42
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Systems/Enemies/Skeleton.cs": {
+      "Dungnz.Systems.Enemies.Skeleton": {
+        "System.Void Dungnz.Systems.Enemies.Skeleton::.ctor()": {
+          "Lines": {
+            "6": 40,
+            "7": 40,
+            "8": 40,
+            "9": 40,
+            "10": 40,
+            "11": 40,
+            "12": 40,
+            "13": 40,
+            "14": 40,
+            "15": 40,
+            "16": 40,
+            "17": 40,
+            "18": 40,
+            "19": 40,
+            "20": 40,
+            "21": 40,
+            "22": 40,
+            "23": 40,
+            "24": 40,
+            "25": 40,
+            "26": 40,
+            "27": 40,
+            "28": 40
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Systems/Enemies/Troll.cs": {
+      "Dungnz.Systems.Enemies.Troll": {
+        "System.Void Dungnz.Systems.Enemies.Troll::.ctor()": {
+          "Lines": {
+            "6": 38,
+            "7": 38,
+            "8": 38,
+            "9": 38,
+            "10": 38,
+            "11": 38,
+            "12": 38,
+            "13": 38,
+            "14": 38,
+            "15": 38,
+            "16": 38,
+            "17": 38,
+            "18": 38,
+            "19": 38,
+            "20": 38,
+            "21": 38
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Models/Enemy.cs": {
+      "Dungnz.Models.Enemy": {
+        "System.String Dungnz.Models.Enemy::get_Name()": {
+          "Lines": {
+            "5": 455
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Enemy::get_HP()": {
+          "Lines": {
+            "6": 265
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Enemy::get_MaxHP()": {
+          "Lines": {
+            "7": 225
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Enemy::get_Attack()": {
+          "Lines": {
+            "8": 214
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Enemy::get_Defense()": {
+          "Lines": {
+            "9": 221
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Enemy::get_XPValue()": {
+          "Lines": {
+            "10": 227
+          },
+          "Branches": []
+        },
+        "Dungnz.Models.LootTable Dungnz.Models.Enemy::get_LootTable()": {
+          "Lines": {
+            "11": 662
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Models/Item.cs": {
+      "Dungnz.Models.Item": {
+        "System.String Dungnz.Models.Item::get_Name()": {
+          "Lines": {
+            "5": 708
+          },
+          "Branches": []
+        },
+        "Dungnz.Models.ItemType Dungnz.Models.Item::get_Type()": {
+          "Lines": {
+            "6": 342
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Item::get_StatModifier()": {
+          "Lines": {
+            "7": 13
+          },
+          "Branches": []
+        },
+        "System.String Dungnz.Models.Item::get_Description()": {
+          "Lines": {
+            "8": 666
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Item::get_AttackBonus()": {
+          "Lines": {
+            "9": 118
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Item::get_DefenseBonus()": {
+          "Lines": {
+            "10": 104
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Item::get_HealAmount()": {
+          "Lines": {
+            "11": 102
+          },
+          "Branches": []
+        },
+        "System.Boolean Dungnz.Models.Item::get_IsEquippable()": {
+          "Lines": {
+            "13": 0
+          },
+          "Branches": [
+            {
+              "Line": 13,
+              "Offset": 9,
+              "EndOffset": 13,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 0
+            },
+            {
+              "Line": 13,
+              "Offset": 9,
+              "EndOffset": 17,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            }
+          ]
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Models/LootResult.cs": {
+      "Dungnz.Models.LootResult": {
+        "Dungnz.Models.Item Dungnz.Models.LootResult::get_Item()": {
+          "Lines": {
+            "5": 158
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.LootResult::get_Gold()": {
+          "Lines": {
+            "6": 171
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Models/LootTable.cs": {
+      "Dungnz.Models.LootTable": {
+        "System.Void Dungnz.Models.LootTable::AddDrop(Dungnz.Models.Item,System.Double)": {
+          "Lines": {
+            "18": 242,
+            "19": 242,
+            "20": 242
+          },
+          "Branches": []
+        },
+        "Dungnz.Models.LootResult Dungnz.Models.LootTable::RollDrop(Dungnz.Models.Enemy)": {
+          "Lines": {
+            "23": 105,
+            "24": 105,
+            "26": 105,
+            "27": 377,
+            "28": 42,
+            "29": 42,
+            "30": 22,
+            "31": 22,
+            "32": 22,
+            "34": 20,
+            "36": 105,
+            "37": 105
+          },
+          "Branches": [
+            {
+              "Line": 24,
+              "Offset": 13,
+              "EndOffset": 15,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 52
+            },
+            {
+              "Line": 24,
+              "Offset": 13,
+              "EndOffset": 42,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 53
+            },
+            {
+              "Line": 27,
+              "Offset": 122,
+              "EndOffset": 66,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 42
+            },
+            {
+              "Line": 29,
+              "Offset": 107,
+              "EndOffset": 109,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 22
+            },
+            {
+              "Line": 29,
+              "Offset": 107,
+              "EndOffset": 114,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 20
+            },
+            {
+              "Line": 27,
+              "Offset": 122,
+              "EndOffset": 124,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 105
+            }
+          ]
+        },
+        "System.Void Dungnz.Models.LootTable::.ctor(System.Random,System.Int32,System.Int32)": {
+          "Lines": {
+            "5": 215,
+            "10": 215,
+            "11": 215,
+            "12": 215,
+            "13": 215,
+            "14": 215,
+            "15": 215
+          },
+          "Branches": [
+            {
+              "Line": 12,
+              "Offset": 22,
+              "EndOffset": 24,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 208
+            },
+            {
+              "Line": 12,
+              "Offset": 22,
+              "EndOffset": 30,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 215
+            }
+          ]
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Models/Player.cs": {
+      "Dungnz.Models.Player": {
+        "System.String Dungnz.Models.Player::get_Name()": {
+          "Lines": {
+            "5": 77
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Player::get_HP()": {
+          "Lines": {
+            "6": 144
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Player::get_MaxHP()": {
+          "Lines": {
+            "7": 121
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Player::get_Attack()": {
+          "Lines": {
+            "8": 110
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Player::get_Defense()": {
+          "Lines": {
+            "9": 102
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Player::get_Gold()": {
+          "Lines": {
+            "10": 11
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Player::get_XP()": {
+          "Lines": {
+            "11": 46
+          },
+          "Branches": []
+        },
+        "System.Int32 Dungnz.Models.Player::get_Level()": {
+          "Lines": {
+            "12": 68
+          },
+          "Branches": []
+        },
+        "System.Collections.Generic.List`1<Dungnz.Models.Item> Dungnz.Models.Player::get_Inventory()": {
+          "Lines": {
+            "13": 95
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Models/Room.cs": {
+      "Dungnz.Models.Room": {
+        "System.String Dungnz.Models.Room::get_Description()": {
+          "Lines": {
+            "5": 547
+          },
+          "Branches": []
+        },
+        "System.Collections.Generic.Dictionary`2<Dungnz.Models.Direction,Dungnz.Models.Room> Dungnz.Models.Room::get_Exits()": {
+          "Lines": {
+            "6": 1243
+          },
+          "Branches": []
+        },
+        "Dungnz.Models.Enemy Dungnz.Models.Room::get_Enemy()": {
+          "Lines": {
+            "7": 155
+          },
+          "Branches": []
+        },
+        "System.Collections.Generic.List`1<Dungnz.Models.Item> Dungnz.Models.Room::get_Items()": {
+          "Lines": {
+            "8": 361
+          },
+          "Branches": []
+        },
+        "System.Boolean Dungnz.Models.Room::get_IsExit()": {
+          "Lines": {
+            "9": 21
+          },
+          "Branches": []
+        },
+        "System.Boolean Dungnz.Models.Room::get_Visited()": {
+          "Lines": {
+            "10": 23
+          },
+          "Branches": []
+        },
+        "System.Boolean Dungnz.Models.Room::get_Looted()": {
+          "Lines": {
+            "11": 0
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Engine/CombatEngine.cs": {
+      "Dungnz.Engine.CombatEngine": {
+        "Dungnz.Models.CombatResult Dungnz.Engine.CombatEngine::RunCombat(Dungnz.Models.Player,Dungnz.Models.Enemy)": {
+          "Lines": {
+            "19": 12,
+            "20": 12,
+            "22": 14,
+            "23": 14,
+            "24": 14,
+            "25": 14,
+            "26": 14,
+            "28": 14,
+            "29": 3,
+            "30": 3,
+            "31": 1,
+            "32": 1,
+            "33": 1,
+            "36": 2,
+            "37": 2,
+            "38": 2,
+            "39": 2,
+            "40": 2,
+            "41": 3,
+            "42": 1,
+            "46": 11,
+            "47": 11,
+            "48": 11,
+            "50": 11,
+            "51": 9,
+            "52": 9,
+            "54": 9,
+            "55": 9,
+            "56": 1,
+            "57": 1,
+            "58": 1,
+            "59": 1,
+            "60": 9,
+            "61": 1,
+            "62": 1,
+            "63": 1,
+            "64": 1,
+            "66": 9,
+            "67": 9,
+            "68": 9,
+            "69": 9,
+            "72": 2,
+            "73": 2,
+            "74": 2,
+            "76": 3,
+            "77": 1,
+            "78": 12
+          },
+          "Branches": [
+            {
+              "Line": 26,
+              "Offset": 78,
+              "EndOffset": 80,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 26,
+              "Offset": 78,
+              "EndOffset": 86,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 14
+            },
+            {
+              "Line": 28,
+              "Offset": 108,
+              "EndOffset": 110,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 11
+            },
+            {
+              "Line": 28,
+              "Offset": 108,
+              "EndOffset": 123,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 3
+            },
+            {
+              "Line": 28,
+              "Offset": 126,
+              "EndOffset": 131,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 3
+            },
+            {
+              "Line": 30,
+              "Offset": 158,
+              "EndOffset": 160,
+              "Path": 0,
+              "Ordinal": 6,
+              "Hits": 1
+            },
+            {
+              "Line": 30,
+              "Offset": 158,
+              "EndOffset": 186,
+              "Path": 1,
+              "Ordinal": 7,
+              "Hits": 2
+            },
+            {
+              "Line": 41,
+              "Offset": 336,
+              "EndOffset": 338,
+              "Path": 0,
+              "Ordinal": 8,
+              "Hits": 1
+            },
+            {
+              "Line": 28,
+              "Offset": 126,
+              "EndOffset": 351,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 11
+            },
+            {
+              "Line": 50,
+              "Offset": 493,
+              "EndOffset": 498,
+              "Path": 0,
+              "Ordinal": 10,
+              "Hits": 9
+            },
+            {
+              "Line": 55,
+              "Offset": 560,
+              "EndOffset": 562,
+              "Path": 0,
+              "Ordinal": 12,
+              "Hits": 1
+            },
+            {
+              "Line": 55,
+              "Offset": 560,
+              "EndOffset": 655,
+              "Path": 1,
+              "Ordinal": 13,
+              "Hits": 9
+            },
+            {
+              "Line": 60,
+              "Offset": 669,
+              "EndOffset": 671,
+              "Path": 0,
+              "Ordinal": 14,
+              "Hits": 1
+            },
+            {
+              "Line": 60,
+              "Offset": 669,
+              "EndOffset": 711,
+              "Path": 1,
+              "Ordinal": 15,
+              "Hits": 9
+            },
+            {
+              "Line": 50,
+              "Offset": 493,
+              "EndOffset": 843,
+              "Path": 1,
+              "Ordinal": 11,
+              "Hits": 2
+            },
+            {
+              "Line": 76,
+              "Offset": 972,
+              "EndOffset": 974,
+              "Path": 0,
+              "Ordinal": 16,
+              "Hits": 1
+            },
+            {
+              "Line": 76,
+              "Offset": 972,
+              "EndOffset": 979,
+              "Path": 1,
+              "Ordinal": 17,
+              "Hits": 1
+            },
+            {
+              "Line": 41,
+              "Offset": 336,
+              "EndOffset": 980,
+              "Path": 1,
+              "Ordinal": 9,
+              "Hits": 14
+            }
+          ]
+        },
+        "System.Void Dungnz.Engine.CombatEngine::CheckLevelUp(Dungnz.Models.Player)": {
+          "Lines": {
+            "81": 9,
+            "82": 9,
+            "83": 9,
+            "84": 1,
+            "85": 1,
+            "86": 1,
+            "87": 1,
+            "88": 1,
+            "89": 1,
+            "90": 1,
+            "91": 1,
+            "92": 9
+          },
+          "Branches": [
+            {
+              "Line": 83,
+              "Offset": 24,
+              "EndOffset": 29,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 83,
+              "Offset": 24,
+              "EndOffset": 167,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 9
+            }
+          ]
+        },
+        "System.Void Dungnz.Engine.CombatEngine::.ctor(Dungnz.Display.DisplayService,Dungnz.Engine.IInputReader,System.Random)": {
+          "Lines": {
+            "11": 12,
+            "12": 12,
+            "13": 12,
+            "14": 12,
+            "15": 12,
+            "16": 12
+          },
+          "Branches": [
+            {
+              "Line": 14,
+              "Offset": 18,
+              "EndOffset": 20,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 14,
+              "Offset": 18,
+              "EndOffset": 26,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 12
+            },
+            {
+              "Line": 15,
+              "Offset": 34,
+              "EndOffset": 36,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 0
+            },
+            {
+              "Line": 15,
+              "Offset": 34,
+              "EndOffset": 42,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 12
+            }
+          ]
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Engine/CommandParser.cs": {
+      "Dungnz.Engine.ParsedCommand": {
+        "Dungnz.Engine.CommandType Dungnz.Engine.ParsedCommand::get_Type()": {
+          "Lines": {
+            "19": 156
+          },
+          "Branches": []
+        },
+        "System.String Dungnz.Engine.ParsedCommand::get_Argument()": {
+          "Lines": {
+            "20": 142
+          },
+          "Branches": []
+        }
+      },
+      "Dungnz.Engine.CommandParser": {
+        "Dungnz.Engine.ParsedCommand Dungnz.Engine.CommandParser::Parse(System.String)": {
+          "Lines": {
+            "26": 78,
+            "27": 78,
+            "28": 78,
+            "29": 2,
+            "30": 2,
+            "33": 76,
+            "34": 76,
+            "35": 76,
+            "37": 76,
+            "38": 76,
+            "39": 2,
+            "40": 8,
+            "41": 3,
+            "42": 3,
+            "43": 3,
+            "44": 3,
+            "45": 5,
+            "46": 4,
+            "47": 4,
+            "48": 6,
+            "49": 3,
+            "50": 6,
+            "51": 23,
+            "52": 3,
+            "53": 76,
+            "54": 78
+          },
+          "Branches": [
+            {
+              "Line": 28,
+              "Offset": 18,
+              "EndOffset": 20,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 2
+            },
+            {
+              "Line": 28,
+              "Offset": 18,
+              "EndOffset": 42,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 76
+            },
+            {
+              "Line": 35,
+              "Offset": 66,
+              "EndOffset": 68,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 62
+            },
+            {
+              "Line": 35,
+              "Offset": 66,
+              "EndOffset": 75,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 14
+            },
+            {
+              "Line": 37,
+              "Offset": 98,
+              "EndOffset": 103,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 52
+            },
+            {
+              "Line": 37,
+              "Offset": 110,
+              "EndOffset": 112,
+              "Path": 0,
+              "Ordinal": 6,
+              "Hits": 18
+            },
+            {
+              "Line": 37,
+              "Offset": 119,
+              "EndOffset": 121,
+              "Path": 0,
+              "Ordinal": 8,
+              "Hits": 7
+            },
+            {
+              "Line": 37,
+              "Offset": 128,
+              "EndOffset": 135,
+              "Path": 0,
+              "Ordinal": 10,
+              "Hits": 5
+            },
+            {
+              "Line": 37,
+              "Offset": 142,
+              "EndOffset": 149,
+              "Path": 0,
+              "Ordinal": 12,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 119,
+              "EndOffset": 166,
+              "Path": 1,
+              "Ordinal": 9,
+              "Hits": 11
+            },
+            {
+              "Line": 37,
+              "Offset": 173,
+              "EndOffset": 180,
+              "Path": 0,
+              "Ordinal": 16,
+              "Hits": 7
+            },
+            {
+              "Line": 37,
+              "Offset": 187,
+              "EndOffset": 194,
+              "Path": 0,
+              "Ordinal": 18,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 110,
+              "EndOffset": 211,
+              "Path": 1,
+              "Ordinal": 7,
+              "Hits": 34
+            },
+            {
+              "Line": 37,
+              "Offset": 218,
+              "EndOffset": 220,
+              "Path": 0,
+              "Ordinal": 22,
+              "Hits": 24
+            },
+            {
+              "Line": 37,
+              "Offset": 227,
+              "EndOffset": 234,
+              "Path": 0,
+              "Ordinal": 24,
+              "Hits": 22
+            },
+            {
+              "Line": 37,
+              "Offset": 241,
+              "EndOffset": 248,
+              "Path": 0,
+              "Ordinal": 26,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 218,
+              "EndOffset": 265,
+              "Path": 1,
+              "Ordinal": 23,
+              "Hits": 10
+            },
+            {
+              "Line": 37,
+              "Offset": 272,
+              "EndOffset": 274,
+              "Path": 0,
+              "Ordinal": 30,
+              "Hits": 5
+            },
+            {
+              "Line": 37,
+              "Offset": 281,
+              "EndOffset": 288,
+              "Path": 0,
+              "Ordinal": 32,
+              "Hits": 4
+            },
+            {
+              "Line": 37,
+              "Offset": 272,
+              "EndOffset": 305,
+              "Path": 1,
+              "Ordinal": 31,
+              "Hits": 5
+            },
+            {
+              "Line": 37,
+              "Offset": 312,
+              "EndOffset": 319,
+              "Path": 0,
+              "Ordinal": 36,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 98,
+              "EndOffset": 336,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 24
+            },
+            {
+              "Line": 37,
+              "Offset": 343,
+              "EndOffset": 345,
+              "Path": 0,
+              "Ordinal": 40,
+              "Hits": 16
+            },
+            {
+              "Line": 37,
+              "Offset": 352,
+              "EndOffset": 354,
+              "Path": 0,
+              "Ordinal": 42,
+              "Hits": 10
+            },
+            {
+              "Line": 37,
+              "Offset": 361,
+              "EndOffset": 368,
+              "Path": 0,
+              "Ordinal": 44,
+              "Hits": 9
+            },
+            {
+              "Line": 37,
+              "Offset": 375,
+              "EndOffset": 382,
+              "Path": 0,
+              "Ordinal": 46,
+              "Hits": 8
+            },
+            {
+              "Line": 37,
+              "Offset": 352,
+              "EndOffset": 399,
+              "Path": 1,
+              "Ordinal": 43,
+              "Hits": 6
+            },
+            {
+              "Line": 37,
+              "Offset": 406,
+              "EndOffset": 408,
+              "Path": 0,
+              "Ordinal": 50,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 415,
+              "EndOffset": 422,
+              "Path": 0,
+              "Ordinal": 52,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 406,
+              "EndOffset": 439,
+              "Path": 1,
+              "Ordinal": 51,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 446,
+              "EndOffset": 453,
+              "Path": 0,
+              "Ordinal": 56,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 343,
+              "EndOffset": 470,
+              "Path": 1,
+              "Ordinal": 41,
+              "Hits": 8
+            },
+            {
+              "Line": 37,
+              "Offset": 477,
+              "EndOffset": 479,
+              "Path": 0,
+              "Ordinal": 60,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 486,
+              "EndOffset": 493,
+              "Path": 0,
+              "Ordinal": 62,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 500,
+              "EndOffset": 507,
+              "Path": 0,
+              "Ordinal": 64,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 477,
+              "EndOffset": 524,
+              "Path": 1,
+              "Ordinal": 61,
+              "Hits": 5
+            },
+            {
+              "Line": 37,
+              "Offset": 531,
+              "EndOffset": 533,
+              "Path": 0,
+              "Ordinal": 68,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 540,
+              "EndOffset": 547,
+              "Path": 0,
+              "Ordinal": 70,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 531,
+              "EndOffset": 564,
+              "Path": 1,
+              "Ordinal": 69,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 571,
+              "EndOffset": 575,
+              "Path": 0,
+              "Ordinal": 74,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 227,
+              "EndOffset": 592,
+              "Path": 1,
+              "Ordinal": 25,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 389,
+              "EndOffset": 613,
+              "Path": 1,
+              "Ordinal": 49,
+              "Hits": 7
+            },
+            {
+              "Line": 37,
+              "Offset": 486,
+              "EndOffset": 634,
+              "Path": 1,
+              "Ordinal": 63,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 156,
+              "EndOffset": 655,
+              "Path": 1,
+              "Ordinal": 15,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 571,
+              "EndOffset": 676,
+              "Path": 1,
+              "Ordinal": 75,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 128,
+              "EndOffset": 697,
+              "Path": 1,
+              "Ordinal": 11,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 415,
+              "EndOffset": 718,
+              "Path": 1,
+              "Ordinal": 53,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 460,
+              "EndOffset": 739,
+              "Path": 1,
+              "Ordinal": 59,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 540,
+              "EndOffset": 760,
+              "Path": 1,
+              "Ordinal": 71,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 429,
+              "EndOffset": 781,
+              "Path": 1,
+              "Ordinal": 55,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 446,
+              "EndOffset": 802,
+              "Path": 1,
+              "Ordinal": 57,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 173,
+              "EndOffset": 823,
+              "Path": 1,
+              "Ordinal": 17,
+              "Hits": 4
+            },
+            {
+              "Line": 37,
+              "Offset": 255,
+              "EndOffset": 844,
+              "Path": 1,
+              "Ordinal": 29,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 142,
+              "EndOffset": 865,
+              "Path": 1,
+              "Ordinal": 13,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 281,
+              "EndOffset": 886,
+              "Path": 1,
+              "Ordinal": 33,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 295,
+              "EndOffset": 907,
+              "Path": 1,
+              "Ordinal": 35,
+              "Hits": 4
+            },
+            {
+              "Line": 37,
+              "Offset": 582,
+              "EndOffset": 928,
+              "Path": 1,
+              "Ordinal": 77,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 326,
+              "EndOffset": 949,
+              "Path": 1,
+              "Ordinal": 39,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 500,
+              "EndOffset": 970,
+              "Path": 1,
+              "Ordinal": 65,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 312,
+              "EndOffset": 991,
+              "Path": 1,
+              "Ordinal": 37,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 361,
+              "EndOffset": 1012,
+              "Path": 1,
+              "Ordinal": 45,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 187,
+              "EndOffset": 1033,
+              "Path": 1,
+              "Ordinal": 19,
+              "Hits": 4
+            },
+            {
+              "Line": 37,
+              "Offset": 201,
+              "EndOffset": 1054,
+              "Path": 1,
+              "Ordinal": 21,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 514,
+              "EndOffset": 1075,
+              "Path": 1,
+              "Ordinal": 67,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 241,
+              "EndOffset": 1096,
+              "Path": 1,
+              "Ordinal": 27,
+              "Hits": 21
+            },
+            {
+              "Line": 37,
+              "Offset": 375,
+              "EndOffset": 1117,
+              "Path": 1,
+              "Ordinal": 47,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 554,
+              "EndOffset": 1138,
+              "Path": 1,
+              "Ordinal": 73,
+              "Hits": 1
+            },
+            {
+              "Line": 37,
+              "Offset": 603,
+              "EndOffset": 1159,
+              "Path": 1,
+              "Ordinal": 79,
+              "Hits": 2
+            },
+            {
+              "Line": 37,
+              "Offset": 624,
+              "EndOffset": 1187,
+              "Path": 1,
+              "Ordinal": 81,
+              "Hits": 8
+            },
+            {
+              "Line": 37,
+              "Offset": 645,
+              "EndOffset": 1187,
+              "Path": 1,
+              "Ordinal": 83,
+              "Hits": 8
+            },
+            {
+              "Line": 37,
+              "Offset": 666,
+              "EndOffset": 1219,
+              "Path": 1,
+              "Ordinal": 85,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 687,
+              "EndOffset": 1219,
+              "Path": 1,
+              "Ordinal": 87,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 708,
+              "EndOffset": 1251,
+              "Path": 1,
+              "Ordinal": 89,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 729,
+              "EndOffset": 1251,
+              "Path": 1,
+              "Ordinal": 91,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 750,
+              "EndOffset": 1283,
+              "Path": 1,
+              "Ordinal": 93,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 771,
+              "EndOffset": 1283,
+              "Path": 1,
+              "Ordinal": 95,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 792,
+              "EndOffset": 1315,
+              "Path": 1,
+              "Ordinal": 97,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 813,
+              "EndOffset": 1315,
+              "Path": 1,
+              "Ordinal": 99,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 834,
+              "EndOffset": 1335,
+              "Path": 1,
+              "Ordinal": 101,
+              "Hits": 5
+            },
+            {
+              "Line": 37,
+              "Offset": 855,
+              "EndOffset": 1335,
+              "Path": 1,
+              "Ordinal": 103,
+              "Hits": 5
+            },
+            {
+              "Line": 37,
+              "Offset": 876,
+              "EndOffset": 1363,
+              "Path": 1,
+              "Ordinal": 105,
+              "Hits": 4
+            },
+            {
+              "Line": 37,
+              "Offset": 897,
+              "EndOffset": 1363,
+              "Path": 1,
+              "Ordinal": 107,
+              "Hits": 4
+            },
+            {
+              "Line": 37,
+              "Offset": 918,
+              "EndOffset": 1388,
+              "Path": 1,
+              "Ordinal": 109,
+              "Hits": 4
+            },
+            {
+              "Line": 37,
+              "Offset": 939,
+              "EndOffset": 1413,
+              "Path": 1,
+              "Ordinal": 111,
+              "Hits": 6
+            },
+            {
+              "Line": 37,
+              "Offset": 960,
+              "EndOffset": 1413,
+              "Path": 1,
+              "Ordinal": 113,
+              "Hits": 6
+            },
+            {
+              "Line": 37,
+              "Offset": 981,
+              "EndOffset": 1413,
+              "Path": 1,
+              "Ordinal": 115,
+              "Hits": 6
+            },
+            {
+              "Line": 37,
+              "Offset": 1002,
+              "EndOffset": 1430,
+              "Path": 1,
+              "Ordinal": 117,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 1023,
+              "EndOffset": 1430,
+              "Path": 1,
+              "Ordinal": 119,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 1044,
+              "EndOffset": 1447,
+              "Path": 1,
+              "Ordinal": 121,
+              "Hits": 6
+            },
+            {
+              "Line": 37,
+              "Offset": 1065,
+              "EndOffset": 1447,
+              "Path": 1,
+              "Ordinal": 123,
+              "Hits": 6
+            },
+            {
+              "Line": 37,
+              "Offset": 1086,
+              "EndOffset": 1447,
+              "Path": 1,
+              "Ordinal": 125,
+              "Hits": 6
+            },
+            {
+              "Line": 37,
+              "Offset": 1107,
+              "EndOffset": 1464,
+              "Path": 1,
+              "Ordinal": 127,
+              "Hits": 23
+            },
+            {
+              "Line": 37,
+              "Offset": 1128,
+              "EndOffset": 1464,
+              "Path": 1,
+              "Ordinal": 129,
+              "Hits": 23
+            },
+            {
+              "Line": 37,
+              "Offset": 1149,
+              "EndOffset": 1464,
+              "Path": 1,
+              "Ordinal": 131,
+              "Hits": 23
+            },
+            {
+              "Line": 37,
+              "Offset": 156,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 14,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 201,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 20,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 255,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 28,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 295,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 34,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 326,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 38,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 389,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 48,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 429,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 54,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 460,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 58,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 514,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 66,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 554,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 72,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 582,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 76,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 603,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 78,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 624,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 80,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 645,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 82,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 666,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 84,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 687,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 86,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 708,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 88,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 729,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 90,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 750,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 92,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 771,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 94,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 792,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 96,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 813,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 98,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 834,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 100,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 855,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 102,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 876,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 104,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 897,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 106,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 918,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 108,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 939,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 110,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 960,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 112,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 981,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 114,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 1002,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 116,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 1023,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 118,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 1044,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 120,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 1065,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 122,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 1086,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 124,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 1107,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 126,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 1128,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 128,
+              "Hits": 3
+            },
+            {
+              "Line": 37,
+              "Offset": 1149,
+              "EndOffset": 1481,
+              "Path": 0,
+              "Ordinal": 130,
+              "Hits": 3
+            }
+          ]
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Engine/DungeonGenerator.cs": {
+      "Dungnz.Engine.DungeonGenerator": {
+        "System.ValueTuple`2<Dungnz.Models.Room,Dungnz.Models.Room> Dungnz.Engine.DungeonGenerator::Generate(System.Int32,System.Int32)": {
+          "Lines": {
+            "28": 11,
+            "30": 11,
+            "31": 110,
+            "32": 44,
+            "33": 528,
+            "34": 220,
+            "35": 220,
+            "36": 220,
+            "37": 220,
+            "38": 220,
+            "39": 220,
+            "40": 44,
+            "43": 110,
+            "44": 44,
+            "45": 528,
+            "46": 220,
+            "47": 220,
+            "50": 220,
+            "51": 165,
+            "52": 165,
+            "53": 165,
+            "54": 165,
+            "55": 165,
+            "58": 220,
+            "59": 176,
+            "60": 176,
+            "61": 176,
+            "62": 176,
+            "63": 176,
+            "64": 220,
+            "65": 44,
+            "68": 11,
+            "69": 11,
+            "70": 11,
+            "71": 11,
+            "74": 11,
+            "77": 110,
+            "78": 44,
+            "79": 528,
+            "80": 220,
+            "81": 220,
+            "82": 242,
+            "84": 198,
+            "85": 108,
+            "86": 108,
+            "87": 108,
+            "88": 198,
+            "89": 44,
+            "92": 110,
+            "93": 44,
+            "94": 528,
+            "95": 220,
+            "96": 220,
+            "97": 220,
+            "98": 84,
+            "99": 84,
+            "100": 84,
+            "101": 220,
+            "102": 44,
+            "105": 11,
+            "106": 0,
+            "109": 0,
+            "111": 11,
+            "112": 11
+          },
+          "Branches": [
+            {
+              "Line": 31,
+              "Offset": 96,
+              "EndOffset": 13,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 44
+            },
+            {
+              "Line": 33,
+              "Offset": 81,
+              "EndOffset": 19,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 220
+            },
+            {
+              "Line": 33,
+              "Offset": 81,
+              "EndOffset": 83,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 44
+            },
+            {
+              "Line": 31,
+              "Offset": 96,
+              "EndOffset": 98,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 11
+            },
+            {
+              "Line": 43,
+              "Offset": 285,
+              "EndOffset": 106,
+              "Path": 1,
+              "Ordinal": 11,
+              "Hits": 44
+            },
+            {
+              "Line": 45,
+              "Offset": 264,
+              "EndOffset": 115,
+              "Path": 1,
+              "Ordinal": 9,
+              "Hits": 220
+            },
+            {
+              "Line": 50,
+              "Offset": 137,
+              "EndOffset": 139,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 165
+            },
+            {
+              "Line": 50,
+              "Offset": 137,
+              "EndOffset": 187,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 220
+            },
+            {
+              "Line": 58,
+              "Offset": 198,
+              "EndOffset": 200,
+              "Path": 0,
+              "Ordinal": 6,
+              "Hits": 176
+            },
+            {
+              "Line": 58,
+              "Offset": 198,
+              "EndOffset": 248,
+              "Path": 1,
+              "Ordinal": 7,
+              "Hits": 220
+            },
+            {
+              "Line": 45,
+              "Offset": 264,
+              "EndOffset": 269,
+              "Path": 0,
+              "Ordinal": 8,
+              "Hits": 44
+            },
+            {
+              "Line": 43,
+              "Offset": 285,
+              "EndOffset": 290,
+              "Path": 0,
+              "Ordinal": 10,
+              "Hits": 11
+            },
+            {
+              "Line": 77,
+              "Offset": 478,
+              "EndOffset": 355,
+              "Path": 1,
+              "Ordinal": 21,
+              "Hits": 44
+            },
+            {
+              "Line": 79,
+              "Offset": 460,
+              "EndOffset": 361,
+              "Path": 1,
+              "Ordinal": 19,
+              "Hits": 220
+            },
+            {
+              "Line": 82,
+              "Offset": 377,
+              "EndOffset": 379,
+              "Path": 0,
+              "Ordinal": 12,
+              "Hits": 209
+            },
+            {
+              "Line": 82,
+              "Offset": 377,
+              "EndOffset": 386,
+              "Path": 1,
+              "Ordinal": 13,
+              "Hits": 11
+            },
+            {
+              "Line": 82,
+              "Offset": 391,
+              "EndOffset": 395,
+              "Path": 1,
+              "Ordinal": 15,
+              "Hits": 198
+            },
+            {
+              "Line": 84,
+              "Offset": 421,
+              "EndOffset": 423,
+              "Path": 0,
+              "Ordinal": 16,
+              "Hits": 108
+            },
+            {
+              "Line": 84,
+              "Offset": 421,
+              "EndOffset": 444,
+              "Path": 1,
+              "Ordinal": 17,
+              "Hits": 198
+            },
+            {
+              "Line": 82,
+              "Offset": 391,
+              "EndOffset": 445,
+              "Path": 0,
+              "Ordinal": 14,
+              "Hits": 220
+            },
+            {
+              "Line": 79,
+              "Offset": 460,
+              "EndOffset": 462,
+              "Path": 0,
+              "Ordinal": 18,
+              "Hits": 44
+            },
+            {
+              "Line": 77,
+              "Offset": 478,
+              "EndOffset": 480,
+              "Path": 0,
+              "Ordinal": 20,
+              "Hits": 11
+            },
+            {
+              "Line": 92,
+              "Offset": 587,
+              "EndOffset": 485,
+              "Path": 1,
+              "Ordinal": 27,
+              "Hits": 44
+            },
+            {
+              "Line": 94,
+              "Offset": 569,
+              "EndOffset": 491,
+              "Path": 1,
+              "Ordinal": 25,
+              "Hits": 220
+            },
+            {
+              "Line": 97,
+              "Offset": 530,
+              "EndOffset": 532,
+              "Path": 0,
+              "Ordinal": 22,
+              "Hits": 84
+            },
+            {
+              "Line": 97,
+              "Offset": 530,
+              "EndOffset": 553,
+              "Path": 1,
+              "Ordinal": 23,
+              "Hits": 220
+            },
+            {
+              "Line": 94,
+              "Offset": 569,
+              "EndOffset": 571,
+              "Path": 0,
+              "Ordinal": 24,
+              "Hits": 44
+            },
+            {
+              "Line": 92,
+              "Offset": 587,
+              "EndOffset": 589,
+              "Path": 0,
+              "Ordinal": 26,
+              "Hits": 11
+            },
+            {
+              "Line": 105,
+              "Offset": 604,
+              "EndOffset": 606,
+              "Path": 0,
+              "Ordinal": 28,
+              "Hits": 0
+            },
+            {
+              "Line": 105,
+              "Offset": 604,
+              "EndOffset": 608,
+              "Path": 1,
+              "Ordinal": 29,
+              "Hits": 11
+            }
+          ]
+        },
+        "Dungnz.Models.Item Dungnz.Engine.DungeonGenerator::CreateRandomItem()": {
+          "Lines": {
+            "115": 84,
+            "116": 84,
+            "117": 84,
+            "118": 84,
+            "119": 29,
+            "120": 29,
+            "121": 29,
+            "122": 29,
+            "123": 29,
+            "124": 29,
+            "125": 29,
+            "126": 20,
+            "127": 20,
+            "128": 20,
+            "129": 20,
+            "130": 20,
+            "131": 20,
+            "132": 20,
+            "133": 9,
+            "134": 9,
+            "135": 9,
+            "136": 9,
+            "137": 9,
+            "138": 9,
+            "139": 9,
+            "140": 26,
+            "141": 26,
+            "142": 26,
+            "143": 26,
+            "144": 26,
+            "145": 26,
+            "146": 26,
+            "147": 84,
+            "148": 84
+          },
+          "Branches": [
+            {
+              "Line": 117,
+              "Offset": 19,
+              "EndOffset": 41,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 29
+            },
+            {
+              "Line": 117,
+              "Offset": 19,
+              "EndOffset": 93,
+              "Path": 2,
+              "Ordinal": 2,
+              "Hits": 20
+            },
+            {
+              "Line": 117,
+              "Offset": 19,
+              "EndOffset": 141,
+              "Path": 3,
+              "Ordinal": 3,
+              "Hits": 9
+            },
+            {
+              "Line": 117,
+              "Offset": 19,
+              "EndOffset": 189,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 26
+            }
+          ]
+        },
+        "System.Boolean Dungnz.Engine.DungeonGenerator::PathExists(Dungnz.Models.Room,Dungnz.Models.Room)": {
+          "Lines": {
+            "151": 11,
+            "152": 11,
+            "153": 11,
+            "154": 11,
+            "155": 11,
+            "157": 220,
+            "158": 220,
+            "159": 220,
+            "160": 231,
+            "162": 1947,
+            "163": 660,
+            "164": 660,
+            "165": 209,
+            "166": 209,
+            "167": 209,
+            "168": 209,
+            "169": 660,
+            "170": 209,
+            "172": 0,
+            "173": 11
+          },
+          "Branches": [
+            {
+              "Line": 157,
+              "Offset": 161,
+              "EndOffset": 31,
+              "Path": 1,
+              "Ordinal": 7,
+              "Hits": 220
+            },
+            {
+              "Line": 160,
+              "Offset": 45,
+              "EndOffset": 47,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 11
+            },
+            {
+              "Line": 160,
+              "Offset": 45,
+              "EndOffset": 52,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 209
+            },
+            {
+              "Line": 162,
+              "Offset": 128,
+              "EndOffset": 73,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 660
+            },
+            {
+              "Line": 164,
+              "Offset": 98,
+              "EndOffset": 100,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 209
+            },
+            {
+              "Line": 164,
+              "Offset": 98,
+              "EndOffset": 120,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 660
+            },
+            {
+              "Line": 162,
+              "Offset": 128,
+              "EndOffset": 130,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 209
+            },
+            {
+              "Line": 157,
+              "Offset": 161,
+              "EndOffset": 166,
+              "Path": 0,
+              "Ordinal": 6,
+              "Hits": 0
+            }
+          ]
+        },
+        "System.Void Dungnz.Engine.DungeonGenerator::.ctor(System.Nullable`1<System.Int32>)": {
+          "Lines": {
+            "22": 11,
+            "23": 11,
+            "24": 11,
+            "25": 11
+          },
+          "Branches": [
+            {
+              "Line": 24,
+              "Offset": 16,
+              "EndOffset": 18,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 24,
+              "Offset": 16,
+              "EndOffset": 25,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 11
+            }
+          ]
+        },
+        "System.Void Dungnz.Engine.DungeonGenerator::.cctor()": {
+          "Lines": {
+            "8": 1,
+            "9": 1,
+            "10": 1,
+            "11": 1,
+            "12": 1,
+            "13": 1,
+            "14": 1,
+            "15": 1,
+            "16": 1,
+            "17": 1,
+            "18": 1,
+            "19": 1,
+            "20": 1
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Engine/EnemyFactory.cs": {
+      "Dungnz.Engine.EnemyFactory": {
+        "Dungnz.Models.Enemy Dungnz.Engine.EnemyFactory::CreateRandom(System.Random)": {
+          "Lines": {
+            "9": 169,
+            "10": 169,
+            "11": 169,
+            "12": 169,
+            "13": 41,
+            "14": 39,
+            "15": 37,
+            "16": 52,
+            "17": 169,
+            "18": 169
+          },
+          "Branches": [
+            {
+              "Line": 11,
+              "Offset": 14,
+              "EndOffset": 33,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 41
+            },
+            {
+              "Line": 11,
+              "Offset": 14,
+              "EndOffset": 41,
+              "Path": 2,
+              "Ordinal": 2,
+              "Hits": 39
+            },
+            {
+              "Line": 11,
+              "Offset": 14,
+              "EndOffset": 49,
+              "Path": 3,
+              "Ordinal": 3,
+              "Hits": 37
+            },
+            {
+              "Line": 11,
+              "Offset": 14,
+              "EndOffset": 57,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 52
+            }
+          ]
+        },
+        "Dungnz.Models.Enemy Dungnz.Engine.EnemyFactory::CreateBoss(System.Random)": {
+          "Lines": {
+            "21": 12,
+            "22": 12,
+            "23": 12
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Engine/GameLoop.cs": {
+      "Dungnz.Engine.GameLoop": {
+        "System.Void Dungnz.Engine.GameLoop::Run(Dungnz.Models.Player,Dungnz.Models.Room)": {
+          "Lines": {
+            "23": 20,
+            "24": 20,
+            "25": 20,
+            "26": 20,
+            "27": 20,
+            "28": 20,
+            "30": 39,
+            "31": 39,
+            "32": 39,
+            "33": 39,
+            "34": 39,
+            "36": 39,
+            "39": 6,
+            "40": 6,
+            "42": 1,
+            "43": 1,
+            "45": 3,
+            "46": 3,
+            "48": 2,
+            "49": 2,
+            "51": 3,
+            "52": 3,
+            "54": 1,
+            "55": 1,
+            "57": 1,
+            "58": 1,
+            "60": 1,
+            "61": 1,
+            "63": 20,
+            "64": 20,
+            "66": 1,
+            "67": 1,
+            "69": 19,
+            "70": 20
+          },
+          "Branches": [
+            {
+              "Line": 33,
+              "Offset": 88,
+              "EndOffset": 90,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 33,
+              "Offset": 88,
+              "EndOffset": 96,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 39
+            },
+            {
+              "Line": 36,
+              "Offset": 114,
+              "EndOffset": 160,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 6
+            },
+            {
+              "Line": 36,
+              "Offset": 114,
+              "EndOffset": 178,
+              "Path": 2,
+              "Ordinal": 4,
+              "Hits": 1
+            },
+            {
+              "Line": 36,
+              "Offset": 114,
+              "EndOffset": 190,
+              "Path": 3,
+              "Ordinal": 5,
+              "Hits": 3
+            },
+            {
+              "Line": 36,
+              "Offset": 114,
+              "EndOffset": 205,
+              "Path": 4,
+              "Ordinal": 6,
+              "Hits": 2
+            },
+            {
+              "Line": 36,
+              "Offset": 114,
+              "EndOffset": 220,
+              "Path": 5,
+              "Ordinal": 7,
+              "Hits": 3
+            },
+            {
+              "Line": 36,
+              "Offset": 114,
+              "EndOffset": 235,
+              "Path": 6,
+              "Ordinal": 8,
+              "Hits": 1
+            },
+            {
+              "Line": 36,
+              "Offset": 114,
+              "EndOffset": 255,
+              "Path": 7,
+              "Ordinal": 9,
+              "Hits": 1
+            },
+            {
+              "Line": 36,
+              "Offset": 114,
+              "EndOffset": 275,
+              "Path": 8,
+              "Ordinal": 10,
+              "Hits": 1
+            },
+            {
+              "Line": 36,
+              "Offset": 114,
+              "EndOffset": 289,
+              "Path": 9,
+              "Ordinal": 11,
+              "Hits": 20
+            },
+            {
+              "Line": 36,
+              "Offset": 114,
+              "EndOffset": 308,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 1
+            }
+          ]
+        },
+        "System.Void Dungnz.Engine.GameLoop::HandleGo(System.String)": {
+          "Lines": {
+            "73": 6,
+            "74": 6,
+            "75": 1,
+            "76": 1,
+            "77": 1,
+            "81": 5,
+            "85": 5,
+            "86": 5,
+            "89": 0,
+            "90": 0,
+            "93": 0,
+            "94": 0,
+            "97": 0,
+            "98": 0,
+            "100": 0,
+            "101": 0,
+            "104": 5,
+            "105": 1,
+            "106": 1,
+            "107": 1,
+            "111": 4,
+            "112": 1,
+            "113": 1,
+            "114": 1,
+            "118": 3,
+            "119": 3,
+            "120": 3,
+            "123": 3,
+            "124": 1,
+            "125": 1,
+            "127": 1,
+            "128": 1,
+            "129": 1,
+            "130": 1,
+            "133": 0,
+            "134": 0,
+            "135": 0,
+            "136": 0,
+            "137": 0,
+            "140": 2,
+            "141": 1,
+            "142": 1,
+            "143": 1,
+            "145": 6
+          },
+          "Branches": [
+            {
+              "Line": 74,
+              "Offset": 9,
+              "EndOffset": 11,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 74,
+              "Offset": 9,
+              "EndOffset": 34,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 5
+            },
+            {
+              "Line": 81,
+              "Offset": 60,
+              "EndOffset": 62,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 5
+            },
+            {
+              "Line": 81,
+              "Offset": 69,
+              "EndOffset": 71,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 78,
+              "EndOffset": 85,
+              "Path": 0,
+              "Ordinal": 6,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 69,
+              "EndOffset": 99,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 5
+            },
+            {
+              "Line": 81,
+              "Offset": 106,
+              "EndOffset": 110,
+              "Path": 0,
+              "Ordinal": 10,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 60,
+              "EndOffset": 127,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 134,
+              "EndOffset": 136,
+              "Path": 0,
+              "Ordinal": 14,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 143,
+              "EndOffset": 150,
+              "Path": 0,
+              "Ordinal": 16,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 134,
+              "EndOffset": 164,
+              "Path": 1,
+              "Ordinal": 15,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 171,
+              "EndOffset": 175,
+              "Path": 0,
+              "Ordinal": 20,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 106,
+              "EndOffset": 189,
+              "Path": 1,
+              "Ordinal": 11,
+              "Hits": 5
+            },
+            {
+              "Line": 81,
+              "Offset": 157,
+              "EndOffset": 204,
+              "Path": 1,
+              "Ordinal": 19,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 92,
+              "EndOffset": 219,
+              "Path": 1,
+              "Ordinal": 9,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 182,
+              "EndOffset": 234,
+              "Path": 1,
+              "Ordinal": 23,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 78,
+              "EndOffset": 249,
+              "Path": 1,
+              "Ordinal": 7,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 117,
+              "EndOffset": 264,
+              "Path": 1,
+              "Ordinal": 13,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 143,
+              "EndOffset": 279,
+              "Path": 1,
+              "Ordinal": 17,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 171,
+              "EndOffset": 294,
+              "Path": 1,
+              "Ordinal": 21,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 200,
+              "EndOffset": 309,
+              "Path": 1,
+              "Ordinal": 25,
+              "Hits": 5
+            },
+            {
+              "Line": 81,
+              "Offset": 215,
+              "EndOffset": 309,
+              "Path": 1,
+              "Ordinal": 27,
+              "Hits": 5
+            },
+            {
+              "Line": 81,
+              "Offset": 230,
+              "EndOffset": 313,
+              "Path": 1,
+              "Ordinal": 29,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 245,
+              "EndOffset": 313,
+              "Path": 1,
+              "Ordinal": 31,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 260,
+              "EndOffset": 317,
+              "Path": 1,
+              "Ordinal": 33,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 275,
+              "EndOffset": 317,
+              "Path": 1,
+              "Ordinal": 35,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 290,
+              "EndOffset": 321,
+              "Path": 1,
+              "Ordinal": 37,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 305,
+              "EndOffset": 321,
+              "Path": 1,
+              "Ordinal": 39,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 92,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 8,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 117,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 12,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 157,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 18,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 182,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 22,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 200,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 24,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 215,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 26,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 230,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 28,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 245,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 30,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 260,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 32,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 275,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 34,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 290,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 36,
+              "Hits": 0
+            },
+            {
+              "Line": 81,
+              "Offset": 305,
+              "EndOffset": 325,
+              "Path": 0,
+              "Ordinal": 38,
+              "Hits": 0
+            },
+            {
+              "Line": 104,
+              "Offset": 379,
+              "EndOffset": 381,
+              "Path": 0,
+              "Ordinal": 40,
+              "Hits": 1
+            },
+            {
+              "Line": 104,
+              "Offset": 379,
+              "EndOffset": 404,
+              "Path": 1,
+              "Ordinal": 41,
+              "Hits": 4
+            },
+            {
+              "Line": 111,
+              "Offset": 410,
+              "EndOffset": 412,
+              "Path": 0,
+              "Ordinal": 42,
+              "Hits": 2
+            },
+            {
+              "Line": 111,
+              "Offset": 418,
+              "EndOffset": 420,
+              "Path": 0,
+              "Ordinal": 44,
+              "Hits": 1
+            },
+            {
+              "Line": 111,
+              "Offset": 410,
+              "EndOffset": 436,
+              "Path": 1,
+              "Ordinal": 43,
+              "Hits": 3
+            },
+            {
+              "Line": 111,
+              "Offset": 418,
+              "EndOffset": 436,
+              "Path": 1,
+              "Ordinal": 45,
+              "Hits": 3
+            },
+            {
+              "Line": 111,
+              "Offset": 441,
+              "EndOffset": 443,
+              "Path": 0,
+              "Ordinal": 46,
+              "Hits": 1
+            },
+            {
+              "Line": 111,
+              "Offset": 441,
+              "EndOffset": 466,
+              "Path": 1,
+              "Ordinal": 47,
+              "Hits": 3
+            },
+            {
+              "Line": 123,
+              "Offset": 515,
+              "EndOffset": 517,
+              "Path": 0,
+              "Ordinal": 48,
+              "Hits": 1
+            },
+            {
+              "Line": 123,
+              "Offset": 515,
+              "EndOffset": 538,
+              "Path": 1,
+              "Ordinal": 49,
+              "Hits": 2
+            },
+            {
+              "Line": 123,
+              "Offset": 543,
+              "EndOffset": 545,
+              "Path": 0,
+              "Ordinal": 50,
+              "Hits": 1
+            },
+            {
+              "Line": 127,
+              "Offset": 585,
+              "EndOffset": 587,
+              "Path": 0,
+              "Ordinal": 52,
+              "Hits": 1
+            },
+            {
+              "Line": 127,
+              "Offset": 585,
+              "EndOffset": 607,
+              "Path": 1,
+              "Ordinal": 53,
+              "Hits": 0
+            },
+            {
+              "Line": 133,
+              "Offset": 616,
+              "EndOffset": 618,
+              "Path": 0,
+              "Ordinal": 54,
+              "Hits": 0
+            },
+            {
+              "Line": 133,
+              "Offset": 616,
+              "EndOffset": 633,
+              "Path": 1,
+              "Ordinal": 55,
+              "Hits": 0
+            },
+            {
+              "Line": 123,
+              "Offset": 543,
+              "EndOffset": 634,
+              "Path": 1,
+              "Ordinal": 51,
+              "Hits": 2
+            },
+            {
+              "Line": 140,
+              "Offset": 645,
+              "EndOffset": 647,
+              "Path": 0,
+              "Ordinal": 56,
+              "Hits": 1
+            },
+            {
+              "Line": 140,
+              "Offset": 645,
+              "EndOffset": 663,
+              "Path": 1,
+              "Ordinal": 57,
+              "Hits": 1
+            },
+            {
+              "Line": 140,
+              "Offset": 668,
+              "EndOffset": 670,
+              "Path": 0,
+              "Ordinal": 58,
+              "Hits": 1
+            },
+            {
+              "Line": 140,
+              "Offset": 668,
+              "EndOffset": 690,
+              "Path": 1,
+              "Ordinal": 59,
+              "Hits": 6
+            }
+          ]
+        },
+        "System.Void Dungnz.Engine.GameLoop::HandleLook()": {
+          "Lines": {
+            "148": 1,
+            "149": 1,
+            "150": 1
+          },
+          "Branches": []
+        },
+        "System.Void Dungnz.Engine.GameLoop::HandleExamine(System.String)": {
+          "Lines": {
+            "153": 3,
+            "154": 3,
+            "155": 0,
+            "156": 0,
+            "157": 0,
+            "160": 3,
+            "163": 3,
+            "164": 3,
+            "165": 1,
+            "166": 1,
+            "167": 1,
+            "171": 3,
+            "172": 2,
+            "173": 1,
+            "174": 1,
+            "175": 1,
+            "179": 2,
+            "180": 1,
+            "181": 1,
+            "182": 1,
+            "183": 1,
+            "186": 0,
+            "187": 3
+          },
+          "Branches": [
+            {
+              "Line": 154,
+              "Offset": 15,
+              "EndOffset": 17,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 154,
+              "Offset": 15,
+              "EndOffset": 40,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 3
+            },
+            {
+              "Line": 163,
+              "Offset": 63,
+              "EndOffset": 65,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 1
+            },
+            {
+              "Line": 163,
+              "Offset": 82,
+              "EndOffset": 84,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 1
+            },
+            {
+              "Line": 163,
+              "Offset": 63,
+              "EndOffset": 118,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 2
+            },
+            {
+              "Line": 163,
+              "Offset": 82,
+              "EndOffset": 118,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 2
+            },
+            {
+              "Line": 163,
+              "Offset": 123,
+              "EndOffset": 128,
+              "Path": 0,
+              "Ordinal": 6,
+              "Hits": 1
+            },
+            {
+              "Line": 163,
+              "Offset": 123,
+              "EndOffset": 335,
+              "Path": 1,
+              "Ordinal": 7,
+              "Hits": 2
+            },
+            {
+              "Line": 172,
+              "Offset": 372,
+              "EndOffset": 374,
+              "Path": 0,
+              "Ordinal": 8,
+              "Hits": 1
+            },
+            {
+              "Line": 172,
+              "Offset": 372,
+              "EndOffset": 411,
+              "Path": 1,
+              "Ordinal": 9,
+              "Hits": 1
+            },
+            {
+              "Line": 180,
+              "Offset": 448,
+              "EndOffset": 450,
+              "Path": 0,
+              "Ordinal": 10,
+              "Hits": 1
+            },
+            {
+              "Line": 180,
+              "Offset": 448,
+              "EndOffset": 487,
+              "Path": 1,
+              "Ordinal": 11,
+              "Hits": 0
+            }
+          ]
+        },
+        "System.Void Dungnz.Engine.GameLoop::HandleTake(System.String)": {
+          "Lines": {
+            "190": 2,
+            "191": 2,
+            "192": 0,
+            "193": 0,
+            "194": 0,
+            "197": 2,
+            "198": 3,
+            "200": 2,
+            "201": 1,
+            "202": 1,
+            "203": 1,
+            "206": 1,
+            "207": 1,
+            "208": 1,
+            "209": 2
+          },
+          "Branches": [
+            {
+              "Line": 191,
+              "Offset": 15,
+              "EndOffset": 17,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 191,
+              "Offset": 15,
+              "EndOffset": 40,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 2
+            },
+            {
+              "Line": 200,
+              "Offset": 87,
+              "EndOffset": 89,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 1
+            },
+            {
+              "Line": 200,
+              "Offset": 87,
+              "EndOffset": 120,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 1
+            }
+          ]
+        },
+        "System.Void Dungnz.Engine.GameLoop::HandleUse(System.String)": {
+          "Lines": {
+            "212": 3,
+            "213": 3,
+            "214": 0,
+            "215": 0,
+            "216": 0,
+            "219": 3,
+            "220": 5,
+            "222": 3,
+            "223": 1,
+            "224": 1,
+            "225": 1,
+            "228": 2,
+            "231": 1,
+            "232": 1,
+            "233": 1,
+            "234": 1,
+            "235": 1,
+            "236": 1,
+            "237": 1,
+            "239": 0,
+            "240": 0,
+            "241": 0,
+            "242": 1,
+            "246": 1,
+            "247": 1,
+            "248": 1,
+            "249": 1,
+            "250": 1,
+            "253": 0,
+            "254": 0,
+            "256": 3
+          },
+          "Branches": [
+            {
+              "Line": 213,
+              "Offset": 15,
+              "EndOffset": 17,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 213,
+              "Offset": 15,
+              "EndOffset": 40,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 3
+            },
+            {
+              "Line": 222,
+              "Offset": 87,
+              "EndOffset": 89,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 1
+            },
+            {
+              "Line": 222,
+              "Offset": 87,
+              "EndOffset": 123,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 2
+            },
+            {
+              "Line": 228,
+              "Offset": 138,
+              "EndOffset": 145,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 1
+            },
+            {
+              "Line": 228,
+              "Offset": 148,
+              "EndOffset": 155,
+              "Path": 1,
+              "Ordinal": 7,
+              "Hits": 1
+            },
+            {
+              "Line": 231,
+              "Offset": 168,
+              "EndOffset": 173,
+              "Path": 0,
+              "Ordinal": 8,
+              "Hits": 1
+            },
+            {
+              "Line": 231,
+              "Offset": 168,
+              "EndOffset": 395,
+              "Path": 1,
+              "Ordinal": 9,
+              "Hits": 0
+            },
+            {
+              "Line": 228,
+              "Offset": 138,
+              "EndOffset": 435,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 1
+            },
+            {
+              "Line": 228,
+              "Offset": 148,
+              "EndOffset": 625,
+              "Path": 0,
+              "Ordinal": 6,
+              "Hits": 0
+            }
+          ]
+        },
+        "System.Void Dungnz.Engine.GameLoop::.ctor(Dungnz.Display.DisplayService,Dungnz.Engine.ICombatEngine,Dungnz.Engine.IInputReader)": {
+          "Lines": {
+            "12": 20,
+            "13": 20,
+            "15": 20,
+            "16": 20,
+            "17": 20,
+            "18": 20,
+            "19": 20,
+            "20": 20
+          },
+          "Branches": [
+            {
+              "Line": 19,
+              "Offset": 39,
+              "EndOffset": 41,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 19,
+              "Offset": 39,
+              "EndOffset": 47,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 20
+            }
+          ]
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Engine/IInputReader.cs": {
+      "Dungnz.Engine.ConsoleInputReader": {
+        "System.String Dungnz.Engine.ConsoleInputReader::ReadLine()": {
+          "Lines": {
+            "10": 0
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Engine/StubCombatEngine.cs": {
+      "Dungnz.Engine.StubCombatEngine": {
+        "Dungnz.Models.CombatResult Dungnz.Engine.StubCombatEngine::RunCombat(Dungnz.Models.Player,Dungnz.Models.Enemy)": {
+          "Lines": {
+            "9": 1,
+            "11": 1,
+            "12": 1,
+            "13": 1
+          },
+          "Branches": []
+        }
+      }
+    },
+    "/home/anthony/RiderProjects/TextGame/Display/DisplayService.cs": {
+      "Dungnz.Display.DisplayService": {
+        "System.Void Dungnz.Display.DisplayService::ShowTitle()": {
+          "Lines": {
+            "8": 0,
+            "9": 0,
+            "10": 0,
+            "11": 0,
+            "12": 0,
+            "13": 0,
+            "14": 0,
+            "15": 0
+          },
+          "Branches": []
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowRoom(Dungnz.Models.Room)": {
+          "Lines": {
+            "18": 4,
+            "19": 4,
+            "20": 4,
+            "21": 4,
+            "23": 4,
+            "24": 1,
+            "25": 1,
+            "26": 1,
+            "27": 1,
+            "29": 4,
+            "30": 1,
+            "31": 1,
+            "32": 1,
+            "34": 4,
+            "35": 1,
+            "36": 2,
+            "37": 1,
+            "39": 4,
+            "40": 4
+          },
+          "Branches": [
+            {
+              "Line": 23,
+              "Offset": 41,
+              "EndOffset": 43,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 23,
+              "Offset": 41,
+              "EndOffset": 83,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 4
+            },
+            {
+              "Line": 29,
+              "Offset": 94,
+              "EndOffset": 96,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 1
+            },
+            {
+              "Line": 29,
+              "Offset": 94,
+              "EndOffset": 130,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 4
+            },
+            {
+              "Line": 34,
+              "Offset": 146,
+              "EndOffset": 148,
+              "Path": 0,
+              "Ordinal": 4,
+              "Hits": 1
+            },
+            {
+              "Line": 34,
+              "Offset": 146,
+              "EndOffset": 218,
+              "Path": 1,
+              "Ordinal": 5,
+              "Hits": 4
+            }
+          ]
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowCombat(System.String)": {
+          "Lines": {
+            "43": 1,
+            "44": 1,
+            "45": 1
+          },
+          "Branches": []
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowCombatStatus(Dungnz.Models.Player,Dungnz.Models.Enemy)": {
+          "Lines": {
+            "48": 1,
+            "49": 1,
+            "50": 1,
+            "51": 1,
+            "52": 1
+          },
+          "Branches": []
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowCombatMessage(System.String)": {
+          "Lines": {
+            "55": 1,
+            "56": 1,
+            "57": 1
+          },
+          "Branches": []
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowPlayerStats(Dungnz.Models.Player)": {
+          "Lines": {
+            "60": 1,
+            "61": 1,
+            "62": 1,
+            "63": 1,
+            "64": 1,
+            "65": 1,
+            "66": 1,
+            "67": 1,
+            "68": 1,
+            "69": 1,
+            "70": 1,
+            "71": 1
+          },
+          "Branches": []
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowInventory(Dungnz.Models.Player)": {
+          "Lines": {
+            "74": 2,
+            "75": 2,
+            "76": 2,
+            "78": 2,
+            "79": 1,
+            "80": 1,
+            "81": 1,
+            "83": 1,
+            "84": 5,
+            "85": 1,
+            "86": 1,
+            "87": 1,
+            "88": 1,
+            "90": 2,
+            "91": 2
+          },
+          "Branches": [
+            {
+              "Line": 78,
+              "Offset": 34,
+              "EndOffset": 36,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 1
+            },
+            {
+              "Line": 78,
+              "Offset": 34,
+              "EndOffset": 54,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 1
+            },
+            {
+              "Line": 84,
+              "Offset": 175,
+              "EndOffset": 70,
+              "Path": 1,
+              "Ordinal": 3,
+              "Hits": 1
+            },
+            {
+              "Line": 84,
+              "Offset": 175,
+              "EndOffset": 177,
+              "Path": 0,
+              "Ordinal": 2,
+              "Hits": 1
+            }
+          ]
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowLootDrop(Dungnz.Models.Item)": {
+          "Lines": {
+            "94": 1,
+            "95": 1,
+            "96": 1
+          },
+          "Branches": []
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowMessage(System.String)": {
+          "Lines": {
+            "99": 1,
+            "100": 1,
+            "101": 1
+          },
+          "Branches": []
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowError(System.String)": {
+          "Lines": {
+            "104": 1,
+            "105": 1,
+            "106": 1
+          },
+          "Branches": []
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowHelp()": {
+          "Lines": {
+            "109": 1,
+            "110": 1,
+            "111": 1,
+            "112": 1,
+            "113": 1,
+            "114": 1,
+            "115": 1,
+            "116": 1,
+            "117": 1,
+            "118": 1,
+            "119": 1,
+            "120": 1,
+            "121": 1,
+            "122": 1,
+            "123": 1
+          },
+          "Branches": []
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowCommandPrompt()": {
+          "Lines": {
+            "126": 1,
+            "127": 1,
+            "128": 1
+          },
+          "Branches": []
+        },
+        "System.Void Dungnz.Display.DisplayService::ShowCombatPrompt()": {
+          "Lines": {
+            "131": 1,
+            "132": 1,
+            "133": 1
+          },
+          "Branches": []
+        },
+        "System.String Dungnz.Display.DisplayService::ReadPlayerName()": {
+          "Lines": {
+            "136": 0,
+            "137": 0,
+            "138": 0,
+            "139": 0
+          },
+          "Branches": [
+            {
+              "Line": 138,
+              "Offset": 18,
+              "EndOffset": 20,
+              "Path": 0,
+              "Ordinal": 0,
+              "Hits": 0
+            },
+            {
+              "Line": 138,
+              "Offset": 18,
+              "EndOffset": 26,
+              "Path": 1,
+              "Ordinal": 1,
+              "Hits": 0
+            }
+          ]
+        }
+      }
+    }
+  }
+}

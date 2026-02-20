@@ -5,11 +5,14 @@ using Dungnz.Display;
 public class CombatEngine : ICombatEngine
 {
     private readonly DisplayService _display;
-    private readonly Random _rng = new();
+    private readonly IInputReader _input;
+    private readonly Random _rng;
     
-    public CombatEngine(DisplayService display)
+    public CombatEngine(DisplayService display, IInputReader? input = null, Random? rng = null)
     {
         _display = display;
+        _input = input ?? new ConsoleInputReader();
+        _rng = rng ?? new Random();
     }
     
     public CombatResult RunCombat(Player player, Enemy enemy)
@@ -20,7 +23,7 @@ public class CombatEngine : ICombatEngine
         {
             _display.ShowCombatStatus(player, enemy);
             _display.ShowCombatPrompt();
-            var choice = (Console.ReadLine() ?? string.Empty).Trim().ToUpperInvariant();
+            var choice = (_input.ReadLine() ?? string.Empty).Trim().ToUpperInvariant();
             
             if (choice == "F" || choice == "FLEE")
             {
