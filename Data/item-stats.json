@@ -1,0 +1,14 @@
+{
+  "Items": [
+    {"Name": "Health Potion", "Type": "Consumable", "HealAmount": 20, "AttackBonus": 0, "DefenseBonus": 0, "StatModifier": 0, "Description": "Restores 20 HP"},
+    {"Name": "Large Health Potion", "Type": "Consumable", "HealAmount": 50, "AttackBonus": 0, "DefenseBonus": 0, "StatModifier": 0, "Description": "Restores 50 HP"},
+    {"Name": "Iron Sword", "Type": "Weapon", "HealAmount": 0, "AttackBonus": 5, "DefenseBonus": 0, "StatModifier": 0, "Description": "A sturdy iron blade"},
+    {"Name": "Leather Armor", "Type": "Armor", "HealAmount": 0, "AttackBonus": 0, "DefenseBonus": 3, "StatModifier": 0, "Description": "Basic leather protection"},
+    {"Name": "Rusty Sword", "Type": "Weapon", "HealAmount": 0, "AttackBonus": 3, "DefenseBonus": 0, "StatModifier": 0, "Description": "A corroded blade."},
+    {"Name": "Bone Fragment", "Type": "Consumable", "HealAmount": 5, "AttackBonus": 0, "DefenseBonus": 0, "StatModifier": 0, "Description": "Shards from the dead."},
+    {"Name": "Troll Hide", "Type": "Armor", "HealAmount": 0, "AttackBonus": 0, "DefenseBonus": 4, "StatModifier": 0, "Description": "Thick, resilient leather."},
+    {"Name": "Dark Blade", "Type": "Weapon", "HealAmount": 0, "AttackBonus": 5, "DefenseBonus": 0, "StatModifier": 0, "Description": "A blade forged in shadow."},
+    {"Name": "Knight's Armor", "Type": "Armor", "HealAmount": 0, "AttackBonus": 0, "DefenseBonus": 6, "StatModifier": 0, "Description": "Heavy plated armor."},
+    {"Name": "Boss Key", "Type": "Consumable", "HealAmount": 0, "AttackBonus": 0, "DefenseBonus": 0, "StatModifier": 0, "Description": "Proof of your victory."}
+  ]
+}
