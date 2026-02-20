@@ -9,13 +9,17 @@ public class CombatEngine : ICombatEngine
     private readonly IInputReader _input;
     private readonly Random _rng;
     private readonly GameEvents? _events;
+    private readonly StatusEffectManager _statusEffects;
+    private readonly AbilityManager _abilities;
     
-    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null)
+    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null)
     {
         _display = display;
         _input = input ?? new ConsoleInputReader();
         _rng = rng ?? new Random();
         _events = events;
+        _statusEffects = statusEffects ?? new StatusEffectManager(display);
+        _abilities = abilities ?? new AbilityManager();
     }
     
     public CombatResult RunCombat(Player player, Enemy enemy)
@@ -24,8 +28,31 @@ public class CombatEngine : ICombatEngine
         
         while (true)
         {
+            _statusEffects.ProcessTurnStart(player);
+            _statusEffects.ProcessTurnStart(enemy);
+            
+            player.RestoreMana(10);
+            _abilities.TickCooldowns();
+            
+            if (enemy.HP <= 0)
+            {
+                _display.ShowCombat($"You defeated the {enemy.Name}!");
+                HandleLootAndXP(player, enemy);
+                return CombatResult.Won;
+            }
+            
+            if (player.HP <= 0) return CombatResult.PlayerDied;
+            
+            if (_statusEffects.HasEffect(player, StatusEffect.Stun))
+            {
+                _display.ShowCombatMessage("You are stunned and cannot act this turn!");
+                PerformEnemyTurn(player, enemy);
+                if (player.HP <= 0) return CombatResult.PlayerDied;
+                continue;
+            }
+            
             _display.ShowCombatStatus(player, enemy);
-            _display.ShowCombatPrompt();
+            ShowCombatMenu(player);
             var choice = (_input.ReadLine() ?? string.Empty).Trim().ToUpperInvariant();
             
             if (choice == "F" || choice == "FLEE")
@@ -33,78 +60,182 @@ public class CombatEngine : ICombatEngine
                 if (_rng.NextDouble() < 0.5)
                 {
                     _display.ShowMessage("You fled successfully!");
+                    _statusEffects.Clear(player);
+                    _statusEffects.Clear(enemy);
                     return CombatResult.Fled;
                 }
                 else
                 {
                     _display.ShowMessage("You failed to flee!");
-                    var fleeDmg = Math.Max(1, enemy.Attack - player.Defense);
-                    player.TakeDamage(fleeDmg);
-                    _display.ShowCombatMessage($"{enemy.Name} hits you for {fleeDmg} damage!");
+                    PerformEnemyTurn(player, enemy);
                     if (player.HP <= 0) return CombatResult.PlayerDied;
                     continue;
                 }
             }
             
-            if (RollDodge(enemy.Defense))
+            if (choice == "B" || choice == "ABILITY")
             {
-                _display.ShowCombatMessage($"{enemy.Name} dodged your attack!");
-            }
-            else
-            {
-                var playerDmg = Math.Max(1, player.Attack - enemy.Defense);
-                var isCrit = RollCrit();
-                if (isCrit)
+                var abilityResult = HandleAbilityMenu(player, enemy);
+                if (abilityResult == AbilityMenuResult.Cancel)
+                    continue;
+                if (abilityResult == AbilityMenuResult.Used)
                 {
-                    playerDmg *= 2;
-                    _display.ShowCombatMessage("Critical hit!");
+                    if (enemy.HP <= 0)
+                    {
+                        _display.ShowCombat($"You defeated the {enemy.Name}!");
+                        HandleLootAndXP(player, enemy);
+                        return CombatResult.Won;
+                    }
+                    PerformEnemyTurn(player, enemy);
+                    if (player.HP <= 0) return CombatResult.PlayerDied;
+                    continue;
                 }
-                enemy.HP -= playerDmg;
-                _display.ShowCombatMessage($"You hit {enemy.Name} for {playerDmg} damage!");
             }
             
-            if (enemy.HP <= 0)
+            if (choice == "A" || choice == "ATTACK")
             {
-                _display.ShowCombat($"You defeated the {enemy.Name}!");
+                PerformPlayerAttack(player, enemy);
                 
-                var loot = enemy.LootTable.RollDrop(enemy);
-                if (loot.Gold > 0)
+                if (enemy.HP <= 0)
                 {
-                    player.AddGold(loot.Gold);
-                    _display.ShowMessage($"You found {loot.Gold} gold!");
-                }
-                if (loot.Item != null)
-                {
-                    player.Inventory.Add(loot.Item);
-                    _display.ShowLootDrop(loot.Item);
+                    _display.ShowCombat($"You defeated the {enemy.Name}!");
+                    HandleLootAndXP(player, enemy);
+                    return CombatResult.Won;
                 }
                 
-                player.AddXP(enemy.XPValue);
-                _display.ShowMessage($"You gained {enemy.XPValue} XP. (Total: {player.XP})");
-                CheckLevelUp(player);
-                _events?.RaiseCombatEnded(player, enemy, CombatResult.Won);
-                return CombatResult.Won;
+                PerformEnemyTurn(player, enemy);
+                if (player.HP <= 0) return CombatResult.PlayerDied;
             }
-            
-            if (RollDodge(player.Defense))
-            {
-                _display.ShowCombatMessage("You dodged the attack!");
-            }
-            else
-            {
-                var enemyDmg = Math.Max(1, enemy.Attack - player.Defense);
-                var isCrit = RollCrit();
-                if (isCrit)
-                {
-                    enemyDmg *= 2;
-                    _display.ShowCombatMessage("Critical hit!");
-                }
-                player.TakeDamage(enemyDmg);
-                _display.ShowCombatMessage($"{enemy.Name} hits you for {enemyDmg} damage!");
-            }
-            
-            if (player.HP <= 0) return CombatResult.PlayerDied;
         }
+    }
+    
+    private void ShowCombatMenu(Player player)
+    {
+        _display.ShowMessage("[A]ttack [B]ability [I]tem [F]lee");
+        var unlockedAbilities = _abilities.GetUnlockedAbilities(player);
+        if (unlockedAbilities.Any())
+        {
+            _display.ShowMessage($"Mana: {player.Mana}/{player.MaxMana}");
+        }
+    }
+    
+    private AbilityMenuResult HandleAbilityMenu(Player player, Enemy enemy)
+    {
+        var unlocked = _abilities.GetUnlockedAbilities(player);
+        if (!unlocked.Any())
+        {
+            _display.ShowMessage("You haven't unlocked any abilities yet!");
+            return AbilityMenuResult.Cancel;
+        }
+        
+        _display.ShowMessage("\n=== Abilities ===");
+        int index = 1;
+        foreach (var ability in unlocked)
+        {
+            var status = "";
+            if (_abilities.IsOnCooldown(ability.Type))
+            {
+                status = $" (Cooldown: {_abilities.GetCooldown(ability.Type)} turns)";
+            }
+            else if (player.Mana < ability.ManaCost)
+            {
+                status = $" (Need {ability.ManaCost} mana)";
+            }
+            else
+            {
+                status = $" [{index}]";
+            }
+            _display.ShowMessage($"{status} {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)");
+            index++;
+        }
+        _display.ShowMessage("[C]ancel");
+        
+        var choice = (_input.ReadLine() ?? string.Empty).Trim().ToUpperInvariant();
+        if (choice == "C" || choice == "CANCEL")
+            return AbilityMenuResult.Cancel;
+        
+        if (int.TryParse(choice, out int abilityIndex) && abilityIndex >= 1 && abilityIndex <= unlocked.Count)
+        {
+            var selectedAbility = unlocked[abilityIndex - 1];
+            var result = _abilities.UseAbility(player, enemy, selectedAbility.Type, _statusEffects, _display);
+            
+            if (result == UseAbilityResult.Success)
+                return AbilityMenuResult.Used;
+            
+            _display.ShowMessage($"Cannot use ability: {result}");
+            return AbilityMenuResult.Cancel;
+        }
+        
+        _display.ShowMessage("Invalid choice!");
+        return AbilityMenuResult.Cancel;
+    }
+    
+    private void PerformPlayerAttack(Player player, Enemy enemy)
+    {
+        if (RollDodge(enemy.Defense))
+        {
+            _display.ShowCombatMessage($"{enemy.Name} dodged your attack!");
+        }
+        else
+        {
+            var playerDmg = Math.Max(1, player.Attack - enemy.Defense);
+            var isCrit = RollCrit();
+            if (isCrit)
+            {
+                playerDmg *= 2;
+                _display.ShowCombatMessage("Critical hit!");
+            }
+            enemy.HP -= playerDmg;
+            _display.ShowCombatMessage($"You hit {enemy.Name} for {playerDmg} damage!");
+        }
+    }
+    
+    private void PerformEnemyTurn(Player player, Enemy enemy)
+    {
+        if (_statusEffects.HasEffect(enemy, StatusEffect.Stun))
+        {
+            _display.ShowCombatMessage($"{enemy.Name} is stunned and cannot act!");
+            return;
+        }
+        
+        if (RollDodge(player.Defense))
+        {
+            _display.ShowCombatMessage("You dodged the attack!");
+        }
+        else
+        {
+            var enemyDmg = Math.Max(1, enemy.Attack - player.Defense);
+            var isCrit = RollCrit();
+            if (isCrit)
+            {
+                enemyDmg *= 2;
+                _display.ShowCombatMessage("Critical hit!");
+            }
+            player.TakeDamage(enemyDmg);
+            _display.ShowCombatMessage($"{enemy.Name} hits you for {enemyDmg} damage!");
+        }
+    }
+    
+    private void HandleLootAndXP(Player player, Enemy enemy)
+    {
+        var loot = enemy.LootTable.RollDrop(enemy);
+        if (loot.Gold > 0)
+        {
+            player.AddGold(loot.Gold);
+            _display.ShowMessage($"You found {loot.Gold} gold!");
+        }
+        if (loot.Item != null)
+        {
+            player.Inventory.Add(loot.Item);
+            _display.ShowLootDrop(loot.Item);
+        }
+        
+        player.AddXP(enemy.XPValue);
+        _display.ShowMessage($"You gained {enemy.XPValue} XP. (Total: {player.XP})");
+        CheckLevelUp(player);
+        _events?.RaiseCombatEnded(player, enemy, CombatResult.Won);
+        _statusEffects.Clear(player);
+        _statusEffects.Clear(enemy);
     }
     
     private void CheckLevelUp(Player player)
@@ -127,4 +258,10 @@ public class CombatEngine : ICombatEngine
     {
         return _rng.NextDouble() < 0.15;
     }
+}
+
+public enum AbilityMenuResult
+{
+    Cancel,
+    Used
 }
