@@ -43,5 +43,50 @@
     "XPValue": 100,
     "MinGold": 50,
     "MaxGold": 100
+  },
+  "GoblinShaman": {
+    "Name": "Goblin Shaman",
+    "MaxHP": 25,
+    "Attack": 10,
+    "Defense": 4,
+    "XPValue": 25,
+    "MinGold": 5,
+    "MaxGold": 15
+  },
+  "StoneGolem": {
+    "Name": "Stone Golem",
+    "MaxHP": 90,
+    "Attack": 8,
+    "Defense": 20,
+    "XPValue": 50,
+    "MinGold": 10,
+    "MaxGold": 25
+  },
+  "Wraith": {
+    "Name": "Wraith",
+    "MaxHP": 35,
+    "Attack": 18,
+    "Defense": 2,
+    "XPValue": 35,
+    "MinGold": 8,
+    "MaxGold": 20
+  },
+  "VampireLord": {
+    "Name": "Vampire Lord",
+    "MaxHP": 80,
+    "Attack": 16,
+    "Defense": 12,
+    "XPValue": 60,
+    "MinGold": 15,
+    "MaxGold": 30
+  },
+  "Mimic": {
+    "Name": "Mimic",
+    "MaxHP": 40,
+    "Attack": 14,
+    "Defense": 8,
+    "XPValue": 40,
+    "MinGold": 10,
+    "MaxGold": 25
   }
 }

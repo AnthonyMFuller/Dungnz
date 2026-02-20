@@ -12,6 +12,29 @@ public class Player
     public int Level { get; private set; } = 1;
     public List<Item> Inventory { get; private set; } = new();
 
+    // Equipment slots
+    public Item? EquippedWeapon { get; private set; }
+    public Item? EquippedArmor { get; private set; }
+    public Item? EquippedAccessory { get; private set; }
+
+    // Mana system
+    public int Mana { get; private set; } = 30;
+    public int MaxMana { get; private set; } = 30;
+
+    public void RestoreMana(int amount)
+    {
+        if (amount < 0) throw new ArgumentException("Amount cannot be negative.", nameof(amount));
+        Mana = Math.Min(MaxMana, Mana + amount);
+    }
+
+    public bool SpendMana(int amount)
+    {
+        if (amount < 0) throw new ArgumentException("Amount cannot be negative.", nameof(amount));
+        if (Mana < amount) return false;
+        Mana -= amount;
+        return true;
+    }
+
     public event EventHandler<HealthChangedEventArgs>? OnHealthChanged;
 
     public void TakeDamage(int amount)
@@ -72,7 +95,145 @@ public class Player
         var oldHP = HP;
         HP = MaxHP;
         OnHealthChanged?.Invoke(this, new HealthChangedEventArgs(oldHP, HP));
+        MaxMana += 10;
+        Mana = MaxMana;
     }
+    public void EquipItem(Item item)
+    {
+        if (!item.IsEquippable)
+            throw new ArgumentException($"Item {item.Name} is not equippable.", nameof(item));
+
+        if (!Inventory.Contains(item))
+            throw new ArgumentException($"Item {item.Name} is not in inventory.", nameof(item));
+
+        Item? previousItem = null;
+
+        switch (item.Type)
+        {
+            case ItemType.Weapon:
+                if (EquippedWeapon != null)
+                {
+                    previousItem = EquippedWeapon;
+                    RemoveStatBonuses(previousItem);
+                }
+                EquippedWeapon = item;
+                break;
+
+            case ItemType.Armor:
+                if (EquippedArmor != null)
+                {
+                    previousItem = EquippedArmor;
+                    RemoveStatBonuses(previousItem);
+                }
+                EquippedArmor = item;
+                break;
+
+            case ItemType.Accessory:
+                if (EquippedAccessory != null)
+                {
+                    previousItem = EquippedAccessory;
+                    RemoveStatBonuses(previousItem);
+                }
+                EquippedAccessory = item;
+                break;
+
+            default:
+                throw new ArgumentException($"Invalid item type for equipment: {item.Type}", nameof(item));
+        }
+
+        Inventory.Remove(item);
+        ApplyStatBonuses(item);
+
+        if (previousItem != null)
+        {
+            Inventory.Add(previousItem);
+        }
+    }
+
+    public Item? UnequipItem(string slotName)
+    {
+        Item? item = null;
+        var slotLower = slotName.ToLowerInvariant();
+
+        switch (slotLower)
+        {
+            case "weapon":
+                if (EquippedWeapon == null)
+                    throw new InvalidOperationException("No weapon equipped.");
+                item = EquippedWeapon;
+                EquippedWeapon = null;
+                break;
+
+            case "armor":
+                if (EquippedArmor == null)
+                    throw new InvalidOperationException("No armor equipped.");
+                item = EquippedArmor;
+                EquippedArmor = null;
+                break;
+
+            case "accessory":
+                if (EquippedAccessory == null)
+                    throw new InvalidOperationException("No accessory equipped.");
+                item = EquippedAccessory;
+                EquippedAccessory = null;
+                break;
+
+            default:
+                throw new ArgumentException($"Invalid slot name: {slotName}. Use 'weapon', 'armor', or 'accessory'.", nameof(slotName));
+        }
+
+        RemoveStatBonuses(item);
+        Inventory.Add(item);
+        return item;
+    }
+
+    private void ApplyStatBonuses(Item item)
+    {
+        if (item.AttackBonus != 0)
+            ModifyAttack(item.AttackBonus);
+        if (item.DefenseBonus != 0)
+            ModifyDefense(item.DefenseBonus);
+        if (item.StatModifier != 0)
+        {
+            var oldMaxHP = MaxHP;
+            MaxHP += item.StatModifier;
+            if (MaxHP < 1)
+                MaxHP = 1;
+            
+            // If MaxHP increased, heal proportionally
+            if (MaxHP > oldMaxHP && HP > 0)
+            {
+                var oldHP = HP;
+                HP = Math.Min(MaxHP, HP + (MaxHP - oldMaxHP));
+                if (HP != oldHP)
+                    OnHealthChanged?.Invoke(this, new HealthChangedEventArgs(oldHP, HP));
+            }
+        }
+    }
+
+    private void RemoveStatBonuses(Item item)
+    {
+        if (item.AttackBonus != 0)
+            ModifyAttack(-item.AttackBonus);
+        if (item.DefenseBonus != 0)
+            ModifyDefense(-item.DefenseBonus);
+        if (item.StatModifier != 0)
+        {
+            var oldMaxHP = MaxHP;
+            MaxHP -= item.StatModifier;
+            if (MaxHP < 1)
+                MaxHP = 1;
+            
+            // If HP exceeds new MaxHP, clamp it
+            if (HP > MaxHP)
+            {
+                var oldHP = HP;
+                HP = MaxHP;
+                OnHealthChanged?.Invoke(this, new HealthChangedEventArgs(oldHP, HP));
+            }
+        }
+    }
+
 }
 
 public class HealthChangedEventArgs : EventArgs
