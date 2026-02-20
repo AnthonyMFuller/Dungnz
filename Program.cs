@@ -2,7 +2,7 @@ using Dungnz.Display;
 using Dungnz.Engine;
 using Dungnz.Models;
 
-var display = new DisplayService();
+var display = new ConsoleDisplayService();
 display.ShowTitle();
 
 var name = display.ReadPlayerName();
