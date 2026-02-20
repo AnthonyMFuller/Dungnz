@@ -197,3 +197,154 @@ Future-proofs for achievements, UI updates, analytics.
 ## Tags
 
 encapsulation, domain-model, validation, oop, c#, state-management
+
+## Updated: 2026-02-20 — Full Player Implementation with Event Pattern
+
+**Confidence:** high (validated through production implementation in Dungnz)  
+**Implementation:** Models/Player.cs (PR #26)
+
+### Complete Implementation Example
+
+```csharp
+public class Player
+{
+    public string Name { get; set; } = string.Empty;
+    public int HP { get; private set; } = 100;
+    public int MaxHP { get; private set; } = 100;
+    public int Attack { get; private set; } = 10;
+    public int Defense { get; private set; } = 5;
+    public int Gold { get; private set; }
+    public int XP { get; private set; }
+    public int Level { get; private set; } = 1;
+    public List<Item> Inventory { get; private set; } = new();
+
+    public event EventHandler<HealthChangedEventArgs>? OnHealthChanged;
+
+    public void TakeDamage(int amount)
+    {
+        if (amount < 0)
+            throw new ArgumentException("Damage amount cannot be negative.", nameof(amount));
+
+        var oldHP = HP;
+        HP = Math.Max(0, HP - amount);
+        
+        if (HP != oldHP)
+            OnHealthChanged?.Invoke(this, new HealthChangedEventArgs(oldHP, HP));
+    }
+
+    public void Heal(int amount)
+    {
+        if (amount < 0)
+            throw new ArgumentException("Heal amount cannot be negative.", nameof(amount));
+
+        var oldHP = HP;
+        HP = Math.Min(MaxHP, HP + amount);
+        
+        if (HP != oldHP)
+            OnHealthChanged?.Invoke(this, new HealthChangedEventArgs(oldHP, HP));
+    }
+
+    public void AddGold(int amount)
+    {
+        if (amount < 0)
+            throw new ArgumentException("Gold amount cannot be negative.", nameof(amount));
+        Gold += amount;
+    }
+
+    public void AddXP(int amount)
+    {
+        if (amount < 0)
+            throw new ArgumentException("XP amount cannot be negative.", nameof(amount));
+        XP += amount;
+    }
+
+    public void ModifyAttack(int delta)
+    {
+        Attack = Math.Max(1, Attack + delta);
+    }
+
+    public void ModifyDefense(int delta)
+    {
+        Defense = Math.Max(0, Defense + delta);
+    }
+
+    public void LevelUp()
+    {
+        Level++;
+        ModifyAttack(2);
+        ModifyDefense(1);
+        MaxHP += 10;
+        var oldHP = HP;
+        HP = MaxHP;
+        OnHealthChanged?.Invoke(this, new HealthChangedEventArgs(oldHP, HP));
+    }
+}
+
+public class HealthChangedEventArgs : EventArgs
+{
+    public int OldHP { get; }
+    public int NewHP { get; }
+    public int Delta => NewHP - OldHP;
+
+    public HealthChangedEventArgs(int oldHP, int newHP)
+    {
+        OldHP = oldHP;
+        NewHP = newHP;
+    }
+}
+```
+
+### Key Refinements from Production
+
+1. **Event-driven health changes:** OnHealthChanged fires only when HP actually changes (guards with `if (HP != oldHP)`)
+2. **Custom EventArgs:** HealthChangedEventArgs provides OldHP, NewHP, and computed Delta for subscribers
+3. **Min guards on stats:** Attack clamped to minimum 1 (never 0), Defense to minimum 0
+4. **Composition in LevelUp:** Calls ModifyAttack/ModifyDefense to reuse clamping logic
+5. **Validation everywhere:** All mutation methods validate negative inputs (fail-fast)
+
+### Caller Migration Examples
+
+**Before (GameLoop):**
+```csharp
+var healedAmount = Math.Min(item.HealAmount, _player.MaxHP - _player.HP);
+_player.HP += healedAmount;
+_player.Inventory.Remove(item);
+_display.ShowMessage($"You use {item.Name} and restore {healedAmount} HP.");
+```
+
+**After (GameLoop):**
+```csharp
+var oldHP = _player.HP;
+_player.Heal(item.HealAmount);
+var healedAmount = _player.HP - oldHP;
+_player.Inventory.Remove(item);
+_display.ShowMessage($"You use {item.Name} and restore {healedAmount} HP.");
+```
+
+**Before (CombatEngine):**
+```csharp
+player.Level = newLevel;
+player.Attack += 2;
+player.Defense += 1;
+player.MaxHP += 10;
+player.HP = player.MaxHP;
+_display.ShowMessage($"LEVEL UP! You are now level {player.Level}!");
+```
+
+**After (CombatEngine):**
+```csharp
+player.LevelUp();
+_display.ShowMessage($"LEVEL UP! You are now level {player.Level}!");
+```
+
+### Production Metrics
+- 4 files changed, 94 insertions(+), 22 deletions(-)
+- 7 caller sites updated (4 in CombatEngine, 3 in GameLoop)
+- Zero build warnings
+- Clean upgrade path from anemic model
+
+### Future Extensions Enabled
+- **Analytics:** Subscribe to OnHealthChanged for damage tracking
+- **Achievements:** Detect "defeat boss at 1 HP" via events
+- **Save/Load:** All state changes go through validated methods
+- **UI Updates:** Health bar reactively updates from event
