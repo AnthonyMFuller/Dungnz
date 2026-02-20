@@ -49,9 +49,9 @@ public static class EnemyFactory
         return new DungeonBoss(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig);
     }
 
-    public static Enemy CreateScaled(string enemyType, int playerLevel)
+    public static Enemy CreateScaled(string enemyType, int playerLevel, float floorMultiplier = 1.0f)
     {
-        var scalar = 1.0f + (playerLevel - 1) * 0.12f;
+        var scalar = (1.0f + (playerLevel - 1) * 0.12f) * floorMultiplier;
         
         var baseStats = enemyType.ToLower() switch
         {
