@@ -101,9 +101,12 @@ mockDisplay.Verify(d => d.ShowMessage(It.Is<string>(s => s.Contains("LEVEL UP"))
 2. **Rename concrete class** to implementation-specific name (e.g., `DisplayService` → `ConsoleDisplayService`)
 3. **Update all consumers** to depend on interface type (change constructor parameters, field types)
 4. **Create test implementation** (e.g., `TestDisplayService`) that captures output — prefer direct interface implementation over extending concrete class
-5. **Verify no breaking changes** (production code should work unchanged, just different variable types)
+5. **Verify entrypoint files** (Program.cs, Main methods) instantiate the renamed class correctly
+6. **Run full build from clean state** (not just tests) to catch production code paths
 
 **Key Insight:** Test doubles should implement the interface directly, not extend the concrete class. This provides cleaner isolation and avoids inheriting production behavior that may interfere with test assertions. Replace inheritance-based test fakes (e.g., `class FakeDisplayService : DisplayService`) with composition-based implementations (e.g., `class TestDisplayService : IDisplayService`).
+
+**Common Pitfall:** Tests may pass while production code breaks. Test suites use test doubles (TestDisplayService), which can mask issues in production entrypoints (Program.cs) that still reference old class names. Always verify build AND runtime entry points after renaming.
 
 ## Anti-Patterns to Avoid
 
