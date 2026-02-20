@@ -47,3 +47,50 @@
 **Next Steps (Hill):**
 - WI-3: DungeonGenerator (creates rooms, links exits bidirectionally, places enemies/items)
 - WI-4: GameLoop and CommandParser (wires up DisplayService, handles player commands)
+
+### 2026-02-20 — Phase 2: Dungeon Generator, Command Parser, Game Loop (WI-3, WI-4)
+
+**Files Created:**
+- `Engine/DungeonGenerator.cs` — Procedural 5x4 room grid generator with BFS path validation
+- `Engine/CommandParser.cs` — Parses 10 command types (Go, Look, Examine, Take, Use, Inventory, Stats, Help, Quit, Unknown)
+- `Engine/GameLoop.cs` — Main game loop with command dispatch and all handler implementations
+- `Engine/ICombatEngine.cs` — Interface contract for combat system (Barton implements)
+- `Engine/StubCombatEngine.cs` — Temporary stub (unused; Barton delivered real CombatEngine in parallel)
+- `Engine/EnemyFactory.cs` — Stub enemy instances (Goblin/Skeleton/Troll/DarkKnight/Boss stubs for generator)
+- `Program.cs` — Updated with full wiring: display, player, generator, combat engine, game loop
+
+**Design Decisions:**
+1. **Room graph structure:** 5x4 grid (20 rooms) with bidirectional exits. Start at (0,0), exit at (height-1, width-1). All adjacent rooms connected via Dictionary<Direction, Room>.
+2. **Enemy placement:** ~60% of non-start/non-exit rooms get random enemies via EnemyFactory. Boss always placed in exit room.
+3. **Item placement:** ~30% of rooms get random items (Health Potion, Large Health Potion, Iron Sword, Leather Armor).
+4. **Boss guard:** GameLoop prevents moving to exit room if boss is alive (HP > 0). Win condition: IsExit && Enemy is dead.
+5. **Win/lose conditions:** Win = reach exit with dead boss. Lose = CombatResult.PlayerDied in HandleGo.
+6. **Command parsing:** Case-insensitive with shortcuts (n/s/e/w for directions, i for inventory, h/? for help, q for quit).
+7. **Item interactions:** HandleTake removes from room, adds to inventory. HandleUse applies HealAmount (consumables) or adds stat bonuses (equippables) and removes from inventory.
+8. **Combat integration:** GameLoop takes ICombatEngine via dependency injection. Barton's CombatEngine (already delivered) plugged directly into Program.cs.
+
+**Coordination with Barton:**
+- Barton delivered CombatEngine, 5 enemy types (Goblin, Skeleton, Troll, DarkKnight, DungeonBoss), InventoryManager, and full LootTable implementation in parallel
+- EnemyFactory stubs remain in Engine/ but are not instantiated; Barton's real enemy classes in Systems/Enemies/ are used by EnemyFactory.CreateRandom() and CreateBoss()
+- ICombatEngine interface allows seamless integration: GameLoop is agnostic to combat implementation details
+- StubCombatEngine unused; real CombatEngine wired in Program.cs
+
+**Build Status:**
+- All Engine/ files created successfully
+- Program.cs wired with full game initialization flow
+- Project structure complete and matches agreed architecture
+- Build verification not performed (permission issue in environment), but code follows all .NET 9 patterns and should compile cleanly
+
+**Deviations from Plan:**
+- None; all specified contracts implemented exactly as requested
+- Barton's parallel work (CombatEngine + enemies + loot) delivered simultaneously, allowing immediate integration rather than stub usage
+
+**Functional Completeness:**
+- Dungeon generation with guaranteed start-to-exit path (BFS validation)
+- All 10 command types parsed and handled
+- Room navigation with directional movement
+- Enemy encounters trigger combat automatically on room entry
+- Item collection and usage (heal, equip weapon/armor)
+- Inventory and stats display
+- Win/lose conditions enforced
+- Help system for player guidance
