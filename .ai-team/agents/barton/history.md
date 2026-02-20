@@ -112,3 +112,40 @@
 - Combat should feel decisive (avoid endless attrition via burst mechanics)
 - Enemy variety over quantity (5 new types with unique mechanics > 20 stat clones)
 - Every mechanic has counter-play (Poison counters Troll regen, Weakened counters Vampire lifesteal)
+
+### 2026-02-20: Status Effects System Foundation (#12)
+
+**Files Created:**
+- `Models/StatusEffect.cs` — enum for 6 status effects (Poison, Bleed, Stun, Regen, Fortified, Weakened)
+- `Models/ActiveEffect.cs` — tracks effect type and remaining duration
+- `Systems/StatusEffectManager.cs` — manages applying, processing, and removing effects
+
+**Architecture Decisions:**
+- Status effects are data-driven: each effect has predefined damage/heal/modifier values
+- Effects stored per-target in dictionary (supports both Player and Enemy)
+- ProcessTurnStart handles all DOT/HOT/duration logic at combat turn start
+- Debuffs (Poison, Bleed, Stun, Weakened) removable by Antidote consumable
+- Buffs (Regen, Fortified) cannot be removed by Antidote
+
+**Effect Specifications:**
+- Poison: 3 damage/turn, 3 turns
+- Bleed: 5 damage/turn, 2 turns
+- Stun: skip turn, 1 turn
+- Regen: +4 HP/turn, 3 turns
+- Fortified: +50% DEF, 2 turns
+- Weakened: -50% ATK, 2 turns
+
+**Integration Points:**
+- StatusEffectManager needs wiring into CombatEngine constructor
+- ProcessTurnStart must be called at combat loop start
+- Stat modifiers (Fortified/Weakened) need integration into damage calculations
+- Stun check required before player/enemy actions
+- Antidote item needs handling in GameLoop.HandleUse()
+- DisplayActiveEffects feedback should be added to combat loop
+
+**Next Steps:**
+- Wire StatusEffectManager into CombatEngine and GameLoop
+- Update damage formulas to respect stat modifiers
+- Add stun checks before attack actions
+- Implement Antidote consumable usage
+- Add active effects display during combat
