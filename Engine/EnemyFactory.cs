@@ -20,7 +20,7 @@ public static class EnemyFactory
         var type = rng.Next(4);
         return type switch
         {
-            0 => new Goblin(_enemyConfig?.GetValueOrDefault("Goblin"), _itemConfig),
+            0 => new Goblin(_enemyConfig?.GetValueOrDefault("Goblin")),
             1 => new Skeleton(_enemyConfig?.GetValueOrDefault("Skeleton"), _itemConfig),
             2 => new Troll(_enemyConfig?.GetValueOrDefault("Troll"), _itemConfig),
             _ => new DarkKnight(_enemyConfig?.GetValueOrDefault("DarkKnight"), _itemConfig)
