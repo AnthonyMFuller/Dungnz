@@ -29,3 +29,44 @@
 1. Hill implements Models + DisplayService first (Phase 1a)
 2. Barton implements Enemy subclasses + systems (Phase 1b, depends on 1a)
 3. Parallel work: Hill (DungeonGenerator/GameLoop/CommandParser), Barton (combat/inventory/loot logic)
+
+---
+
+## 2026-02-20: Retrospective Ceremony
+
+**Facilitator:** Coulson  
+**Participants:** Coulson, Hill, Barton, Romanoff, Scribe  
+**Context:** Team retrospective after completing TextGame v1 (shipped, code review passed)
+
+### What Went Well
+- **Design Review ceremony prevented rework** — Pre-build interface contracts enabled true parallel development with zero integration bugs
+- **Code review caught issues before shipping** — 7 architectural violations and logic bugs fixed before v1 release
+- **Clean architecture with clear boundaries** — Model ownership and contract-first design paid dividends
+
+### Critical Issues Identified
+1. **No automated test coverage** — Zero unit tests, high regression risk for any future work
+2. **Player model lacks encapsulation** — Public setters allow invalid state, blocks save/load and multiplayer
+3. **RNG not injectable** — CombatEngine/LootTable create own Random instances, prevents deterministic testing
+4. **DisplayService coupled to Console** — No interface, blocks headless testing and alternative UIs
+5. **Architectural violation persists** — CombatEngine still has direct Console.ReadLine() call
+
+### Key Decisions Made
+- **D1: Test Infrastructure Required for v2** — Unit test framework, injectable Random, IDisplayService interface required before v2 features
+- **D2: Player Encapsulation Refactor** — Private setters, validation, public methods (TakeDamage, Heal, etc.) before save/load work
+- **D3: DisplayService Interface Extraction** — Extract IDisplayService for testability and future UI options
+
+### Action Items Assigned
+- Hill: Add defensive null checks in GameLoop constructor (immediate)
+- Barton: Fix CombatEngine Console.ReadLine() violation (immediate)
+- Coulson: Create v2 planning ceremony agenda (next)
+- Romanoff: Document WI-10 edge cases as future test cases (next)
+- Hill: Player encapsulation refactor (before v2 save/load)
+- Hill + Barton: IDisplayService extraction (before v2 testing)
+- Barton: Injectable Random refactor (before v2 testing)
+
+### Risks
+- **HIGH regression risk** without automated tests
+- State integrity risk from Player public setters
+- Testability blocked by tight Console coupling
+
+**Outcome:** Team aligned on v2 priorities. Test infrastructure and encapsulation refactors must precede new features. Ceremony summary written to `.ai-team/log/2026-02-20-retrospective.md`. Decisions written to inbox for Scribe merge.

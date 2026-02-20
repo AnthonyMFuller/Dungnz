@@ -47,3 +47,17 @@
 - Respected Hill's existing Model contracts exactly
 - Integrated real enemies into EnemyFactory.cs (replaced stubs)
 - Program.cs already wired to use CombatEngine (Hill's work)
+
+### 2026-02-20: Retrospective Ceremony & v2 Planning Decisions
+
+**Team Update:** Retrospective ceremony identified 3 refactoring decisions for v2:
+
+1. **DisplayService Interface Extraction** — Extract IDisplayService interface for testability. CombatEngine will update to depend on IDisplayService instead of concrete DisplayService. Minimal breaking change. Effort: 1-2 hours.
+
+2. **Player Encapsulation Refactor** — Hill refactoring Player model to use private setters and validation methods. Barton can use these methods in combat/inventory logic instead of direct property mutations.
+
+3. **Test Infrastructure Required** — Before v2 feature work, implement xUnit/NUnit harness. Inject Random into CombatEngine and LootTable for deterministic testing. Blocks feature work. Effort: 1-2 sprints.
+
+**Participants:** Coulson (facilitator), Hill, Barton, Romanoff
+
+**Impact:** Barton coordinates with Hill on IDisplayService updates. Random injection strategy needed for CombatEngine deterministic testing.

@@ -94,3 +94,17 @@
 - Inventory and stats display
 - Win/lose conditions enforced
 - Help system for player guidance
+
+### 2026-02-20: Retrospective Ceremony & v2 Planning Decisions
+
+**Team Update:** Retrospective ceremony identified 3 refactoring decisions for v2:
+
+1. **DisplayService Interface Extraction** — Extract IDisplayService interface for testability and alternative UI implementations. Minimal breaking change (constructors already use DI). Effort: 1-2 hours.
+
+2. **Player Encapsulation Refactor** — Refactor Player model to use private setters and validation methods (TakeDamage, Heal, ModifyAttack, etc.). Prevents invalid state mutations and enables save/load, analytics, achievements. Effort: 2-3 hours.
+
+3. **Test Infrastructure Required** — Before v2 feature work, implement xUnit/NUnit harness and inject Random for deterministic combat testing. Blocks feature work. Effort: 1-2 sprints.
+
+**Participants:** Coulson (facilitator), Hill, Barton, Romanoff
+
+**Impact:** Hill owns DisplayService interface extraction and Player encapsulation. Coordinate with Barton on IDisplayService updates across CombatEngine.
