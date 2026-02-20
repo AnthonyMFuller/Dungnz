@@ -239,3 +239,39 @@
 - Math.Clamp for boundary enforcement
 - ArgumentException for invalid input
 - Events for state change notifications
+
+### 2026-02-20: Config-Driven Balance System (Issue #10, PR #31)
+
+**Files Created:**
+- `Data/enemy-stats.json` — JSON config with all 5 enemy types (Goblin, Skeleton, Troll, DarkKnight, DungeonBoss) base stats (MaxHP, Attack, Defense, XPValue, MinGold, MaxGold)
+- `Data/item-stats.json` — JSON config with all 10 items (Health Potion, Large Health Potion, Iron Sword, Leather Armor, Rusty Sword, Bone Fragment, Troll Hide, Dark Blade, Knight's Armor, Boss Key)
+- `Systems/EnemyConfig.cs` — Static loader class with Load(path) returning Dictionary<string, EnemyStats>; includes validation for all required fields and value ranges
+- `Systems/ItemConfig.cs` — Static loader class with Load(path) returning List<ItemStats> and CreateItem(ItemStats) factory method; validates item types against ItemType enum
+
+**Design Decisions:**
+1. **Config file location:** Data/ directory at project root, copied to output directory via .csproj <None Update="Data\**\*.json">
+2. **Validation strategy:** Load-time validation with descriptive exceptions (FileNotFoundException, InvalidDataException) specifying which field/enemy failed
+3. **Fallback pattern:** Enemy classes accept nullable EnemyStats/ItemStats parameters with hardcoded defaults if null (graceful degradation if config missing during development)
+4. **Error handling:** Program.cs wraps initialization in try/catch, displays fatal error message and waits for keypress before exit
+5. **Config format:** Enemy stats in flat dictionary by enemy type name; item stats in array under "Items" key for extensibility
+
+**Architecture Patterns:**
+- Static config loader classes (no instances needed)
+- Record types for config DTOs (EnemyStats, ItemStats, ItemConfigData)
+- Dictionary<string, EnemyStats> lookup for fast enemy config access
+- System.Text.Json with PropertyNameCaseInsensitive for flexible JSON parsing
+
+**Integration Points:**
+- EnemyFactory.Initialize(enemyPath, itemPath) called at app startup
+- DungeonGenerator.SetItemConfig(itemConfig) for dungeon item placement
+- Enemy constructors modified to accept config parameters
+
+**Build Configuration:**
+- Updated Dungnz.csproj with <None Update> to copy Data/**/*.json to bin/Debug/net9.0/Data/ at build time (PreserveNewest)
+- Config files loaded from AppContext.BaseDirectory at runtime for deployment compatibility
+
+**Lessons:**
+- JSON config files enable game balance tuning without recompilation
+- Config validation at startup prevents runtime errors from malformed data
+- Record types ideal for immutable config DTOs with init-only properties
+- Fallback defaults useful during iterative development when config incomplete

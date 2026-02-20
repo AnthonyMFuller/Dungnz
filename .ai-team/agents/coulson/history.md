@@ -171,3 +171,33 @@
 - `/Display/IDisplayService.cs` — Interface contract (14 methods)
 - `/Display/DisplayService.cs` — Renamed to ConsoleDisplayService (commit 32184c6)
 - `/Dungnz.Tests/Helpers/TestDisplayService.cs` — Test double for headless testing
+
+---
+
+### 2026-02-20: GameEvents System Implementation (Issue #11, PR #30)
+**Context:** Implemented injectable event system for game-wide notifications
+
+**Architecture Decisions:**
+- GameEvents as instance-based class (not static singleton) for testability and dependency injection
+- Nullable GameEvents? parameter pattern - events are optional, no mandatory subscribers
+- Strongly-typed EventArgs subclasses: CombatEndedEventArgs, ItemPickedEventArgs, LevelUpEventArgs, RoomEnteredEventArgs
+- Events fire AFTER state changes complete (e.g., RaiseCombatEnded after loot awarded)
+- RoomEnteredEventArgs includes previousRoom reference for navigation tracking
+
+**Implementation:**
+- Systems/GameEvents.cs — Event declarations and Raise* methods
+- Systems/GameEventArgs.cs — Custom EventArgs types with relevant context
+- CombatEngine fires: OnCombatEnded (Won/Fled/PlayerDied), OnLevelUp (with old/new level)
+- GameLoop fires: OnRoomEntered (with previousRoom), OnItemPicked (with room context)
+- Program.cs instantiates GameEvents once, injects into both CombatEngine and GameLoop
+
+**Key Files:**
+- `/Systems/GameEvents.cs` — Event system core, 4 typed events
+- `/Systems/GameEventArgs.cs` — EventArgs definitions
+- `/Engine/CombatEngine.cs` — Fires combat and level-up events
+- `/Engine/GameLoop.cs` — Fires room and item events
+
+**Pattern Established:**
+- Optional event subscribers via nullable injected instance
+- No tight coupling — consumers subscribe only if needed
+- Clean separation: game logic unaware of subscribers, events fire unconditionally
