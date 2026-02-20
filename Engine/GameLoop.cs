@@ -3,20 +3,23 @@ namespace Dungnz.Engine;
 using System;
 using Dungnz.Display;
 using Dungnz.Models;
+using Dungnz.Systems;
 
 public class GameLoop
 {
     private readonly IDisplayService _display;
     private readonly ICombatEngine _combat;
     private readonly IInputReader _input;
+    private readonly GameEvents? _events;
     private Player _player = null!;
     private Room _currentRoom = null!;
 
-    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null)
+    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null)
     {
         _display = display;
         _combat = combat;
         _input = input ?? new ConsoleInputReader();
+        _events = events;
     }
 
     public void Run(Player player, Room startRoom)
@@ -115,9 +118,11 @@ public class GameLoop
         }
 
         // Move to new room
+        var previousRoom = _currentRoom;
         _currentRoom = nextRoom;
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
+        _events?.RaiseRoomEntered(_player, _currentRoom, previousRoom);
 
         // Check for enemy encounter
         if (_currentRoom.Enemy != null && _currentRoom.Enemy.HP > 0)
@@ -206,6 +211,7 @@ public class GameLoop
         _currentRoom.Items.Remove(item);
         _player.Inventory.Add(item);
         _display.ShowMessage($"You take the {item.Name}.");
+        _events?.RaiseItemPicked(_player, item, _currentRoom);
     }
 
     private void HandleUse(string itemName)

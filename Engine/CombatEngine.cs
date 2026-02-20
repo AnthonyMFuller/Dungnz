@@ -1,18 +1,21 @@
 namespace Dungnz.Engine;
 using Dungnz.Models;
 using Dungnz.Display;
+using Dungnz.Systems;
 
 public class CombatEngine : ICombatEngine
 {
     private readonly IDisplayService _display;
     private readonly IInputReader _input;
     private readonly Random _rng;
+    private readonly GameEvents? _events;
     
-    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null)
+    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null)
     {
         _display = display;
         _input = input ?? new ConsoleInputReader();
         _rng = rng ?? new Random();
+        _events = events;
     }
     
     public CombatResult RunCombat(Player player, Enemy enemy)
@@ -66,6 +69,7 @@ public class CombatEngine : ICombatEngine
                 player.AddXP(enemy.XPValue);
                 _display.ShowMessage($"You gained {enemy.XPValue} XP. (Total: {player.XP})");
                 CheckLevelUp(player);
+                _events?.RaiseCombatEnded(player, enemy, CombatResult.Won);
                 return CombatResult.Won;
             }
             
