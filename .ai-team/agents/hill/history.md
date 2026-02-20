@@ -275,3 +275,9 @@
 - Config validation at startup prevents runtime errors from malformed data
 - Record types ideal for immutable config DTOs with init-only properties
 - Fallback defaults useful during iterative development when config incomplete
+
+📌 Team update (2026-02-20): Config-Driven Game Balance consolidated — Coulson + Hill. Finalized pattern: JSON config files (enemy-stats.json, item-stats.json) loaded at startup with validation. Static loader classes with fallback defaults.
+
+📌 Team update (2026-02-20): Two-Pass Serialization for Circular Object Graphs established — Guid-based serialization for Room.Exits circular references in save/load system.
+
+📌 Team update (2026-02-20): AppData Save Location standardized — saves stored in Environment.GetFolderPath(SpecialFolder.ApplicationData)/Dungnz/saves/

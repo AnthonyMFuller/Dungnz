@@ -149,3 +149,5 @@
 - Add stun checks before attack actions
 - Implement Antidote consumable usage
 - Add active effects display during combat
+
+📌 Team update (2026-02-20): Status Effects System consolidated — Barton + Coulson. Finalized design: Enum-based types, duration tracking, dictionary storage, on-demand stat modifiers. 6 core effects (Poison, Bleed, Stun, Regen, Fortified, Weakened).

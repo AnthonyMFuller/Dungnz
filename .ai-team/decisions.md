@@ -514,39 +514,28 @@ Approved by retrospective. Assigned to Hill and Barton for v2 planning coordinat
 
 ## 1. NEW GAMEPLAY FEATURES (Ranked by Impact/Effort)
 
-### Priority 1: Status Effects System (HIGH Impact / MEDIUM Effort)
-**What:** Add temporary buffs/debuffs that persist across combat turns
-**Mechanics:**
-- Status effects: Poison (3 dmg/turn, 3 turns), Bleed (5 dmg/turn, 2 turns), Stun (skip 1 turn), Regen (heal 5 HP/turn, 4 turns), Fortified (+50% DEF, 3 turns), Weakened (-30% ATK, 3 turns)
-- Applied via skills, enemy abilities, or consumable items
-- Stack duration but not intensity (reapplying refreshes timer)
-- Display active effects in combat status UI
-
-**Implementation:**
-```csharp
-public class StatusEffect
-{
-    public StatusType Type { get; set; } // enum: Poison, Bleed, Stun, etc.
-    public int RemainingTurns { get; set; }
-    public int Intensity { get; set; } // damage per turn or modifier %
-}
-
-// Add to Player/Enemy
-public List<StatusEffect> ActiveEffects { get; set; } = new();
-
-// In CombatEngine turn loop
-private void ProcessStatusEffects(Player player, Enemy enemy)
-{
-    foreach (var effect in player.ActiveEffects.ToList())
-    {
-        ApplyEffect(player, effect);
-        effect.RemainingTurns--;
-        if (effect.RemainingTurns <= 0) player.ActiveEffects.Remove(effect);
-    }
-}
-```
-
+### Priority 1: Status Effects System (consolidated)
+**By:** Barton, Coulson (v2 planning)
+**What:** Turn-based status effects (buffs/debuffs) with 6 core types: Poison (DOT), Bleed (DOT), Stun (skip turn), Regen (HOT), Fortified (DEF buff), Weakened (ATK debuff). Enum-based, duration-tracked, on-demand stat modifiers.
 **Why:** Adds tactical depth without UI complexity. Counters "spam attack" strategy. Enables build diversity (DOT vs burst).
+
+**Design Details (Barton Implementation):**
+- **Effect types:** Enum with 6 entries (type-safe, extensible)
+- **Duration tracking:** Each ActiveEffect.RemainingTurns decrements per turn
+- **Storage:** Dictionary<object, List<StatusEffect>> keyed by target (fast lookup)
+- **Stat application:** Modifiers calculated on-demand (GetStatModifier()) during damage calculations, not mutating base stats
+- **Debuff/Buff separation:** Antidote only removes debuffs; buffs persist
+
+**Balance Tuning:**
+- DOTs frontloaded: Bleed (5dmg/2turns=10 total) > Poison (3dmg/3turns=9 total)
+- Stun brief (1 turn) to prevent frustration
+- Stat modifiers 50% to impact without trivializing combat
+- Regen (4HP/3turns=12 total) counters DOT pressure
+
+**Integration:**
+- StatusEffectManager shared between CombatEngine and GameLoop
+- Effects processed before actions (prevents ghost hits from DOT deaths)
+- Clear effects on combat end (prevents stale state)
 
 ---
 
@@ -852,20 +841,36 @@ private Item ScaleLootToLevel(Item baseItem, int playerLevel)
 
 ---
 
-### 2026-02-20: Interface Extraction Pattern for Testability (consolidated)
+### 2026-02-20: Interface Extraction & Refactoring Verification (consolidated)
 
 **By:** Coulson, Hill  
-**What:** Standardized pattern for extracting interfaces from concrete classes to enable mocking and alternative implementations  
-**Why:** Enables mocking in unit tests, supports GUI/web/Discord bot implementations, follows dependency inversion principle
+**What:** Standardized pattern for extracting interfaces from concrete classes to enable mocking and alternative implementations. Includes verification checklist to catch production entrypoint issues.
+**Why:** Enables mocking in unit tests, supports GUI/web/Discord bot implementations, follows dependency inversion principle. Verification catches regressions where tests pass but production code fails.
 
-#### Extract interfaces when:
+#### When to Extract Interfaces:
 - Need to mock for testing (IDisplayService, IRandom, IInputService)
 - Multiple implementations likely (IGamePersistence)
 - Crossing architectural boundaries (Engine → Display, Engine → Systems)
 
-#### Don't extract interfaces for:
+#### When NOT to Extract Interfaces:
 - Pure data classes (Player, Enemy, Item, Room)
 - Single implementation with no test/extension need (CommandParser)
+
+#### Verification Checklist (CRITICAL):
+After any interface extraction or class renaming, **ALWAYS**:
+1. Run `dotnet build` from clean state (not just `dotnet test`)
+2. Explicitly check all entrypoints that instantiate the renamed/extracted class
+3. Search for `new OldClassName()` references across the codebase
+4. Verify production code paths, not just test code paths
+
+**Common Trap:** Tests pass with mock implementations while production code still references old class names, causing build failures at shipping time.
+
+**Search Pattern:**
+```bash
+# After renaming DisplayService → ConsoleDisplayService
+$ rg "new DisplayService\(\)" --type cs
+Program.cs:5:var display = new DisplayService();  # ← Would be missed without this check!
+```
 
 #### Example: IDisplayService (Hill's detailed implementation):
 ```csharp
@@ -1038,20 +1043,30 @@ public void Combat_WithFixedSeed_IsDeterministic()
 ---
 
 
-### 2026-02-20: Configuration-Driven Balance Tuning
+### 2026-02-20: Config-Driven Game Balance (consolidated)
 
-**By:** Coulson  
-**What:** Move game balance parameters to appsettings.json  
-**Why:** Enable balance tuning without recompilation; supports A/B testing, modding
+**By:** Coulson, Hill
+**What:** Externalized all game balance parameters to JSON config files — enemy stats, item stats, combat settings — loaded at startup with validation
+**Why:** 
+- **Iteration speed:** Balance tuning (HP, attack, loot) without recompilation
+- **Designer-friendly:** JSON readable and editable by non-programmers
+- **Version control:** Changes tracked separately from code
+- **Validation:** Load-time checks catch config errors before gameplay
+- **Extensibility:** Supports A/B testing, modding, difficulty presets
 
-#### Configuration Structure:
-- Combat settings (flee chance, damage formula)
-- Loot settings (drop rates, gold multipliers)
-- Dungeon settings (grid size, spawn rates)
+#### Configuration Files:
+- **Data/enemy-stats.json** — Enemy archetypes (HP, Attack, Defense, XPValue, GoldReward)
+- **Data/item-stats.json** — Item definitions (AttackBonus, DefenseBonus, HealAmount, Value)
+- **Data/combat-settings.json** — Flee chance, dodge/crit formulas (future)
+- **Data/dungeon-settings.json** — Grid size, spawn rates (future)
 
-**Load via:** Microsoft.Extensions.Configuration in Program.cs
+#### Pattern:
+Static loader classes (EnemyConfig, ItemConfig) with Load(path) methods returning config DTOs. Entity constructors accept nullable config parameters with hardcoded fallbacks. Program.cs loads configs at startup.
 
-**Rationale:** Hardcoded balance values (flee = 0.5, grid = 5x4) require recompile to adjust. JSON config enables rapid iteration and user customization.
+#### Trade-offs:
+- File I/O at startup (negligible overhead)
+- Config must be copied to output directory (.csproj PublishFiles required)
+- Two sources of truth during migration (config + hardcoded defaults) — intentional for graceful transition
 ### 2026-02-20: Dungnz v2 — C# Implementation Proposal
 **By:** Hill
 **What:** Comprehensive C# refactoring and feature proposals for v2
@@ -2170,3 +2185,130 @@ public event EventHandler<HealthChangedEventArgs>? OnHealthChanged;
 - Consider IReadOnlyList<Item> for Inventory exposure (prevent external mutation)
 
 **PR:** #26 (squad/2-player-encapsulation)
+---
+
+### 2026-02-20: Status Effects System Architecture
+
+**By:** Barton  
+**What:** Implemented foundation for turn-based status effects system with 6 effect types  
+**Why:** Adds depth to combat with DOT/HOT mechanics and stat modifiers; enables counter-play strategies
+
+**Design Choices:**
+1. **Enum-based effect types** — Simple, type-safe, easy to extend
+2. **Duration tracking per effect** — Each ActiveEffect has RemainingTurns that decrements each turn
+3. **Dictionary-based storage** — Effects keyed by target object (Player/Enemy) for fast lookup
+4. **Debuff/Buff separation** — Antidote only removes debuffs, preserving intentional design
+5. **Stat modifiers calculated on-demand** — GetStatModifier() called during damage calculations instead of mutating base stats
+
+**Effect Balance:**
+- DOTs frontloaded: Bleed (5dmg/2turns = 10 total) > Poison (3dmg/3turns = 9 total)
+- Stun is powerful but brief (1 turn) to avoid frustration
+- Stat modifiers use 50% to be impactful without trivializing combat
+- Regen (4HP/3turns = 12 total) counters DOT pressure
+
+**Integration Strategy:**
+- StatusEffectManager shared between CombatEngine and GameLoop for Antidote usage
+- Effects processed before actions to prevent "ghost hits" from DOT deaths
+- Clear effects on combat end to prevent stale state
+
+---
+
+### 2026-02-20: GameEvents Event System Architecture
+**By:** Coulson
+**What:** Instance-based event system with optional subscribers using nullable dependency injection
+**Why:** 
+- Testability requires instance-based (not static) events for mocking and isolation
+- Nullable GameEvents? parameter pattern removes tight coupling — events fire unconditionally, subscribers are optional
+- Strongly-typed EventArgs provide compile-time safety and rich context for subscribers
+- Firing events AFTER state changes ensures subscribers see consistent game state
+- Pattern established: inject shared GameEvents instance into subsystems (CombatEngine, GameLoop) at construction
+
+---
+
+### 2026-02-20: Config-Driven Game Balance
+
+**By:** Hill  
+**What:** Moved all enemy and item stats from hardcoded C# to external JSON config files (Data/enemy-stats.json, Data/item-stats.json) loaded at startup via EnemyConfig/ItemConfig static classes with validation.
+
+**Why:**  
+- **Iteration speed:** Game balance tuning (HP, attack values, loot tables) without recompilation
+- **Designer-friendly:** JSON is human-readable and editable by non-programmers
+- **Version control:** Balance changes tracked in git separately from code
+- **Validation:** Load-time checks with descriptive exceptions catch config errors before gameplay
+
+**Pattern:**  
+Static loader classes with Load(path) methods returning config DTOs (EnemyStats, ItemStats records). Entity constructors accept nullable config parameters with hardcoded fallbacks. Program.cs loads configs at startup, crashes with clear error if invalid.
+
+**Trade-offs:**  
+- Adds file I/O dependency at startup (negligible overhead)
+- Config must be copied to output directory (.csproj configuration required)
+- Two sources of truth during migration (config + hardcoded defaults)
+
+---
+
+### 2026-02-20: Two-Pass Serialization for Circular Object Graphs
+**By:** Hill  
+**What:** Implemented Guid-based two-pass serialization to handle circular Room.Exits references in save/load system.  
+**Why:**  
+- Room graph contains circular references (Room.Exits points to other Rooms which point back)
+- Standard JSON serialization fails on circular references
+- Two-pass approach: serialize Guids instead of object references, then rehydrate object graph from Guids
+- BFS traversal ensures all reachable rooms are captured
+- Guid.NewGuid() provides unique IDs without central ID management
+- System.Text.Json (native) preferred over Newtonsoft.Json (external dependency)
+
+**Pattern:**
+1. **Serialize:** BFS collect all rooms → RoomSaveData DTOs replace `Room` refs with `Guid` refs → JSON
+2. **Deserialize:** JSON → create all Room objects → wire Exits by resolving Guids through dictionary
+
+**Applicability:** Any domain with circular object graphs needing persistence (e.g., enemy spawn graphs, quest dependency trees, dialogue trees)
+
+### 2026-02-20: AppData Save Location for User Data
+**By:** Hill  
+**What:** Saves stored in `Environment.GetFolderPath(SpecialFolder.ApplicationData)/Dungnz/saves/`  
+**Why:**  
+- Follows .NET conventions for user-specific application data
+- Cross-platform (Windows: %APPDATA%, Linux: ~/.config, macOS: ~/Library/Application Support)
+- Survives application upgrades and re-installs
+- No admin privileges required
+
+### 2026-02-20: Specific Exception Handling for User-Facing Errors
+**By:** Hill  
+**What:** Save/load handlers catch `FileNotFoundException`, `InvalidDataException`, and generic `Exception` separately  
+**Why:**  
+- Different error types warrant different user messages
+- FileNotFoundException → "not found, use LIST"
+- InvalidDataException → "corrupt save"  
+- Generic Exception → "unexpected error"  
+- Prevents cryptic .NET stack traces in game console
+- Guides users to resolution (e.g., suggests LIST command for typos)
+
+**Pattern:** Catch specific exceptions first, then generic Exception as fallback, always with user-friendly messages.
+
+---
+
+### 2026-02-20: CI Quality Gate Infrastructure Decision
+
+**By:** Romanoff (Tester)
+
+**What:** Established GitHub Actions CI pipeline with 70% code coverage threshold as mandatory quality gate. Fixed test project framework compatibility (net10.0 → net9.0).
+
+**Why:** 
+- **CI automation:** Prevents broken code from merging to master. Every push/PR now runs full build + test suite.
+- **Coverage enforcement:** 70% line coverage threshold chosen as pragmatic starting point — high enough to catch untested logic, low enough to be achievable without blocking development velocity.
+- **Framework fix:** Test project targeted net10.0 (doesn't exist), breaking CI runners. Downgraded to net9.0 to match main project and available SDKs.
+- **Tooling:** Used existing Coverlet packages (already in test project), avoided adding new dependencies.
+
+**Impact:**
+- Blocks merges below 70% coverage — developers must write tests before shipping features.
+- CI will catch compilation errors, test failures, and coverage regressions before code review.
+- Foundation for future quality gates: mutation testing, static analysis, performance benchmarks.
+
+**Decision Points:**
+- Line coverage vs branch coverage: **Line** chosen for simplicity (branch coverage can be added later as second-tier gate).
+- Threshold value: **70%** balances rigor vs pragmatism. Can be raised to 80-90% once baseline is stable.
+- Workflow triggers: **Push to master + all PRs**. Does not run on draft PRs to save CI minutes.
+
+**Files:**
+- `.github/workflows/ci.yml` (new)
+- `Dungnz.Tests/Dungnz.Tests.csproj` (framework fix)

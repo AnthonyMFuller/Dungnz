@@ -201,3 +201,7 @@
 - Optional event subscribers via nullable injected instance
 - No tight coupling — consumers subscribe only if needed
 - Clean separation: game logic unaware of subscribers, events fire unconditionally
+
+📌 Team update (2026-02-20): Interface Extraction & Refactoring Verification consolidated — Coulson + Hill. Added entrypoint verification checklist to catch regressions where tests pass but production code fails.
+
+📌 Team update (2026-02-20): GameEvents Event System Architecture established — instance-based events with nullable DI for testability.

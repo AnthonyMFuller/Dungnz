@@ -130,3 +130,5 @@
 - **Coverage Targets:** 70%+ code coverage required Phase 1→2 gate. CombatEngine, LootTable, InventoryManager = 100% coverage must-haves per testing strategy.
 
 **Impact on Romanoff:** Confirmed xUnit + Moq + FluentAssertions stack (vs NUnit). Mocking strategy (IDisplayService + seeded Random) documented and agreed across team.
+
+📌 Team update (2026-02-20): CI Quality Gate Infrastructure established — 70% code coverage threshold enforced by GitHub Actions. Test project framework fixed (net10.0 → net9.0).
