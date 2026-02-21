@@ -62,7 +62,15 @@ public static class SaveSystem
                 Visited = r.Visited,
                 Looted = r.Looted,
                 HasShrine = r.HasShrine,
-                ShrineUsed = r.ShrineUsed
+                ShrineUsed = r.ShrineUsed,
+                BossState = r.Enemy is Dungnz.Systems.Enemies.DungeonBoss boss
+                    ? new BossSaveState
+                    {
+                        IsEnraged = boss.IsEnraged,
+                        IsCharging = boss.IsCharging,
+                        ChargeActive = boss.ChargeActive
+                    }
+                    : null
             }).ToList()
         };
 
@@ -120,6 +128,13 @@ public static class SaveSystem
                     HasShrine = roomData.HasShrine,
                     ShrineUsed = roomData.ShrineUsed
                 };
+                if (roomData.BossState is { } bossState &&
+                    room.Enemy is Dungnz.Systems.Enemies.DungeonBoss dungeonBoss)
+                {
+                    dungeonBoss.IsEnraged = bossState.IsEnraged;
+                    dungeonBoss.IsCharging = bossState.IsCharging;
+                    dungeonBoss.ChargeActive = bossState.ChargeActive;
+                }
                 roomDict[room.Id] = room;
             }
 
@@ -230,4 +245,27 @@ internal class RoomSaveData
     public required bool Looted { get; init; }
     public bool HasShrine { get; init; }
     public bool ShrineUsed { get; init; }
+
+    /// <summary>
+    /// Persisted combat flags for a <see cref="Dungnz.Systems.Enemies.DungeonBoss"/>.
+    /// <see langword="null"/> when the room's enemy is not a boss.
+    /// </summary>
+    public BossSaveState? BossState { get; init; }
+}
+
+/// <summary>
+/// Snapshot of the three runtime combat flags that control <see cref="Dungnz.Systems.Enemies.DungeonBoss"/>
+/// behaviour: enrage phase, charge wind-up, and charge release. Serialised alongside the room so
+/// that a mid-boss save/load cycle restores the fight to the exact same state.
+/// </summary>
+internal class BossSaveState
+{
+    /// <summary>Whether the boss has entered its enraged phase (HP ≤ 40 %).</summary>
+    public bool IsEnraged { get; init; }
+
+    /// <summary>Whether the boss is currently winding up a charge attack.</summary>
+    public bool IsCharging { get; init; }
+
+    /// <summary>Whether the boss's charged attack fires this turn.</summary>
+    public bool ChargeActive { get; init; }
 }

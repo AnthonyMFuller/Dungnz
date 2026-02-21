@@ -13,7 +13,7 @@ public class DungeonBoss : Enemy
     /// Indicates whether the boss has entered its enraged phase, triggered when HP falls
     /// to 40% or below. While enraged the boss's attack is permanently increased by 50%.
     /// </summary>
-    public bool IsEnraged { get; private set; }
+    public bool IsEnraged { get; internal set; }
 
     /// <summary>
     /// When <see langword="true"/>, the boss is winding up a charge attack this turn.
