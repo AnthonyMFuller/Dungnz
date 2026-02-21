@@ -19,6 +19,10 @@ namespace Dungnz.Models;
 [JsonDerivedType(typeof(VampireLord), "VampireLord")]
 [JsonDerivedType(typeof(Wraith), "Wraith")]
 [JsonDerivedType(typeof(DungeonBoss), "DungeonBoss")]
+[JsonDerivedType(typeof(LichKing), "lichking")]
+[JsonDerivedType(typeof(StoneTitan), "stonetitan")]
+[JsonDerivedType(typeof(ShadowWraith), "shadowwraith")]
+[JsonDerivedType(typeof(VampireBoss), "vampireboss")]
 public abstract class Enemy
 {
     /// <summary>Gets or sets the enemy's display name used in combat and room descriptions.</summary>
