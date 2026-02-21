@@ -81,12 +81,12 @@ public class IntegrationTests
         // Give exactly 100 XP to trigger level 2 threshold (100/100+1=2 > 1)
         var display = MakeDisplay();
         var enemy = new Enemy_Stub(1, 1, 0, 100);
-        var input = new FakeInputReader("A");
+        var input = new FakeInputReader("A", "1"); // "A" = attack, "1" = trait: +5 MaxHP
         var engine = new CombatEngine(display, input, new ControlledRandom());
         engine.RunCombat(player, enemy);
 
         player.Level.Should().Be(initialLevel + 1);
-        player.MaxHP.Should().Be(initialMaxHP + 10);
+        player.MaxHP.Should().Be(initialMaxHP + 15); // +10 level-up + 5 trait bonus
     }
 
     // ─────────────────────────────────────────────────────────────────

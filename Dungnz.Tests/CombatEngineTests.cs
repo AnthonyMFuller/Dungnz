@@ -150,7 +150,7 @@ public class CombatEngineTests
         var player = new Player { HP = 100, MaxHP = 100, Attack = 10, Defense = 5, XP = 90, Level = 1 };
         var enemy = new Enemy_Stub(hp: 1, atk: 8, def: 2, xp: 15);
         var display = new FakeDisplayService();
-        var input = new FakeInputReader("A");
+        var input = new FakeInputReader("A", "1"); // "A" = attack, "1" = trait: +5 MaxHP
         var engine = new CombatEngine(display, input, new ControlledRandom());
 
         engine.RunCombat(player, enemy);
@@ -158,8 +158,8 @@ public class CombatEngineTests
         player.Level.Should().Be(2);
         player.Attack.Should().Be(12); // +2
         player.Defense.Should().Be(6); // +1
-        player.MaxHP.Should().Be(110); // +10
-        player.HP.Should().Be(110);    // restored
+        player.MaxHP.Should().Be(115); // +10 level-up + 5 trait bonus
+        player.HP.Should().Be(115);    // restored
     }
 
     [Fact]
