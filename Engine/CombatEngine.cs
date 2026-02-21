@@ -303,6 +303,23 @@ public class CombatEngine : ICombatEngine
             return;
         }
 
+        // Goblin Shaman: try to heal when below 50% HP
+        if (enemy is GoblinShaman shaman && shaman.HP < shaman.MaxHP / 2)
+        {
+            int heal = (int)(shaman.MaxHP * 0.20);
+            shaman.HP = Math.Min(shaman.MaxHP, shaman.HP + heal);
+            _display.ShowCombatMessage($"The {shaman.Name} channels dark magic and heals for {heal}!");
+            _display.ShowCombatMessage($"({shaman.Name} HP: {shaman.HP}/{shaman.MaxHP})");
+            return; // skip normal attack this turn
+        }
+        // Troll: regenerates 5% max HP each turn
+        if (enemy is Troll troll)
+        {
+            int regen = Math.Max(1, (int)(troll.MaxHP * 0.05));
+            troll.HP = Math.Min(troll.MaxHP, troll.HP + regen);
+            _display.ShowCombatMessage($"The Troll regenerates {regen} HP!");
+        }
+
         // Boss telegraphed charge: resolve previous charge or set new one
         if (enemy is DungeonBoss boss)
         {

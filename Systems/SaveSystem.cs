@@ -99,6 +99,12 @@ public static class SaveSystem
             if (saveData == null)
                 throw new InvalidDataException("Save file is corrupt or empty");
 
+            // v2 → v3 migration: Version 0 means an old save without the Version field
+            if (saveData.Version == 0)
+            {
+                Console.WriteLine("[SaveSystem] Migrating v2 save to v3: applying default difficulty 'Normal'.");
+            }
+
             var roomDict = new Dictionary<Guid, Room>();
             foreach (var roomData in saveData.Rooms)
             {
@@ -209,6 +215,7 @@ internal class SaveData
     public required Player Player { get; init; }
     public required Guid CurrentRoomId { get; init; }
     public required List<RoomSaveData> Rooms { get; init; }
+    public int Version { get; init; } = 1;
 }
 
 internal class RoomSaveData
