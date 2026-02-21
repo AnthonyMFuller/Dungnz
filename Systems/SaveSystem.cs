@@ -58,7 +58,9 @@ public static class SaveSystem
                 Items = r.Items,
                 IsExit = r.IsExit,
                 Visited = r.Visited,
-                Looted = r.Looted
+                Looted = r.Looted,
+                HasShrine = r.HasShrine,
+                ShrineUsed = r.ShrineUsed
             }).ToList()
         };
 
@@ -105,7 +107,9 @@ public static class SaveSystem
                     Items = roomData.Items.ToList(),
                     IsExit = roomData.IsExit,
                     Visited = roomData.Visited,
-                    Looted = roomData.Looted
+                    Looted = roomData.Looted,
+                    HasShrine = roomData.HasShrine,
+                    ShrineUsed = roomData.ShrineUsed
                 };
                 roomDict[room.Id] = room;
             }
@@ -143,7 +147,7 @@ public static class SaveSystem
 
         return Directory.GetFiles(SaveDirectory, "*.json")
             .Select(Path.GetFileNameWithoutExtension)
-            .OrderByDescending(File.GetLastWriteTime)
+            .OrderByDescending(f => File.GetLastWriteTime(f!))
             .ToArray()!;
     }
 
@@ -214,4 +218,6 @@ internal class RoomSaveData
     public required bool IsExit { get; init; }
     public required bool Visited { get; init; }
     public required bool Looted { get; init; }
+    public bool HasShrine { get; init; }
+    public bool ShrineUsed { get; init; }
 }

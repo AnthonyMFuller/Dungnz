@@ -111,7 +111,7 @@ public class DungeonGenerator
         exitRoom.Enemy = EnemyFactory.CreateScaled("dungeonboss", playerLevel, floorMultiplier);
 
         // Place enemies in ~60% of non-start, non-exit rooms
-        var enemyTypes = new[] { "goblin", "skeleton", "troll", "darkknight" };
+        var enemyTypes = new[] { "goblin", "skeleton", "troll", "darkknight", "goblinshaman", "stonegolem", "wraith", "vampirelord", "mimic" };
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)

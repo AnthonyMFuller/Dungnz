@@ -398,3 +398,78 @@
 - Scribe: Merge inbox file after team review
 
 **Key Insight:** v2 was "dungeon crawler foundations" (systems, mechanics, save/load). v3 is "roguelike identity" (classes, builds, character expression, content variety). Together, they transform Dungnz from "generic text game" to "players have reasons to play again."
+
+### 2026-02-20: Pre-v3 Data Integrity Bug Audit
+
+**Context:** Comprehensive review of Player.cs, Models/, and Display/ for data integrity bugs before v3 feature work begins.
+
+**Files Reviewed:**
+- Models/Player.cs (encapsulation, equipment, mana, events)
+- Models/Item.cs (property flags)
+- Models/Enemy.cs (stat fields, special flags)
+- Models/Room.cs (state flags)
+- Models/StatusEffect.cs, ActiveEffect.cs (effect system)
+- Engine/CombatEngine.cs (loot handling, damage flow)
+- Engine/GameLoop.cs (inventory, equipment commands)
+- Systems/StatusEffectManager.cs (effect processing)
+- Display/DisplayService.cs, IDisplayService.cs (output layer)
+
+**Bugs Identified:** 11 total (3 Critical, 4 High, 3 Medium, 1 Low)
+
+**Critical Bugs:**
+1. **Inventory encapsulation violated** — CombatEngine.cs:336 and GameLoop.cs:298,337 directly call player.Inventory.Add/Remove, bypassing future validation logic. Blocks future inventory limits, weight systems, quest tracking.
+2. **Equipment properties not applied** — MaxManaBonus, DodgeBonus, PoisonImmunity, AppliesBleedOnHit defined on Item but never applied/removed in ApplyStatBonuses/RemoveStatBonuses. Ring of Focus and Cloak of Shadows from LootTable are broken.
+3. **Enemy HP mutations uncontrolled** — CombatEngine.cs:255 (enemy.HP -= playerDmg), AbilityManager.cs:143 (enemy.HP -= damage) directly mutate HP without validation. Allows negative HP, breaks future enemy encapsulation.
+
+**High Severity:**
+4. **RemoveStatBonuses missing OnHealthChanged** — Lines 390-411, when MaxHP decreases and HP doesn't clamp, no event fires. Analytics/achievements miss HP changes from unequipping +MaxHP accessories.
+5. **Event subscription memory leak risk** — OnHealthChanged is public event with no unsubscribe pattern. Long-running sessions or save/load cycles could accumulate stale subscriptions.
+6. **Room.Visited/Looted exposed** — Public setters on Room (lines 44, 50) allow external mutation. Should be private with methods like MarkVisited(), MarkLooted().
+7. **Enemy.IsAmbush/IsElite public setters** — Lines 59, 65 allow runtime mutation after enemy creation, enabling exploit: set boss.IsElite = false to skip tier-2 loot.
+
+**Medium Severity:**
+8. **Mana validation asymmetry** — RestoreMana (line 87) throws on negative, but CombatEngine always passes literal 10 (safe). FortifyMaxMana (line 198) throws on ≤0, but no callers exist. Overly strict validation for unused code paths.
+9. **StatusEffectManager direct Enemy.HP mutation** — Line 57 (poison), 61 (bleed), 65 (regen) mutate enemy.HP directly instead of using TakeDamage/Heal pattern. Breaks future enemy encapsulation, no death check.
+10. **Item.IsEquippable manual flag** — Line 69, boolean set by ItemConfig.cs, not computed from Type. Risk: config typo (IsEquippable=false on Weapon) causes runtime exception in Player.EquipItem.
+
+**Low Severity:**
+11. **DisplayService null-forgiving operator** — ConsoleInputReader pattern matches but DisplayService uses Console.ReadLine() ?? "Hero" (line 205). Technically safe but inconsistent with nullable pattern elsewhere.
+
+**Patterns Observed:**
+- Player encapsulation strong (private setters + validation methods)
+- Enemy/Room encapsulation weak (public setters, direct HP mutation)
+- Inventory follows list-exposure pattern (direct Add/Remove), not encapsulated
+- Equipment stat application incomplete (4 of 8 Item properties ignored)
+- Event-driven architecture present but underutilized (no event for equipment changes)
+
+**Recommended Fixes (Prioritized):**
+- HIGH: Encapsulate inventory (AddItem, RemoveItem methods with validation)
+- HIGH: Apply missing equipment properties (MaxManaBonus, DodgeBonus, immunities)
+- HIGH: Encapsulate Enemy HP (TakeDamage method with Math.Max(0, ...) guard)
+- MEDIUM: Encapsulate Room state (MarkVisited, MarkLooted methods)
+- MEDIUM: Make IsElite/IsAmbush init-only or computed properties
+- LOW: Add OnHealthChanged to RemoveStatBonuses negative-MaxHP path
+- LOW: Document event subscription cleanup pattern or implement IDisposable
+
+**Blockers for v3:**
+- Equipment bugs block class-specific trait/gear systems (Issue #1-3)
+- Inventory encapsulation needed for equipment sets, weight limits
+- Enemy encapsulation required for elite variants, boss phases
+
+### 2026-02-20: Pre-v3 Bug Hunt Session — Encapsulation Findings
+
+📌 **Team update (2026-02-20):** Pre-v3 bug hunt identified 47 critical issues and architectural patterns. Key finding for architecture:
+
+**Encapsulation Pattern Inconsistency:** Player model enforces strong encapsulation (private setters, validation methods), but Enemy and Room models expose mutable state via public setters. This creates:
+- Mental model confusion (Player needs methods, Enemy allows direct mutation)
+- Future refactoring cost (adding Enemy.TakeDamage requires migrating 5+ call sites)
+- Invalid state risks (negative HP, visited=false after entry)
+- Blocks event-driven architecture (no death events, no state change observation)
+
+**Recommendation:** Standardize on Player's encapsulation pattern before v3 Wave 1:
+- Private setters on all mutable state
+- Public methods with validation (Enemy.TakeDamage, Room.MarkVisited, Player.AddItem)
+- Events for observation (OnDeath, OnVisited, OnItemAdded)
+- Estimated effort: 4-6 hours (Enemy refactor 2h, Room 1h, Inventory 1h, testing 2h)
+
+— decided by Hill (from Encapsulation Audit findings)

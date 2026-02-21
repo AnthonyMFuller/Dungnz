@@ -113,6 +113,15 @@ public class GameLoop
                 case CommandType.Help:
                     _display.ShowHelp();
                     break;
+                case CommandType.Save:
+                    HandleSave(cmd.Argument);
+                    break;
+                case CommandType.Load:
+                    HandleLoad(cmd.Argument);
+                    break;
+                case CommandType.ListSaves:
+                    HandleListSaves();
+                    break;
                 case CommandType.Quit:
                     _display.ShowMessage("Thanks for playing!");
                     return;
@@ -451,6 +460,44 @@ public class GameLoop
         }
     }
 
+    private void HandleSave(string saveName)
+    {
+        if (string.IsNullOrWhiteSpace(saveName))
+        {
+            _display.ShowError("Save as what? Usage: SAVE <name>");
+            return;
+        }
+        SaveSystem.SaveGame(new GameState(_player, _currentRoom), saveName);
+        _display.ShowMessage($"Game saved as '{saveName}'.");
+    }
+
+    private void HandleLoad(string saveName)
+    {
+        if (string.IsNullOrWhiteSpace(saveName))
+        {
+            _display.ShowError("Load which save? Usage: LOAD <name>");
+            return;
+        }
+        var state = SaveSystem.LoadGame(saveName);
+        _player = state.Player;
+        _currentRoom = state.CurrentRoom;
+        _display.ShowMessage($"Loaded save '{saveName}'.");
+        _display.ShowRoom(_currentRoom);
+    }
+
+    private void HandleListSaves()
+    {
+        var saves = SaveSystem.ListSaves();
+        if (saves.Length == 0)
+        {
+            _display.ShowMessage("No saved games found.");
+            return;
+        }
+        _display.ShowMessage("=== Saved Games ===");
+        foreach (var s in saves)
+            _display.ShowMessage($"  {s}");
+    }
+
     private void HandleDescend()
     {
         if (!_currentRoom.IsExit || _currentRoom.Enemy != null)
@@ -463,7 +510,8 @@ public class GameLoop
         _display.ShowMessage($"You descend deeper into the dungeon... Floor {_currentFloor}");
 
         float floorMult = 1.0f + (_currentFloor - 1) * 0.5f;
-        var gen = new DungeonGenerator(_seed);
+        var floorSeed = _seed.HasValue ? _seed.Value + _currentFloor : (int?)null;
+        var gen = new DungeonGenerator(floorSeed);
         var (newStart, _) = gen.Generate(floorMultiplier: floorMult);
         _currentRoom = newStart;
         _currentRoom.Visited = true;

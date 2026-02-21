@@ -19,6 +19,7 @@ else
     display.ShowMessage($"Using seed: {actualSeed}");
 
 var player = new Player { Name = name };
+EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
 var generator = new DungeonGenerator(actualSeed);
 var (startRoom, _) = generator.Generate();
 

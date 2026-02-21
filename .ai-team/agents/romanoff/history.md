@@ -215,3 +215,99 @@
 
 **Files written:**
 - `.ai-team/decisions/inbox/romanoff-v3-planning.md` — test strategy recommendations
+
+### 2026-02-20: Systems/ Pre-v3 Bug Hunt — 7 Bugs Identified
+
+**Scope:** SaveSystem, AchievementSystem, RunStats, config loaders — persistence layer review for state corruption, double-unlock, unset fields, and loading failures.
+
+**Review Method:**
+- Static code analysis (no test execution)
+- LINQ usage audit (SaveSystem.ListSaves sort order)
+- Data flow tracing (RunStats field updates)
+- Deserialization safety audit (SaveSystem validation, Player state bounds)
+- Edge case analysis (status effects on dead entities, config directory missing)
+
+**Bugs Found (6 valid, 1 retracted):**
+
+**Critical:**
+1. **SaveSystem.ListSaves() — OrderByDescending Sort Bug** (SaveSystem.cs:146)
+   - `OrderByDescending(File.GetLastWriteTime)` sorts filename strings, not timestamps
+   - Impact: Save file list mis-sorted if filenames don't match write-time order alphabetically
+   - Fix: Apply `OrderByDescending` to full paths, not filenames
+
+2. **RunStats.DamageDealt/DamageTaken Never Updated** (RunStats.cs:18,21 + CombatEngine.cs)
+   - Fields declared but never incremented during combat
+   - Impact: "Untouchable" achievement always unlocks (DamageTaken defaults to 0), stat display broken
+   - Fix: Inject RunStats into CombatEngine, track damage in PerformPlayerAttack/PerformEnemyTurn
+
+**High:**
+3. **SaveSystem.LoadGame() — No Player State Validation** (SaveSystem.cs:79-132)
+   - Deserialized Player bypasses encapsulation: HP > MaxHP, negative stats, Level < 1 all allowed
+   - Impact: Save corruption/exploit editing breaks combat math, achievement integrity
+   - Fix: Validate HP <= MaxHP, stats > 0, Level >= 1 after deserialization
+
+**Medium:**
+4. **ItemConfig/EnemyConfig.Load() — No Directory Handling** (ItemConfig.cs:64, EnemyConfig.cs:55)
+   - Check `File.Exists()` but don't handle missing parent directory
+   - Impact: `DirectoryNotFoundException` instead of clearer `FileNotFoundException` if Data/ missing
+   - Fix: Improve error message to mention directory requirement
+
+5. **StatusEffectManager.ProcessTurnStart() — No Dead Entity Check** (StatusEffectManager.cs:46-79)
+   - Applies status effects to entities with HP <= 0, shows "effect wore off" on corpses
+   - Impact: Cosmetic bug (death messages on dead entities); potential logic error if called post-death
+   - Fix: Guard clause to skip processing if target HP <= 0
+
+**Low:**
+6. **SaveSystem — Redundant .ToList() on Items** (SaveSystem.cs:105)
+   - `Items = roomData.Items.ToList()` creates defensive copy when Items is already a List<Item>
+   - Impact: None (defensive copy is actually good practice); micro-optimization opportunity only
+   - Fix: None required; defensive copy prevents shared-reference bugs
+
+**Retracted:**
+- **AchievementSystem.Evaluate() Double-Unlock** — False alarm. `LoadUnlocked() + savedNames.Contains()` correctly prevents double-unlocking. No bug exists.
+
+**Critical Patterns Identified:**
+
+1. **LINQ Ordering Anti-Pattern:** `collection.OrderByDescending(File.GetLastWriteTime)` when `collection` is strings, not paths. Must pass full path to lambda for file-based sorts.
+
+2. **Deserialization Trust Violation:** Loading JSON directly into domain models without validation bypasses encapsulation. Always validate external data:
+   - Bounds checks (HP <= MaxHP)
+   - Positive constraints (Level >= 1, MaxHP > 0)
+   - Logical invariants (Mana <= MaxMana)
+
+3. **Event-Driven Stat Tracking Gap:** RunStats fields exist but no event hooks to populate them. GameLoop → CombatEngine → RunStats dependency chain broken. Options:
+   - **Dependency Injection:** Pass RunStats to CombatEngine (invasive but correct)
+   - **Event Subscription:** GameLoop subscribes to damage events (looser coupling, harder to test)
+   - **Post-Combat Aggregation:** CombatEngine returns damage summary (requires API change)
+
+4. **Status Effect Lifecycle Management:** StatusEffectManager doesn't check entity liveness before applying effects. Defensive pattern: guard clause at method entry (`if (HP <= 0) return`).
+
+5. **Config Loader Error Handling:** ItemConfig/EnemyConfig don't match SaveSystem's defensive directory handling. SaveSystem creates missing directories; config loaders assume they exist. Inconsistent error UX.
+
+**Blocking Issues for v3:**
+- **BUG-4 (RunStats tracking):** Blocks achievement system integrity — "Untouchable" exploit renders achievement meaningless
+- **BUG-2 (SaveSystem validation):** Blocks safe save/load — corruption or exploit editing breaks game state
+- **BUG-1 (ListSaves sort):** Blocks quality-of-life — "most recent save" UI misleading
+
+**Test Coverage Gaps Exposed:**
+- No SaveSystem round-trip validation tests (corrupt JSON → InvalidDataException)
+- No RunStats integration tests (combat → verify damage counters incremented)
+- No SaveSystem.ListSaves() temporal ordering tests
+- No StatusEffectManager death-check tests (poison damage on 1 HP entity)
+- No config loader error message tests (missing directory vs missing file)
+
+**Files Written:**
+- `.ai-team/decisions/inbox/romanoff-systems-bugs.md` — comprehensive bug report with severity, reproduction, fix recommendations
+
+**Key File Paths (Systems/):**
+- `SaveSystem.cs` — JSON save/load, room graph serialization, LINQ sort bug
+- `AchievementSystem.cs` — Achievement unlock logic (CORRECT, no bugs found)
+- `RunStats.cs` — Stat tracking fields (DamageDealt/Taken never updated)
+- `ItemConfig.cs`, `EnemyConfig.cs` — Config loaders (directory handling weak)
+- `StatusEffectManager.cs` — Status effect tick processing (no dead-entity guard)
+- `GameEvents.cs` — Event hub (no events for damage tracking)
+
+**Architecture Observation:**
+- **Persistence Layer Weak Points:** SaveSystem has no validation layer; trusts deserialized data implicitly. Missing "hydration validation" step between JSON → Model.
+- **Telemetry Gap:** RunStats declared as data DTO but no instrumentation to populate it. Event-driven architecture (GameEvents) exists but underutilized for analytics.
+- **Config vs Save Asymmetry:** SaveSystem defensively creates directories; config loaders assume existence. Inconsistent defensive coding standards.

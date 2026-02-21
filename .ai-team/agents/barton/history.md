@@ -305,3 +305,76 @@
 - How do Merchant prices scale with player level? (Linear? Exponential?)
 
 **File Created:** `.ai-team/decisions/inbox/barton-v3-planning.md` — comprehensive roadmap with wave timing, dependencies, and testing strategy.
+
+### 2026-02-20: Pre-v3 Bug Hunt - Combat System Review
+
+**Context:** Requested by Copilot to review Engine/ and Systems/Enemies/ for combat logic bugs before v3 development begins.
+
+**Scope:** CombatEngine.cs, EnemyFactory.cs, DungeonGenerator.cs, StatusEffectManager.cs, all enemy implementations, boss Phase 2 mechanics, status effect interactions.
+
+**Bugs Found:** 14 total (2 Critical, 3 High, 6 Medium, 3 Low)
+
+**Critical Bugs:**
+1. **Status effect stat modifiers never applied** (CombatEngine.cs:248,294) — `GetStatModifier()` implemented but NEVER CALLED in damage calculations. Fortified/Weakened have zero gameplay impact. Fix: Integrate `_statusEffects.GetStatModifier(target, "Attack"|"Defense")` into damage formulas.
+
+2. **Poison-on-hit mechanic inverted** (CombatEngine.cs:259-260) — GoblinShaman's poison triggers when PLAYER attacks Shaman, not when Shaman hits player. Player poisons themselves. Fix: Move logic from PerformPlayerAttack() to PerformEnemyTurn() after enemy damage dealt.
+
+**High-Severity Bugs:**
+3. **Half enemy roster inaccessible** (DungeonGenerator.cs:114) — Generator only spawns 4 of 9 enemy types (Goblin, Skeleton, Troll, DarkKnight). GoblinShaman, StoneGolem, Wraith, VampireLord, Mimic never appear. Fix: Update enemy type array or use EnemyFactory.CreateRandom().
+
+4. **Stun double-handling fragility** (StatusEffectManager.cs:67-69, CombatEngine.cs:108-114) — Stun logic split between StatusEffectManager (displays message) and CombatEngine (enforces skip). Unclear responsibility. Fix: Remove stun message from ProcessTurnStart(), let CombatEngine own skip logic.
+
+5. **Boss enrage multiplier compounds if status cleared** (DungeonBoss.cs:98) — Enrage multiplies current Attack, not base Attack. If boss heals above 40% or IsEnraged flag resets, re-enrage applies 1.5x to already-enraged value (2.25x total). Fix: Store base attack, always calculate enrage from base.
+
+**Medium-Severity Bugs:**
+6. **Boss charge flag sticks if player dodges** (CombatEngine.cs:296-302) — ChargeActive reset only happens if attack lands. If player dodges charged attack, ChargeActive stays true, all future attacks deal 3x damage. Fix: Reset ChargeActive BEFORE dodge check.
+
+7. **Boss enrage delayed to next turn** (CombatEngine.cs:91-97) — CheckEnrage() called at turn start, not after damage dealt. Burst damage can drop boss below 40% without triggering enrage until next turn. Fix: Move CheckEnrage() to PerformPlayerAttack() immediately after damage.
+
+8. **Boss telegraph gives free turn** (CombatEngine.cs:281-286) — Charge telegraph turn: boss doesn't attack, player gets mana/cooldowns/status ticks. Unclear if intentional counterplay window or bug. Fix: Either remove return (boss attacks AND telegraphs) or move telegraph before turn processing.
+
+9. **Mimic ambush bypasses turn processing** (CombatEngine.cs:74-80) — Ambush executes before main loop, skips status ticks/mana regen on turn 1. Fix: Move ambush into main loop after turn processing.
+
+10. **Elite multiplier stacking risk** (EnemyFactory.cs:67-71) — Elite 1.5x applied in CreateRandom() after config stats loaded. If caller chains CreateRandom() → CreateScaled(), multipliers stack. Fix: Pass isElite flag to CreateScaled(), integrate into scalar.
+
+11. **Poison-on-hit wrong immunity check** (CombatEngine.cs:259) — Checks enemy.IsImmuneToEffects when applying poison to player. Symptom of Bug #2.
+
+**Low-Severity Issues:**
+12. **Crit chance documentation mismatch** (CombatEngine.cs:366) — Code implements 15% crit, docs say 20%. Unclear if intentional balance change.
+
+13. **PathExists() dead code** (DungeonGenerator.cs:156-160) — Full grid always connected, check always returns true. Safety net for future partial grids or should be removed.
+
+14. **Rectangular grid limitation** (DungeonGenerator.cs:80-102) — Generator creates only full grids, no layout variety. Not a bug, flagged for v3 planning.
+
+**Key Learnings:**
+- Status effect integration incomplete — modifiers calculated but never consumed
+- GoblinShaman enemy design completely broken (poison-on-hit inverted)
+- Boss mechanics fragile — enrage/charge/telegraph have edge cases
+- Enemy spawning ignores 5 of 9 types — half the v2 content inaccessible
+- Timing issues with ambush, enrage checks, and status processing
+
+**Files Analyzed:**
+- Engine/CombatEngine.cs (389 lines) — damage formulas, boss mechanics, status ticks, turn structure
+- Engine/EnemyFactory.cs (164 lines) — enemy creation, scaling, elite variants
+- Engine/DungeonGenerator.cs (225 lines) — room generation, enemy spawning, connectivity
+- Systems/StatusEffectManager.cs (131 lines) — effect application, turn processing, stat modifiers
+- Systems/Enemies/*.cs (10 enemy types) — GoblinShaman poison, DungeonBoss enrage/charge, Mimic ambush
+
+**Report Location:** `.ai-team/agents/barton/bug-report-v3-pre-release.md`
+
+**Recommended Fix Priority:**
+1. Bug #1 (stat modifiers) — blocks status effect gameplay
+2. Bug #2 (poison-on-hit) — breaks GoblinShaman design
+3. Bug #3 (enemy spawning) — half the roster inaccessible
+4. Bug #4 (stun coupling) — fragile architecture
+5. Bug #6 (charge sticking) — boss becomes unkillable
+6. Rest are medium/low priority polish issues
+
+**Testing Strategy Post-Fix:**
+- Verify all 6 status effects (Poison, Bleed, Stun, Regen, Fortified, Weakened) with GetStatModifier() integration
+- Test GoblinShaman poison applies when Shaman hits player, not player hitting Shaman
+- Verify all 9 enemy types spawn in dungeons (not just original 4)
+- Test boss enrage triggers immediately at 40% HP threshold, not delayed
+- Test boss charge sequence: telegraph → charge → reset, with dodge cases
+- Test Mimic ambush with pre-existing status effects from previous fights
+- Test elite variants spawn via both CreateRandom() and CreateScaled() without double-scaling

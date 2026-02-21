@@ -201,7 +201,8 @@ encapsulation, domain-model, validation, oop, c#, state-management
 ## Updated: 2026-02-20 — Full Player Implementation with Event Pattern
 
 **Confidence:** high (validated through production implementation in Dungnz)  
-**Implementation:** Models/Player.cs (PR #26)
+**Implementation:** Models/Player.cs (PR #26)  
+**Updated:** 2026-02-20 — Bug audit revealed inconsistent application: Player strong, Enemy/Room weak
 
 ### Complete Implementation Example
 
@@ -348,3 +349,48 @@ _display.ShowMessage($"LEVEL UP! You are now level {player.Level}!");
 - **Achievements:** Detect "defeat boss at 1 HP" via events
 - **Save/Load:** All state changes go through validated methods
 - **UI Updates:** Health bar reactively updates from event
+
+## Updated: 2026-02-20 — Inconsistent Application Identified
+
+**Context:** Pre-v3 bug audit revealed partial pattern adoption across codebase.
+
+### Pattern Adoption Status
+
+**Player Model (COMPLETE):**
+- ✅ Private setters on all stats
+- ✅ Validation methods (TakeDamage, Heal, ModifyAttack, ModifyDefense, LevelUp)
+- ✅ Event-driven (OnHealthChanged)
+- ✅ Guards (Math.Clamp, ArgumentException)
+
+**Enemy Model (INCOMPLETE):**
+- ❌ Public setters on HP, Attack, Defense, MaxHP
+- ❌ Direct HP mutations in 5+ locations (CombatEngine:255, AbilityManager:143, StatusEffectManager:57/61/65)
+- ❌ No TakeDamage/Heal methods, no validation, allows negative HP
+- ❌ IsElite/IsAmbush public setters enable runtime exploits
+
+**Room Model (INCOMPLETE):**
+- ❌ Public setters on Visited, Looted, ShrineUsed
+- ❌ Direct property mutations (6+ call sites in GameLoop)
+- ❌ No encapsulation methods (MarkVisited, MarkLooted)
+
+**Inventory (HYBRID):**
+- ⚠️ List<Item> with private setter BUT external code calls .Add/.Remove directly
+- ⚠️ Bypasses future validation (weight, capacity, quest triggers)
+
+### Lessons from Inconsistent Application
+
+1. **Partial adoption creates confusion:** New contributors see Player pattern but Enemy allows direct mutation.
+2. **Refactoring cost compounds:** Adding Enemy.TakeDamage now requires migrating 5+ call sites.
+3. **Missed event opportunities:** No Enemy.OnDeath, Room.OnVisited events for analytics/achievements.
+4. **Validation gaps persist:** Enemy allows negative HP, Room allows visited=false after entry.
+
+### Recommendation: Standardize Universally
+
+Apply Player pattern to ALL domain models before v3:
+1. Enemy.TakeDamage(int amount) — Replace 5+ direct HP mutations
+2. Room.MarkVisited() / MarkLooted() — Replace direct setters
+3. Player.AddItem(Item) / RemoveItem(Item) — Replace Inventory.Add/Remove
+4. IsElite/IsAmbush as init-only — Prevent runtime mutation
+
+**Effort:** 4-6 hours (Enemy 2h, Room 1h, Inventory 1h, testing 2h)  
+**Impact:** Enables v3 class/trait systems, equipment sets, elite variants

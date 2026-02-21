@@ -168,12 +168,18 @@ public class CombatEngine : ICombatEngine
                 PerformEnemyTurn(player, enemy);
                 if (player.HP <= 0) return CombatResult.PlayerDied;
             }
+            else
+            {
+                _display.ShowError("Invalid choice. [A]ttack, [B]ability, or [F]lee.");
+                PerformEnemyTurn(player, enemy);
+                if (player.HP <= 0) return CombatResult.PlayerDied;
+            }
         }
     }
     
     private void ShowCombatMenu(Player player)
     {
-        _display.ShowMessage("[A]ttack [B]ability [I]tem [F]lee");
+        _display.ShowMessage("[A]ttack [B]ability [F]lee");
         var unlockedAbilities = _abilities.GetUnlockedAbilities(player);
         if (unlockedAbilities.Any())
         {
@@ -254,10 +260,6 @@ public class CombatEngine : ICombatEngine
             }
             enemy.HP -= playerDmg;
             _display.ShowCombatMessage($"You hit {enemy.Name} for {playerDmg} damage!");
-
-            // Poison on hit (e.g. Goblin Shaman)
-            if (enemy.AppliesPoisonOnHit && !enemy.IsImmuneToEffects)
-                _statusEffects.Apply(player, StatusEffect.Poison, 3);
         }
     }
     
@@ -310,6 +312,10 @@ public class CombatEngine : ICombatEngine
             player.TakeDamage(enemyDmg);
             _display.ShowCombatMessage($"{enemy.Name} hits you for {enemyDmg} damage!");
 
+            // Poison on hit (e.g. Goblin Shaman poisons the player when it lands a hit)
+            if (enemy.AppliesPoisonOnHit)
+                _statusEffects.Apply(player, StatusEffect.Poison, 3);
+
             // Lifesteal (e.g. Vampire Lord)
             if (enemy.LifestealPercent > 0)
             {
@@ -347,8 +353,7 @@ public class CombatEngine : ICombatEngine
     
     private void CheckLevelUp(Player player)
     {
-        var newLevel = player.XP / 100 + 1;
-        if (newLevel > player.Level)
+        while (player.XP / 100 + 1 > player.Level)
         {
             player.LevelUp();
             _display.ShowMessage($"LEVEL UP! You are now level {player.Level}!");

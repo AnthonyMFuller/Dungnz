@@ -383,3 +383,71 @@
 5. **Design review ceremonies pay off:** Pre-planning prevents rework more than code review post-facto.
 
 **Outcome:** v3 roadmap documented in `.ai-team/decisions/inbox/coulson-v3-planning.md`. Ready for team approval and Wave 1 design review ceremony kickoff.
+
+---
+
+## 2026-02-20: Pre-v3 Architecture Bug Hunt
+
+**Facilitator:** Coulson  
+**Context:** Pre-v3 comprehensive architecture review requested by Copilot — identify integration bugs, missing null checks, unhandled states across GameLoop ↔ CombatEngine ↔ Player ↔ SaveSystem ↔ StatusEffectManager.
+
+### Review Scope
+- **Files Reviewed:** GameLoop.cs, CombatEngine.cs, Player.cs, SaveSystem.cs, StatusEffectManager.cs, DungeonBoss.cs, EnemyFactory.cs, DungeonGenerator.cs, AbilityManager.cs, LootTable.cs, Room.cs, Enemy.cs, Item.cs, Program.cs
+- **Focus Areas:** Null safety, state integrity, save/load roundtrips, status effect integration, boss mechanics, multi-floor progression
+
+### Critical Bugs (3)
+1. **Bug #2: Boss enrage compounds on modified Attack** — DungeonBoss.cs:98 multiplies Attack by 1.5 each time CheckEnrage runs; if boss HP drops below 40% multiple times (e.g., after healing), Attack compounds exponentially. Fix: Store _baseAttack and always calculate as (int)(_baseAttack * 1.5).
+2. **Bug #3: Boss enrage state lost on save/load** — IsEnraged flag not serialized; after load, boss has enraged Attack value but IsEnraged=false, breaking future CheckEnrage logic. Fix: SaveSystem must serialize DungeonBoss state OR CheckEnrage must detect prior enrage (Attack != _baseAttack).
+3. **Bug #6: EnemyFactory.Initialize never called** — Program.cs creates DungeonGenerator without initializing EnemyFactory config; all enemies use fallback hard-coded stats instead of Data/enemies.json. Fix: Add EnemyFactory.Initialize() before line 22.
+
+### High Severity (4)
+4. **Bug #1: Boss enrage timing issue** — CheckEnrage called at turn start (line 92) before damage dealt; boss attacks at pre-enraged value the turn threshold is crossed. Fix: Add second CheckEnrage call after player attack (line 168).
+5. **Bug #4: StatusEffect stat modifiers never applied** — StatusEffectManager.GetStatModifier calculates Weakened/Fortified bonuses but CombatEngine never calls it; buffs/debuffs have no combat effect. Fix: Integrate GetStatModifier at damage calculation points (lines 248, 289, 310).
+6. **Bug #11: SaveSystem missing current floor** — GameState lacks _currentFloor; player saves on Floor 3, loads as Floor 1 with Floor 3 enemy scaling (mismatch). Fix: Add CurrentFloor to SaveData.
+7. **Bug #12: Shrine blessing permanent not temporary** — GameLoop line 508 applies +2 ATK/DEF via ModifyAttack/ModifyDefense with no expiration; blessing described as "5 rooms" but lasts forever. Fix: Implement StatusEffect.Blessed OR room counter in Player.
+
+### Medium Severity (5)
+8. **Bug #5: Boss charge race condition** — IsCharging set to true on charge warning turn; next turn sets ChargeActive=true but does not clear IsCharging; if random roll triggers charge again, both flags true. Fix: Clear IsCharging after setting ChargeActive.
+9. **Bug #7: GameLoop null checks missing** — Run(player, startRoom) accepts nulls; _player/startRoom assigned without validation; NullReferenceException on line 71. Fix: Add ArgumentNullException guards.
+10. **Bug #8: Stun message shown twice** — CombatEngine shows "cannot act" when Stun checked (line 108); ProcessTurnStart also shows "stunned" message (line 68); duplicate output. Fix: Remove Stun case from ProcessTurnStart.
+11. **Bug #9: Multi-floor uses same seed** — HandleDescend creates new DungeonGenerator(_seed) with identical seed; all floors have same layout. Fix: Vary seed per floor (_seed + _currentFloor).
+12. **Bug #13: StatusEffect Weakened calculates from modified stats** — Weakened penalty calculated as 50% of current Attack (including equipment); unequipping weapon breaks math. Fix: Track base stats separately OR store original modifier when effect applied.
+
+### Low Severity (3)
+13. **Bug #10: AbilityManager cooldown underflow** — TickCooldowns decrements cooldowns without floor check; cooldown can become negative (harmless but incorrect state). Fix: Clamp to 0.
+14. **Bug #14: Room.Looted dead code** — Property exists but never set or checked anywhere in codebase. Fix: Remove OR implement.
+15. **Bug #15: Player.OnHealthChanged unused** — Event defined and fired but no subscribers. Fix: Remove OR document as future-use.
+16. **Bug #16: LootTable static item pools** — Tier item pools are static List<Item>; if item mutated after drop, affects all future drops (unlikely but possible). Fix: Clone items on drop.
+
+### Architecture Patterns Identified
+- **Missing Integration:** StatusEffectManager and CombatEngine loosely coupled; stat modifiers calculated but never consumed.
+- **State Integrity Risk:** DungeonBoss mutable state (_baseAttack, IsEnraged, IsCharging) not persisted through save/load; boss mechanics fragile.
+- **Incomplete Abstractions:** Player.ModifyAttack/ModifyDefense used for both permanent (equipment) and temporary (shrine) modifications without tracking duration.
+- **Seed Determinism Broken:** Multi-floor progression creates new DungeonGenerator instances with same seed; identical layouts undermine replay value.
+
+### Key File Interactions
+- **CombatEngine → StatusEffectManager:** Missing GetStatModifier calls break Weakened/Fortified effects.
+- **GameLoop → SaveSystem → DungeonBoss:** Boss state (IsEnraged, _baseAttack) not serialized; save/load corrupts boss encounters.
+- **Program.cs → EnemyFactory:** Initialization never called; config system unused in production.
+- **GameLoop → DungeonGenerator:** Seed reuse on HandleDescend creates duplicate floors.
+
+### Recommendations for v3
+1. **Pre-Wave 1:** Fix Critical bugs (#2, #3, #6) and High severity bugs (#1, #4, #11, #12) before refactoring Player.cs.
+2. **SaveSystem Versioning:** Add SaveFormatVersion field to detect schema changes; migrate IsEnraged and CurrentFloor fields.
+3. **StatusEffect Integration:** Complete StatusEffectManager ↔ CombatEngine integration; add integration tests for buff/debuff scenarios.
+4. **Boss Mechanics Hardening:** DungeonBoss needs immutable base stats + serializable phase flags; consider extracting to BossPhaseManager.
+5. **Player Stat Tracking:** Separate base stats (Level-derived) from modified stats (Equipment + Buffs) to support temporary effects correctly.
+
+**Outcome:** 16 bugs identified and documented. Critical path blockers (#2, #3, #6) must be resolved before v3 Wave 1. Integration bugs (#4, #5, #8) indicate StatusEffectManager and boss mechanics need hardening.
+
+### 2026-02-20: Pre-v3 Bug Hunt Session
+
+📌 **Team update (2026-02-20):** Comprehensive pre-v3 bug hunt identified 47 critical issues across architecture, data integrity, combat logic, and persistence. Team findings:
+- **Coulson:** 16 integration & state integrity bugs (boss mechanics, status effects, save/load, initialization)
+- **Hill:** Encapsulation audit revealing inconsistent patterns (Player strong, Enemy/Room weak)
+- **Barton:** 14 combat system bugs (status modifiers, poison logic, enemy spawning, boss mechanics)
+- **Romanoff:** 7 systems bugs (SaveSystem validation, RunStats tracking, config loading, status effects on dead entities)
+
+**Critical blockers (must fix before v3 Wave 1):** EnemyFactory initialization, boss enrage compounding, boss state persistence, status modifier integration, damage tracking, SaveSystem validation.
+
+— decided by Coulson, Hill, Barton, Romanoff
