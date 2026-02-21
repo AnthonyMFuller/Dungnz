@@ -114,7 +114,7 @@ public class DungeonGenerator
         exitRoom.Description = "A grand chamber with ornate pillars and a massive stone door leading to freedom.";
 
         // Place boss in exit room
-        exitRoom.Enemy = EnemyFactory.CreateScaled("dungeonboss", playerLevel, effectiveMult);
+        exitRoom.Enemy = EnemyFactory.CreateBoss(_rng);
 
         // Place enemies in ~60% of non-start, non-exit rooms
         var enemyTypes = new[] { "goblin", "skeleton", "troll", "darkknight", "goblinshaman", "stonegolem", "wraith", "vampirelord", "mimic" };
@@ -124,7 +124,9 @@ public class DungeonGenerator
             {
                 var room = grid[y, x];
                 if (room == startRoom || room == exitRoom) continue;
-                
+
+                room.Type = (RoomType)_rng.Next(6);
+
                 if (_rng.NextDouble() < 0.6)
                 {
                     var enemyType = enemyTypes[_rng.Next(enemyTypes.Length)];

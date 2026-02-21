@@ -54,10 +54,10 @@ public class DungeonGeneratorTests
     {
         var gen = new DungeonGenerator(seed: 1);
         var (start, exit) = gen.Generate();
-        exit.Enemy.Should().BeOfType<DungeonBoss>();
+        exit.Enemy.Should().BeAssignableTo<DungeonBoss>();
         // Start room either has no enemy or has a non-boss enemy
         if (start.Enemy != null)
-            start.Enemy.Should().NotBeOfType<DungeonBoss>();
+            start.Enemy.Should().NotBeAssignableTo<DungeonBoss>();
     }
 
     [Fact]

@@ -30,7 +30,7 @@ public class EnemyFactoryTests
     {
         var rng = new Random(1);
         var boss = EnemyFactory.CreateBoss(rng);
-        boss.Should().BeOfType<DungeonBoss>();
+        boss.Should().BeAssignableTo<DungeonBoss>();
     }
 
     [Fact]

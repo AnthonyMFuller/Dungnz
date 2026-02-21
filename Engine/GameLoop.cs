@@ -25,6 +25,7 @@ public class GameLoop
     private RunStats _stats = null!;
     private DateTime _runStart;
     private readonly AchievementSystem _achievements = new();
+    private readonly EquipmentManager _equipment;
     private int _currentFloor = 1;
 
     /// <summary>
@@ -56,6 +57,7 @@ public class GameLoop
         _events = events;
         _seed = seed;
         _difficulty = difficulty ?? DifficultySettings.For(Difficulty.Normal);
+        _equipment = new EquipmentManager(display);
     }
 
     /// <summary>
@@ -109,13 +111,13 @@ public class GameLoop
                     _display.ShowPlayerStats(_player);
                     break;
                 case CommandType.Equip:
-                    HandleEquip(cmd.Argument);
+                    _equipment.HandleEquip(_player, cmd.Argument);
                     break;
                 case CommandType.Unequip:
-                    HandleUnequip(cmd.Argument);
+                    _equipment.HandleUnequip(_player, cmd.Argument);
                     break;
                 case CommandType.Equipment:
-                    HandleShowEquipment();
+                    _equipment.ShowEquipment(_player);
                     break;
                 case CommandType.Help:
                     _display.ShowHelp();
@@ -373,102 +375,6 @@ public class GameLoop
             default:
                 _display.ShowError($"You can't use {item.Name}.");
                 break;
-        }
-    }
-
-    private void HandleEquip(string itemName)
-    {
-        if (string.IsNullOrWhiteSpace(itemName))
-        {
-            _display.ShowError("Equip what? Specify an item name.");
-            return;
-        }
-
-        var itemNameLower = itemName.ToLowerInvariant();
-        var item = _player.Inventory.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(itemNameLower));
-
-        if (item == null)
-        {
-            _display.ShowError($"You don't have '{itemName}' in your inventory.");
-            return;
-        }
-
-        if (!item.IsEquippable)
-        {
-            _display.ShowError($"{item.Name} cannot be equipped.");
-            return;
-        }
-
-        try
-        {
-            _player.EquipItem(item);
-            _display.ShowMessage($"You equip {item.Name}. Attack: {_player.Attack}, Defense: {_player.Defense}");
-        }
-        catch (ArgumentException ex)
-        {
-            _display.ShowError(ex.Message);
-        }
-    }
-
-    private void HandleUnequip(string slotName)
-    {
-        if (string.IsNullOrWhiteSpace(slotName))
-        {
-            _display.ShowError("Unequip what? Specify WEAPON, ARMOR, or ACCESSORY.");
-            return;
-        }
-
-        try
-        {
-            var item = _player.UnequipItem(slotName);
-            _display.ShowMessage($"You unequip {item!.Name} and return it to your inventory.");
-        }
-        catch (InvalidOperationException ex)
-        {
-            _display.ShowError(ex.Message);
-        }
-        catch (ArgumentException ex)
-        {
-            _display.ShowError(ex.Message);
-        }
-    }
-
-    private void HandleShowEquipment()
-    {
-        _display.ShowMessage("=== EQUIPMENT ===");
-        
-        if (_player.EquippedWeapon != null)
-        {
-            var w = _player.EquippedWeapon;
-            _display.ShowMessage($"Weapon: {w.Name} (Attack +{w.AttackBonus})");
-        }
-        else
-        {
-            _display.ShowMessage("Weapon: (empty)");
-        }
-
-        if (_player.EquippedArmor != null)
-        {
-            var a = _player.EquippedArmor;
-            _display.ShowMessage($"Armor: {a.Name} (Defense +{a.DefenseBonus})");
-        }
-        else
-        {
-            _display.ShowMessage("Armor: (empty)");
-        }
-
-        if (_player.EquippedAccessory != null)
-        {
-            var acc = _player.EquippedAccessory;
-            var stats = new List<string>();
-            if (acc.AttackBonus != 0) stats.Add($"Attack +{acc.AttackBonus}");
-            if (acc.DefenseBonus != 0) stats.Add($"Defense +{acc.DefenseBonus}");
-            if (acc.StatModifier != 0) stats.Add($"HP +{acc.StatModifier}");
-            _display.ShowMessage($"Accessory: {acc.Name} ({string.Join(", ", stats)})");
-        }
-        else
-        {
-            _display.ShowMessage("Accessory: (empty)");
         }
     }
 
