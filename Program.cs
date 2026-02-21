@@ -40,9 +40,9 @@ display.ShowMessage($"Difficulty: {chosenDifficulty}");
 
 // Class selection
 display.ShowMessage("Choose your class:");
-display.ShowMessage("[1] Warrior - High HP and defense. Slow mana.");
-display.ShowMessage("[2] Mage - High mana and powerful spells. Low HP.");
-display.ShowMessage("[3] Rogue - Balanced. Extra dodge chance.");
+display.ShowMessage("[1] Warrior - High HP, defense, and attack bonus. Reduced mana.");
+display.ShowMessage("[2] Mage - High mana and powerful spells. Reduced HP and defense.");
+display.ShowMessage("[3] Rogue - Balanced with an attack bonus. Extra dodge chance.");
 display.ShowCommandPrompt();
 var classInput = Console.ReadLine()?.Trim() ?? "";
 var chosenClassDef = classInput switch

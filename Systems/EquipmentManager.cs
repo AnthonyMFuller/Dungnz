@@ -87,7 +87,11 @@ public class EquipmentManager
         if (player.EquippedWeapon != null)
         {
             var w = player.EquippedWeapon;
-            _display.ShowMessage($"Weapon: {w.Name} (Attack +{w.AttackBonus})");
+            var wStats = new System.Collections.Generic.List<string> { $"Attack +{w.AttackBonus}" };
+            if (w.DodgeBonus > 0) wStats.Add($"+{w.DodgeBonus:P0} dodge");
+            if (w.PoisonImmunity) wStats.Add("poison immune");
+            if (w.MaxManaBonus > 0) wStats.Add($"+{w.MaxManaBonus} max mana");
+            _display.ShowMessage($"Weapon: {w.Name} ({string.Join(", ", wStats)})");
         }
         else
         {
@@ -97,7 +101,11 @@ public class EquipmentManager
         if (player.EquippedArmor != null)
         {
             var a = player.EquippedArmor;
-            _display.ShowMessage($"Armor: {a.Name} (Defense +{a.DefenseBonus})");
+            var aStats = new System.Collections.Generic.List<string> { $"Defense +{a.DefenseBonus}" };
+            if (a.DodgeBonus > 0) aStats.Add($"+{a.DodgeBonus:P0} dodge");
+            if (a.PoisonImmunity) aStats.Add("poison immune");
+            if (a.MaxManaBonus > 0) aStats.Add($"+{a.MaxManaBonus} max mana");
+            _display.ShowMessage($"Armor: {a.Name} ({string.Join(", ", aStats)})");
         }
         else
         {
@@ -111,6 +119,9 @@ public class EquipmentManager
             if (acc.AttackBonus != 0) stats.Add($"Attack +{acc.AttackBonus}");
             if (acc.DefenseBonus != 0) stats.Add($"Defense +{acc.DefenseBonus}");
             if (acc.StatModifier != 0) stats.Add($"HP +{acc.StatModifier}");
+            if (acc.DodgeBonus > 0) stats.Add($"+{acc.DodgeBonus:P0} dodge");
+            if (acc.PoisonImmunity) stats.Add("poison immune");
+            if (acc.MaxManaBonus > 0) stats.Add($"+{acc.MaxManaBonus} max mana");
             _display.ShowMessage($"Accessory: {acc.Name} ({string.Join(", ", stats)})");
         }
         else

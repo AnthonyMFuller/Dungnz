@@ -14,7 +14,7 @@ public class PrestigeData
 public static class PrestigeSystem
 {
     private static readonly string SavePath = Path.Combine(
-        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Dungnz", "prestige.json");
 
     public static PrestigeData Load()
