@@ -210,3 +210,98 @@
 - Combat loop could be further refactored to extract ability/item menu logic into separate classes
 - Ability costs/cooldowns could be moved to JSON config for easier balance tuning
 - Consider adding ability descriptions to combat menu (currently only shown in submenu)
+
+### 2026-02-20: v3 Planning Session — Systems Gap Analysis
+
+**Context:** v2 complete. Conducting v3 roadmap planning from systems perspective to identify combat/dungeon depth expansions.
+
+**v2 Achievements:**
+- Stable combat engine with RNG (crits 20%, dodge DEF-based)
+- Status effects system with 6 core types (Poison, Bleed, Stun, Regen, Fortified, Weakened)
+- Ability system with 4 abilities (Power Strike L1, Defensive Stance L3, Poison Dart L5, Second Wind L7)
+- 9 enemy types with varying mechanics (Mimic ambush, Wraith flat dodge, Vampire lifesteal, DarkKnight scaling)
+- Boss Phase 2 enrage at 40% HP + telegraphed charge (3x damage)
+- Dungeon generation: 5×4 grid, ~60% enemy rooms, ~30% item rooms, 15% shrine rooms
+- Shrine economy: 4 purchasable effects (Heal, Bless, Fortify, Meditate) for 30-75g
+- 5 achievements tracking (Glass Cannon, Untouchable, Hoarder, Elite Hunter, Speed Runner)
+- Elite variant system: 5% spawn rate, +50% stats (no special abilities)
+
+**Critical Gaps Identified:**
+
+1. **Static Enemy Behavior**
+   - All non-boss enemies perform identical action: attack if possible
+   - No tactical decision-making or context awareness
+   - Abilities like "Troll should regen" or "Vampire should lifesteal" lack AI trigger logic
+   - **System Impact:** Combat against 10th Goblin feels identical to 1st Goblin; no strategic depth
+
+2. **Single Boss Archetype**
+   - DungeonBoss is only boss type; variation comes only from scaling + enrage
+   - No thematic boss variety (elemental, summoner, resurrector, void entity)
+   - Phase transitions are limited to single enrage event
+   - **System Impact:** Final encounter lacks personality; players don't fear specific boss types
+
+3. **Passive Dungeon Environments**
+   - Rooms have flavor text but no mechanical impact on combat
+   - No environmental hazards (traps, fire, poisonous fog, falling blocks)
+   - No dynamic events that change during exploration
+   - **System Impact:** Room location doesn't affect strategy; combat outcomes identical regardless of setting
+
+4. **One-Size-Fits-All Difficulty**
+   - Fixed difficulty curve via scaling formula; no accessibility modes
+   - No hardcore challenge variants beyond elite spawn chance
+   - Elite variants are crude (flat +50% stats, no special abilities)
+   - **System Impact:** Casual players feel overwhelmed; hardcore players lack engaging challenge variations
+
+5. **Shallow Economy**
+   - Shrines sparse (15% spawn) and limited (4 purchasable effects)
+   - No merchant/shop system for consumable purchases or item progression
+   - No crafting or upgrade paths beyond equipment swapping
+   - **System Impact:** Gold collected but purposeless; no meaningful economic decisions
+
+6. **Generic Item Progression**
+   - Random item drops; no progression tiers or item families
+   - No unique/legendary items with special mechanics
+   - No transmog or upgrade progression paths
+   - **System Impact:** Looting feels random; no aspirational item hunting
+
+**v3 Proposed Issues (8 Features):**
+
+| Priority | Issue | Wave | Agent | Rationale |
+|----------|-------|------|-------|-----------|
+| 1 | Difficulty Modes & Scaling | Foundation | Barton | Enables balanced testing for other features; accessibility |
+| 2 | Enemy AI Behaviors | Core | Barton | Highest impact on combat feel; each enemy type uses unique tactics |
+| 3 | Boss Variety (3-4 archetypes) | Core | Barton | Final encounter variety; memorable encounters |
+| 4 | Environmental Hazards | Core | Barton | Dungeon depth; dynamic combat zones |
+| 5 | Elite Variants (with abilities) | Core | Barton | Elite encounters feel special; higher loot/XP reward |
+| 6 | Merchant Shop System | Advanced | Coulson/Hill + Barton | Gold becomes meaningful; item progression agency |
+| 7 | Procedural Room Types | Advanced | Hill/Coulson + Barton | Thematic exploration; reward/risk tension |
+| 8 | Advanced Status Effects | Advanced | Barton | Elemental theming; strategic effect interactions |
+
+**Design Philosophy for v3:**
+
+1. **Behavior Over New Mechanics:** Add combat depth via enemy AI decision-making, not new status effects. Current effects (Poison, Stun, Regen) support rich interactions when AI uses them tactically.
+
+2. **Hazards Damage Both Sides:** Environmental hazards affect player AND enemies equally. Rebalances combat without nerfing; creates resource depletion for both.
+
+3. **Difficulty as Foundation:** Difficulty modes are prerequisite. All future balance (elite rates, boss health, item shop prices) keys off difficulty setting.
+
+4. **Economy Scales with Power:** Merchants and shops don't break economy. Consumable prices scale; core progression remains combat-based.
+
+5. **Room Types Add Flavor + Mechanics:** Libraries grant story; Armories guarantee gear; Miniboss Chambers add challenge; Treasury offers risk/reward.
+
+**Architecture Implications:**
+
+- **Enemy.GetAction():** New method for AI decision logic. CombatEngine calls instead of always attacking.
+- **Boss Subclasses:** Need Phase property (int), phase-specific attack methods, HP threshold triggers
+- **Room.Hazard:** New property (Hazard type); CombatEngine processes at turn start
+- **DifficultyMode:** Global enum/class affecting EnemyFactory.CreateScaled, elite spawn rates, item shop availability
+- **StatusEffectManager Extension:** May need group effect support (Volcano hazard applying Burn to all)
+
+**Spike Questions (Design Review needed):**
+
+- Should Elite Ability system use random selection or difficulty-seeded determinism?
+- Do hazards apply at start of combat or only when entering room mid-combat?
+- Should boss phases reset HP per phase or scale from current HP?
+- How do Merchant prices scale with player level? (Linear? Exponential?)
+
+**File Created:** `.ai-team/decisions/inbox/barton-v3-planning.md` — comprehensive roadmap with wave timing, dependencies, and testing strategy.

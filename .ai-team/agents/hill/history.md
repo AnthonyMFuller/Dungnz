@@ -313,3 +313,88 @@
 - HP management requires careful handling when MaxHP changes (proportional heal on increase, clamp on decrease)
 - Swap logic simplifies player experience (no manual unequip required)
 - Existing SaveSystem handles new properties automatically via full Player serialization
+
+### 2026-02-20: v3 Planning Session — Player Experience & Game Depth Analysis
+
+**Context:** Post-v2 retrospective identified key player experience gaps. v3 planning focus: character agency, progression hooks, content variety, UX clarity.
+
+**Deliverable:** Comprehensive v3 roadmap spanning 4 waves, 8 concrete GitHub issues, strategic feature prioritization.
+
+**Key Findings:**
+
+1. **Player Agency Gap:** v2 lacks character customization. All players are identical "generic warrior" with no build diversity or strategic choices. Roguelike genre expects class/trait systems for replayability.
+
+2. **Weak Progression Hooks:** Leveling in v2 is purely binary—gain +2 Attack, +1 Defense, +10 MaxHP. No milestones, no unlocks, no meaningful progression beyond "level 5 has better gear." Abilities unlock via AbilityManager automatically (no choice).
+
+3. **Content Repetition:** Dungeon is 20 identical "combat rooms." No environmental variety (shrines, treasuries, arenas). No thematic flavor or narrative context. Feels procedural, not curated.
+
+4. **UX Clarity Issues:**
+   - No map display → players navigate by memory, feel lost
+   - Combat log ephemeral → no turn history for learning
+   - Inventory unwieldy → no quick equipment view
+   - No narrative framing → purely mechanical "escape"
+
+**Recommended v3 Features (8 Issues, 4 Waves):**
+
+**WAVE 1: Foundation** (Unlocks further content)
+- **Issue 1:** Character Class System — Warrior/Rogue/Mage with distinct stat curves, starting abilities, trait pools
+  - Impact: 3x playstyles (vs. 1 generic), drives replayability
+  - Agent: Hill (models), Barton (combat), Romanoff (tests)
+
+- **Issue 2:** Class-Specific Traits — Passive bonuses (block %, crit, mana regen), class-unique pools, +1 every 5 levels
+  - Impact: Every 5 levels = meaningful choice, micro-progression
+  - Agent: Hill (encapsulation), Barton (balance), Romanoff (tests)
+
+- **Issue 3:** Skill Tree Foundation — 8 nodes/class, level-gated unlocks, stat bonuses or new abilities, config-driven
+  - Impact: Path optimization, build guides emerge
+  - Agent: Hill (tree model + UI), Barton (stat application), Romanoff (unlock tests)
+
+**WAVE 2: Core** (Player agency × content variety)
+- **Issue 4:** Variant Room Types — Shrines (blessings/curses), Treasuries (mega-loot), Elite Arenas; breaks monotony
+  - Impact: +25% room diversity, adds spatial strategy
+  - Agent: Hill (room types + generator), Barton (elite logic), Romanoff (tests)
+
+- **Issue 5:** Trait Selection at Level-Up — Prompt at Lvl 5/10/15/20 with 2 random traits; choose, apply, persist
+  - Impact: Turns passive leveling into active choice, anticipation
+  - Agent: Hill (UI/flow), Romanoff (save tests)
+
+- **Issue 6:** Combat Clarity System — Turn log (last 5 turns), crit/dodge notifications, action separation
+  - Impact: Players understand combat math, learn patterns, trust RNG
+  - Agent: Hill (DisplayService), Barton (log data), Romanoff (integration)
+
+**WAVE 3: Advanced** (Content depth + polish)
+- **Issue 7:** Dungeon Variants & Lore — "Standard" / "Forsaken" / "Bestiary" / "Cursed" with thematic enemy distributions, flavor text
+  - Impact: 4x narrative flavor, minimal new code (config + generator tweak)
+  - Agent: Hill (variant enum), Barton (config), Romanoff (integration)
+
+- **Issue 8:** Mini-Map Display — ASCII grid showing visited rooms (.), unvisited (▓), current (*), exit (!), boss (B)
+  - Impact: Addresses "feel lost" pain point, fits aesthetic
+  - Agent: Hill (ASCII rendering), Romanoff (state tests)
+
+**Priority Rationale:**
+- Waves 1-3 are sequential (1 enables 2, both enable 3)
+- Wave 4 (Stretch: Prestige, Difficulty, Leaderboard) deferred (nice-to-have, not core v3)
+- Parallelizable within waves (Hill, Barton, Romanoff work simultaneously)
+
+**Expected Outcomes:**
+- Replayability: +300% (3 classes × trait choices × skill paths)
+- Content variety: +400% (5 room types × 4 dungeon variants)
+- Engagement: +200% (milestone progression, mini-map orientation)
+- Timeline: v3a (Wave 1) Week 3, v3b (Wave 2) Week 6, v3c (Wave 3) Week 8
+
+**C# Patterns Used:**
+- Encapsulation for Trait class (private setters, validation methods)
+- Config-driven design (JSON for traits, skill trees, dungeon variants—building on existing pattern)
+- Enum expansion (CharacterClass, RoomType, DungeonVariant)
+- Event-driven progression (OnTraitUnlocked event for UI updates)
+- ASCII rendering (map grid—fits console aesthetic, zero dependencies)
+
+**Design Decisions Captured in:** `.ai-team/decisions/inbox/hill-v3-planning.md` (11KB comprehensive specification)
+
+**Coordination Notes:**
+- Coulson: Confirm wave priorities, merge into canonical decisions.md
+- Barton: Enemy distribution configs, elite mechanics, trait/skill stat balance
+- Romanoff: Unit tests for trait application, config loading, map state, selection persistence
+- Scribe: Merge inbox file after team review
+
+**Key Insight:** v2 was "dungeon crawler foundations" (systems, mechanics, save/load). v3 is "roguelike identity" (classes, builds, character expression, content variety). Together, they transform Dungnz from "generic text game" to "players have reasons to play again."

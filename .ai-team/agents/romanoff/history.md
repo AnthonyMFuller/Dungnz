@@ -132,3 +132,86 @@
 **Impact on Romanoff:** Confirmed xUnit + Moq + FluentAssertions stack (vs NUnit). Mocking strategy (IDisplayService + seeded Random) documented and agreed across team.
 
 📌 Team update (2026-02-20): CI Quality Gate Infrastructure established — 70% code coverage threshold enforced by GitHub Actions. Test project framework fixed (net10.0 → net9.0).
+
+### 2026-02-20: v3 Quality Planning - Test Coverage Gaps & Strategy
+
+**Scope:** Post-v2 test inventory audit; identify coverage gaps; plan v3 testing infrastructure for character classes, shops, crafting systems.
+
+**v2 Test Inventory:**
+- **Test Classes:** 13 total (139 test methods)
+- **Coverage by System:**
+  - ✅ **Full coverage:** CombatEngine (12), CommandParser (14), DisplayService (17), EnemyFactory (17), GameLoop (20), InventoryManager (8), LootTable (8), DungeonGenerator (10), AbilityManager (20), PlayerManaTests (10)
+  - ⚠️ **Partial coverage:** Player (7 tests, basic only), EnemyTests (5, stub only)
+  - ❌ **Zero coverage:** AchievementSystem (96 LOC), SaveSystem (178 LOC), StatusEffectManager (84 LOC), EnemyConfig, ItemConfig, GameEvents, RunStats, Enemies (9 types × 29-62 LOC)
+
+**Critical Coverage Gaps (v2):**
+1. **StatusEffectManager:** No unit tests for poison/bleed/burn/stun/regen/slow application, duration tracking, immunity handling (Stone Golem), turn-start processing, effect removal. Risk: Combat balance broken by untested effect logic.
+2. **AchievementSystem:** No tests for unlock conditions, persistence (JSON save), Glass Cannon/Untouchable/Hoarder/EliteHunter/SpeedRunner logic. Risk: Silent achievement unlock failures; save corruption.
+3. **SaveSystem:** No tests for GameState serialization, room graph reconstruction, deserialization safety (HP validation, stat bounds, null safety). Risk: Save/load data loss; soft-locks on corrupted saves.
+4. **Equipment System:** Player equipment slots (weapon/armor/accessory) exist but no tests for swap logic, stat bonuses, or unequip edge cases. Risk: Stat exploitation (equip multiple weapons).
+5. **Enemy Variants (Elite 5% & Config Scaling):** Elite enemy generation logic untested; config-driven stat scaling untested. Risk: Balance breakage via config edits.
+
+**Quality Risks for v3 Features:**
+1. **Character Classes:** No base class for inheritance testing; type casting untested in combat/loot systems. Need polymorphic test patterns.
+2. **Shops & Crafting:** New persistent state (inventory qty tracking, recipe manager); no SaveSystem integration tests yet. Need transaction semantics testing.
+3. **New Systems:** Player encapsulation must be validated (no public setters); mutable shared state (config, events) risks race conditions in multithreaded logging. Need immutability/isolation tests.
+
+**Recommended v3 Test Strategy:**
+
+**Tier 1 - Foundation (High Risk, Must Test):**
+- StatusEffectManager unit tests (all 6 effects, immunity, duration, removal)
+- Equipment system unit tests (equip/unequip, stat bonuses, conflict detection)
+- SaveSystem integration tests (serialize/deserialize, file safety, data validation)
+- AchievementSystem unit tests (all 5 achievement conditions, unlock logic, persistence)
+
+**Tier 2 - Infrastructure (New Systems):**
+- Abstract base class pattern tests (for character classes)
+- Shop system unit tests (buy/sell logic, inventory qty, gold validation)
+- Crafting recipe validation tests (ingredient checks, output generation)
+- Config hotload safety tests (no state mutation during reload)
+
+**Tier 3 - Hardening (Edge Cases & Defensive Coding):**
+- Boundary tests: negative HP in save, invalid stat values, circular room exits
+- Input validation: negative gold, invalid equipment slot indices, recipe name injection
+- Concurrency safety: GameEvents thread safety, shared config read/write locks
+- Null safety: SaveSystem deserialization failure modes, missing achievements list
+
+**Tier 4 - Integration (v2 Regressions):**
+- Dead enemy cleanup (regression from WI-10)
+- Flee-and-return combat state persistence
+- Status effect interaction during combat (apply → combat → remove cycle)
+- Level-up during combat + status effect application ordering
+
+**Test Infrastructure for v3:**
+- **Async support:** Xunit + async/await for file I/O tests (SaveSystem)
+- **JSON fixtures:** System.Text.Json deserializer safety patterns; corrupt JSON handling
+- **Time-based tests:** Duration-based effect removal (turn counter vs wall-clock time)
+- **Factory patterns:** CharacterClassBuilder, ShopStateBuilder, RecipeBuilder for test data
+- **Config injection:** IGameConfig interface for mocking config values
+
+**Edge Case Inventory (v2 + v3 Risks):**
+- Dead enemy cleanup (GP@WI-10)
+- Flee-and-return HP persistence (by design, but test it)
+- Save file corruption recovery (silent fail vs graceful error)
+- Empty shop (no recipes, no items) edge case
+- Inventory overflow on pickup (max items, max qty per slot)
+- Negative stat calculations (Defense > Attack scenario)
+- Status effect duration = 0 at apply time
+- Elite enemy spawn without base enemy type defined in config
+
+**Quality Gates (v3):**
+- **Build gates:** 80%+ coverage on high-risk systems (StatusEffects, Equipment, SaveSystem, Achievements). No test failures block merge.
+- **Manual gates:** Code review for SaveSystem file I/O (handles missing directory, permission errors); Equipment stat bonuses validated against balance spreadsheet; Config hotload tested with live game state.
+- **Regression gates:** All WI-10 edge case tests pass; dead enemy cleanup regression test included in CI.
+- **Rejection criteria:** Coverage drop, new system without tests, untested edge case causing crash/balance issue, SaveSystem deserialization failure.
+
+**Effort Estimate:**
+- StatusEffectManager tests: 4-6 hours (all 6 effects × multiple scenarios)
+- SaveSystem tests: 6-8 hours (file I/O, deserialization, validation)
+- AchievementSystem tests: 3-4 hours (5 conditions, persistence)
+- Equipment system tests: 3-4 hours (equip/unequip, bonuses)
+- v3 infrastructure (class hierarchy, shop, crafting): 10-12 hours across phases
+- **Total v3 testing work estimate:** 26-34 hours across v3 phases
+
+**Files written:**
+- `.ai-team/decisions/inbox/romanoff-v3-planning.md` — test strategy recommendations

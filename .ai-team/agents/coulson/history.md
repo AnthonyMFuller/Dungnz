@@ -205,3 +205,181 @@
 📌 Team update (2026-02-20): Interface Extraction & Refactoring Verification consolidated — Coulson + Hill. Added entrypoint verification checklist to catch regressions where tests pass but production code fails.
 
 📌 Team update (2026-02-20): GameEvents Event System Architecture established — instance-based events with nullable DI for testability.
+
+---
+
+## 2026-02-20: v3 Planning Session & Architecture Analysis
+
+**Facilitator:** Coulson  
+**Context:** v2 Complete (28 work items, 91.86% coverage, 5 waves). Planning v3 foundation and feature roadmap.
+
+### v2 Assessment
+- **Codebase Health:** Excellent — clean layering, interface-based DI, >90% test coverage
+- **Architecture:** Models/Engine/Systems/Display separation clean; IDisplayService extraction successful
+- **Known Scalability Issues:** Player.cs 273 LOC mixing 7 concerns; Equipment/Inventory tied to Player; StatusEffects hardcoded; no integration tests
+
+### Architectural Concerns Identified (v3 Blockers)
+
+**1. Player Model Decomposition**
+- Problem: 273 LOC mixing HP, Mana, XP, Gold, Inventory, Equipment, Abilities — violates SRP
+- Impact: Adding character classes, shops, crafting requires refactoring without breaking saves
+- Decision: Split into PlayerStats (combat), PlayerInventory (items), PlayerCombat (abilities/cooldowns) in Wave 1
+
+**2. Equipment System Fragmentation**
+- Problem: EquipItem/UnequipItem in Player; ApplyStatBonuses/RemoveStatBonuses private; no equipment config
+- Impact: Can't build shops, merchants, or equipment trading without refactoring
+- Decision: Create EquipmentManager; extract equipment to config (like items/enemies)
+
+**3. Test Coverage Gaps (Integration)**
+- Problem: 91.86% unit coverage but zero integration tests for multi-system flows
+- Impact: CombatEngine→LootTable→Equipment interactions untested; refactoring risks regressions
+- Decision: Create integration test suite covering combat→loot→equipment, status→save/load, ability→cooldown chains
+
+**4. Status Effect System Lacks Composition**
+- Problem: 6 effects hardcoded in StatusEffectManager; no config, no stacking, no extensibility
+- Impact: Elemental system, effect combos, custom effects blocked
+- Decision: Refactor to IStatusEffect interface + config system (v3 foundational, v4 elemental ready)
+
+**5. Inventory Management Needs Validation**
+- Problem: List<Item> with no weight/slot limits; item logic scattered across systems
+- Impact: Shop systems can't validate constraints; duping bugs possible
+- Decision: Create InventoryManager with centralized add/remove/validate logic
+
+**6. Ability System Too Combat-Focused**
+- Problem: AbilityManager tied to combat only; no passive abilities or trait system
+- Impact: Skill trees (v4) require major redesign
+- Decision: Extend AbilityManager to support passive abilities + cooldown groups in v3
+
+**7. Character Class Architecture Missing**
+- Problem: All players same stats/abilities/playstyles; no class concept
+- Impact: v3 feature "class selection" has no foundation
+- Decision: Design ClassDefinition config system + ClassManager (depends on Player decomposition)
+
+**8. Save System Fragility**
+- Problem: Couples to current Player structure; no version tracking or migration path
+- Impact: Player.cs decomposition breaks all existing saves
+- Decision: Add SaveFormatVersion + migration logic before refactoring Player
+
+### v3 Feature Feasibility
+
+**Feasible (After Foundation Work)**
+- Character classes (config-driven) — requires Player decomposition + ClassManager
+- Shop/merchant system — requires Equipment refactoring + InventoryManager
+- Basic crafting — requires InventoryManager + Recipe config
+- Achievement expansion (skill-based) — independent, low risk
+
+**Questionable (Defer to v4)**
+- Skill trees (complex Ability redesign required)
+- Elemental damage (Status effect composition needed)
+- Multiplayer/PvP (no session/lobby system)
+- Permadeath (SaveSystem too fragile for mode switching)
+
+### v3 Recommended Wave Structure
+
+**Wave 1 (Foundation):** Player decomposition, Equipment/Inventory managers, integration testing, SaveSystem migration  
+**Wave 2 (Systems):** Character classes, Ability expansion, Achievement expansion  
+**Wave 3 (Features):** Shops, Crafting system  
+**Wave 4 (Polish):** New enemy types, Shrine upgrades, Difficulty tuning  
+
+**Critical Path:** Player decomposition → SaveSystem migration → Integration tests  
+**Risk:** High (refactoring critical path); Mitigation: Feature flags, parallel implementations, integration tests
+
+### Architectural Patterns to Enforce (v3+)
+
+**Pattern 1: Configuration-Driven Entities**
+- Rule: All extensible entities (Classes, Abilities, StatusEffects, Shops) defined in config, not hardcoded
+- Precedent: ItemConfig, EnemyConfig established in v2
+- Apply to: Classes, Abilities, StatusEffects, Shop inventories
+
+**Pattern 2: Composition Over Inheritance**
+- Rule: Use IStatusEffect, IAbility interfaces; compose abilities from components
+- Avoid: Inheritance hierarchies for combat vs. passive vs. class-specific abilities
+- Benefit: Reduces branching logic; enables effect combos and ability chaining
+
+**Pattern 3: Manager Pattern for Subsystems**
+- Rule: Each major subsystem owns a manager (EquipmentManager, InventoryManager, ClassManager, CraftingManager)
+- Responsibility: Manager validates state, applies side effects, fires events
+- DI: All managers receive config, Random, GameEvents via constructor (no static dependencies)
+
+**Pattern 4: Event-Based Cross-System Communication**
+- Rule: Systems don't call each other directly; fire events and subscribe (GameEvents pattern)
+- Extend with: EquipmentChanged, ItemCrafted, ClassSelected, AchievementEarned
+- Benefit: Decouples features; future systems (UI, mods) consume events without touching core logic
+
+**Pattern 5: Design Review Before Coding**
+- Rule: Each Wave starts with architecture ceremony; no coding without signed-off design
+- Precedent: v1 Design Review, v2 Planning ceremony successful
+- Benefit: Prevents rework, integration bugs; establishes contracts early
+
+### Integration Strategy (No Breaking Changes)
+
+**Principle 1: Backward Compatibility for Saves**
+- SaveSystem supports v2 and v3 formats simultaneously
+- Migration on load; no data loss
+- Two-release deprecation window if data format changes needed
+
+**Principle 2: Feature Flags for Risky Refactoring**
+- New systems run in parallel with old (EquipmentManager + Player equipment slots)
+- Old behavior unchanged; gradual migration
+- Classes opt-in; existing saves load as "unclassed"
+
+**Principle 3: Incremental Merging**
+- One subsystem per PR (PlayerStats → PlayerInventory → PlayerCombat in separate PRs)
+- Full integration tested in final Wave 1 PR before merge to master
+- Prevents megacommit integration issues
+
+**Principle 4: Regression Testing Mandatory**
+- Integration test suite must precede decomposition work
+- Multi-system flows tested before any Player.cs refactoring begins
+- All tests passing before merging to master
+
+### v3 Scope Decision
+
+**IN Scope (Must Have)**
+- Player.cs decomposition (PlayerStats, PlayerInventory, PlayerCombat)
+- EquipmentManager + equipment config system
+- InventoryManager with validation
+- Integration test suite (multi-system flows)
+- SaveSystem migration + version tracking
+- Character classes (config-driven, 5 classes)
+- Shop system with NPC merchants
+- Basic crafting system
+
+**OUT of Scope (v4 or Later)**
+- Skill trees (requires stable Player + Ability architecture)
+- Permadeath/hardcore modes (SaveSystem too fragile)
+- Multiplayer/lobbies (no session system)
+- Elemental damage system (Status effect composition needed)
+
+### Success Criteria for v3
+
+**Wave 1 (Foundation):** Player decomposed (<150 LOC each module); EquipmentManager/InventoryManager created; integration tests cover 10+ multi-system flows; SaveSystem migration working; >90% coverage
+
+**Wave 2 (Systems):** 5 classes defined in config; ClassManager working; Ability expansion complete; class-based achievements; >90% coverage
+
+**Wave 3 (Features):** Shop system with 3+ merchants; Crafting system with 5+ recipes; economy balanced; >90% coverage
+
+**Wave 4 (Content):** 8 new enemy types; new shrine types; difficulty curves balanced; no v2 regressions
+
+### Team Assignments
+
+- **Hill:** Player decomposition, ClassManager, SaveSystem migration, Shop architecture (~35 hours)
+- **Barton:** EquipmentManager, InventoryManager, Crafting, new enemies, ability expansion (~40 hours)
+- **Romanoff:** Integration tests, edge cases, balancing, difficulty curves (~30 hours)
+
+### Key Decision: Sequential Waves Over Parallel
+
+**Decision:** Execute Waves sequentially (1→2→3→4), not in parallel.  
+**Rationale:** Wave 2 depends on Wave 1 (Player decomposition); Wave 3 depends on Wave 2 (Classes for class-specific shops); parallelizing increases rework risk.  
+**Benefit:** Clear dependencies, easier communication, cleaner merges.  
+**Timeline:** ~12-14 weeks for all 4 waves at 1 wave/2-3 weeks pace.
+
+### Lessons Learned (v3 Planning)
+
+1. **Architecture debt compounds:** Small SRP violations (Player.cs) become major blockers (can't add classes without refactoring).
+2. **Integration tests are force multipliers:** Test coverage alone insufficient; need multi-system flow tests to refactor safely.
+3. **Config-driven design enables iteration:** ItemConfig/EnemyConfig patterns should extend to all extensible systems (Classes, StatusEffects).
+4. **Feature flags are refactoring insurance:** Parallel old/new implementations protect against bugs during decomposition.
+5. **Design review ceremonies pay off:** Pre-planning prevents rework more than code review post-facto.
+
+**Outcome:** v3 roadmap documented in `.ai-team/decisions/inbox/coulson-v3-planning.md`. Ready for team approval and Wave 1 design review ceremony kickoff.
