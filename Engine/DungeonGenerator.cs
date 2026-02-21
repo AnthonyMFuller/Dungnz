@@ -144,6 +144,7 @@ public class DungeonGenerator
             for (int x = 0; x < width; x++)
             {
                 var room = grid[y, x];
+                if (room == startRoom || room == exitRoom) continue;
                 if (_rng.NextDouble() < 0.3)
                 {
                     room.Items.Add(CreateRandomItem());

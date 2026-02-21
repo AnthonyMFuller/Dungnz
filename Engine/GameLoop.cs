@@ -26,6 +26,7 @@ public class GameLoop
     private DateTime _runStart;
     private readonly AchievementSystem _achievements = new();
     private readonly EquipmentManager _equipment;
+    private readonly InventoryManager _inventoryManager;
     private int _currentFloor = 1;
 
     /// <summary>
@@ -58,6 +59,7 @@ public class GameLoop
         _seed = seed;
         _difficulty = difficulty ?? DifficultySettings.For(Difficulty.Normal);
         _equipment = new EquipmentManager(display);
+        _inventoryManager = new InventoryManager(display);
     }
 
     /// <summary>
@@ -236,7 +238,13 @@ public class GameLoop
             _display.ShowMessage($"⚠ You trigger {hazardName} and take {dmg} damage! HP: {_player.HP}/{_player.MaxHP}");
             if (_player.HP <= 0)
             {
-                _display.ShowMessage("You died from a trap!");
+                _display.ShowMessage("You died from a trap! Game over.");
+                _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
+                if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
+                _stats.FinalLevel = _player.Level;
+                _stats.TimeElapsed = DateTime.UtcNow - _runStart;
+                _stats.Display(_display.ShowMessage);
+                RunStats.AppendToHistory(_stats, won: false);
                 PrestigeSystem.RecordRun(won: false);
                 return;
             }
@@ -372,7 +380,12 @@ public class GameLoop
         }
 
         _currentRoom.Items.Remove(item);
-        _player.Inventory.Add(item);
+        if (!_inventoryManager.TryAddItem(_player, item))
+        {
+            _currentRoom.Items.Add(item);
+            _display.ShowMessage("Your inventory is full!");
+            return;
+        }
         _display.ShowMessage($"You take the {item.Name}.");
         _events?.RaiseItemPicked(_player, item, _currentRoom);
         _stats.ItemsFound++;
@@ -414,6 +427,20 @@ public class GameLoop
                     _player.Inventory.Remove(item);
                     _display.ShowMessage($"You use {item.Name} and restore {healedAmount} HP. Current HP: {_player.HP}/{_player.MaxHP}");
                 }
+                else if (item.MaxManaBonus > 0)
+                {
+                    var oldMana = _player.Mana;
+                    _player.RestoreMana(item.MaxManaBonus);
+                    var restoredMana = _player.Mana - oldMana;
+                    _player.Inventory.Remove(item);
+                    _display.ShowMessage($"You use {item.Name} and restore {restoredMana} mana. Mana: {_player.Mana}/{_player.MaxMana}");
+                }
+                else if (item.AttackBonus > 0)
+                {
+                    _player.ModifyAttack(item.AttackBonus);
+                    _player.Inventory.Remove(item);
+                    _display.ShowMessage($"You use {item.Name}. Attack permanently +{item.AttackBonus}. Attack: {_player.Attack}");
+                }
                 else
                 {
                     _display.ShowError($"You can't use {item.Name} right now.");
@@ -439,7 +466,7 @@ public class GameLoop
             _display.ShowError("Save as what? Usage: SAVE <name>");
             return;
         }
-        SaveSystem.SaveGame(new GameState(_player, _currentRoom), saveName);
+        SaveSystem.SaveGame(new GameState(_player, _currentRoom, _currentFloor), saveName);
         _display.ShowMessage($"Game saved as '{saveName}'.");
     }
 
@@ -453,6 +480,7 @@ public class GameLoop
         var state = SaveSystem.LoadGame(saveName);
         _player = state.Player;
         _currentRoom = state.CurrentRoom;
+        _currentFloor = state.CurrentFloor;
         _display.ShowMessage($"Loaded save '{saveName}'.");
         _display.ShowRoom(_currentRoom);
     }
@@ -475,6 +503,27 @@ public class GameLoop
         if (!_currentRoom.IsExit || _currentRoom.Enemy != null)
         {
             _display.ShowError("You can only descend at a cleared exit room.");
+            return;
+        }
+
+        const int finalFloor = 5;
+        if (_currentFloor >= finalFloor)
+        {
+            _display.ShowMessage("You escaped the dungeon! You win!");
+            _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
+            if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
+            _stats.FinalLevel = _player.Level;
+            _stats.TimeElapsed = DateTime.UtcNow - _runStart;
+            _stats.Display(_display.ShowMessage);
+            RunStats.AppendToHistory(_stats, won: true);
+            PrestigeSystem.RecordRun(won: true);
+            var unlocked = _achievements.Evaluate(_stats, _player, won: true);
+            if (unlocked.Count > 0)
+            {
+                _display.ShowMessage("=== ACHIEVEMENTS UNLOCKED ===");
+                foreach (var a in unlocked)
+                    _display.ShowMessage($"\U0001f3c6 {a.Name} \u2014 {a.Description}");
+            }
             return;
         }
 
@@ -613,6 +662,7 @@ public class GameLoop
             {
                 _player.SpendGold(selected.Price);
                 _player.Inventory.Add(selected.Item);
+                merchant.Stock.RemoveAt(choice - 1);
                 _display.ShowMessage($"You bought {selected.Item.Name} for {selected.Price}g. Gold remaining: {_player.Gold}g");
             }
         }
