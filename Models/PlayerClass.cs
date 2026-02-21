@@ -28,5 +28,12 @@ public class PlayerClassDefinition
         BonusAttack = 2, BonusDefense = 0, BonusMaxHP = 0, BonusMaxMana = 0
     };
 
+    public string TraitDescription => Class switch {
+        PlayerClass.Warrior => "Passive: +5% damage when HP < 50%",
+        PlayerClass.Mage => "Passive: Spells deal +20% damage",
+        PlayerClass.Rogue => "Passive: +10% dodge chance",
+        _ => ""
+    };
+
     public static IReadOnlyList<PlayerClassDefinition> All => new[] { Warrior, Mage, Rogue };
 }
