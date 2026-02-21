@@ -51,6 +51,9 @@ public static class SaveSystem
         {
             Player = state.Player,
             CurrentRoomId = state.CurrentRoom.Id,
+            CurrentFloor = state.CurrentFloor,
+            UnlockedSkills = state.Player.Skills.UnlockedSkills.Select(s => s.ToString()).ToList(),
+            Version = 1,
             Rooms = roomMap.Values.Select(r => new RoomSaveData
             {
                 Id = r.Id,
@@ -63,6 +66,9 @@ public static class SaveSystem
                 Looted = r.Looted,
                 HasShrine = r.HasShrine,
                 ShrineUsed = r.ShrineUsed,
+                Merchant = r.Merchant,
+                Hazard = r.Hazard,
+                RoomType = r.Type,
                 BossState = r.Enemy is Dungnz.Systems.Enemies.DungeonBoss boss
                     ? new BossSaveState
                     {
@@ -126,7 +132,10 @@ public static class SaveSystem
                     Visited = roomData.Visited,
                     Looted = roomData.Looted,
                     HasShrine = roomData.HasShrine,
-                    ShrineUsed = roomData.ShrineUsed
+                    ShrineUsed = roomData.ShrineUsed,
+                    Merchant = roomData.Merchant,
+                    Hazard = roomData.Hazard,
+                    Type = roomData.RoomType
                 };
                 if (roomData.BossState is { } bossState &&
                     room.Enemy is Dungnz.Systems.Enemies.DungeonBoss dungeonBoss)
@@ -151,7 +160,15 @@ public static class SaveSystem
             }
 
             var currentRoom = roomDict[saveData.CurrentRoomId];
-            return new GameState(saveData.Player, currentRoom);
+
+            // Restore unlocked skills (bonuses already baked into saved stats)
+            foreach (var skillName in saveData.UnlockedSkills)
+            {
+                if (Enum.TryParse<Dungnz.Systems.Skill>(skillName, out var skill))
+                    saveData.Player.Skills.Unlock(skill);
+            }
+
+            return new GameState(saveData.Player, currentRoom, saveData.CurrentFloor);
         }
         catch (JsonException ex)
         {
@@ -212,16 +229,21 @@ public class GameState
     /// <summary>The room the player is currently standing in when the state was captured.</summary>
     public Room CurrentRoom { get; }
 
+    /// <summary>The dungeon floor the player is currently on.</summary>
+    public int CurrentFloor { get; }
+
     /// <summary>
-    /// Creates a new game state with the given player and current room.
+    /// Creates a new game state with the given player, current room, and floor number.
     /// </summary>
     /// <param name="player">The player to associate with this state.</param>
     /// <param name="currentRoom">The room the player is currently in.</param>
+    /// <param name="currentFloor">The floor number the player is currently on. Defaults to 1.</param>
     /// <exception cref="ArgumentNullException">Thrown when either <paramref name="player"/> or <paramref name="currentRoom"/> is <see langword="null"/>.</exception>
-    public GameState(Player player, Room currentRoom)
+    public GameState(Player player, Room currentRoom, int currentFloor = 1)
     {
         Player = player ?? throw new ArgumentNullException(nameof(player));
         CurrentRoom = currentRoom ?? throw new ArgumentNullException(nameof(currentRoom));
+        CurrentFloor = currentFloor;
     }
 }
 
@@ -230,7 +252,16 @@ internal class SaveData
     public required Player Player { get; init; }
     public required Guid CurrentRoomId { get; init; }
     public required List<RoomSaveData> Rooms { get; init; }
-    public int Version { get; init; } = 1;
+
+    /// <summary>The floor number the player was on when the game was saved.</summary>
+    public int CurrentFloor { get; init; } = 1;
+
+    /// <summary>Names of skills the player had unlocked at save time.</summary>
+    public List<string> UnlockedSkills { get; init; } = new();
+
+    /// <summary>Save format version. 0 = pre-v3 legacy save; 1 = v3+.</summary>
+    [System.Text.Json.Serialization.JsonPropertyName("version")]
+    public int Version { get; init; }
 }
 
 internal class RoomSaveData
@@ -245,6 +276,15 @@ internal class RoomSaveData
     public required bool Looted { get; init; }
     public bool HasShrine { get; init; }
     public bool ShrineUsed { get; init; }
+
+    /// <summary>The merchant present in this room, or <see langword="null"/> if none.</summary>
+    public Merchant? Merchant { get; init; }
+
+    /// <summary>The environmental hazard in this room.</summary>
+    public HazardType Hazard { get; init; }
+
+    /// <summary>The environmental flavour type of this room.</summary>
+    public RoomType RoomType { get; init; }
 
     /// <summary>
     /// Persisted combat flags for a <see cref="Dungnz.Systems.Enemies.DungeonBoss"/>.

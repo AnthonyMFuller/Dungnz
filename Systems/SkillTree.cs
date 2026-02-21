@@ -16,6 +16,13 @@ public class SkillTree
 
     public bool IsUnlocked(Skill skill) => _unlocked.Contains(skill);
 
+    /// <summary>
+    /// Directly marks <paramref name="skill"/> as unlocked without a level check or re-applying
+    /// stat bonuses. Used by the save system to restore persisted skill state on load.
+    /// </summary>
+    /// <param name="skill">The skill to mark as learned.</param>
+    public void Unlock(Skill skill) => _unlocked.Add(skill);
+
     public IReadOnlyCollection<Skill> UnlockedSkills => _unlocked;
 
     public bool TryUnlock(Player player, Skill skill)

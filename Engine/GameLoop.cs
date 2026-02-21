@@ -466,7 +466,7 @@ public class GameLoop
             _display.ShowError("Save as what? Usage: SAVE <name>");
             return;
         }
-        SaveSystem.SaveGame(new GameState(_player, _currentRoom), saveName);
+        SaveSystem.SaveGame(new GameState(_player, _currentRoom, _currentFloor), saveName);
         _display.ShowMessage($"Game saved as '{saveName}'.");
     }
 
@@ -480,6 +480,7 @@ public class GameLoop
         var state = SaveSystem.LoadGame(saveName);
         _player = state.Player;
         _currentRoom = state.CurrentRoom;
+        _currentFloor = state.CurrentFloor;
         _display.ShowMessage($"Loaded save '{saveName}'.");
         _display.ShowRoom(_currentRoom);
     }

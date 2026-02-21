@@ -197,4 +197,81 @@ public class SaveSystemTests : IDisposable
         loadedBoss.IsCharging.Should().BeTrue();
         loadedBoss.ChargeActive.Should().BeFalse();
     }
+
+    [Fact]
+    public void RoundTrip_CurrentFloor_Preserved()
+    {
+        var state = new GameState(new Player { Name = "Tester" }, new Room { Description = "Floor3" }, 3);
+
+        SaveSystem.SaveGame(state, "floor");
+        var loaded = SaveSystem.LoadGame("floor");
+
+        loaded.CurrentFloor.Should().Be(3);
+    }
+
+    [Fact]
+    public void RoundTrip_UnlockedSkills_Preserved()
+    {
+        var player = new Player { Name = "Tester" };
+        player.Skills.Unlock(Dungnz.Systems.Skill.PowerStrike);
+        player.Skills.Unlock(Dungnz.Systems.Skill.Swiftness);
+        var state = new GameState(player, new Room { Description = "Skill Room" });
+
+        SaveSystem.SaveGame(state, "skills");
+        var loaded = SaveSystem.LoadGame("skills");
+
+        loaded.Player.Skills.IsUnlocked(Dungnz.Systems.Skill.PowerStrike).Should().BeTrue();
+        loaded.Player.Skills.IsUnlocked(Dungnz.Systems.Skill.Swiftness).Should().BeTrue();
+        loaded.Player.Skills.IsUnlocked(Dungnz.Systems.Skill.IronSkin).Should().BeFalse();
+    }
+
+    [Theory]
+    [InlineData("lichking")]
+    [InlineData("stonetitan")]
+    [InlineData("shadowwraith")]
+    [InlineData("vampireboss")]
+    public void RoundTrip_BossVariant_Preserved(string bossType)
+    {
+        Dungnz.Systems.Enemies.DungeonBoss boss = bossType switch
+        {
+            "lichking"     => new Dungnz.Systems.Enemies.LichKing(),
+            "stonetitan"   => new Dungnz.Systems.Enemies.StoneTitan(),
+            "shadowwraith" => new Dungnz.Systems.Enemies.ShadowWraith(),
+            _              => new Dungnz.Systems.Enemies.VampireBoss(),
+        };
+        boss.IsEnraged = true;
+        var room = new Room { Description = "Boss Room" };
+        room.Enemy = boss;
+        var state = new GameState(new Player { Name = "Tester" }, room);
+
+        SaveSystem.SaveGame(state, $"boss_{bossType}");
+        var loaded = SaveSystem.LoadGame($"boss_{bossType}");
+
+        var loadedBoss = loaded.CurrentRoom.Enemy as Dungnz.Systems.Enemies.DungeonBoss;
+        loadedBoss.Should().NotBeNull();
+        loadedBoss!.GetType().Should().Be(boss.GetType());
+        loadedBoss.IsEnraged.Should().BeTrue();
+    }
+
+    [Fact]
+    public void RoundTrip_RoomMerchantHazardType_Preserved()
+    {
+        var room = new Room
+        {
+            Description = "Shop",
+            Merchant = new Merchant { Name = "Bob" },
+            Hazard = HazardType.Fire,
+            Type = RoomType.Scorched,
+        };
+        var state = new GameState(new Player { Name = "Tester" }, room);
+
+        SaveSystem.SaveGame(state, "roomextra");
+        var loaded = SaveSystem.LoadGame("roomextra");
+
+        loaded.CurrentRoom.Merchant.Should().NotBeNull();
+        loaded.CurrentRoom.Merchant!.Name.Should().Be("Bob");
+        loaded.CurrentRoom.Hazard.Should().Be(HazardType.Fire);
+        loaded.CurrentRoom.Type.Should().Be(RoomType.Scorched);
+    }
+
 }
