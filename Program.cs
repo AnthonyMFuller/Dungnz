@@ -31,7 +31,31 @@ var chosenDifficulty = diffInput switch
 var difficultySettings = DifficultySettings.For(chosenDifficulty);
 display.ShowMessage($"Difficulty: {chosenDifficulty}");
 
+// Class selection
+display.ShowMessage("Choose your class:");
+display.ShowMessage("[1] Warrior - High HP and defense. Slow mana.");
+display.ShowMessage("[2] Mage - High mana and powerful spells. Low HP.");
+display.ShowMessage("[3] Rogue - Balanced. Extra dodge chance.");
+display.ShowCommandPrompt();
+var classInput = Console.ReadLine()?.Trim() ?? "";
+var chosenClassDef = classInput switch
+{
+    "2" => PlayerClassDefinition.Mage,
+    "3" => PlayerClassDefinition.Rogue,
+    _   => PlayerClassDefinition.Warrior
+};
+display.ShowMessage($"Class: {chosenClassDef.Name}");
+
 var player = new Player { Name = name };
+player.Class = chosenClassDef.Class;
+player.Attack += chosenClassDef.BonusAttack;
+player.Defense = Math.Max(0, player.Defense + chosenClassDef.BonusDefense);
+player.MaxHP = Math.Max(1, player.MaxHP + chosenClassDef.BonusMaxHP);
+player.HP = player.MaxHP;
+player.MaxMana = Math.Max(0, player.MaxMana + chosenClassDef.BonusMaxMana);
+player.Mana = player.MaxMana;
+if (chosenClassDef.Class == PlayerClass.Rogue)
+    player.ClassDodgeBonus = 0.10f;
 EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
 var generator = new DungeonGenerator(actualSeed);
 var (startRoom, _) = generator.Generate(difficulty: difficultySettings);
