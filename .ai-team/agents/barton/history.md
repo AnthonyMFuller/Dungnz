@@ -378,3 +378,17 @@
 - Test boss charge sequence: telegraph → charge → reset, with dodge cases
 - Test Mimic ambush with pre-existing status effects from previous fights
 - Test elite variants spawn via both CreateRandom() and CreateScaled() without double-scaling
+
+### 2026-02-20: Pre-v3 Bug Hunt Session — Combat Systems Findings
+
+📌 **Team update (2026-02-20):** Pre-v3 bug hunt identified 47 critical issues across all systems. Combat systems audit found 14 bugs:
+
+**Critical Blockers (must fix before v3 feature work):**
+1. **Status Effect Stat Modifiers Never Applied (CRITICAL):** GetStatModifier() implemented but never called in CombatEngine damage calculations — Fortified and Weakened effects have ZERO gameplay effect
+2. **GoblinShaman Poison-on-Hit Inverted (CRITICAL):** Player poisons themselves when attacking Shaman, not when Shaman hits player — enemy design completely broken
+3. **Half Enemy Roster Inaccessible (HIGH):** 5 of 9 enemy types never spawn (GoblinShaman, StoneGolem, Wraith, VampireLord, Mimic) — DungeonGenerator hardcoded to original 4 types
+4. **Boss Enrage Multiplier Compounds (HIGH):** Enrage multiplies current Attack instead of base — re-enrage applies 2.25x instead of 1.5x
+
+**Recommended Actions:** Fix stat modifiers, poison-on-hit, and enemy spawning before starting v3 boss variety/environmental hazard work. Boss mechanics need hardening before inheriting more complexity.
+
+— decided by Barton (from Pre-v3 Critical Bug Hunt)

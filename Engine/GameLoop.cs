@@ -19,6 +19,7 @@ public class GameLoop
     private readonly IInputReader _input;
     private readonly GameEvents? _events;
     private readonly int? _seed;
+    private readonly DifficultySettings _difficulty;
     private Player _player = null!;
     private Room _currentRoom = null!;
     private RunStats _stats = null!;
@@ -43,13 +44,18 @@ public class GameLoop
     /// Optional RNG seed forwarded to the <see cref="DungeonGenerator"/> for reproducible
     /// dungeon layouts; displayed to the player on run end so they can replay the same layout.
     /// </param>
-    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null)
+    /// <param name="difficulty">
+    /// The difficulty settings to apply for this run. Defaults to <see cref="Difficulty.Normal"/>
+    /// when <see langword="null"/>.
+    /// </param>
+    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null, DifficultySettings? difficulty = null)
     {
         _display = display;
         _combat = combat;
         _input = input ?? new ConsoleInputReader();
         _events = events;
         _seed = seed;
+        _difficulty = difficulty ?? DifficultySettings.For(Difficulty.Normal);
     }
 
     /// <summary>
@@ -67,6 +73,7 @@ public class GameLoop
         _runStart = DateTime.UtcNow;
         _currentFloor = 1;
         _display.ShowTitle();
+        _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
         _display.ShowMessage($"Floor {_currentFloor}");
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
@@ -127,6 +134,9 @@ public class GameLoop
                     return;
                 case CommandType.Descend:
                     HandleDescend();
+                    break;
+                case CommandType.Map:
+                    _display.ShowMap(_currentRoom);
                     break;
                 default:
                     _display.ShowError("Unknown command. Type HELP for commands.");
@@ -195,6 +205,7 @@ public class GameLoop
             if (result == CombatResult.PlayerDied)
             {
                 _display.ShowMessage("You have been defeated. Game over.");
+                _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
                 if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
                 _stats.FinalLevel = _player.Level;
                 _stats.TimeElapsed = DateTime.UtcNow - _runStart;
@@ -217,6 +228,7 @@ public class GameLoop
             if (_currentFloor >= finalFloor)
             {
                 _display.ShowMessage("You escaped the dungeon! You win!");
+                _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
                 if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
                 _stats.FinalLevel = _player.Level;
                 _stats.TimeElapsed = DateTime.UtcNow - _runStart;
@@ -512,11 +524,19 @@ public class GameLoop
         float floorMult = 1.0f + (_currentFloor - 1) * 0.5f;
         var floorSeed = _seed.HasValue ? _seed.Value + _currentFloor : (int?)null;
         var gen = new DungeonGenerator(floorSeed);
-        var (newStart, _) = gen.Generate(floorMultiplier: floorMult);
+        var (newStart, _) = gen.Generate(floorMultiplier: floorMult, difficulty: _difficulty);
         _currentRoom = newStart;
         _currentRoom.Visited = true;
         _display.ShowMessage($"Floor {_currentFloor}");
         _display.ShowRoom(_currentRoom);
+    }
+
+    /// <summary>Returns a display-friendly label for the current difficulty setting.</summary>
+    private string GetDifficultyName()
+    {
+        if (_difficulty.EnemyStatMultiplier < 1.0f) return "Casual";
+        if (_difficulty.EnemyStatMultiplier > 1.0f) return "Hard";
+        return "Normal";
     }
 
     private void HandleShrine()

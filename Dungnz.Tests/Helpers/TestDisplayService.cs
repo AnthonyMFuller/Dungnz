@@ -60,6 +60,8 @@ public class TestDisplayService : IDisplayService
         AllOutput.Add($"loot:{item.Name}");
     }
 
+    public void ShowMap(Room room) => AllOutput.Add($"map:{room.Description}");
+
     public string ReadPlayerName()
     {
         return "TestPlayer";

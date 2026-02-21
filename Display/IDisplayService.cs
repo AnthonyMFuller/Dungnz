@@ -94,6 +94,18 @@ public interface IDisplayService
     void ShowCombatPrompt();
 
     /// <summary>
+    /// Renders an ASCII mini-map of the dungeon centred on <paramref name="currentRoom"/>,
+    /// using BFS to discover all reachable rooms and infer their grid positions from
+    /// exit directions. The map shows fog-of-war for unvisited rooms and distinct
+    /// symbols for the current room, boss rooms, shrines, enemies, and cleared rooms.
+    /// </summary>
+    /// <param name="currentRoom">
+    /// The room the player currently occupies; rendered at grid origin (0,0) and
+    /// displayed with the <c>[*]</c> symbol.
+    /// </param>
+    void ShowMap(Room currentRoom);
+
+    /// <summary>
     /// Prompts the player to enter their character's name at game start and
     /// returns the value they typed.
     /// </summary>
