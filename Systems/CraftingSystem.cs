@@ -27,7 +27,7 @@ public class CraftingSystem
         },
         new CraftingRecipe {
             Name = "Reinforced Armor",
-            Ingredients = new() { ("Iron Shield", 1) },
+            Ingredients = new() { ("Leather Armor", 1) },
             GoldCost = 25,
             Result = new Item { Name = "Reinforced Armor", Type = ItemType.Armor, DefenseBonus = 8, IsEquippable = true, Description = "Upgraded protection." }
         },
