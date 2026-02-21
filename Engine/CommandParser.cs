@@ -56,6 +56,9 @@ public enum CommandType
     /// <summary>Render an ASCII mini-map of all discovered rooms, with the player's current position highlighted.</summary>
     Map,
 
+    /// <summary>Browse the wares of a merchant present in the current room.</summary>
+    Shop,
+
     /// <summary>
     /// The player's input could not be matched to any known command verb;
     /// the game loop will display an error and prompt again.
@@ -135,6 +138,7 @@ public static class CommandParser
             "list" or "saves" => new ParsedCommand { Type = CommandType.ListSaves },
             "descend" or "down" => new ParsedCommand { Type = CommandType.Descend },
             "map" or "m" => new ParsedCommand { Type = CommandType.Map },
+            "shop" or "buy" => new ParsedCommand { Type = CommandType.Shop },
             _ => new ParsedCommand { Type = CommandType.Unknown }
         };
     }

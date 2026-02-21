@@ -3,6 +3,9 @@ namespace Dungnz.Models;
 /// <summary>Describes the environmental flavour of a dungeon room.</summary>
 public enum RoomType { Standard, Dark, Mossy, Flooded, Scorched, Ancient }
 
+/// <summary>Describes environmental hazards that can damage the player on entry.</summary>
+public enum HazardType { None, Spike, Poison, Fire }
+
 /// <summary>
 /// Represents a single room in the dungeon. Holds navigational connections to adjacent rooms,
 /// the enemy or items present, and state flags that track player interaction (visited, looted,
@@ -65,4 +68,10 @@ public class Room
     /// Shrines can only be used once per dungeon run.
     /// </summary>
     public bool ShrineUsed { get; set; }
+
+    /// <summary>Gets or sets the merchant present in this room, or <c>null</c> if none.</summary>
+    public Merchant? Merchant { get; set; }
+
+    /// <summary>Gets or sets the environmental hazard in this room that damages the player on entry.</summary>
+    public HazardType Hazard { get; set; } = HazardType.None;
 }

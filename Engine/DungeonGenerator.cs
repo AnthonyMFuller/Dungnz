@@ -132,6 +132,9 @@ public class DungeonGenerator
                     var enemyType = enemyTypes[_rng.Next(enemyTypes.Length)];
                     room.Enemy = EnemyFactory.CreateScaled(enemyType, playerLevel, effectiveMult);
                 }
+
+                if (_rng.Next(100) < 20) room.Merchant = Merchant.CreateRandom(_rng);
+                if (_rng.Next(100) < 15) room.Hazard = (HazardType)(_rng.Next(3) + 1); // 1-3 = Spike/Poison/Fire
             }
         }
 
