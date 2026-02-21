@@ -1,5 +1,8 @@
 namespace Dungnz.Models;
 
+/// <summary>Describes the environmental flavour of a dungeon room.</summary>
+public enum RoomType { Standard, Dark, Mossy, Flooded, Scorched, Ancient }
+
 /// <summary>
 /// Represents a single room in the dungeon. Holds navigational connections to adjacent rooms,
 /// the enemy or items present, and state flags that track player interaction (visited, looted,
@@ -7,6 +10,9 @@ namespace Dungnz.Models;
 /// </summary>
 public class Room
 {
+    /// <summary>Gets or sets the environmental type of this room, used to add flavour text on entry.</summary>
+    public RoomType Type { get; set; } = RoomType.Standard;
+
     /// <summary>Gets or sets the unique identifier for this room, assigned automatically on creation.</summary>
     public Guid Id { get; set; } = Guid.NewGuid();
 

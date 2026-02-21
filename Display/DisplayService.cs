@@ -30,7 +30,16 @@ public class ConsoleDisplayService : IDisplayService
     public void ShowRoom(Room room)
     {
         Console.WriteLine();
-        Console.WriteLine(room.Description);
+        var prefix = room.Type switch
+        {
+            RoomType.Dark => "🌑 The room is pitch dark. ",
+            RoomType.Mossy => "🌿 Damp moss covers the walls. ",
+            RoomType.Flooded => "💧 Ankle-deep water pools here. ",
+            RoomType.Scorched => "🔥 Scorch marks scar the stone. ",
+            RoomType.Ancient => "🏛 Ancient runes line the walls. ",
+            _ => string.Empty
+        };
+        Console.WriteLine(prefix + room.Description);
         Console.WriteLine();
 
         if (room.Exits.Count > 0)

@@ -6,6 +6,9 @@ public partial class Player
     /// Gets the player's current hit points. Reduced by <see cref="TakeDamage"/> and restored
     /// by <see cref="Heal"/>; always clamped between 0 and <see cref="MaxHP"/>.
     /// </summary>
+    public PlayerClass Class { get; set; } = PlayerClass.Warrior;
+    public float ClassDodgeBonus { get; set; }
+
     public int HP { get; set; } = 100;
 
     /// <summary>

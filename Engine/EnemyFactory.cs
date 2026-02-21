@@ -83,7 +83,15 @@ public static class EnemyFactory
     /// <returns>A <see cref="DungeonBoss"/> instance ready for a boss-room encounter.</returns>
     public static Enemy CreateBoss(Random rng)
     {
-        return new DungeonBoss(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig);
+        var pick = rng.Next(5);
+        return pick switch
+        {
+            0 => new DungeonBoss(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            1 => new LichKing(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            2 => new StoneTitan(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            3 => new ShadowWraith(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            _ => new VampireBoss(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+        };
     }
 
     /// <summary>
