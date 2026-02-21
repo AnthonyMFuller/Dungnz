@@ -59,6 +59,9 @@ public enum CommandType
     /// <summary>Browse the wares of a merchant present in the current room.</summary>
     Shop,
 
+    /// <summary>Display the player's prestige level, total wins/runs, and active stat bonuses.</summary>
+    Prestige,
+
     /// <summary>
     /// The player's input could not be matched to any known command verb;
     /// the game loop will display an error and prompt again.
@@ -139,6 +142,7 @@ public static class CommandParser
             "descend" or "down" => new ParsedCommand { Type = CommandType.Descend },
             "map" or "m" => new ParsedCommand { Type = CommandType.Map },
             "shop" or "buy" => new ParsedCommand { Type = CommandType.Shop },
+            "prestige" or "p" => new ParsedCommand { Type = CommandType.Prestige },
             _ => new ParsedCommand { Type = CommandType.Unknown }
         };
     }

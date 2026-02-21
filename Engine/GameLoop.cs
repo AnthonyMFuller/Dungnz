@@ -143,6 +143,9 @@ public class GameLoop
                 case CommandType.Shop:
                     HandleShop();
                     break;
+                case CommandType.Prestige:
+                    HandlePrestige();
+                    break;
                 default:
                     _display.ShowError("Unknown command. Type HELP for commands.");
                     break;
@@ -222,6 +225,7 @@ public class GameLoop
             if (_player.HP <= 0)
             {
                 _display.ShowMessage("You died from a trap!");
+                PrestigeSystem.RecordRun(won: false);
                 return;
             }
         }
@@ -246,6 +250,7 @@ public class GameLoop
                 _stats.TimeElapsed = DateTime.UtcNow - _runStart;
                 _stats.Display(_display.ShowMessage);
                 RunStats.AppendToHistory(_stats, won: false);
+                PrestigeSystem.RecordRun(won: false);
                 return;
             }
             
@@ -269,6 +274,7 @@ public class GameLoop
                 _stats.TimeElapsed = DateTime.UtcNow - _runStart;
                 _stats.Display(_display.ShowMessage);
                 RunStats.AppendToHistory(_stats, won: true);
+                PrestigeSystem.RecordRun(won: true);
                 var unlocked = _achievements.Evaluate(_stats, _player, won: true);
                 if (unlocked.Count > 0)
                 {
@@ -544,6 +550,18 @@ public class GameLoop
                 _display.ShowError("Invalid choice.");
                 break;
         }
+    }
+
+    private void HandlePrestige()
+    {
+        var data = PrestigeSystem.Load();
+        _display.ShowMessage("=== PRESTIGE STATUS ===");
+        _display.ShowMessage($"Prestige Level: {data.PrestigeLevel}");
+        _display.ShowMessage($"Total Wins: {data.TotalWins} | Total Runs: {data.TotalRuns}");
+        if (data.PrestigeLevel > 0)
+            _display.ShowMessage($"Bonuses: +{data.BonusStartAttack} Attack, +{data.BonusStartDefense} Defense, +{data.BonusStartHP} Max HP");
+        else
+            _display.ShowMessage("Win 3 runs to earn your first Prestige level!");
     }
 
     private void HandleShop()
