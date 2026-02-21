@@ -2,20 +2,103 @@ using Dungnz.Models;
 
 namespace Dungnz.Display;
 
+/// <summary>
+/// Defines all output (and one input) operations the game uses to communicate
+/// with the player, separating presentation logic from game logic so that the
+/// console implementation can be swapped for a test stub or a GUI renderer.
+/// </summary>
 public interface IDisplayService
 {
+    /// <summary>
+    /// Renders the game's title screen / splash banner to the player.
+    /// </summary>
     void ShowTitle();
+
+    /// <summary>
+    /// Describes the current room to the player, including its exits,
+    /// any enemies present, and any items lying on the floor.
+    /// </summary>
+    /// <param name="room">The room whose details should be displayed.</param>
     void ShowRoom(Room room);
+
+    /// <summary>
+    /// Displays a combat-start or combat-event headline (e.g. "A Goblin attacks!").
+    /// </summary>
+    /// <param name="message">The headline message to show.</param>
     void ShowCombat(string message);
+
+    /// <summary>
+    /// Shows a one-line HP status bar for both combatants so the player can
+    /// assess the state of the fight at a glance.
+    /// </summary>
+    /// <param name="player">The player whose current and maximum HP is shown.</param>
+    /// <param name="enemy">The enemy whose current and maximum HP is shown.</param>
     void ShowCombatStatus(Player player, Enemy enemy);
+
+    /// <summary>
+    /// Displays a single line of flavour or mechanical text that describes what
+    /// just happened in combat (e.g. hit/miss/dodge/crit messages).
+    /// </summary>
+    /// <param name="message">The combat narrative line to display.</param>
     void ShowCombatMessage(string message);
+
+    /// <summary>
+    /// Renders a formatted summary of all the player's current statistics,
+    /// including HP, attack, defense, gold, XP, and level.
+    /// </summary>
+    /// <param name="player">The player whose stats should be displayed.</param>
     void ShowPlayerStats(Player player);
+
+    /// <summary>
+    /// Lists every item currently in the player's inventory, including item
+    /// type annotations to help the player decide what to use or equip.
+    /// </summary>
+    /// <param name="player">The player whose inventory should be displayed.</param>
     void ShowInventory(Player player);
+
+    /// <summary>
+    /// Announces that an enemy dropped an item after being defeated.
+    /// </summary>
+    /// <param name="item">The item that was dropped.</param>
     void ShowLootDrop(Item item);
+
+    /// <summary>
+    /// Displays an informational message to the player (e.g. narrative text,
+    /// confirmations, and general-purpose game output).
+    /// </summary>
+    /// <param name="message">The message to display.</param>
     void ShowMessage(string message);
+
+    /// <summary>
+    /// Displays an error or warning message to inform the player that their
+    /// last action could not be completed (e.g. invalid direction, missing item).
+    /// </summary>
+    /// <param name="message">The error description to display.</param>
     void ShowError(string message);
+
+    /// <summary>
+    /// Prints the full list of available player commands and their aliases.
+    /// </summary>
     void ShowHelp();
+
+    /// <summary>
+    /// Renders the standard input prompt symbol that invites the player to
+    /// type a command during normal exploration.
+    /// </summary>
     void ShowCommandPrompt();
+
+    /// <summary>
+    /// Renders the combat-specific input prompt presenting the player with
+    /// their available actions (Attack / Flee).
+    /// </summary>
     void ShowCombatPrompt();
+
+    /// <summary>
+    /// Prompts the player to enter their character's name at game start and
+    /// returns the value they typed.
+    /// </summary>
+    /// <returns>
+    /// The name entered by the player, or a default fallback name if none was provided.
+    /// </returns>
     string ReadPlayerName();
 }

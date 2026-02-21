@@ -2,17 +2,41 @@ namespace Dungnz.Systems;
 
 using System.Text.Json;
 
+/// <summary>
+/// Accumulates performance metrics for a single dungeon run, used for end-of-run
+/// summaries, history logging, and achievement evaluation.
+/// </summary>
 public class RunStats
 {
+    /// <summary>The total number of turns the player took during the run.</summary>
     public int TurnsTaken { get; set; }
+
+    /// <summary>The total number of enemies defeated during the run.</summary>
     public int EnemiesDefeated { get; set; }
+
+    /// <summary>The cumulative damage dealt by the player to all enemies during the run.</summary>
     public int DamageDealt { get; set; }
+
+    /// <summary>The cumulative damage received by the player from all sources during the run.</summary>
     public int DamageTaken { get; set; }
+
+    /// <summary>The total amount of gold collected from enemy loot and room rewards during the run.</summary>
     public int GoldCollected { get; set; }
+
+    /// <summary>The total number of items discovered or picked up during the run.</summary>
     public int ItemsFound { get; set; }
+
+    /// <summary>The player's character level at the end of the run.</summary>
     public int FinalLevel { get; set; }
+
+    /// <summary>The wall-clock duration from the start to the end of the run.</summary>
     public TimeSpan TimeElapsed { get; set; }
 
+    /// <summary>
+    /// Outputs a formatted statistics summary to the provided delegate, including
+    /// turns, kills, damage, gold, items, level, and time.
+    /// </summary>
+    /// <param name="output">A delegate that receives each formatted line of output, e.g. the console or UI renderer.</param>
     public void Display(Action<string> output)
     {
         output("=== RUN STATISTICS ===");
@@ -26,6 +50,12 @@ public class RunStats
         output($"Time Elapsed:     {(int)TimeElapsed.TotalMinutes}m {TimeElapsed.Seconds}s");
     }
 
+    /// <summary>
+    /// Appends a run record to the persistent JSON history file stored in the user's AppData folder.
+    /// Failures are silently swallowed so a history write error never disrupts the game.
+    /// </summary>
+    /// <param name="stats">The statistics collected during the completed run.</param>
+    /// <param name="won"><see langword="true"/> if the player won the run; <see langword="false"/> if they died.</param>
     public static void AppendToHistory(RunStats stats, bool won)
     {
         try

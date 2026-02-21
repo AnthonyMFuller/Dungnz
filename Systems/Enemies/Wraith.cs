@@ -2,8 +2,22 @@ namespace Dungnz.Systems.Enemies;
 using Dungnz.Models;
 using Dungnz.Systems;
 
+/// <summary>
+/// An incorporeal undead spirit with a 30% flat dodge chance that bypasses the normal
+/// defense-based dodge formula, making it difficult to reliably damage despite low base defense.
+/// </summary>
 public class Wraith : Enemy
 {
+    /// <summary>
+    /// Initialises the Wraith using either the provided external stats from config
+    /// or built-in fallback defaults. Sets <see cref="Enemy.FlatDodgeChance"/> to 30%
+    /// to represent its ethereal, hard-to-hit nature.
+    /// </summary>
+    /// <param name="stats">
+    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
+    /// hard-coded defaults (35 HP, 18 ATK, 2 DEF, 35 XP, 8–20 gold).
+    /// </param>
+    /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
     public Wraith(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         FlatDodgeChance = 0.30f; // 30% flat dodge, ignores DEF-based formula

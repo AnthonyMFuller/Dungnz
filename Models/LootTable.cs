@@ -1,5 +1,10 @@
 namespace Dungnz.Models;
 
+/// <summary>
+/// Defines the drop pool for a specific enemy, combining a configurable list of chance-based
+/// item drops (e.g., boss keys) with a tiered random item system that scales with player level.
+/// Gold is also rolled from a configurable min/max range.
+/// </summary>
 public class LootTable
 {
     private readonly List<(Item item, double chance)> _drops = new();
@@ -28,6 +33,16 @@ public class LootTable
         new Item { Name = "Cloak of Shadows", Type = ItemType.Accessory, Description = "+10% dodge chance.", IsEquippable = true, DodgeBonus = 0.10f }
     };
 
+    /// <summary>
+    /// Initialises a new <see cref="LootTable"/> with an optional random-number generator and
+    /// a gold drop range.
+    /// </summary>
+    /// <param name="rng">
+    /// The <see cref="Random"/> instance to use for all probability rolls. If <c>null</c>,
+    /// a new <see cref="Random"/> is created automatically.
+    /// </param>
+    /// <param name="minGold">The minimum gold that can be dropped (inclusive). Defaults to 0.</param>
+    /// <param name="maxGold">The maximum gold that can be dropped (inclusive). Defaults to 0.</param>
     public LootTable(Random? rng = null, int minGold = 0, int maxGold = 0)
     {
         _rng = rng ?? new Random();
@@ -35,8 +50,23 @@ public class LootTable
         _maxGold = maxGold;
     }
 
+    /// <summary>
+    /// Registers an item as a possible drop with the specified probability.
+    /// Multiple items may be added; the first one whose probability roll succeeds is used.
+    /// </summary>
+    /// <param name="item">The item to add to the explicit drop pool.</param>
+    /// <param name="chance">The probability [0.0, 1.0] that this item drops when <see cref="RollDrop"/> is called.</param>
     public void AddDrop(Item item, double chance) => _drops.Add((item, chance));
 
+    /// <summary>
+    /// Executes a full loot roll for a defeated enemy, returning any item that was selected and
+    /// the gold amount to award. Explicit drops (registered via <see cref="AddDrop"/>) are tried
+    /// first; if none trigger, a 30 % chance of a random tiered item applies based on
+    /// <paramref name="playerLevel"/>. Elite enemies are guaranteed at least a tier-2 item.
+    /// </summary>
+    /// <param name="enemy">The defeated enemy, used to check <see cref="Enemy.IsElite"/> for tier escalation.</param>
+    /// <param name="playerLevel">The player's current level, used to select the appropriate item tier pool.</param>
+    /// <returns>A <see cref="LootResult"/> containing the optional item drop and the gold amount.</returns>
     public LootResult RollDrop(Enemy enemy, int playerLevel = 1)
     {
         int gold = _minGold == _maxGold ? _minGold : _rng.Next(_minGold, _maxGold + 1);

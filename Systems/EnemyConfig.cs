@@ -3,17 +3,38 @@ namespace Dungnz.Systems;
 using System.Text.Json;
 using Dungnz.Models;
 
+/// <summary>
+/// Represents the raw combat statistics for a single enemy type as read from the JSON
+/// configuration file. Immutable once deserialised and used to initialise enemy instances.
+/// </summary>
 public record EnemyStats
 {
+    /// <summary>The display name of the enemy type shown during combat and in room descriptions.</summary>
     public string Name { get; init; } = string.Empty;
+
+    /// <summary>The enemy's maximum (and starting) hit points.</summary>
     public int MaxHP { get; init; }
+
+    /// <summary>The enemy's base attack value used to calculate damage dealt per hit.</summary>
     public int Attack { get; init; }
+
+    /// <summary>The enemy's base defense value used to reduce incoming damage.</summary>
     public int Defense { get; init; }
+
+    /// <summary>The amount of experience points awarded to the player upon defeating this enemy.</summary>
     public int XPValue { get; init; }
+
+    /// <summary>The minimum amount of gold that drops from this enemy's loot table.</summary>
     public int MinGold { get; init; }
+
+    /// <summary>The maximum amount of gold that drops from this enemy's loot table.</summary>
     public int MaxGold { get; init; }
 }
 
+/// <summary>
+/// Provides a static helper for loading and validating enemy stat definitions from a JSON
+/// configuration file, returning a dictionary keyed by enemy type identifier.
+/// </summary>
 public static class EnemyConfig
 {
     private static readonly JsonSerializerOptions JsonOptions = new()
@@ -22,6 +43,15 @@ public static class EnemyConfig
         ReadCommentHandling = JsonCommentHandling.Skip
     };
 
+    /// <summary>
+    /// Reads the specified JSON file and deserialises it as a dictionary of enemy stat entries,
+    /// validating that each entry has a non-empty name, positive max HP, and non-negative
+    /// attack, defense, XP, and gold values.
+    /// </summary>
+    /// <param name="path">Absolute or relative path to the enemy JSON configuration file.</param>
+    /// <returns>A dictionary mapping enemy type keys to their validated <see cref="EnemyStats"/>.</returns>
+    /// <exception cref="FileNotFoundException">Thrown when the file does not exist at <paramref name="path"/>.</exception>
+    /// <exception cref="InvalidDataException">Thrown when the file is empty, invalid, or contains malformed enemy data.</exception>
     public static Dictionary<string, EnemyStats> Load(string path)
     {
         if (!File.Exists(path))

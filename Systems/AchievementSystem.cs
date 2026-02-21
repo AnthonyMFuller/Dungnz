@@ -3,20 +3,44 @@ namespace Dungnz.Systems;
 using System.Text.Json;
 using Dungnz.Models;
 
+/// <summary>
+/// Represents a single achievement that can be unlocked when specific run conditions are met.
+/// </summary>
 public class Achievement
 {
+    /// <summary>The display name of the achievement shown to the player.</summary>
     public string Name { get; init; } = string.Empty;
+
+    /// <summary>A short description explaining how the achievement is earned.</summary>
     public string Description { get; init; } = string.Empty;
+
+    /// <summary>
+    /// A predicate evaluated against end-of-run statistics and the player's state to determine
+    /// whether the achievement should be unlocked. Only evaluated on won runs.
+    /// </summary>
     public Func<RunStats, Player, bool> Condition { get; init; } = (_, _) => false;
+
+    /// <summary>
+    /// Indicates whether this achievement has already been unlocked in a previous run.
+    /// Set to <see langword="true"/> after being persisted to disk.
+    /// </summary>
     public bool Unlocked { get; set; }
 }
 
+/// <summary>
+/// Evaluates run achievements after a victory, tracks which achievements have been unlocked
+/// across all runs, and persists unlock state to disk.
+/// </summary>
 public class AchievementSystem
 {
     private static readonly string HistoryPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Dungnz", "achievements.json");
 
+    /// <summary>
+    /// The full catalogue of achievements available in the game, each with its unlock condition
+    /// evaluated at run completion.
+    /// </summary>
     public List<Achievement> Achievements { get; } = new()
     {
         new Achievement
@@ -51,6 +75,14 @@ public class AchievementSystem
         }
     };
 
+    /// <summary>
+    /// Evaluates all achievement conditions against the completed run. Only runs where the player
+    /// won are eligible. Newly satisfied achievements are persisted to disk and returned.
+    /// </summary>
+    /// <param name="stats">Statistics collected over the course of the run.</param>
+    /// <param name="player">The player's final state at run completion.</param>
+    /// <param name="won"><see langword="true"/> if the player won; achievements are only evaluated on wins.</param>
+    /// <returns>A list of achievements unlocked for the first time during this run.</returns>
     public List<Achievement> Evaluate(RunStats stats, Player player, bool won)
     {
         if (!won) return new List<Achievement>();

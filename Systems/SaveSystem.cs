@@ -5,6 +5,11 @@ using System.IO;
 using System.Text.Json;
 using Dungnz.Models;
 
+/// <summary>
+/// Provides static methods for serialising game state to JSON save files and
+/// deserialising them back, plus enumeration of existing saves. Save files are stored
+/// in the user's AppData folder under <c>Dungnz/saves/</c>.
+/// </summary>
 public static class SaveSystem
 {
     private static readonly string SaveDirectory = Path.Combine(
@@ -27,6 +32,13 @@ public static class SaveSystem
         }
     }
 
+    /// <summary>
+    /// Serialises the current game state — including the player, all reachable rooms, and their
+    /// interconnections — to a named JSON file in the save directory.
+    /// </summary>
+    /// <param name="state">The game state snapshot to persist.</param>
+    /// <param name="saveName">The name of the save slot; used as the file name (without extension).</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="saveName"/> is null or whitespace.</exception>
     public static void SaveGame(GameState state, string saveName)
     {
         if (string.IsNullOrWhiteSpace(saveName))
@@ -55,6 +67,15 @@ public static class SaveSystem
         File.WriteAllText(fileName, json);
     }
 
+    /// <summary>
+    /// Deserialises the named save file back into a <see cref="GameState"/>, reconstructing
+    /// the room graph with its exit links fully restored.
+    /// </summary>
+    /// <param name="saveName">The name of the save slot to load.</param>
+    /// <returns>A <see cref="GameState"/> containing the player and their current room.</returns>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="saveName"/> is null or whitespace.</exception>
+    /// <exception cref="FileNotFoundException">Thrown when no save file with the given name exists.</exception>
+    /// <exception cref="InvalidDataException">Thrown when the save file is corrupt or contains invalid JSON.</exception>
     public static GameState LoadGame(string saveName)
     {
         if (string.IsNullOrWhiteSpace(saveName))
@@ -110,6 +131,11 @@ public static class SaveSystem
         }
     }
 
+    /// <summary>
+    /// Returns the names of all available save slots, sorted by most recently written first.
+    /// Returns an empty array if the save directory does not exist.
+    /// </summary>
+    /// <returns>An array of save slot names (without file extensions).</returns>
     public static string[] ListSaves()
     {
         if (!Directory.Exists(SaveDirectory))
@@ -146,11 +172,24 @@ public static class SaveSystem
     }
 }
 
+/// <summary>
+/// An immutable snapshot of the game's core runtime state, pairing a player with the room
+/// they currently occupy. Used as the unit of data passed to and from the save system.
+/// </summary>
 public class GameState
 {
+    /// <summary>The player character, including stats, inventory, level, and experience.</summary>
     public Player Player { get; }
+
+    /// <summary>The room the player is currently standing in when the state was captured.</summary>
     public Room CurrentRoom { get; }
 
+    /// <summary>
+    /// Creates a new game state with the given player and current room.
+    /// </summary>
+    /// <param name="player">The player to associate with this state.</param>
+    /// <param name="currentRoom">The room the player is currently in.</param>
+    /// <exception cref="ArgumentNullException">Thrown when either <paramref name="player"/> or <paramref name="currentRoom"/> is <see langword="null"/>.</exception>
     public GameState(Player player, Room currentRoom)
     {
         Player = player ?? throw new ArgumentNullException(nameof(player));

@@ -2,10 +2,17 @@ namespace Dungnz.Engine;
 
 using Dungnz.Models;
 
+/// <summary>
+/// Procedurally generates a fully connected grid-based dungeon floor by creating a
+/// rectangular room grid, wiring bidirectional exits between adjacent cells, placing
+/// enemies (scaled to player level and floor depth), scattering loot items, and
+/// optionally seeding healing shrines — all driven by a seeded or random RNG so runs
+/// can be reproduced exactly.
+/// </summary>
 public class DungeonGenerator
 {
     private readonly Random _rng;
-    private static readonly string[] RoomDescriptions = 
+    private static readonly string[] RoomDescriptions =
     {
         "A damp corridor with moss-covered stone walls. Water drips from the ceiling.",
         "A dusty chamber filled with broken furniture and cobwebs.",
@@ -19,11 +26,41 @@ public class DungeonGenerator
         "A spacious vault with collapsed sections of ceiling allowing dim light through."
     };
 
+    /// <summary>
+    /// Initialises a new <see cref="DungeonGenerator"/> with an optional fixed seed.
+    /// Using the same seed value produces an identical dungeon layout every time.
+    /// </summary>
+    /// <param name="seed">
+    /// A seed value for the internal <see cref="Random"/> instance. When
+    /// <see langword="null"/>, a non-deterministic seed is used.
+    /// </param>
     public DungeonGenerator(int? seed = null)
     {
         _rng = seed.HasValue ? new Random(seed.Value) : new Random();
     }
 
+    /// <summary>
+    /// Generates a <paramref name="width"/> × <paramref name="height"/> grid of
+    /// interconnected rooms with bidirectional exits, then populates it with
+    /// level-scaled enemies (~60 % occupancy), random loot items (~30 % per room),
+    /// healing shrines (~15 % in non-terminal rooms), and a mandatory boss enemy in
+    /// the bottom-right exit room. Returns the top-left starting room and the
+    /// bottom-right exit room.
+    /// </summary>
+    /// <param name="width">Number of rooms along the horizontal axis. Defaults to 5.</param>
+    /// <param name="height">Number of rooms along the vertical axis. Defaults to 4.</param>
+    /// <param name="playerLevel">
+    /// The player's current level, used to scale enemy stats via
+    /// <see cref="EnemyFactory.CreateScaled"/>. Defaults to 1.
+    /// </param>
+    /// <param name="floorMultiplier">
+    /// Additional stat multiplier representing dungeon depth (1.0 = floor 1, 1.5 = floor 2, etc.).
+    /// Defaults to 1.0.
+    /// </param>
+    /// <returns>
+    /// A tuple of (<c>startRoom</c>, <c>exitRoom</c>) where <c>startRoom</c> is the
+    /// player's entry point and <c>exitRoom</c> is the boss-guarded exit.
+    /// </returns>
     public (Room startRoom, Room exitRoom) Generate(int width = 5, int height = 4, int playerLevel = 1, float floorMultiplier = 1.0f)
     {
         // Create grid of rooms

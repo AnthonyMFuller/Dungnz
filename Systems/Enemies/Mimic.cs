@@ -2,8 +2,22 @@ namespace Dungnz.Systems.Enemies;
 using Dungnz.Models;
 using Dungnz.Systems;
 
+/// <summary>
+/// A treasure chest that has come to life and attacks when the player attempts to loot it.
+/// Uses an ambush mechanic that prevents the player from acting on the first turn of combat.
+/// </summary>
 public class Mimic : Enemy
 {
+    /// <summary>
+    /// Initialises the Mimic using either the provided external stats from config
+    /// or built-in fallback defaults. Sets <see cref="Enemy.IsAmbush"/> to <see langword="true"/>
+    /// so the player cannot act during the first turn of the encounter.
+    /// </summary>
+    /// <param name="stats">
+    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
+    /// hard-coded defaults (40 HP, 14 ATK, 8 DEF, 40 XP, 10–25 gold).
+    /// </param>
+    /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
     public Mimic(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         IsAmbush = true; // first-turn surprise: player cannot act

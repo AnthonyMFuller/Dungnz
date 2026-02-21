@@ -2,8 +2,22 @@ namespace Dungnz.Systems.Enemies;
 using Dungnz.Models;
 using Dungnz.Systems;
 
+/// <summary>
+/// A magic-wielding goblin that inflicts poison on every successful hit, dealing additional
+/// damage over time. Its spellcraft makes it more dangerous than its modest HP suggests.
+/// </summary>
 public class GoblinShaman : Enemy
 {
+    /// <summary>
+    /// Initialises the Goblin Shaman using either the provided external stats from config
+    /// or built-in fallback defaults. Sets <see cref="Enemy.AppliesPoisonOnHit"/> to enable
+    /// per-hit poison application during combat.
+    /// </summary>
+    /// <param name="stats">
+    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
+    /// hard-coded defaults (25 HP, 10 ATK, 4 DEF, 25 XP, 5–15 gold).
+    /// </param>
+    /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
     public GoblinShaman(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         AppliesPoisonOnHit = true;

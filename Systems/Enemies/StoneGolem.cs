@@ -2,8 +2,22 @@ namespace Dungnz.Systems.Enemies;
 using Dungnz.Models;
 using Dungnz.Systems;
 
+/// <summary>
+/// A magically animated stone construct with extremely high defense and HP. Completely
+/// immune to all status effects, making it resistant to poison, stun, and other debuffs.
+/// </summary>
 public class StoneGolem : Enemy
 {
+    /// <summary>
+    /// Initialises the Stone Golem using either the provided external stats from config
+    /// or built-in fallback defaults. Sets <see cref="Enemy.IsImmuneToEffects"/> to prevent
+    /// any status effects from being applied.
+    /// </summary>
+    /// <param name="stats">
+    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
+    /// hard-coded defaults (90 HP, 8 ATK, 20 DEF, 50 XP, 10–25 gold).
+    /// </param>
+    /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
     public StoneGolem(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         IsImmuneToEffects = true;

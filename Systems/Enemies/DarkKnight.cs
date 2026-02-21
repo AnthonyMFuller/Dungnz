@@ -2,8 +2,24 @@ namespace Dungnz.Systems.Enemies;
 using Dungnz.Models;
 using Dungnz.Systems;
 
+/// <summary>
+/// A powerful armoured warrior with high attack and defense. May drop a Dark Blade weapon
+/// or Knight's Armor, making it a high-risk, high-reward mid-game encounter.
+/// </summary>
 public class DarkKnight : Enemy
 {
+    /// <summary>
+    /// Initialises the Dark Knight using either the provided external stats from config
+    /// or built-in fallback defaults, and populates the loot table from item config when available.
+    /// </summary>
+    /// <param name="stats">
+    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
+    /// hard-coded defaults (45 HP, 18 ATK, 12 DEF, 55 XP, 20–40 gold).
+    /// </param>
+    /// <param name="itemConfig">
+    /// The loaded item configuration used to source Dark Blade and Knight's Armor drops,
+    /// or <see langword="null"/> to create fallback inline items.
+    /// </param>
     public DarkKnight(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         if (stats != null)

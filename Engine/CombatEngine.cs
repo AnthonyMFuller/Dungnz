@@ -4,6 +4,11 @@ using Dungnz.Display;
 using Dungnz.Systems;
 using Dungnz.Systems.Enemies;
 
+/// <summary>
+/// Full turn-based combat engine that drives fight encounters between the player and
+/// an enemy, handling player input, ability usage, status effects, boss mechanics
+/// (enrage, telegraphed charge, ambush), loot distribution, and XP/level-up logic.
+/// </summary>
 public class CombatEngine : ICombatEngine
 {
     private readonly IDisplayService _display;
@@ -12,7 +17,32 @@ public class CombatEngine : ICombatEngine
     private readonly GameEvents? _events;
     private readonly StatusEffectManager _statusEffects;
     private readonly AbilityManager _abilities;
-    
+
+    /// <summary>
+    /// Initialises a new <see cref="CombatEngine"/> with the required display and input
+    /// services, optional event bus, and optional pre-seeded subsystem instances for
+    /// deterministic testing.
+    /// </summary>
+    /// <param name="display">The display service used to render all combat output.</param>
+    /// <param name="input">
+    /// The input reader used to receive player choices during combat.
+    /// Defaults to <see cref="ConsoleInputReader"/> when <see langword="null"/>.
+    /// </param>
+    /// <param name="rng">
+    /// The random-number generator used for hit/dodge/crit rolls.
+    /// A new instance is created when <see langword="null"/>.
+    /// </param>
+    /// <param name="events">
+    /// Optional event bus for broadcasting game-wide events such as combat end.
+    /// </param>
+    /// <param name="statusEffects">
+    /// Optional pre-configured status-effect manager; a default instance is created
+    /// when <see langword="null"/>.
+    /// </param>
+    /// <param name="abilities">
+    /// Optional pre-configured ability manager; a default instance is created when
+    /// <see langword="null"/>.
+    /// </param>
     public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null)
     {
         _display = display;
@@ -22,7 +52,21 @@ public class CombatEngine : ICombatEngine
         _statusEffects = statusEffects ?? new StatusEffectManager(display);
         _abilities = abilities ?? new AbilityManager();
     }
-    
+
+    /// <summary>
+    /// Runs a complete combat encounter between <paramref name="player"/> and
+    /// <paramref name="enemy"/>, looping through player/enemy turns until one side
+    /// is defeated or the player successfully flees. Handles ambush enemies, boss
+    /// phase-two enrage and charged attacks, status-effect tick processing, mana
+    /// regeneration, ability menus, loot drops, and XP/level-up on victory.
+    /// </summary>
+    /// <param name="player">The player character participating in the fight.</param>
+    /// <param name="enemy">The enemy the player is fighting.</param>
+    /// <returns>
+    /// <see cref="CombatResult.Won"/> if the enemy was defeated,
+    /// <see cref="CombatResult.Fled"/> if the player escaped, or
+    /// <see cref="CombatResult.PlayerDied"/> if the player's HP reached zero.
+    /// </returns>
     public CombatResult RunCombat(Player player, Enemy enemy)
     {
         _display.ShowCombat($"A {enemy.Name} attacks!");
@@ -323,8 +367,22 @@ public class CombatEngine : ICombatEngine
     }
 }
 
+/// <summary>
+/// Indicates the outcome of the player's interaction with the in-combat ability
+/// selection menu, so the combat loop knows whether to advance to the enemy's
+/// turn or to re-display the main combat prompt.
+/// </summary>
 public enum AbilityMenuResult
 {
+    /// <summary>
+    /// The player dismissed the menu without using an ability, either by choosing
+    /// "Cancel" explicitly or by providing an invalid selection.
+    /// </summary>
     Cancel,
+
+    /// <summary>
+    /// The player successfully activated an ability, consuming the required mana
+    /// and triggering its effect; the enemy turn should now follow.
+    /// </summary>
     Used
 }

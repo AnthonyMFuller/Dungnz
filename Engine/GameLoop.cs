@@ -5,6 +5,13 @@ using Dungnz.Display;
 using Dungnz.Models;
 using Dungnz.Systems;
 
+/// <summary>
+/// The primary game loop that drives exploration, combat, inventory management, and
+/// floor progression. It reads player commands each turn, delegates to specialised
+/// handlers for each action, invokes the combat engine on enemy encounters, tracks
+/// run statistics, evaluates achievements on game-end, and terminates the run on
+/// victory, defeat, or player-quit.
+/// </summary>
 public class GameLoop
 {
     private readonly IDisplayService _display;
@@ -19,6 +26,23 @@ public class GameLoop
     private readonly AchievementSystem _achievements = new();
     private int _currentFloor = 1;
 
+    /// <summary>
+    /// Creates a new <see cref="GameLoop"/> wired to the specified display, combat,
+    /// and input services.
+    /// </summary>
+    /// <param name="display">The display service used to render all game output.</param>
+    /// <param name="combat">The combat engine invoked whenever the player enters a room with a live enemy.</param>
+    /// <param name="input">
+    /// The input reader used to receive exploration commands.
+    /// Defaults to <see cref="ConsoleInputReader"/> when <see langword="null"/>.
+    /// </param>
+    /// <param name="events">
+    /// Optional event bus for broadcasting room-entered, item-picked, and other game events.
+    /// </param>
+    /// <param name="seed">
+    /// Optional RNG seed forwarded to the <see cref="DungeonGenerator"/> for reproducible
+    /// dungeon layouts; displayed to the player on run end so they can replay the same layout.
+    /// </param>
     public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null)
     {
         _display = display;
@@ -28,6 +52,13 @@ public class GameLoop
         _seed = seed;
     }
 
+    /// <summary>
+    /// Starts the main command loop for the given player and dungeon, reading and
+    /// dispatching commands until the player wins, dies, or quits. Also handles
+    /// multi-floor descents, shrine interactions, and end-of-run stat/achievement display.
+    /// </summary>
+    /// <param name="player">The player character whose state is mutated throughout the run.</param>
+    /// <param name="startRoom">The first room the player occupies when the loop begins.</param>
     public void Run(Player player, Room startRoom)
     {
         _player = player;
