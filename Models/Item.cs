@@ -67,4 +67,10 @@ public class Item
     /// items are not equippable; weapons, armor, and accessories are.
     /// </summary>
     public bool IsEquippable { get; set; }
+
+    /// <summary>
+    /// Gets or sets the carry weight of this item. Defaults to <c>1</c>.
+    /// Used by <see cref="Dungnz.Systems.InventoryManager"/> to enforce the per-player weight limit.
+    /// </summary>
+    public int Weight { get; set; } = 1;
 }

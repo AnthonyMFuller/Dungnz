@@ -119,4 +119,102 @@ public class InventoryManagerTests
 
         result.Should().Be(UseResult.NotUsable);
     }
+
+    // ---- TryAddItem / TryRemoveItem / HasItem / IsFull ----
+
+    [Fact]
+    public void TryAddItem_UnderCapacity_AddsItemAndReturnsTrue()
+    {
+        var (player, _, _, manager) = Make();
+        var item = new Item { Name = "Dagger", Type = ItemType.Weapon };
+
+        var result = manager.TryAddItem(player, item);
+
+        result.Should().BeTrue();
+        player.Inventory.Should().Contain(item);
+    }
+
+    [Fact]
+    public void TryAddItem_SlotsAtMax_ReturnsFalseAndDoesNotAdd()
+    {
+        var (player, _, _, manager) = Make();
+        for (var i = 0; i < InventoryManager.MaxSlots; i++)
+            player.Inventory.Add(new Item { Name = $"Item{i}" });
+
+        var overflow = new Item { Name = "One Too Many" };
+        var result = manager.TryAddItem(player, overflow);
+
+        result.Should().BeFalse();
+        player.Inventory.Should().NotContain(overflow);
+    }
+
+    [Fact]
+    public void TryAddItem_ExceedsWeightLimit_ReturnsFalse()
+    {
+        var (player, _, _, manager) = Make();
+        // Fill weight to limit with a single heavy item (no slot limit breached)
+        player.Inventory.Add(new Item { Name = "Boulder", Weight = InventoryManager.MaxWeight });
+
+        var result = manager.TryAddItem(player, new Item { Name = "Pebble", Weight = 1 });
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void TryRemoveItem_CaseInsensitiveMatch_RemovesAndReturnsTrue()
+    {
+        var (player, _, _, manager) = Make();
+        var item = new Item { Name = "Iron Shield" };
+        player.Inventory.Add(item);
+
+        var result = manager.TryRemoveItem(player, "IRON SHIELD");
+
+        result.Should().BeTrue();
+        player.Inventory.Should().NotContain(item);
+    }
+
+    [Fact]
+    public void TryRemoveItem_ItemNotFound_ReturnsFalse()
+    {
+        var (player, _, _, manager) = Make();
+
+        var result = manager.TryRemoveItem(player, "nonexistent");
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public void HasItem_ItemPresent_ReturnsTrue()
+    {
+        var (player, _, _, manager) = Make();
+        player.Inventory.Add(new Item { Name = "Torch" });
+
+        manager.HasItem(player, "torch").Should().BeTrue();
+    }
+
+    [Fact]
+    public void HasItem_ItemAbsent_ReturnsFalse()
+    {
+        var (player, _, _, manager) = Make();
+
+        manager.HasItem(player, "torch").Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsFull_BelowMaxSlots_ReturnsFalse()
+    {
+        var (player, _, _, manager) = Make();
+
+        manager.IsFull(player).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsFull_AtMaxSlots_ReturnsTrue()
+    {
+        var (player, _, _, manager) = Make();
+        for (var i = 0; i < InventoryManager.MaxSlots; i++)
+            player.Inventory.Add(new Item { Name = $"Item{i}" });
+
+        manager.IsFull(player).Should().BeTrue();
+    }
 }
