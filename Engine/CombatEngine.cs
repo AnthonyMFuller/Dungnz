@@ -289,6 +289,9 @@ public class CombatEngine : ICombatEngine
                 playerDmg *= 2;
                 _display.ShowCombatMessage("Critical hit!");
             }
+            // Warrior passive: +5% damage when HP < 50%
+            if (player.Class == PlayerClass.Warrior && player.HP < player.MaxHP / 2.0)
+                playerDmg = (int)(playerDmg * 1.05);
             enemy.HP -= playerDmg;
             _display.ShowCombatMessage($"You hit {enemy.Name} for {playerDmg} damage!");
             _turnLog.Add(new CombatTurn("You", "Attack", playerDmg, isCrit, false, null));

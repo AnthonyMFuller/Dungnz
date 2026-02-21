@@ -108,6 +108,9 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine($"Gold:    {player.Gold}");
         Console.WriteLine($"XP:      {player.XP}");
         Console.WriteLine($"Level:   {player.Level}");
+        var classDef = PlayerClassDefinition.All.FirstOrDefault(c => c.Class == player.Class);
+        if (classDef != null && !string.IsNullOrEmpty(classDef.TraitDescription))
+            Console.WriteLine($"Trait:   {classDef.TraitDescription}");
         Console.WriteLine();
     }
 
