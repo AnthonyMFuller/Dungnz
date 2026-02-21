@@ -18,6 +18,7 @@ public class CombatEngine : ICombatEngine
     private readonly StatusEffectManager _statusEffects;
     private readonly AbilityManager _abilities;
     private readonly List<CombatTurn> _turnLog = new();
+    private RunStats _stats = new();
 
     /// <summary>
     /// Initialises a new <see cref="CombatEngine"/> with the required display and input
@@ -68,8 +69,9 @@ public class CombatEngine : ICombatEngine
     /// <see cref="CombatResult.Fled"/> if the player escaped, or
     /// <see cref="CombatResult.PlayerDied"/> if the player's HP reached zero.
     /// </returns>
-    public CombatResult RunCombat(Player player, Enemy enemy)
+    public CombatResult RunCombat(Player player, Enemy enemy, RunStats? stats = null)
     {
+        if (stats != null) _stats = stats;
         _display.ShowCombat($"A {enemy.Name} attacks!");
         _turnLog.Clear();
 
@@ -293,6 +295,7 @@ public class CombatEngine : ICombatEngine
             if (player.Class == PlayerClass.Warrior && player.HP < player.MaxHP / 2.0)
                 playerDmg = (int)(playerDmg * 1.05);
             enemy.HP -= playerDmg;
+            _stats.DamageDealt += playerDmg;
             _display.ShowCombatMessage($"You hit {enemy.Name} for {playerDmg} damage!");
             _turnLog.Add(new CombatTurn("You", "Attack", playerDmg, isCrit, false, null));
         }
@@ -363,6 +366,7 @@ public class CombatEngine : ICombatEngine
                 _display.ShowCombatMessage("Critical hit!");
             }
             player.TakeDamage(enemyDmg);
+            _stats.DamageTaken += enemyDmg;
             _display.ShowCombatMessage($"{enemy.Name} hits you for {enemyDmg} damage!");
 
             string? statusApplied = null;
@@ -395,6 +399,7 @@ public class CombatEngine : ICombatEngine
         if (loot.Gold > 0)
         {
             player.AddGold(loot.Gold);
+            _stats.GoldCollected += loot.Gold;
             _display.ShowMessage($"You found {loot.Gold} gold!");
         }
         if (loot.Item != null)

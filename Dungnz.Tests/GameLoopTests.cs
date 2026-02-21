@@ -1,5 +1,6 @@
 using Dungnz.Engine;
 using Dungnz.Models;
+using Dungnz.Systems;
 using Dungnz.Tests.Helpers;
 using FluentAssertions;
 using Moq;
@@ -225,7 +226,7 @@ public class GameLoopTests
         var nextRoom = new Room { Description = "Danger room", Enemy = enemy };
         room.Exits[Direction.North] = nextRoom;
 
-        combat.Setup(c => c.RunCombat(player, enemy)).Returns(CombatResult.PlayerDied);
+        combat.Setup(c => c.RunCombat(player, enemy, It.IsAny<RunStats?>())).Returns(CombatResult.PlayerDied);
 
         var loop = MakeLoop(display, combat.Object, "north");
         loop.Run(player, room);

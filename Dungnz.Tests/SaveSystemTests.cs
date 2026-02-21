@@ -174,4 +174,27 @@ public class SaveSystemTests : IDisposable
 
         loaded.CurrentRoom.Id.Should().Be(originalId);
     }
+
+    [Fact]
+    public void RoundTrip_BossEnrageState_Preserved()
+    {
+        var boss = new Dungnz.Systems.Enemies.DungeonBoss();
+        boss.HP = 30; // below 40 % threshold
+        boss.IsEnraged = true;
+        boss.IsCharging = true;
+        boss.ChargeActive = false;
+
+        var exitRoom = new Room { Description = "Boss Chamber", IsExit = true };
+        exitRoom.Enemy = boss;
+        var state = new GameState(new Player { Name = "Tester" }, exitRoom);
+
+        SaveSystem.SaveGame(state, "boss");
+        var loaded = SaveSystem.LoadGame("boss");
+
+        var loadedBoss = loaded.CurrentRoom.Enemy as Dungnz.Systems.Enemies.DungeonBoss;
+        loadedBoss.Should().NotBeNull();
+        loadedBoss!.IsEnraged.Should().BeTrue();
+        loadedBoss.IsCharging.Should().BeTrue();
+        loadedBoss.ChargeActive.Should().BeFalse();
+    }
 }

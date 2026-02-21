@@ -251,7 +251,7 @@ public class GameLoop
         // Check for enemy encounter
         if (_currentRoom.Enemy != null && _currentRoom.Enemy.HP > 0)
         {
-            var result = _combat.RunCombat(_player, _currentRoom.Enemy);
+            var result = _combat.RunCombat(_player, _currentRoom.Enemy, _stats);
             
             if (result == CombatResult.PlayerDied)
             {

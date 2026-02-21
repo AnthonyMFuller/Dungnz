@@ -1,5 +1,6 @@
 namespace Dungnz.Engine;
 using Dungnz.Models;
+using Dungnz.Systems;
 
 /// <summary>
 /// Defines the contract for resolving a combat encounter between the player and an enemy,
@@ -16,5 +17,10 @@ public interface ICombatEngine
     /// <returns>
     /// A <see cref="CombatResult"/> indicating whether the player won, fled, or died.
     /// </returns>
-    CombatResult RunCombat(Player player, Enemy enemy);
+    /// <param name="stats">
+    /// Optional run-statistics accumulator. When provided, the engine increments
+    /// <see cref="RunStats.DamageDealt"/>, <see cref="RunStats.DamageTaken"/>, and
+    /// <see cref="RunStats.GoldCollected"/> as combat events occur.
+    /// </param>
+    CombatResult RunCombat(Player player, Enemy enemy, RunStats? stats = null);
 }
