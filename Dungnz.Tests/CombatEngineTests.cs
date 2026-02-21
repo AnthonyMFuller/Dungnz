@@ -1,6 +1,8 @@
 using Dungnz.Display;
 using Dungnz.Engine;
 using Dungnz.Models;
+using Dungnz.Systems;
+using Dungnz.Systems.Enemies;
 using Dungnz.Tests.Helpers;
 using FluentAssertions;
 using Xunit;
@@ -187,6 +189,152 @@ public class CombatEngineTests
 
         display.CombatMessages.Should().Contain(m => m.Contains("1 damage"));
     }
+    // ── Bug #85 ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Bug85_ClassDodgeBonus_IncludedInPlayerDodgeRoll()
+    {
+        var (player, enemy, display) = MakeBasic(playerDef: 0, enemyHp: 999, enemyAtk: 50);
+        player.ClassDodgeBonus = 0.99f;
+        var input = new FakeInputReader("A", "F");
+        var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.01));
+        engine.RunCombat(player, enemy);
+        display.CombatMessages.Should().Contain(m => m.Contains("dodged"));
+        player.HP.Should().Be(100);
+    }
+
+    [Fact]
+    public void Bug85_EquipmentDodgeBonus_IncludedInPlayerDodgeRoll()
+    {
+        var (player, enemy, display) = MakeBasic(playerDef: 0, enemyHp: 999, enemyAtk: 50);
+        player.DodgeBonus = 0.99f;
+        var input = new FakeInputReader("A", "F");
+        var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.01));
+        engine.RunCombat(player, enemy);
+        display.CombatMessages.Should().Contain(m => m.Contains("dodged"));
+        player.HP.Should().Be(100);
+    }
+
+    // ── Bug #86 ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Bug86_PowerStrikeSkill_IncreasesPlayerDamageBy15Percent()
+    {
+        // Attack=10, EnemyDef=0 -> base=10; x1.15 -> (int)11.5 = 11
+        var player = new Player { HP = 100, MaxHP = 100, Attack = 10, Defense = 5, Level = 3 };
+        player.Skills.TryUnlock(player, Skill.PowerStrike);
+        var enemy = new Enemy_Stub(hp: 1, atk: 0, def: 0, xp: 1);
+        var display = new FakeDisplayService();
+        var input = new FakeInputReader("A");
+        var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.95));
+        engine.RunCombat(player, enemy);
+        display.CombatMessages.Should().Contain(m => m.Contains("11 damage"));
+    }
+
+    [Fact]
+    public void Bug86_BattleHardenedSkill_ReducesIncomingDamageByOne()
+    {
+        // Enemy attack=10, player def=0 -> normally 10; BattleHardened -> 9
+        var player = new Player { HP = 100, MaxHP = 100, Attack = 1, Defense = 0, Level = 6 };
+        player.Skills.TryUnlock(player, Skill.BattleHardened);
+        var enemy = new Enemy_Stub(hp: 999, atk: 10, def: 0, xp: 1);
+        var display = new FakeDisplayService();
+        var input = new FakeInputReader("A", "F");
+        var rng = new ControlledRandom(defaultDouble: 0.1, 0.95, 0.95, 0.95, 0.95);
+        var engine = new CombatEngine(display, input, rng);
+        engine.RunCombat(player, enemy);
+        player.HP.Should().Be(91); // 100 - (10-1)
+    }
+
+    [Fact]
+    public void Bug86_SwiftnessSkill_AddsToPlayerDodgeChance()
+    {
+        // Player def=0 -> base dodge=0; Swiftness adds 0.05; RNG=0.03 < 0.05 -> dodge
+        var player = new Player { HP = 100, MaxHP = 100, Attack = 1, Defense = 0, Level = 5 };
+        player.Skills.TryUnlock(player, Skill.Swiftness);
+        var enemy = new Enemy_Stub(hp: 999, atk: 50, def: 0, xp: 1);
+        var display = new FakeDisplayService();
+        var input = new FakeInputReader("A", "F");
+        var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.03));
+        engine.RunCombat(player, enemy);
+        display.CombatMessages.Should().Contain(m => m.Contains("dodged"));
+        player.HP.Should().Be(100);
+    }
+
+    // ── Bug #106 ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Bug106_Fortified_ReducesIncomingDamageByThree()
+    {
+        // Enemy atk=10, player def=0 -> normally 10; Fortified -> 7
+        var player = new Player { HP = 100, MaxHP = 100, Attack = 1, Defense = 0 };
+        var enemy = new Enemy_Stub(hp: 999, atk: 10, def: 0, xp: 1);
+        var display = new FakeDisplayService();
+        var statusEffects = new StatusEffectManager(display);
+        statusEffects.Apply(player, StatusEffect.Fortified, 5);
+        var input = new FakeInputReader("A", "F");
+        var rng = new ControlledRandom(defaultDouble: 0.1, 0.95, 0.95, 0.95, 0.95);
+        var engine = new CombatEngine(display, input, rng, statusEffects: statusEffects);
+        engine.RunCombat(player, enemy);
+        player.HP.Should().Be(93); // 100 - 7
+    }
+
+    // ── Bug #107 ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Bug107_BossChargeActive_ClearedOnPlayerDodge()
+    {
+        // IsCharging=true -> PerformEnemyTurn sets ChargeActive=true and proceeds.
+        // ClassDodgeBonus=0.99 -> player dodges the charged hit. ChargeActive must be false after.
+        var player = new Player { HP = 100, MaxHP = 100, Attack = 1, Defense = 0, ClassDodgeBonus = 0.99f };
+        var boss = new DungeonBoss(null, null);
+        boss.HP = boss.MaxHP = 999;
+        boss.Attack = 50;
+        boss.IsCharging = true;
+        var display = new FakeDisplayService();
+        var input = new FakeInputReader("A", "F");
+        var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.01));
+        engine.RunCombat(player, boss);
+        boss.ChargeActive.Should().BeFalse();
+    }
+
+    // ── Bug #110 ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Bug110_BleedOnHit_MessageShown_WhenWeaponHasBleed()
+    {
+        var player = new Player { HP = 100, MaxHP = 100, Attack = 10, Defense = 5 };
+        var bleedSword = new Item { Name = "Bleed Sword", Type = ItemType.Weapon, IsEquippable = true, AppliesBleedOnHit = true };
+        player.Inventory.Add(bleedSword);
+        player.EquipItem(bleedSword);
+        var enemy = new Enemy_Stub(hp: 999, atk: 0, def: 0, xp: 1);
+        var display = new FakeDisplayService();
+        var input = new FakeInputReader("A", "F");
+        // Queue: [0.95(enemy no-dodge), 0.95(no crit), 0.05(bleed proc)]
+        // default=0.1: player dodge (0.1 < 5/25=0.2), flee success
+        var rng = new ControlledRandom(defaultDouble: 0.1, 0.95, 0.95, 0.05);
+        var engine = new CombatEngine(display, input, rng);
+        engine.RunCombat(player, enemy);
+        display.CombatMessages.Should().Contain(m => m.Contains("bleeding"));
+    }
+
+    // ── Bug #111 ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Bug111_AbilityDamage_TrackedInRunStats()
+    {
+        // PowerStrike: Max(1, 10*2 - 0) = 20
+        var player = new Player { HP = 100, MaxHP = 100, Attack = 10, Defense = 5, Level = 1, Mana = 30, MaxMana = 30 };
+        var enemy = new Enemy_Stub(hp: 999, atk: 0, def: 0, xp: 1);
+        var display = new FakeDisplayService();
+        var stats = new RunStats();
+        var input = new FakeInputReader("B", "1", "F");
+        var rng = new ControlledRandom(defaultDouble: 0.1);
+        var engine = new CombatEngine(display, input, rng);
+        engine.RunCombat(player, enemy, stats);
+        stats.DamageDealt.Should().Be(20);
+    }
+
 }
 
 /// <summary>Test stub enemy with configurable stats.</summary>

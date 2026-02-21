@@ -257,10 +257,16 @@ public class CombatEngine : ICombatEngine
         if (int.TryParse(choice, out int abilityIndex) && abilityIndex >= 1 && abilityIndex <= unlocked.Count)
         {
             var selectedAbility = unlocked[abilityIndex - 1];
+            var hpBeforeAbility = enemy.HP;
             var result = _abilities.UseAbility(player, enemy, selectedAbility.Type, _statusEffects, _display);
             
             if (result == UseAbilityResult.Success)
+            {
+                // Bug #111: track ability damage in run stats
+                if (enemy.HP < hpBeforeAbility)
+                    _stats.DamageDealt += hpBeforeAbility - enemy.HP;
                 return AbilityMenuResult.Used;
+            }
             
             _display.ShowMessage($"Cannot use ability: {result}");
             return AbilityMenuResult.Cancel;
@@ -294,10 +300,22 @@ public class CombatEngine : ICombatEngine
             // Warrior passive: +5% damage when HP < 50%
             if (player.Class == PlayerClass.Warrior && player.HP < player.MaxHP / 2.0)
                 playerDmg = (int)(playerDmg * 1.05);
+            // Bug #86: PowerStrike skill passive â +15% damage
+            if (player.Skills.IsUnlocked(Skill.PowerStrike))
+                playerDmg = Math.Max(1, (int)(playerDmg * 1.15));
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
             _display.ShowCombatMessage($"You hit {enemy.Name} for {playerDmg} damage!");
-            _turnLog.Add(new CombatTurn("You", "Attack", playerDmg, isCrit, false, null));
+
+            string? statusApplied = null;
+            // Bug #110: bleed-on-hit from equipped weapon (10% chance, 3 turns)
+            if (player.EquippedWeaponAppliesBleed && _rng.NextDouble() < 0.10)
+            {
+                _statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
+                statusApplied = "Bleed";
+                _display.ShowCombatMessage($"{enemy.Name} is bleeding!");
+            }
+            _turnLog.Add(new CombatTurn("You", "Attack", playerDmg, isCrit, false, statusApplied));
         }
     }
     
@@ -342,7 +360,16 @@ public class CombatEngine : ICombatEngine
             }
         }
         
-        if (RollDodge(player.Defense))
+        // Bug #107: clear ChargeActive before the dodge roll so it resets whether hit or missed
+        bool wasCharged = false;
+        if (enemy is DungeonBoss pendingChargeBoss && pendingChargeBoss.ChargeActive)
+        {
+            pendingChargeBoss.ChargeActive = false;
+            wasCharged = true;
+        }
+
+        // Bug #85: include equipment and class dodge bonuses for the player
+        if (RollPlayerDodge(player))
         {
             _display.ShowCombatMessage("You dodged the attack!");
             _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
@@ -352,9 +379,8 @@ public class CombatEngine : ICombatEngine
             var enemyDmg = Math.Max(1, enemy.Attack - player.Defense);
 
             // Apply charge multiplier (3x)
-            if (enemy is DungeonBoss chargeBoss && chargeBoss.ChargeActive)
+            if (wasCharged)
             {
-                chargeBoss.ChargeActive = false;
                 enemyDmg *= 3;
                 _display.ShowCombatMessage($"⚡ {enemy.Name} unleashes the charged attack!");
             }
@@ -365,6 +391,12 @@ public class CombatEngine : ICombatEngine
                 enemyDmg *= 2;
                 _display.ShowCombatMessage("Critical hit!");
             }
+            // Bug #86: BattleHardened skill passive â reduce incoming damage by 1 (minimum 1)
+            if (player.Skills.IsUnlocked(Skill.BattleHardened))
+                enemyDmg = Math.Max(1, enemyDmg - 1);
+            // Bug #106: Fortified status effect â reduce incoming damage by 3 (minimum 1)
+            if (_statusEffects.HasEffect(player, StatusEffect.Fortified))
+                enemyDmg = Math.Max(1, enemyDmg - 3);
             player.TakeDamage(enemyDmg);
             _stats.DamageTaken += enemyDmg;
             _display.ShowCombatMessage($"{enemy.Name} hits you for {enemyDmg} damage!");
@@ -454,6 +486,25 @@ public class CombatEngine : ICombatEngine
     private bool RollDodge(int defense)
     {
         var dodgeChance = defense / (double)(defense + 20);
+        return _rng.NextDouble() < dodgeChance;
+    }
+
+    /// <summary>
+    /// Rolls a dodge check for the player, incorporating base-defense probability,
+    /// equipped-item dodge bonuses (<see cref="Player.DodgeBonus"/>), class bonus
+    /// (<see cref="Player.ClassDodgeBonus"/>), and the Swiftness skill passive (+5%).
+    /// </summary>
+    /// <param name="player">The player attempting to dodge an incoming attack.</param>
+    /// <returns><see langword="true"/> if the dodge succeeds; otherwise <see langword="false"/>.</returns>
+    private bool RollPlayerDodge(Player player)
+    {
+        // Bug #85: add flat equipment and class bonuses on top of DEF-based chance
+        float dodgeChance = player.Defense / (player.Defense + 20f)
+                          + player.DodgeBonus
+                          + player.ClassDodgeBonus;
+        // Bug #86: Swiftness skill passive â +5% dodge chance
+        if (player.Skills.IsUnlocked(Skill.Swiftness))
+            dodgeChance += 0.05f;
         return _rng.NextDouble() < dodgeChance;
     }
     
