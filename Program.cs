@@ -1,9 +1,16 @@
 using Dungnz.Display;
 using Dungnz.Engine;
 using Dungnz.Models;
+using Dungnz.Systems;
 
 var display = new ConsoleDisplayService();
 display.ShowTitle();
+
+var prestige = PrestigeSystem.Load();
+if (prestige.PrestigeLevel > 0)
+{
+    Console.WriteLine(PrestigeSystem.GetPrestigeDisplay(prestige));
+}
 
 var name = display.ReadPlayerName();
 
@@ -57,6 +64,15 @@ player.Mana = player.MaxMana;
 if (chosenClassDef.Class == PlayerClass.Rogue)
     player.ClassDodgeBonus = 0.10f;
 EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
+
+// Apply prestige bonuses to starting stats
+if (prestige.PrestigeLevel > 0)
+{
+    player.Attack += prestige.BonusStartAttack;
+    player.Defense += prestige.BonusStartDefense;
+    player.MaxHP += prestige.BonusStartHP;
+    player.HP = player.MaxHP;
+}
 var generator = new DungeonGenerator(actualSeed);
 var (startRoom, _) = generator.Generate(difficulty: difficultySettings);
 

@@ -94,4 +94,55 @@ public class RunStats
             // Non-critical — don't crash the game if history can't be written
         }
     }
+
+    /// <summary>
+    /// Loads all previously recorded run history from the persistent JSON file.
+    /// Returns an empty list if the file does not exist or cannot be read.
+    /// </summary>
+    public static List<RunStats> LoadHistory()
+    {
+        try
+        {
+            var path = Path.Combine(
+                Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+                "Dungnz", "stats-history.json");
+            if (!File.Exists(path)) return new List<RunStats>();
+            var elements = JsonSerializer.Deserialize<List<JsonElement>>(File.ReadAllText(path));
+            if (elements == null) return new List<RunStats>();
+            var result = new List<RunStats>();
+            foreach (var el in elements)
+            {
+                var rs = new RunStats
+                {
+                    TurnsTaken      = el.TryGetProperty("TurnsTaken",      out var p1) ? p1.GetInt32() : 0,
+                    EnemiesDefeated = el.TryGetProperty("EnemiesDefeated", out var p2) ? p2.GetInt32() : 0,
+                    DamageDealt     = el.TryGetProperty("DamageDealt",     out var p3) ? p3.GetInt32() : 0,
+                    DamageTaken     = el.TryGetProperty("DamageTaken",     out var p4) ? p4.GetInt32() : 0,
+                    GoldCollected   = el.TryGetProperty("GoldCollected",   out var p5) ? p5.GetInt32() : 0,
+                    ItemsFound      = el.TryGetProperty("ItemsFound",      out var p6) ? p6.GetInt32() : 0,
+                    FinalLevel      = el.TryGetProperty("FinalLevel",      out var p7) ? p7.GetInt32() : 0,
+                    TimeElapsed     = TimeSpan.FromSeconds(
+                        el.TryGetProperty("TimeElapsedSeconds", out var p8) ? p8.GetInt32() : 0)
+                };
+                result.Add(rs);
+            }
+            return result;
+        }
+        catch
+        {
+            return new List<RunStats>();
+        }
+    }
+
+    /// <summary>
+    /// Returns the top <paramref name="count"/> runs from history, ranked by
+    /// score (FinalLevel × 100 + EnemiesDefeated).
+    /// </summary>
+    public static List<RunStats> GetTopRuns(int count = 5)
+    {
+        return LoadHistory()
+            .OrderByDescending(r => r.FinalLevel * 100 + r.EnemiesDefeated)
+            .Take(count)
+            .ToList();
+    }
 }
