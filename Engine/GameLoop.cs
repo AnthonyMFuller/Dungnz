@@ -140,6 +140,9 @@ public class GameLoop
                 case CommandType.Map:
                     _display.ShowMap(_currentRoom);
                     break;
+                case CommandType.Shop:
+                    HandleShop();
+                    break;
                 default:
                     _display.ShowError("Unknown command. Type HELP for commands.");
                     break;
@@ -198,6 +201,36 @@ public class GameLoop
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
         _events?.RaiseRoomEntered(_player, _currentRoom, previousRoom);
+
+        // Apply environmental hazard damage
+        if (_currentRoom.Hazard != HazardType.None)
+        {
+            var dmg = _currentRoom.Hazard switch {
+                HazardType.Spike => 5,
+                HazardType.Poison => 3,
+                HazardType.Fire => 7,
+                _ => 0
+            };
+            var hazardName = _currentRoom.Hazard switch {
+                HazardType.Spike => "hidden spikes",
+                HazardType.Poison => "poison gas",
+                HazardType.Fire => "a fire trap",
+                _ => "a hazard"
+            };
+            _player.TakeDamage(dmg);
+            _display.ShowMessage($"⚠ You trigger {hazardName} and take {dmg} damage! HP: {_player.HP}/{_player.MaxHP}");
+            if (_player.HP <= 0)
+            {
+                _display.ShowMessage("You died from a trap!");
+                return;
+            }
+        }
+
+        // Notify about merchant if present
+        if (_currentRoom.Merchant != null)
+        {
+            _display.ShowMessage("🛒 A merchant is here! Type SHOP to browse wares.");
+        }
 
         // Check for enemy encounter
         if (_currentRoom.Enemy != null && _currentRoom.Enemy.HP > 0)
@@ -510,6 +543,52 @@ public class GameLoop
             default:
                 _display.ShowError("Invalid choice.");
                 break;
+        }
+    }
+
+    private void HandleShop()
+    {
+        if (_currentRoom.Merchant == null)
+        {
+            _display.ShowMessage("There is no merchant here.");
+            return;
+        }
+
+        var merchant = _currentRoom.Merchant;
+        _display.ShowMessage($"=== MERCHANT SHOP ({merchant.Name}) ===");
+        for (int i = 0; i < merchant.Stock.Count; i++)
+        {
+            var mi = merchant.Stock[i];
+            _display.ShowMessage($"[{i + 1}] {mi.Item.Name} — {mi.Item.Description} — {mi.Price}g");
+        }
+        _display.ShowMessage($"Your gold: {_player.Gold}g");
+        _display.ShowMessage("[#] Buy  [X] Leave");
+        _display.ShowCommandPrompt();
+
+        var input = _input.ReadLine()?.Trim() ?? "";
+        if (input.Equals("x", StringComparison.OrdinalIgnoreCase))
+        {
+            _display.ShowMessage("You leave the shop.");
+            return;
+        }
+
+        if (int.TryParse(input, out var choice) && choice >= 1 && choice <= merchant.Stock.Count)
+        {
+            var selected = merchant.Stock[choice - 1];
+            if (_player.Gold < selected.Price)
+            {
+                _display.ShowMessage("Not enough gold.");
+            }
+            else
+            {
+                _player.SpendGold(selected.Price);
+                _player.Inventory.Add(selected.Item);
+                _display.ShowMessage($"You bought {selected.Item.Name} for {selected.Price}g. Gold remaining: {_player.Gold}g");
+            }
+        }
+        else
+        {
+            _display.ShowMessage("Leaving the shop.");
         }
     }
 }

@@ -68,4 +68,10 @@ public class Room
     /// Shrines can only be used once per dungeon run.
     /// </summary>
     public bool ShrineUsed { get; set; }
+
+    /// <summary>Gets or sets the merchant present in this room, or <c>null</c> if none.</summary>
+    public Merchant? Merchant { get; set; }
+
+    /// <summary>Gets or sets the environmental hazard in this room that damages the player on entry.</summary>
+    public HazardType Hazard { get; set; } = HazardType.None;
 }
