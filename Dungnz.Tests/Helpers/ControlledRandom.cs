@@ -6,7 +6,7 @@ public class ControlledRandom : Random
     private readonly Queue<double> _doubleValues;
     private readonly double _defaultDouble;
 
-    public ControlledRandom(double defaultDouble = 0.0, params double[] additionalDoubles)
+    public ControlledRandom(double defaultDouble = 0.95, params double[] additionalDoubles)
     {
         _defaultDouble = defaultDouble;
         _doubleValues = new Queue<double>(additionalDoubles);

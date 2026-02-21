@@ -18,6 +18,9 @@ public class Mimic : Enemy
     /// hard-coded defaults (40 HP, 14 ATK, 8 DEF, 40 XP, 10–25 gold).
     /// </param>
     /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
+    [System.Text.Json.Serialization.JsonConstructor]
+    private Mimic() { }
+
     public Mimic(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         IsAmbush = true; // first-turn surprise: player cannot act

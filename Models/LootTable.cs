@@ -87,7 +87,7 @@ public class LootTable
                      : Tier1Items;
 
             // Elite enemies guarantee tier-2+ drop
-            if (enemy.IsElite && pool == Tier1Items) pool = Tier2Items;
+            if (enemy?.IsElite == true && pool == Tier1Items) pool = Tier2Items;
 
             dropped = pool[_rng.Next(pool.Count)];
         }

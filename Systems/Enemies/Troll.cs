@@ -20,6 +20,9 @@ public class Troll : Enemy
     /// The loaded item configuration used to source the Troll Hide drop,
     /// or <see langword="null"/> to create a fallback inline item.
     /// </param>
+    [System.Text.Json.Serialization.JsonConstructor]
+    private Troll() { }
+
     public Troll(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         if (stats != null)

@@ -200,5 +200,6 @@ internal class Enemy_Stub : Enemy
         Defense = def;
         XPValue = xp;
         LootTable = new LootTable(minGold: 0, maxGold: 0);
+        FlatDodgeChance = 0f; // deterministic: never dodges in tests
     }
 }

@@ -17,6 +17,9 @@ public class Goblin : Enemy
     /// hard-coded defaults (20 HP, 8 ATK, 2 DEF, 15 XP, 2–8 gold).
     /// </param>
     /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
+    [System.Text.Json.Serialization.JsonConstructor]
+    private Goblin() { }
+
     public Goblin(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         if (stats != null)

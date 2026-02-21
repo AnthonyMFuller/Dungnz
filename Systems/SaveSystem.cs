@@ -12,11 +12,13 @@ using Dungnz.Models;
 /// </summary>
 public static class SaveSystem
 {
-    private static readonly string SaveDirectory = Path.Combine(
+    private static string SaveDirectory = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Dungnz",
         "saves"
     );
+
+    internal static void OverrideSaveDirectory(string path) => SaveDirectory = path;
 
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
@@ -65,6 +67,7 @@ public static class SaveSystem
         };
 
         var fileName = Path.Combine(SaveDirectory, $"{saveName}.json");
+        Directory.CreateDirectory(SaveDirectory);
         var json = JsonSerializer.Serialize(saveData, JsonOptions);
         File.WriteAllText(fileName, json);
     }
@@ -146,8 +149,8 @@ public static class SaveSystem
             return Array.Empty<string>();
 
         return Directory.GetFiles(SaveDirectory, "*.json")
+            .OrderByDescending(f => File.GetLastWriteTime(f))
             .Select(Path.GetFileNameWithoutExtension)
-            .OrderByDescending(f => File.GetLastWriteTime(f!))
             .ToArray()!;
     }
 

@@ -18,7 +18,7 @@ public class AbilityManagerTests
         _statusEffects = new StatusEffectManager(_display);
         _abilities = new AbilityManager();
         _player = new Player { Name = "TestHero" };
-        _enemy = new Enemy { Name = "TestMonster", HP = 100, MaxHP = 100, Attack = 10, Defense = 5 };
+        _enemy = new Enemy_Stub(100, 10, 5, 20) { Name = "TestMonster" };
     }
 
     [Fact]

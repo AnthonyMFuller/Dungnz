@@ -20,6 +20,9 @@ public class DarkKnight : Enemy
     /// The loaded item configuration used to source Dark Blade and Knight's Armor drops,
     /// or <see langword="null"/> to create fallback inline items.
     /// </param>
+    [System.Text.Json.Serialization.JsonConstructor]
+    private DarkKnight() { }
+
     public DarkKnight(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         if (stats != null)

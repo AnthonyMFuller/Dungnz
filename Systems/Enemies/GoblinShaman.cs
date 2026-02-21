@@ -18,6 +18,9 @@ public class GoblinShaman : Enemy
     /// hard-coded defaults (25 HP, 10 ATK, 4 DEF, 25 XP, 5–15 gold).
     /// </param>
     /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
+    [System.Text.Json.Serialization.JsonConstructor]
+    private GoblinShaman() { }
+
     public GoblinShaman(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         AppliesPoisonOnHit = true;

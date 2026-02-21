@@ -1,3 +1,6 @@
+using System.Text.Json.Serialization;
+using Dungnz.Systems.Enemies;
+
 namespace Dungnz.Models;
 
 /// <summary>
@@ -5,6 +8,17 @@ namespace Dungnz.Models;
 /// flags, and the loot table used when the enemy is defeated. Concrete enemy types derive
 /// from this class and configure their specific behaviours in their constructors.
 /// </summary>
+[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
+[JsonDerivedType(typeof(Goblin), "Goblin")]
+[JsonDerivedType(typeof(GoblinShaman), "GoblinShaman")]
+[JsonDerivedType(typeof(Skeleton), "Skeleton")]
+[JsonDerivedType(typeof(Troll), "Troll")]
+[JsonDerivedType(typeof(DarkKnight), "DarkKnight")]
+[JsonDerivedType(typeof(Mimic), "Mimic")]
+[JsonDerivedType(typeof(StoneGolem), "StoneGolem")]
+[JsonDerivedType(typeof(VampireLord), "VampireLord")]
+[JsonDerivedType(typeof(Wraith), "Wraith")]
+[JsonDerivedType(typeof(DungeonBoss), "DungeonBoss")]
 public abstract class Enemy
 {
     /// <summary>Gets or sets the enemy's display name used in combat and room descriptions.</summary>
@@ -26,6 +40,7 @@ public abstract class Enemy
     public int XPValue { get; set; }
 
     /// <summary>Gets or sets the loot table that determines what items and gold are dropped when this enemy dies.</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
     public LootTable LootTable { get; set; } = null!;
 
     // Special mechanic flags

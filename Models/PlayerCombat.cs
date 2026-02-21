@@ -3,25 +3,25 @@ namespace Dungnz.Models;
 public partial class Player
 {
     /// <summary>Gets the weapon currently equipped by the player, or <c>null</c> if the weapon slot is empty.</summary>
-    public Item? EquippedWeapon { get; private set; }
+    public Item? EquippedWeapon { get; set; }
 
     /// <summary>Gets the armor currently equipped by the player, or <c>null</c> if the armor slot is empty.</summary>
-    public Item? EquippedArmor { get; private set; }
+    public Item? EquippedArmor { get; set; }
 
     /// <summary>Gets the accessory currently equipped by the player, or <c>null</c> if the accessory slot is empty.</summary>
-    public Item? EquippedAccessory { get; private set; }
+    public Item? EquippedAccessory { get; set; }
 
     /// <summary>
     /// Gets the sum of all <see cref="Item.DodgeBonus"/> values across every currently equipped item,
     /// expressed as a fraction in [0, 1]. Recalculated automatically on equip and unequip.
     /// </summary>
-    public float DodgeBonus { get; private set; }
+    public float DodgeBonus { get; set; }
 
     /// <summary>
     /// Gets whether the player is currently immune to the Poison status effect.
     /// <c>true</c> if any equipped item has <see cref="Item.PoisonImmunity"/> set; recalculated on equip and unequip.
     /// </summary>
-    public bool PoisonImmune { get; private set; }
+    public bool PoisonImmune { get; set; }
 
     /// <summary>
     /// Gets whether the currently equipped weapon applies the Bleed status effect on each hit.
