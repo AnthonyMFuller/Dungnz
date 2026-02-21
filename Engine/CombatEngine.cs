@@ -417,6 +417,32 @@ public class CombatEngine : ICombatEngine
         {
             player.LevelUp();
             _display.ShowMessage($"LEVEL UP! You are now level {player.Level}!");
+
+            // Every 2 levels, offer a trait bonus
+            if (player.Level % 2 == 0)
+            {
+                _display.ShowMessage("=== LEVEL UP BONUS — Choose a trait: ===");
+                _display.ShowMessage("[1] +5 Max HP");
+                _display.ShowMessage("[2] +2 Attack");
+                _display.ShowMessage("[3] +2 Defense");
+                var traitChoice = (_input.ReadLine() ?? "1").Trim();
+                switch (traitChoice)
+                {
+                    case "2":
+                        player.ModifyAttack(2);
+                        _display.ShowMessage("You feel stronger! +2 Attack");
+                        break;
+                    case "3":
+                        player.ModifyDefense(2);
+                        _display.ShowMessage("You feel tougher! +2 Defense");
+                        break;
+                    default:
+                        player.MaxHP += 5;
+                        player.HP = Math.Min(player.HP + 5, player.MaxHP);
+                        _display.ShowMessage("You feel healthier! +5 Max HP");
+                        break;
+                }
+            }
         }
     }
     

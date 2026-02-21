@@ -62,6 +62,18 @@ public enum CommandType
     /// <summary>Display the player's prestige level, total wins/runs, and active stat bonuses.</summary>
     Prestige,
 
+    /// <summary>Display the player's skill tree and unlocked skills.</summary>
+    Skills,
+
+    /// <summary>Unlock a skill from the skill tree by name.</summary>
+    Learn,
+
+    /// <summary>Combine items (and optionally gold) into a new item via a crafting recipe.</summary>
+    Craft,
+
+    /// <summary>Display the top 5 historical runs ranked by score.</summary>
+    Leaderboard,
+
     /// <summary>
     /// The player's input could not be matched to any known command verb;
     /// the game loop will display an error and prompt again.
@@ -143,6 +155,10 @@ public static class CommandParser
             "map" or "m" => new ParsedCommand { Type = CommandType.Map },
             "shop" or "buy" => new ParsedCommand { Type = CommandType.Shop },
             "prestige" or "p" => new ParsedCommand { Type = CommandType.Prestige },
+            "skills" or "skill" => new ParsedCommand { Type = CommandType.Skills },
+            "learn" => new ParsedCommand { Type = CommandType.Learn, Argument = argument },
+            "craft" => new ParsedCommand { Type = CommandType.Craft, Argument = argument },
+            "leaderboard" or "lb" or "scores" => new ParsedCommand { Type = CommandType.Leaderboard },
             _ => new ParsedCommand { Type = CommandType.Unknown }
         };
     }

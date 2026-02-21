@@ -146,6 +146,18 @@ public class GameLoop
                 case CommandType.Prestige:
                     HandlePrestige();
                     break;
+                case CommandType.Skills:
+                    HandleSkills();
+                    break;
+                case CommandType.Learn:
+                    HandleLearnSkill(cmd.Argument);
+                    break;
+                case CommandType.Craft:
+                    HandleCraft(cmd.Argument);
+                    break;
+                case CommandType.Leaderboard:
+                    HandleLeaderboard();
+                    break;
                 default:
                     _display.ShowError("Unknown command. Type HELP for commands.");
                     break;
@@ -609,4 +621,81 @@ public class GameLoop
             _display.ShowMessage("Leaving the shop.");
         }
     }
+
+    private void HandleSkills()
+    {
+        _display.ShowMessage("=== SKILL TREE ===");
+        _display.ShowMessage($"Your level: {_player.Level}");
+        foreach (Skill skill in Enum.GetValues<Skill>())
+        {
+            var unlocked = _player.Skills.IsUnlocked(skill);
+            var minLevel = skill switch {
+                Skill.PowerStrike => 3, Skill.IronSkin => 3, Skill.Swiftness => 5,
+                Skill.ManaFlow => 4, Skill.BattleHardened => 6, _ => 1
+            };
+            var status = unlocked ? "✅ Unlocked" : $"Locked (need Lv{minLevel})";
+            _display.ShowMessage($"  {skill}: {SkillTree.GetDescription(skill)} [{status}]");
+        }
+        _display.ShowMessage("Type LEARN <skill> to unlock a skill.");
+    }
+
+    private void HandleLearnSkill(string skillName)
+    {
+        if (!Enum.TryParse<Skill>(skillName, ignoreCase: true, out var skill))
+        {
+            _display.ShowError($"Unknown skill: {skillName}");
+            return;
+        }
+        if (_player.Skills.TryUnlock(_player, skill))
+            _display.ShowMessage($"You learned {skill}! {SkillTree.GetDescription(skill)}");
+        else if (_player.Skills.IsUnlocked(skill))
+            _display.ShowError($"You already know {skill}.");
+        else
+            _display.ShowError($"You need to be higher level to learn {skill}.");
+    }
+    private void HandleCraft(string recipeName)
+    {
+        if (string.IsNullOrWhiteSpace(recipeName))
+        {
+            _display.ShowMessage("=== CRAFTING RECIPES ===");
+            foreach (var r in CraftingSystem.Recipes)
+            {
+                var ingredients = string.Join(", ", r.Ingredients.Select(i => $"{i.Count}x {i.ItemName}"));
+                var goldStr = r.GoldCost > 0 ? $" + {r.GoldCost}g" : "";
+                _display.ShowMessage($"  {r.Name}: {ingredients}{goldStr} → {r.Result.Name}");
+            }
+            _display.ShowMessage("Type CRAFT <recipe name> to craft.");
+            return;
+        }
+
+        var recipe = CraftingSystem.Recipes.FirstOrDefault(r =>
+            r.Name.Contains(recipeName, StringComparison.OrdinalIgnoreCase));
+        if (recipe == null)
+        {
+            _display.ShowError($"Unknown recipe: {recipeName}");
+            return;
+        }
+
+        var (success, msg) = CraftingSystem.TryCraft(_player, recipe);
+        if (success) _display.ShowMessage(msg);
+        else _display.ShowError(msg);
+    }
+
+    private void HandleLeaderboard()
+    {
+        _display.ShowMessage("=== TOP RUNS ===");
+        var top = RunStats.GetTopRuns(5);
+        if (top.Count == 0)
+        {
+            _display.ShowMessage("No completed runs yet. Be the first!");
+            return;
+        }
+        for (int i = 0; i < top.Count; i++)
+        {
+            var r = top[i];
+            var won = r.FinalLevel > 0 ? "✅" : "💀";
+            _display.ShowMessage($"#{i + 1} {won} Level {r.FinalLevel} | {r.EnemiesDefeated} enemies | {r.GoldCollected}g");
+        }
+    }
+
 }
