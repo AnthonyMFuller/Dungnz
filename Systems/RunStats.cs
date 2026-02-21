@@ -29,6 +29,9 @@ public class RunStats
     /// <summary>The player's character level at the end of the run.</summary>
     public int FinalLevel { get; set; }
 
+    /// <summary><see langword="true"/> if the player completed the dungeon successfully; <see langword="false"/> if they died.</summary>
+    public bool Won { get; set; }
+
     /// <summary>The wall-clock duration from the start to the end of the run.</summary>
     public TimeSpan TimeElapsed { get; set; }
 
@@ -122,7 +125,8 @@ public class RunStats
                     ItemsFound      = el.TryGetProperty("ItemsFound",      out var p6) ? p6.GetInt32() : 0,
                     FinalLevel      = el.TryGetProperty("FinalLevel",      out var p7) ? p7.GetInt32() : 0,
                     TimeElapsed     = TimeSpan.FromSeconds(
-                        el.TryGetProperty("TimeElapsedSeconds", out var p8) ? p8.GetInt32() : 0)
+                        el.TryGetProperty("TimeElapsedSeconds", out var p8) ? p8.GetInt32() : 0),
+                    Won             = el.TryGetProperty("Won", out var p9) && p9.GetBoolean()
                 };
                 result.Add(rs);
             }

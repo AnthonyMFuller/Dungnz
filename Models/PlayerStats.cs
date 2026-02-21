@@ -3,8 +3,8 @@ namespace Dungnz.Models;
 public partial class Player
 {
     /// <summary>
-    /// Gets the player's current hit points. Reduced by <see cref="TakeDamage"/> and restored
-    /// by <see cref="Heal"/>; always clamped between 0 and <see cref="MaxHP"/>.
+    /// Gets or sets the player's chosen class (Warrior, Mage, or Rogue), which determines
+    /// starting stat modifiers, the mana pool size, and passive combat traits.
     /// </summary>
     public PlayerClass Class { get; set; } = PlayerClass.Warrior;
     public float ClassDodgeBonus { get; set; }

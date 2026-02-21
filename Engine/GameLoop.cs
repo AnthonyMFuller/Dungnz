@@ -693,7 +693,7 @@ public class GameLoop
         for (int i = 0; i < top.Count; i++)
         {
             var r = top[i];
-            var won = r.FinalLevel > 0 ? "✅" : "💀";
+            var won = r.Won ? "✅" : "💀";
             _display.ShowMessage($"#{i + 1} {won} Level {r.FinalLevel} | {r.EnemiesDefeated} enemies | {r.GoldCollected}g");
         }
     }

@@ -103,6 +103,7 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine("═══ PLAYER STATS ═══");
         Console.WriteLine($"Name:    {player.Name}");
         Console.WriteLine($"HP:      {player.HP}/{player.MaxHP}");
+        Console.WriteLine($"💧 Mana: {player.Mana}/{player.MaxMana}");
         Console.WriteLine($"Attack:  {player.Attack}");
         Console.WriteLine($"Defense: {player.Defense}");
         Console.WriteLine($"Gold:    {player.Gold}");
