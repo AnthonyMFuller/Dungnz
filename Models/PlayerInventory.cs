@@ -6,10 +6,10 @@ public partial class Player
     /// Gets the collection of items the player is currently carrying but not equipped.
     /// Equipped items are removed from this list and tracked in the corresponding equipment slot.
     /// </summary>
-    public List<Item> Inventory { get; private set; } = new();
+    public List<Item> Inventory { get; set; } = new();
 
     /// <summary>Gets the amount of gold the player is currently carrying.</summary>
-    public int Gold { get; private set; }
+    public int Gold { get; set; }
 
     /// <summary>
     /// Increases the player's gold by the specified amount.

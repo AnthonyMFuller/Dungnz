@@ -20,6 +20,9 @@ public class Skeleton : Enemy
     /// The loaded item configuration used to source Rusty Sword and Bone Fragment drops,
     /// or <see langword="null"/> to create fallback inline items.
     /// </param>
+    [System.Text.Json.Serialization.JsonConstructor]
+    private Skeleton() { }
+
     public Skeleton(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         if (stats != null)

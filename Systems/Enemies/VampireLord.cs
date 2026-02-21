@@ -18,6 +18,9 @@ public class VampireLord : Enemy
     /// hard-coded defaults (80 HP, 16 ATK, 12 DEF, 60 XP, 15–30 gold).
     /// </param>
     /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
+    [System.Text.Json.Serialization.JsonConstructor]
+    private VampireLord() { }
+
     public VampireLord(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         LifestealPercent = 0.50f; // heals 50% of damage dealt

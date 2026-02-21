@@ -32,7 +32,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowMessage_WritesMessage()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         svc.ShowMessage("Hello world");
         Output.Should().Contain("Hello world");
     }
@@ -40,7 +40,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowError_WritesError()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         svc.ShowError("Something went wrong");
         Output.Should().Contain("Something went wrong");
     }
@@ -48,7 +48,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowCombat_WritesCombatMessage()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         svc.ShowCombat("A Goblin attacks!");
         Output.Should().Contain("Goblin attacks");
     }
@@ -56,7 +56,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowCombatMessage_WritesMessage()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         svc.ShowCombatMessage("You hit for 5 damage!");
         Output.Should().Contain("5 damage");
     }
@@ -64,7 +64,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowLootDrop_WritesItemName()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         var item = new Item { Name = "Magic Sword" };
         svc.ShowLootDrop(item);
         Output.Should().Contain("Magic Sword");
@@ -73,7 +73,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowCommandPrompt_WritesPrompt()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         svc.ShowCommandPrompt();
         Output.Should().Contain(">");
     }
@@ -81,7 +81,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowCombatPrompt_WritesOptions()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         svc.ShowCombatPrompt();
         Output.Should().Contain("ttack");
     }
@@ -89,7 +89,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowCombatStatus_WritesHp()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         var player = new Player { HP = 80, MaxHP = 100 };
         var enemy = new Enemy_Stub(30, 5, 2, 10);
         svc.ShowCombatStatus(player, enemy);
@@ -99,7 +99,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowPlayerStats_WritesStats()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         var player = new Player { Name = "Hero", HP = 100, MaxHP = 100, Attack = 10, Defense = 5, Gold = 50, XP = 200, Level = 3 };
         svc.ShowPlayerStats(player);
         Output.Should().Contain("Hero")
@@ -113,7 +113,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowInventory_EmptyInventory_ShowsEmpty()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         var player = new Player();
         svc.ShowInventory(player);
         Output.Should().Contain("empty");
@@ -122,7 +122,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowInventory_WithItems_ShowsItemNames()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         var player = new Player();
         player.Inventory.Add(new Item { Name = "Iron Sword", Type = ItemType.Weapon });
         svc.ShowInventory(player);
@@ -132,7 +132,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowHelp_WritesCommands()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         svc.ShowHelp();
         Output.Should().ContainAny("help", "COMMANDS", "quit");
     }
@@ -140,7 +140,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowRoom_WritesDescription()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         var room = new Room { Description = "A dark stone chamber" };
         svc.ShowRoom(room);
         Output.Should().Contain("dark stone chamber");
@@ -149,7 +149,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowRoom_WithEnemy_ShowsEnemyName()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         var room = new Room { Description = "Test room" };
         room.Enemy = new Enemy_Stub(20, 5, 2, 10);
         room.Enemy.Name = "Goblin";
@@ -160,7 +160,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowRoom_WithItems_ShowsItemNames()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         var room = new Room { Description = "Test room" };
         room.Items.Add(new Item { Name = "Sword" });
         svc.ShowRoom(room);
@@ -170,7 +170,7 @@ public class DisplayServiceTests : IDisposable
     [Fact]
     public void ShowRoom_WithExits_ShowsExits()
     {
-        var svc = new DisplayService();
+        var svc = new ConsoleDisplayService();
         var room = new Room { Description = "Test room" };
         room.Exits[Direction.North] = new Room { Description = "North room" };
         svc.ShowRoom(room);

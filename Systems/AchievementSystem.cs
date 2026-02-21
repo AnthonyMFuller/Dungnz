@@ -33,9 +33,11 @@ public class Achievement
 /// </summary>
 public class AchievementSystem
 {
-    private static readonly string HistoryPath = Path.Combine(
+    private static string HistoryPath = Path.Combine(
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Dungnz", "achievements.json");
+
+    internal static void OverrideHistoryPath(string path) => HistoryPath = path;
 
     /// <summary>
     /// The full catalogue of achievements available in the game, each with its unlock condition

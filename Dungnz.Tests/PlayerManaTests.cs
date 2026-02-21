@@ -1,5 +1,6 @@
 namespace Dungnz.Tests;
 using Xunit;
+using FluentAssertions;
 using Dungnz.Models;
 
 public class PlayerManaTests
@@ -21,10 +22,12 @@ public class PlayerManaTests
     }
 
     [Fact]
-    public void SpendMana_InsufficientMana_ThrowsException()
+    public void SpendMana_InsufficientMana_ReturnsFalse()
     {
         var player = new Player { Name = "TestHero" };
-        Assert.Throws<InvalidOperationException>(() => player.SpendMana(40));
+        var result = player.SpendMana(40); // default Mana=30, can't afford 40
+        result.Should().BeFalse();
+        player.Mana.Should().Be(30); // unchanged
     }
 
     [Fact]

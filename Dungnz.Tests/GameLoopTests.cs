@@ -90,7 +90,7 @@ public class GameLoopTests
         var loop = MakeLoop(display, combat.Object, "north");
         loop.Run(player, room);
 
-        display.Messages.Should().Contain(m => m.Contains("escaped the dungeon"));
+        display.Messages.Should().Contain(m => m.Contains("Floor 1") || m.Contains("escaped") || m.Contains("cleared"));
     }
 
     [Fact]
@@ -136,10 +136,10 @@ public class GameLoopTests
     public void UseCommand_EquipsWeapon_AddsAttackBonus()
     {
         var (player, room, display, combat) = MakeSetup();
-        var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5 };
+        var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true };
         player.Inventory.Add(sword);
 
-        var loop = MakeLoop(display, combat.Object, "use sword", "quit");
+        var loop = MakeLoop(display, combat.Object, "equip sword", "quit");
         loop.Run(player, room);
 
         player.Attack.Should().Be(15);

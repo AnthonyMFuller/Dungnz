@@ -6,50 +6,50 @@ public partial class Player
     /// Gets the player's current hit points. Reduced by <see cref="TakeDamage"/> and restored
     /// by <see cref="Heal"/>; always clamped between 0 and <see cref="MaxHP"/>.
     /// </summary>
-    public int HP { get; private set; } = 100;
+    public int HP { get; set; } = 100;
 
     /// <summary>
     /// Gets the player's maximum hit points. Increases on level-up via <see cref="LevelUp"/>,
     /// via <see cref="FortifyMaxHP"/>, and when certain equipment with a positive
     /// <see cref="Item.StatModifier"/> is equipped.
     /// </summary>
-    public int MaxHP { get; private set; } = 100;
+    public int MaxHP { get; set; } = 100;
 
     /// <summary>
     /// Gets the player's base attack power used to calculate raw damage against enemies before
     /// their defense is subtracted.
     /// </summary>
-    public int Attack { get; private set; } = 10;
+    public int Attack { get; set; } = 10;
 
     /// <summary>
     /// Gets the player's base defense value used to reduce incoming damage and influence
     /// dodge-chance calculations during combat.
     /// </summary>
-    public int Defense { get; private set; } = 5;
+    public int Defense { get; set; } = 5;
 
     /// <summary>
     /// Gets the player's total accumulated experience points. Callers must check this value
     /// externally to decide when to call <see cref="LevelUp"/>.
     /// </summary>
-    public int XP { get; private set; }
+    public int XP { get; set; }
 
     /// <summary>
     /// Gets the player's current level. Starts at 1 and increments each time
     /// <see cref="LevelUp"/> is called.
     /// </summary>
-    public int Level { get; private set; } = 1;
+    public int Level { get; set; } = 1;
 
     /// <summary>
     /// Gets the player's current mana. Spent by abilities via <see cref="SpendMana"/> and
     /// restored via <see cref="RestoreMana"/>; always clamped between 0 and <see cref="MaxMana"/>.
     /// </summary>
-    public int Mana { get; private set; } = 30;
+    public int Mana { get; set; } = 30;
 
     /// <summary>
     /// Gets the player's maximum mana capacity. Increases on level-up and via
     /// <see cref="FortifyMaxMana"/>.
     /// </summary>
-    public int MaxMana { get; private set; } = 30;
+    public int MaxMana { get; set; } = 30;
 
     /// <summary>
     /// Raised whenever the player's <see cref="HP"/> value changes, supplying the values

@@ -18,6 +18,9 @@ public class StoneGolem : Enemy
     /// hard-coded defaults (90 HP, 8 ATK, 20 DEF, 50 XP, 10–25 gold).
     /// </param>
     /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
+    [System.Text.Json.Serialization.JsonConstructor]
+    private StoneGolem() { }
+
     public StoneGolem(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         IsImmuneToEffects = true;

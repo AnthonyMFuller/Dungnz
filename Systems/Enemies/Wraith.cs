@@ -18,6 +18,9 @@ public class Wraith : Enemy
     /// hard-coded defaults (35 HP, 18 ATK, 2 DEF, 35 XP, 8–20 gold).
     /// </param>
     /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
+    [System.Text.Json.Serialization.JsonConstructor]
+    private Wraith() { }
+
     public Wraith(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         FlatDodgeChance = 0.30f; // 30% flat dodge, ignores DEF-based formula
