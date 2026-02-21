@@ -311,3 +311,20 @@
 - **Persistence Layer Weak Points:** SaveSystem has no validation layer; trusts deserialized data implicitly. Missing "hydration validation" step between JSON → Model.
 - **Telemetry Gap:** RunStats declared as data DTO but no instrumentation to populate it. Event-driven architecture (GameEvents) exists but underutilized for analytics.
 - **Config vs Save Asymmetry:** SaveSystem defensively creates directories; config loaders assume existence. Inconsistent defensive coding standards.
+
+### 2026-02-20: Pre-v3 Bug Hunt Session — Systems Quality Findings
+
+📌 **Team update (2026-02-20):** Pre-v3 comprehensive bug hunt identified 47 critical issues. Systems audit found 7 critical issues in SaveSystem, RunStats, AchievementSystem, and StatusEffectManager:
+
+**Critical Blockers (must fix before v3):**
+1. **SaveSystem.ListSaves() Sort Error (CRITICAL):** OrderByDescending sorts filename strings, not timestamps — save list shows wrong "most recent" order
+2. **SaveSystem Validation Missing (HIGH):** LoadGame() deserializes without validation — HP can exceed MaxHP, stats go negative, achievement exploits possible (Glass Cannon)
+3. **RunStats Damage Tracking (CRITICAL):** DamageDealt/DamageTaken fields never incremented — "Untouchable" achievement always unlocks because DamageTaken defaults to 0, stat display shows zeros
+
+**Medium Issues:**
+- Config loaders missing directory error handling
+- StatusEffectManager processes effects on dead entities (cosmetic but defensive coding violation)
+
+**Recommended Fixes:** Inject RunStats into CombatEngine (fix damage tracking), add LoadGame() validation (prevent save corruption), correct OrderByDescending usage (UI quality-of-life).
+
+— decided by Romanoff (from Systems Pre-v3 Bug Hunt)
