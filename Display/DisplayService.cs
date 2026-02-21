@@ -171,6 +171,8 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine("  use [item]                    - Use an item");
         Console.WriteLine("  attack                        - Attack enemy in room");
         Console.WriteLine("  flee                          - Attempt to flee combat");
+        Console.WriteLine("  descend                       - Descend to next floor (at cleared exit)");
+        Console.WriteLine("  map                           - Show ASCII mini-map of discovered rooms");
         Console.WriteLine("  help                          - Show this help");
         Console.WriteLine("  quit                          - Exit game");
         Console.WriteLine();
@@ -192,6 +194,99 @@ public class ConsoleDisplayService : IDisplayService
     public void ShowCombatPrompt()
     {
         Console.Write("[A]ttack or [F]lee? ");
+    }
+
+    /// <summary>
+    /// Renders an ASCII mini-map by performing a BFS from <paramref name="currentRoom"/>
+    /// to infer every reachable room's grid coordinates (current room = 0,0;
+    /// North = y−1, South = y+1, East = x+1, West = x−1), then drawing a labelled
+    /// grid with a compass rose and symbol legend.
+    /// </summary>
+    /// <param name="currentRoom">
+    /// The room the player currently occupies, placed at origin (0,0) on the map.
+    /// </param>
+    public void ShowMap(Room currentRoom)
+    {
+        // BFS to assign (x, y) coordinates to every reachable room
+        var positions = new Dictionary<Room, (int x, int y)>();
+        var queue = new Queue<Room>();
+        positions[currentRoom] = (0, 0);
+        queue.Enqueue(currentRoom);
+
+        while (queue.Count > 0)
+        {
+            var room = queue.Dequeue();
+            var (rx, ry) = positions[room];
+
+            foreach (var (dir, neighbour) in room.Exits)
+            {
+                if (positions.ContainsKey(neighbour)) continue;
+
+                var (nx, ny) = dir switch
+                {
+                    Direction.North => (rx,     ry - 1),
+                    Direction.South => (rx,     ry + 1),
+                    Direction.East  => (rx + 1, ry),
+                    Direction.West  => (rx - 1, ry),
+                    _               => (rx,     ry)
+                };
+
+                positions[neighbour] = (nx, ny);
+                queue.Enqueue(neighbour);
+            }
+        }
+
+        // Determine grid bounds
+        int minX = positions.Values.Min(p => p.x);
+        int maxX = positions.Values.Max(p => p.x);
+        int minY = positions.Values.Min(p => p.y);
+        int maxY = positions.Values.Max(p => p.y);
+
+        // Build lookup: coordinate → room
+        var grid = new Dictionary<(int x, int y), Room>();
+        foreach (var (room, pos) in positions)
+            grid[pos] = room;
+
+        // Render
+        Console.WriteLine();
+        Console.WriteLine("═══ MAP ═══   N");
+        Console.WriteLine("              ↑");
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            Console.Write("  ");
+            for (int x = minX; x <= maxX; x++)
+            {
+                if (!grid.TryGetValue((x, y), out var r))
+                {
+                    Console.Write("    ");
+                    continue;
+                }
+
+                string symbol;
+                if (r == currentRoom)
+                    symbol = "[*]";
+                else if (!r.Visited)
+                    symbol = "[ ]";
+                else if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0)
+                    symbol = "[B]";
+                else if (r.IsExit)
+                    symbol = "[E]";
+                else if (r.Enemy != null && r.Enemy.HP > 0)
+                    symbol = "[!]";
+                else if (r.HasShrine && !r.ShrineUsed)
+                    symbol = "[S]";
+                else
+                    symbol = "[+]";
+
+                Console.Write(symbol + " ");
+            }
+            Console.WriteLine();
+        }
+
+        Console.WriteLine();
+        Console.WriteLine("Legend: [*] You  [B] Boss  [E] Exit  [!] Enemy  [S] Shrine  [+] Cleared  [ ] Unknown");
+        Console.WriteLine();
     }
 
     /// <summary>

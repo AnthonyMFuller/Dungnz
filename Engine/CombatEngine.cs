@@ -17,6 +17,7 @@ public class CombatEngine : ICombatEngine
     private readonly GameEvents? _events;
     private readonly StatusEffectManager _statusEffects;
     private readonly AbilityManager _abilities;
+    private readonly List<CombatTurn> _turnLog = new();
 
     /// <summary>
     /// Initialises a new <see cref="CombatEngine"/> with the required display and input
@@ -70,6 +71,7 @@ public class CombatEngine : ICombatEngine
     public CombatResult RunCombat(Player player, Enemy enemy)
     {
         _display.ShowCombat($"A {enemy.Name} attacks!");
+        _turnLog.Clear();
 
         // Ambush: Mimic gets a free first strike before the player can act
         if (enemy.IsAmbush)
@@ -114,6 +116,7 @@ public class CombatEngine : ICombatEngine
             }
             
             _display.ShowCombatStatus(player, enemy);
+            ShowRecentTurns();
             ShowCombatMenu(player);
             var choice = (_input.ReadLine() ?? string.Empty).Trim().ToUpperInvariant();
             
@@ -186,6 +189,33 @@ public class CombatEngine : ICombatEngine
             _display.ShowMessage($"Mana: {player.Mana}/{player.MaxMana}");
         }
     }
+
+    /// <summary>
+    /// Displays the last three entries from the combat turn log, giving the player a
+    /// concise summary of recent exchanges before they choose their next action.
+    /// </summary>
+    private void ShowRecentTurns()
+    {
+        var recent = _turnLog.Count > 3 ? _turnLog.Skip(_turnLog.Count - 3).ToList() : _turnLog;
+        if (recent.Count == 0) return;
+
+        _display.ShowMessage("─── Recent turns ───");
+        foreach (var turn in recent)
+        {
+            string line;
+            if (turn.IsDodge)
+                line = $"  {turn.Actor}: {turn.Action} → dodged";
+            else if (turn.IsCrit)
+                line = $"  {turn.Actor}: {turn.Action} → CRIT {turn.Damage} dmg";
+            else
+                line = $"  {turn.Actor}: {turn.Action} → {turn.Damage} dmg";
+
+            if (turn.StatusApplied != null)
+                line += $" [{turn.StatusApplied}]";
+
+            _display.ShowMessage(line);
+        }
+    }
     
     private AbilityMenuResult HandleAbilityMenu(Player player, Enemy enemy)
     {
@@ -248,6 +278,7 @@ public class CombatEngine : ICombatEngine
         if (dodged)
         {
             _display.ShowCombatMessage($"{enemy.Name} dodged your attack!");
+            _turnLog.Add(new CombatTurn("You", "Attack", 0, false, true, null));
         }
         else
         {
@@ -260,6 +291,7 @@ public class CombatEngine : ICombatEngine
             }
             enemy.HP -= playerDmg;
             _display.ShowCombatMessage($"You hit {enemy.Name} for {playerDmg} damage!");
+            _turnLog.Add(new CombatTurn("You", "Attack", playerDmg, isCrit, false, null));
         }
     }
     
@@ -290,6 +322,7 @@ public class CombatEngine : ICombatEngine
         if (RollDodge(player.Defense))
         {
             _display.ShowCombatMessage("You dodged the attack!");
+            _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
         }
         else
         {
@@ -312,9 +345,14 @@ public class CombatEngine : ICombatEngine
             player.TakeDamage(enemyDmg);
             _display.ShowCombatMessage($"{enemy.Name} hits you for {enemyDmg} damage!");
 
+            string? statusApplied = null;
+
             // Poison on hit (e.g. Goblin Shaman poisons the player when it lands a hit)
             if (enemy.AppliesPoisonOnHit)
+            {
                 _statusEffects.Apply(player, StatusEffect.Poison, 3);
+                statusApplied = "Poison";
+            }
 
             // Lifesteal (e.g. Vampire Lord)
             if (enemy.LifestealPercent > 0)
@@ -326,6 +364,8 @@ public class CombatEngine : ICombatEngine
                     _display.ShowCombatMessage($"{enemy.Name} drains {heal} HP!");
                 }
             }
+
+            _turnLog.Add(new CombatTurn(enemy.Name, "Attack", enemyDmg, isCrit, false, statusApplied));
         }
     }
     

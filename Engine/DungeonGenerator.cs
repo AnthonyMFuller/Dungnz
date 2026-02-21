@@ -57,12 +57,18 @@ public class DungeonGenerator
     /// Additional stat multiplier representing dungeon depth (1.0 = floor 1, 1.5 = floor 2, etc.).
     /// Defaults to 1.0.
     /// </param>
+    /// <param name="difficulty">
+    /// Optional difficulty settings whose <see cref="DifficultySettings.EnemyStatMultiplier"/>
+    /// is combined with <paramref name="floorMultiplier"/> to scale all enemy stats.
+    /// Defaults to <see langword="null"/> (treated as Normal, multiplier = 1.0).
+    /// </param>
     /// <returns>
     /// A tuple of (<c>startRoom</c>, <c>exitRoom</c>) where <c>startRoom</c> is the
     /// player's entry point and <c>exitRoom</c> is the boss-guarded exit.
     /// </returns>
-    public (Room startRoom, Room exitRoom) Generate(int width = 5, int height = 4, int playerLevel = 1, float floorMultiplier = 1.0f)
+    public (Room startRoom, Room exitRoom) Generate(int width = 5, int height = 4, int playerLevel = 1, float floorMultiplier = 1.0f, DifficultySettings? difficulty = null)
     {
+        float effectiveMult = floorMultiplier * (difficulty?.EnemyStatMultiplier ?? 1.0f);
         // Create grid of rooms
         var grid = new Room[height, width];
         for (int y = 0; y < height; y++)
@@ -108,7 +114,7 @@ public class DungeonGenerator
         exitRoom.Description = "A grand chamber with ornate pillars and a massive stone door leading to freedom.";
 
         // Place boss in exit room
-        exitRoom.Enemy = EnemyFactory.CreateScaled("dungeonboss", playerLevel, floorMultiplier);
+        exitRoom.Enemy = EnemyFactory.CreateScaled("dungeonboss", playerLevel, effectiveMult);
 
         // Place enemies in ~60% of non-start, non-exit rooms
         var enemyTypes = new[] { "goblin", "skeleton", "troll", "darkknight", "goblinshaman", "stonegolem", "wraith", "vampirelord", "mimic" };
@@ -122,7 +128,7 @@ public class DungeonGenerator
                 if (_rng.NextDouble() < 0.6)
                 {
                     var enemyType = enemyTypes[_rng.Next(enemyTypes.Length)];
-                    room.Enemy = EnemyFactory.CreateScaled(enemyType, playerLevel, floorMultiplier);
+                    room.Enemy = EnemyFactory.CreateScaled(enemyType, playerLevel, effectiveMult);
                 }
             }
         }

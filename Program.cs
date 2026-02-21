@@ -18,12 +18,25 @@ if (seed == null)
 else
     display.ShowMessage($"Using seed: {actualSeed}");
 
+// Difficulty selection
+display.ShowMessage("Choose difficulty: [1] Casual  [2] Normal  [3] Hard");
+display.ShowCommandPrompt();
+var diffInput = Console.ReadLine()?.Trim() ?? "";
+var chosenDifficulty = diffInput switch
+{
+    "1" => Difficulty.Casual,
+    "3" => Difficulty.Hard,
+    _   => Difficulty.Normal
+};
+var difficultySettings = DifficultySettings.For(chosenDifficulty);
+display.ShowMessage($"Difficulty: {chosenDifficulty}");
+
 var player = new Player { Name = name };
 EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
 var generator = new DungeonGenerator(actualSeed);
-var (startRoom, _) = generator.Generate();
+var (startRoom, _) = generator.Generate(difficulty: difficultySettings);
 
 var inputReader = new ConsoleInputReader();
 var combat = new CombatEngine(display, inputReader);
-var gameLoop = new GameLoop(display, combat, inputReader, seed: actualSeed);
+var gameLoop = new GameLoop(display, combat, inputReader, seed: actualSeed, difficulty: difficultySettings);
 gameLoop.Run(player, startRoom);
