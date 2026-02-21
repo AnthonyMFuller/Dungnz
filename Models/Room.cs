@@ -3,6 +3,9 @@ namespace Dungnz.Models;
 /// <summary>Describes the environmental flavour of a dungeon room.</summary>
 public enum RoomType { Standard, Dark, Mossy, Flooded, Scorched, Ancient }
 
+/// <summary>Describes environmental hazards that can damage the player on entry.</summary>
+public enum HazardType { None, Spike, Poison, Fire }
+
 /// <summary>
 /// Represents a single room in the dungeon. Holds navigational connections to adjacent rooms,
 /// the enemy or items present, and state flags that track player interaction (visited, looted,

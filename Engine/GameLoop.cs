@@ -247,6 +247,9 @@ public class GameLoop
             }
             else
             {
+                var clearedVariant = DungeonVariant.ForFloor(_currentFloor);
+                if (!string.IsNullOrEmpty(clearedVariant.ExitMessage))
+                    _display.ShowMessage(clearedVariant.ExitMessage);
                 _display.ShowMessage($"You cleared Floor {_currentFloor}! Type DESCEND to go deeper.");
             }
         }
@@ -434,6 +437,9 @@ public class GameLoop
         _currentRoom = newStart;
         _currentRoom.Visited = true;
         _display.ShowMessage($"Floor {_currentFloor}");
+        var descendVariant = DungeonVariant.ForFloor(_currentFloor);
+        _display.ShowMessage($"=== {descendVariant.Name} ===");
+        _display.ShowMessage(descendVariant.EntryMessage);
         _display.ShowRoom(_currentRoom);
     }
 
