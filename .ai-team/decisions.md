@@ -9771,3 +9771,30 @@ These ideas are cool but out of scope:
 
 ---
 
+
+### 2026-02-22: Process Alignment Protocol (All-Hands Ceremony)
+
+**By:** Coulson (Lead) — facilitated; Hill, Barton, Romanoff — unanimous consensus  
+**Trigger:** Repeated direct-to-master commits; Anthony directive "alignment on processes"
+
+**Binding protocol (no exceptions):**
+
+1. **Branch check first** — before writing any code: `git branch --show-current`. If on `master`, STOP. Create a branch.
+2. **Branch naming** — `feature/{slug}` for new work, `hotfix/{slug}` for fixes.
+3. **All commits go to branch only** — zero commits directly to `master`. Ever.
+4. **Push branch → open PR → request review** — no self-merges without lead sign-off.
+5. **CI must pass** before any merge is permitted.
+6. **Self-correction protocol** (if violation detected):
+   - Stop immediately
+   - Cherry-pick rogue commits to a `hotfix/` branch
+   - Reset `master` to `origin/master`
+   - Open PR with description of what happened
+   - Log violation in `decisions.md` within the same session
+   - Notify Anthony
+
+**Top enforcement recommendation (all agents, unanimous):**  
+Enable GitHub branch protection on `master` — disable direct pushes at the repo level. Settings → Branches → Add protection rule → `master` → require PR + 1 review + block direct pushes.
+
+**Why:** The gap is enforcement, not documentation. Branch protection makes violations mechanically impossible.
+
+---
