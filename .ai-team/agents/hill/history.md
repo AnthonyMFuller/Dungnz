@@ -802,3 +802,56 @@ When a display string contains ANSI escape codes (e.g., from ColorizeItemName), 
 4. **`GetRoomSymbol()` helper:** Extracted symbol-selection logic into a private static method for readability.
 
 **Build/Test:** 0 errors, 359/359 tests passed.
+
+### 2026-02-20: Phase 1 Display Implementations + Phase 2 Navigation Polish (PR #304)
+
+**Branch:** `squad/303-display-implementations`
+
+**Task:** Implement all empty display method stubs from Phase 0/1, upgrade existing methods with bars/effects, and add Phase 2 navigation polish to ShowRoom and ShowMap.
+
+**Files Modified:**
+- `Display/DisplayService.cs` — Implemented 8 empty stubs, upgraded 2 existing methods, added 1 helper method, updated ShowRoom and GetRoomSymbol
+
+**Phase 1 Implementations:**
+
+1. **ShowCombatStatus (upgrade)** — Replaced bare HP/MP numbers with colored bars
+   - Player row: 8-wide HP bar + 6-wide MP bar (if MaxMana > 0) via RenderBar helper
+   - Enemy row: 8-wide HP bar
+   - Active effects displayed inline: `[Icon Effect Nt]` in Yellow (player) or Red (enemy)
+   - EffectIcon helper maps StatusEffect enum to Unicode symbols (☠ Poison, 🩸 Bleed, ⚡ Stun, etc.)
+
+2. **ShowCombatStart** — 44-wide red bordered banner with `⚔ COMBAT BEGINS ⚔` header and enemy name
+
+3. **ShowCombatEntryFlags** — Elite ⭐ tag in Yellow, Enraged ⚡ tag in BrightRed+Bold (checks DungeonBoss.IsEnraged)
+
+4. **ShowLevelUpChoice** — 38-wide box card with three options: +5 MaxHP, +2 Attack, +2 Defense. Shows current → projected values in Gray.
+
+5. **ShowFloorBanner** — 40-wide box showing floor N/M, variant name, and threat level (Low/Moderate/High) with color coding (Green ≤2, Yellow ≤4, BrightRed >4)
+
+6. **ShowCommandPrompt (upgrade)** — When player context provided, shows mini HP/MP bars: `[██░░ 12/15 HP │ ██░ 5/8 MP] >`
+
+7. **ShowEnemyDetail** — 36-wide box card: enemy name (Yellow if elite, BrightRed otherwise), 10-wide HP bar, ATK/DEF/XP stats, elite ⭐ tag if present
+
+8. **ShowVictory** — 42-wide victory screen: player name + level, floors conquered, RunStats (enemies/gold/items/turns)
+
+9. **ShowGameOver** — 42-wide game over screen: player name + level, death cause, RunStats (enemies/floors/turns)
+
+10. **EffectIcon helper** — private static method mapping StatusEffect enum to symbols for status indicators
+
+**Phase 2 Navigation Polish:**
+
+1. **ShowRoom — Compass-ordered exits** — Replaced comma-separated list with `↑ North   ↓ South   → East   ← West` (space-separated, ordered N/S/E/W). Uses Direction enum dictionary.
+
+2. **ShowRoom — Hazard forewarning** — After description, before exits: Yellow warning for Scorched, Cyan for Flooded, Gray for Dark room types.
+
+3. **ShowRoom — Contextual hints** — After items, before closing blank line: Shrine prompt `✨ A shrine glimmers here. (USE SHRINE)` in Cyan, Merchant prompt `🛒 A merchant awaits. (SHOP)` in Yellow.
+
+4. **GetRoomSymbol — Unvisited indicator** — Added `!r.Visited` check (before IsExit/Enemy checks): returns `[?]` in Gray for rooms in the map graph but not yet visited (fog of war enhancement).
+
+**Property Verification:**
+- Enemy: Name, HP, MaxHP, Attack, Defense, XPValue, IsElite all confirmed in Models/Enemy.cs
+- DungeonBoss: IsEnraged confirmed in Systems/Enemies/DungeonBoss.cs
+- RunStats: EnemiesDefeated, GoldCollected, ItemsFound, TurnsTaken, FloorsVisited confirmed in Systems/RunStats.cs
+- Room: Visited, HasShrine, ShrineUsed, Merchant, Exits (Dictionary<Direction, Room>) confirmed in Models/Room.cs
+
+**Build/Test:** 0 errors (24 XML doc warnings), all tests passed.
