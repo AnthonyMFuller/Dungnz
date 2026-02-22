@@ -169,25 +169,43 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <summary>
-    /// Prints a "COMMANDS" reference block listing every available verb and its purpose
-    /// so the player can discover what actions are available during exploration.
+    /// Prints the full list of available player commands, grouped by category.
     /// </summary>
     public void ShowHelp()
     {
         Console.WriteLine();
         Console.WriteLine("═══ COMMANDS ═══");
-        Console.WriteLine("  move [north|south|east|west] - Move in a direction");
-        Console.WriteLine("  look                          - Examine current room");
-        Console.WriteLine("  stats                         - Show player stats");
-        Console.WriteLine("  inventory                     - Show inventory");
-        Console.WriteLine("  take [item]                   - Pick up an item");
-        Console.WriteLine("  use [item]                    - Use an item");
-        Console.WriteLine("  attack                        - Attack enemy in room");
-        Console.WriteLine("  flee                          - Attempt to flee combat");
-        Console.WriteLine("  descend                       - Descend to next floor (at cleared exit)");
-        Console.WriteLine("  map                           - Show ASCII mini-map of discovered rooms");
-        Console.WriteLine("  help                          - Show this help");
-        Console.WriteLine("  quit                          - Exit game");
+        Console.WriteLine();
+        Console.WriteLine("  Navigation");
+        Console.WriteLine("    go [north|south|east|west]  Move in a direction  (aliases: n s e w)");
+        Console.WriteLine("    look                         Re-describe the current room");
+        Console.WriteLine("    map                          Show ASCII mini-map of discovered rooms");
+        Console.WriteLine("    descend                      Descend to the next floor (at cleared exit)");
+        Console.WriteLine();
+        Console.WriteLine("  Items");
+        Console.WriteLine("    examine [target]             Inspect an enemy, room item, or inventory item");
+        Console.WriteLine("    take [item]                  Pick up an item from the floor");
+        Console.WriteLine("    use [item]                   Use a consumable (e.g. USE POTION, USE SHRINE)");
+        Console.WriteLine("    inventory                    List carried items");
+        Console.WriteLine("    equipment                    Show equipped gear");
+        Console.WriteLine("    equip [item]                 Equip a weapon, armour, or accessory");
+        Console.WriteLine("    unequip [item]               Unequip an item back to inventory");
+        Console.WriteLine("    craft [recipe]               Craft an item (CRAFT alone lists recipes)");
+        Console.WriteLine("    shop                         Browse the merchant (if one is present)");
+        Console.WriteLine();
+        Console.WriteLine("  Character");
+        Console.WriteLine("    stats                        Show player stats and current floor");
+        Console.WriteLine("    skills                       Show skill tree");
+        Console.WriteLine("    learn [skill]                Unlock a skill");
+        Console.WriteLine();
+        Console.WriteLine("  Systems");
+        Console.WriteLine("    save [name]                  Save the game");
+        Console.WriteLine("    load [name]                  Load a saved game");
+        Console.WriteLine("    listsaves                    List available save files");
+        Console.WriteLine("    prestige                     Show prestige level and bonuses");
+        Console.WriteLine("    leaderboard                  Show top run history");
+        Console.WriteLine("    help                         Show this help");
+        Console.WriteLine("    quit                         Exit the game");
         Console.WriteLine();
     }
 
