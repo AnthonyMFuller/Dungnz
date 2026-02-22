@@ -265,6 +265,8 @@ Dungnz uses native ANSI escape codes — no third-party dependencies. Colour sup
 
 All console output is routed through `IDisplayService` / `DisplayService` — colour constants live in `Systems/ColorCodes.cs`. When equipping items, `EquipmentManager` shows stat deltas with green `+` / red `−` indicators.
 
+The `ColorizeDamage` helper in `CombatEngine` targets only the **last** occurrence of the damage value in a narration string (via `LastIndexOf`) to avoid accidentally colourising an identical number that appears earlier in the message text.
+
 ---
 
 ## Save System
