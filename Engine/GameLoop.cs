@@ -419,6 +419,8 @@ public class GameLoop
         switch (item.Type)
         {
             case ItemType.Consumable:
+                if (!string.IsNullOrEmpty(item.Description))
+                    _display.ShowMessage(item.Description);
                 if (item.HealAmount > 0)
                 {
                     var oldHP = _player.HP;
