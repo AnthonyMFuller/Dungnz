@@ -398,7 +398,7 @@ public class GameLoop
         var roomItem = _currentRoom.Items.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(targetLower));
         if (roomItem != null)
         {
-            _display.ShowMessage($"{roomItem.Name}: {roomItem.Description}");
+            _display.ShowItemDetail(roomItem);
             return;
         }
 
@@ -406,7 +406,7 @@ public class GameLoop
         var invItem = _player.Inventory.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(targetLower));
         if (invItem != null)
         {
-            _display.ShowMessage($"{invItem.Name}: {invItem.Description}");
+            _display.ShowItemDetail(invItem);
             return;
         }
 
@@ -441,7 +441,9 @@ public class GameLoop
             _display.ShowMessage("Your inventory is full!");
             return;
         }
-        _display.ShowMessage($"You take the {item.Name}.");
+        int slotsCurrent = _player.Inventory.Count;
+        int weightCurrent = _player.Inventory.Sum(i => i.Weight);
+        _display.ShowItemPickup(item, slotsCurrent, Player.MaxInventorySize, weightCurrent, Systems.InventoryManager.MaxWeight);
         _display.ShowMessage(_narration.Pick(_lootLines));
         _events?.RaiseItemPicked(_player, item, _currentRoom);
         _stats.ItemsFound++;

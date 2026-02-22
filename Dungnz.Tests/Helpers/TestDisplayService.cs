@@ -20,6 +20,7 @@ public class TestDisplayService : IDisplayService
     public void ShowCommandPrompt() { }
     public void ShowHelp() => AllOutput.Add("help");
     public void ShowRoom(Room room) => AllOutput.Add($"room:{room.Description}");
+    public void ShowMap(Room room) { }
 
     public void ShowMessage(string message)
     {
@@ -69,7 +70,9 @@ public class TestDisplayService : IDisplayService
         AllOutput.Add($"loot:{item.Name}");
     }
 
-    public void ShowMap(Room room) => AllOutput.Add($"map:{room.Description}");
+    public void ShowGoldPickup(int amount, int newTotal) { }
+    public void ShowItemPickup(Item item, int slotsCurrent, int slotsMax, int weightCurrent, int weightMax) { }
+    public void ShowItemDetail(Item item) { }
 
     public string ReadPlayerName()
     {

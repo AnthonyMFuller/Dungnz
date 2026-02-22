@@ -70,14 +70,16 @@ public class DarkKnight : Enemy
                 Name = "Dark Blade", 
                 Type = ItemType.Weapon, 
                 AttackBonus = 5, 
-                Description = "A blade forged in shadow." 
+                Description = "A blade forged in shadow.",
+                Tier = ItemTier.Uncommon
             }, 0.5);
             LootTable.AddDrop(new Item 
             { 
                 Name = "Knight's Armor", 
                 Type = ItemType.Armor, 
                 DefenseBonus = 6, 
-                Description = "Heavy plated armor." 
+                Description = "Heavy plated armor.",
+                Tier = ItemTier.Uncommon
             }, 0.4);
         }
     }

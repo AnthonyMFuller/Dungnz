@@ -81,6 +81,12 @@ public class Item
     public int Weight { get; set; } = 1;
 
     /// <summary>
+    /// Gets or sets the power tier of this item, used to colour-code the item name in the UI.
+    /// Defaults to <see cref="ItemTier.Common"/> so that all pre-existing items remain valid.
+    /// </summary>
+    public ItemTier Tier { get; set; } = ItemTier.Common;
+
+    /// <summary>
     /// Creates a shallow copy of this item with all properties duplicated. Used when adding
     /// crafted items to inventory to avoid sharing references.
     /// </summary>

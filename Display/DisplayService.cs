@@ -61,9 +61,13 @@ public class ConsoleDisplayService : IDisplayService
 
         if (room.Items.Count > 0)
         {
-            Console.Write("Items: ");
-            var itemNames = room.Items.Select(i => $"{Systems.ColorCodes.Yellow}{i.Name}{Systems.ColorCodes.Reset}");
-            Console.WriteLine(string.Join(", ", itemNames));
+            Console.WriteLine("Items on the ground:");
+            foreach (var i in room.Items)
+            {
+                var icon = ItemTypeIcon(i.Type);
+                var stat = PrimaryStatLabel(i);
+                Console.WriteLine($"  {icon} {i.Name} {Systems.ColorCodes.Gray}({stat}){Systems.ColorCodes.Reset}");
+            }
         }
 
         Console.WriteLine();
@@ -171,8 +175,22 @@ public class ConsoleDisplayService : IDisplayService
             
             foreach (var item in player.Inventory)
             {
-                Console.Write($"  • {item.Name} ({item.Type})");
-                Console.WriteLine($" {Systems.ColorCodes.Gray}[{item.Weight} wt]{Systems.ColorCodes.Reset}");
+                var icon = ItemTypeIcon(item.Type);
+                var isEquipped = item == player.EquippedWeapon
+                              || item == player.EquippedArmor
+                              || item == player.EquippedAccessory;
+                var equippedTag = isEquipped
+                    ? $" {Systems.ColorCodes.Green}[E]{Systems.ColorCodes.Reset}"
+                    : string.Empty;
+                var statLabel = PrimaryStatLabel(item);
+                // Pad item name + equipped tag to column 28, stat to column 48
+                var nameField = $"{icon} {item.Name}{equippedTag}";
+                // Strip color codes for length calculation
+                var namePlain = $"  {icon} {item.Name}{(isEquipped ? " [E]" : "")}";
+                int namePad = Math.Max(0, 30 - namePlain.Length);
+                var statColored = $"{Systems.ColorCodes.Cyan}{statLabel}{Systems.ColorCodes.Reset}";
+                int statPad = Math.Max(0, 20 - statLabel.Length);
+                Console.WriteLine($"  {nameField}{new string(' ', namePad)}{statColored}{new string(' ', statPad)}{Systems.ColorCodes.Gray}[{item.Weight} wt]{Systems.ColorCodes.Reset}");
             }
         }
         
@@ -180,12 +198,122 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <summary>
-    /// Announces that a defeated enemy dropped an item, prefixed with a star glyph.
+    /// Renders a box-drawn loot drop card with type icon, item name, primary stat, and weight.
     /// </summary>
     /// <param name="item">The item that was dropped.</param>
     public void ShowLootDrop(Item item)
     {
-        Console.WriteLine($"✦ Dropped: {item.Name}");
+        var icon = ItemTypeIcon(item.Type);
+        var stat = PrimaryStatLabel(item);
+        Console.WriteLine("╔══════════════════════════════════════╗");
+        Console.WriteLine("║  ✦ LOOT DROP                         ║");
+        Console.WriteLine($"║  {icon} {Systems.ColorCodes.Yellow}{item.Name,-34}{Systems.ColorCodes.Reset}║");
+        Console.WriteLine($"║  {Systems.ColorCodes.Cyan}{stat,-36}{Systems.ColorCodes.Reset}• {item.Weight} wt  ║");
+        Console.WriteLine("╚══════════════════════════════════════╝");
+    }
+
+    /// <summary>
+    /// Displays a gold pickup notification with running total.
+    /// </summary>
+    public void ShowGoldPickup(int amount, int newTotal)
+    {
+        Console.WriteLine($"  💰 {Systems.ColorCodes.Yellow}+{amount} gold{Systems.ColorCodes.Reset}  (Total: {newTotal}g)");
+    }
+
+    /// <summary>
+    /// Displays a pickup confirmation line with slot/weight usage.
+    /// </summary>
+    public void ShowItemPickup(Item item, int slotsCurrent, int slotsMax, int weightCurrent, int weightMax)
+    {
+        var icon = ItemTypeIcon(item.Type);
+        var stat = PrimaryStatLabel(item);
+        Console.WriteLine($"  {icon} Picked up: {item.Name}  {Systems.ColorCodes.Cyan}({stat}){Systems.ColorCodes.Reset}");
+        var slotsRatio = (double)slotsCurrent / slotsMax;
+        var wtRatio    = (double)weightCurrent / weightMax;
+        var slotsColor = slotsRatio > 0.95 ? Systems.ColorCodes.Red
+                       : slotsRatio > 0.80 ? Systems.ColorCodes.Yellow
+                       : Systems.ColorCodes.Green;
+        var wtColor    = wtRatio > 0.95 ? Systems.ColorCodes.Red
+                       : wtRatio > 0.80 ? Systems.ColorCodes.Yellow
+                       : Systems.ColorCodes.Green;
+        Console.WriteLine($"  Slots: {slotsColor}{slotsCurrent}/{slotsMax}{Systems.ColorCodes.Reset}  •  Weight: {wtColor}{weightCurrent}/{weightMax}{Systems.ColorCodes.Reset}");
+    }
+
+    /// <summary>
+    /// Renders a full stat card for an item (EXAMINE command).
+    /// </summary>
+    public void ShowItemDetail(Item item)
+    {
+        const int W = 36;
+        var border  = new string('═', W);
+        var icon    = ItemTypeIcon(item.Type);
+        var title   = $"  {icon} {item.Name.ToUpperInvariant()}";
+        Console.WriteLine($"╔{border}╗");
+        Console.WriteLine($"║{title.PadRight(W)}║");
+        Console.WriteLine($"╠{border}╣");
+        Console.WriteLine($"║  {"Type:",-10}{item.Type.ToString().PadRight(W - 12)}║");
+        if (item.AttackBonus != 0)
+            Console.WriteLine($"║  {"Attack:",-10}{Systems.ColorCodes.Red}+{item.AttackBonus}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 12 - (item.AttackBonus.ToString().Length + 1)))}║");
+        if (item.DefenseBonus != 0)
+            Console.WriteLine($"║  {"Defense:",-10}{Systems.ColorCodes.Cyan}+{item.DefenseBonus}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 12 - (item.DefenseBonus.ToString().Length + 1)))}║");
+        if (item.HealAmount != 0)
+            Console.WriteLine($"║  {"Heal:",-10}{Systems.ColorCodes.Green}+{item.HealAmount} HP{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 15 - item.HealAmount.ToString().Length))}║");
+        if (item.ManaRestore != 0)
+            Console.WriteLine($"║  {"Mana:",-10}{Systems.ColorCodes.Blue}+{item.ManaRestore}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 12 - (item.ManaRestore.ToString().Length + 1)))}║");
+        if (item.MaxManaBonus != 0)
+            Console.WriteLine($"║  {"Max Mana:",-10}{Systems.ColorCodes.Blue}+{item.MaxManaBonus}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 12 - (item.MaxManaBonus.ToString().Length + 1)))}║");
+        if (item.DodgeBonus > 0)
+            Console.WriteLine($"║  {"Dodge:",-10}+{item.DodgeBonus:P0}{new string(' ', Math.Max(0, W - 12 - $"+{item.DodgeBonus:P0}".Length))}║");
+        Console.WriteLine($"║  {"Weight:",-10}{item.Weight}{new string(' ', Math.Max(0, W - 11 - item.Weight.ToString().Length))}║");
+        if (item.AppliesBleedOnHit)
+            Console.WriteLine($"║  {"Bleed:",-10}{Systems.ColorCodes.BrightRed}On Hit{Systems.ColorCodes.Reset}{new string(' ', W - 16)}║");
+        if (item.PoisonImmunity)
+            Console.WriteLine($"║  {"Poison:",-10}Immune{new string(' ', W - 16)}║");
+        if (!string.IsNullOrEmpty(item.Description))
+        {
+            Console.WriteLine($"╠{border}╣");
+            // Word-wrap description to fit box width
+            var words = item.Description.Split(' ');
+            var line  = "  ";
+            foreach (var word in words)
+            {
+                if (line.Length + word.Length + 1 > W)
+                {
+                    Console.WriteLine($"║{line.PadRight(W)}║");
+                    line = "  " + word;
+                }
+                else
+                {
+                    line += (line == "  " ? "" : " ") + word;
+                }
+            }
+            if (line.Trim().Length > 0)
+                Console.WriteLine($"║{line.PadRight(W)}║");
+        }
+        Console.WriteLine($"╚{border}╝");
+    }
+
+    // ── helpers ────────────────────────────────────────────────────────────
+
+    private static string ItemTypeIcon(ItemType type) => type switch
+    {
+        ItemType.Weapon     => "⚔",
+        ItemType.Armor      => "🛡",
+        ItemType.Consumable => "🧪",
+        ItemType.Accessory  => "💍",
+        _                   => "•"
+    };
+
+    private static string PrimaryStatLabel(Item item)
+    {
+        if (item.AttackBonus  != 0) return $"Attack +{item.AttackBonus}";
+        if (item.DefenseBonus != 0) return $"Defense +{item.DefenseBonus}";
+        if (item.HealAmount   != 0) return $"Heals {item.HealAmount} HP";
+        if (item.ManaRestore  != 0) return $"Mana +{item.ManaRestore}";
+        if (item.MaxManaBonus != 0) return $"Max Mana +{item.MaxManaBonus}";
+        if (item.DodgeBonus   >  0) return $"Dodge +{item.DodgeBonus:P0}";
+        if (item.StatModifier != 0) return $"HP +{item.StatModifier}";
+        return item.Type.ToString();
     }
 
     /// <summary>

@@ -177,7 +177,8 @@ public class DungeonGenerator
                 Name = "Health Potion", 
                 Type = ItemType.Consumable, 
                 HealAmount = 20, 
-                Description = "Restores 20 HP" 
+                Description = "Restores 20 HP",
+                Tier = ItemTier.Common
             },
             1 => new Item 
             { 
@@ -185,7 +186,8 @@ public class DungeonGenerator
                 Type = ItemType.Weapon, 
                 AttackBonus = 5, 
                 IsEquippable = true,
-                Description = "A sturdy iron blade" 
+                Description = "A sturdy iron blade",
+                Tier = ItemTier.Common
             },
             2 => new Item 
             { 
@@ -193,14 +195,16 @@ public class DungeonGenerator
                 Type = ItemType.Armor, 
                 DefenseBonus = 3, 
                 IsEquippable = true,
-                Description = "Basic leather protection" 
+                Description = "Basic leather protection",
+                Tier = ItemTier.Common
             },
             _ => new Item 
             { 
                 Name = "Large Health Potion", 
                 Type = ItemType.Consumable, 
                 HealAmount = 50, 
-                Description = "Restores 50 HP" 
+                Description = "Restores 50 HP",
+                Tier = ItemTier.Common
             }
         };
     }

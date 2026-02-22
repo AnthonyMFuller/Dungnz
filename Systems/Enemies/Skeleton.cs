@@ -70,14 +70,16 @@ public class Skeleton : Enemy
                 Name = "Rusty Sword", 
                 Type = ItemType.Weapon, 
                 AttackBonus = 3, 
-                Description = "A corroded blade." 
+                Description = "A corroded blade.",
+                Tier = ItemTier.Common
             }, 0.3);
             LootTable.AddDrop(new Item 
             { 
                 Name = "Bone Fragment", 
                 Type = ItemType.Consumable, 
                 HealAmount = 5, 
-                Description = "Shards from the dead." 
+                Description = "Shards from the dead.",
+                Tier = ItemTier.Common
             }, 0.5);
         }
     }
