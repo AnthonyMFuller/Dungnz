@@ -20,6 +20,9 @@ public class CombatEngine : ICombatEngine
     private readonly NarrationService _narration;
     private readonly List<CombatTurn> _turnLog = new();
     private RunStats _stats = new();
+    private int _baseEliteAttack;
+    private int _baseEliteDefense;
+    private int _shamanHealCooldown;
 
     private static readonly string[] _playerHitMessages =
     {
@@ -194,6 +197,9 @@ public class CombatEngine : ICombatEngine
             _display.ShowCombat(_narration.Pick(EnemyNarration.GetIntros(enemy.Name), enemy.Name));
         }
         _turnLog.Clear();
+        _baseEliteAttack = enemy.Attack;
+        _baseEliteDefense = enemy.Defense;
+        _shamanHealCooldown = 0;
 
         // Ambush: Mimic gets a free first strike before the player can act
         if (enemy.IsAmbush)
@@ -208,7 +214,8 @@ public class CombatEngine : ICombatEngine
             _statusEffects.ProcessTurnStart(player);
             _statusEffects.ProcessTurnStart(enemy);
             
-            player.RestoreMana(10);
+            int manaRegen = player.Skills.IsUnlocked(Skill.ManaFlow) ? 15 : 10;
+            player.RestoreMana(manaRegen);
             _abilities.TickCooldowns();
 
             // Boss Phase 2: check enrage
@@ -467,9 +474,11 @@ public class CombatEngine : ICombatEngine
             return;
         }
 
-        // Goblin Shaman: try to heal when below 50% HP
-        if (enemy is GoblinShaman shaman && shaman.HP < shaman.MaxHP / 2)
+        // Goblin Shaman: try to heal when below 50% HP (once every 3 turns)
+        if (_shamanHealCooldown > 0) _shamanHealCooldown--;
+        if (enemy is GoblinShaman shaman && shaman.HP < shaman.MaxHP / 2 && _shamanHealCooldown == 0)
         {
+            _shamanHealCooldown = 3;
             _display.ShowCombatMessage("The shaman mutters a guttural incantation. Dark energy knits its wounds closed!");
             int heal = (int)(shaman.MaxHP * 0.20);
             shaman.HP = Math.Min(shaman.MaxHP, shaman.HP + heal);
@@ -513,11 +522,11 @@ public class CombatEngine : ICombatEngine
                     return;
                 case 1:
                     _display.ShowCombatMessage("The elite roars and attacks with renewed fury!");
-                    enemy.Attack = (int)(enemy.Attack * 1.1);
+                    enemy.Attack = Math.Min((int)(enemy.Attack * 1.1), _baseEliteAttack * 2);
                     break;
                 case 2:
                     _display.ShowCombatMessage("The elite lets out a war cry, bolstering its own resolve!");
-                    enemy.Defense = (int)(enemy.Defense * 1.1);
+                    enemy.Defense = Math.Min((int)(enemy.Defense * 1.1), _baseEliteDefense * 2);
                     break;
             }
         }
@@ -553,9 +562,9 @@ public class CombatEngine : ICombatEngine
                 enemyDmg *= 2;
                 _display.ShowCombatMessage("Critical hit!");
             }
-            // Bug #86: BattleHardened skill passive â reduce incoming damage by 1 (minimum 1)
+            // BattleHardened skill passive — 5% damage reduction (matches skill description)
             if (player.Skills.IsUnlocked(Skill.BattleHardened))
-                enemyDmg = Math.Max(1, enemyDmg - 1);
+                enemyDmg = Math.Max(1, (int)(enemyDmg * 0.95f));
             // Bug #106: Fortified status effect â reduce incoming damage by 3 (minimum 1)
             if (_statusEffects.HasEffect(player, StatusEffect.Fortified))
                 enemyDmg = Math.Max(1, enemyDmg - 3);
@@ -673,9 +682,10 @@ public class CombatEngine : ICombatEngine
         float dodgeChance = player.Defense / (player.Defense + 20f)
                           + player.DodgeBonus
                           + player.ClassDodgeBonus;
-        // Bug #86: Swiftness skill passive â +5% dodge chance
+        // Bug #86: Swiftness skill passive — +5% dodge chance
         if (player.Skills.IsUnlocked(Skill.Swiftness))
             dodgeChance += 0.05f;
+        dodgeChance = Math.Min(dodgeChance, 0.95f);
         return _rng.NextDouble() < dodgeChance;
     }
     
