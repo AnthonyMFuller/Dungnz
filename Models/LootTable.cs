@@ -15,22 +15,22 @@ public class LootTable
     // Tiered item pools by player level
     private static readonly List<Item> Tier1Items = new()
     {
-        new Item { Name = "Short Sword", Type = ItemType.Weapon, AttackBonus = 2, Description = "A basic blade.", IsEquippable = true },
-        new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 5, Description = "Light protection.", IsEquippable = true }
+        new Item { Name = "Short Sword", Type = ItemType.Weapon, AttackBonus = 2, Description = "A basic blade.", IsEquippable = true, Tier = ItemTier.Common },
+        new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 5, Description = "Light protection.", IsEquippable = true, Tier = ItemTier.Common }
     };
     private static readonly List<Item> Tier2Items = new()
     {
-        new Item { Name = "Steel Sword", Type = ItemType.Weapon, AttackBonus = 5, Description = "A quality weapon.", IsEquippable = true },
-        new Item { Name = "Chain Mail", Type = ItemType.Armor, DefenseBonus = 10, Description = "Solid protection.", IsEquippable = true },
-        new Item { Name = "Sword of Flames", Type = ItemType.Weapon, AttackBonus = 5, Description = "Burns with inner fire. Applies Bleed on hit.", IsEquippable = true, AppliesBleedOnHit = true },
-        new Item { Name = "Armor of the Turtle", Type = ItemType.Armor, DefenseBonus = 15, Description = "Heavy shell. Grants Poison immunity.", IsEquippable = true, PoisonImmunity = true }
+        new Item { Name = "Steel Sword", Type = ItemType.Weapon, AttackBonus = 5, Description = "A quality weapon.", IsEquippable = true, Tier = ItemTier.Uncommon },
+        new Item { Name = "Chain Mail", Type = ItemType.Armor, DefenseBonus = 10, Description = "Solid protection.", IsEquippable = true, Tier = ItemTier.Uncommon },
+        new Item { Name = "Sword of Flames", Type = ItemType.Weapon, AttackBonus = 5, Description = "Burns with inner fire. Applies Bleed on hit.", IsEquippable = true, AppliesBleedOnHit = true, Tier = ItemTier.Uncommon },
+        new Item { Name = "Armor of the Turtle", Type = ItemType.Armor, DefenseBonus = 15, Description = "Heavy shell. Grants Poison immunity.", IsEquippable = true, PoisonImmunity = true, Tier = ItemTier.Uncommon }
     };
     private static readonly List<Item> Tier3Items = new()
     {
-        new Item { Name = "Mythril Blade", Type = ItemType.Weapon, AttackBonus = 8, Description = "Razor-sharp alloy.", IsEquippable = true },
-        new Item { Name = "Plate Armor", Type = ItemType.Armor, DefenseBonus = 15, Description = "Near-impenetrable.", IsEquippable = true },
-        new Item { Name = "Ring of Focus", Type = ItemType.Accessory, StatModifier = 0, Description = "+15 MaxMana, -20% ability cooldowns.", IsEquippable = true, MaxManaBonus = 15 },
-        new Item { Name = "Cloak of Shadows", Type = ItemType.Accessory, Description = "+10% dodge chance.", IsEquippable = true, DodgeBonus = 0.10f }
+        new Item { Name = "Mythril Blade", Type = ItemType.Weapon, AttackBonus = 8, Description = "Razor-sharp alloy.", IsEquippable = true, Tier = ItemTier.Rare },
+        new Item { Name = "Plate Armor", Type = ItemType.Armor, DefenseBonus = 15, Description = "Near-impenetrable.", IsEquippable = true, Tier = ItemTier.Rare },
+        new Item { Name = "Ring of Focus", Type = ItemType.Accessory, StatModifier = 0, Description = "+15 MaxMana, -20% ability cooldowns.", IsEquippable = true, MaxManaBonus = 15, Tier = ItemTier.Rare },
+        new Item { Name = "Cloak of Shadows", Type = ItemType.Accessory, Description = "+10% dodge chance.", IsEquippable = true, DodgeBonus = 0.10f, Tier = ItemTier.Rare }
     };
 
     /// <summary>

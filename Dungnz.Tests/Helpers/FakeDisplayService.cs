@@ -73,6 +73,10 @@ public class FakeDisplayService : IDisplayService
         AllOutput.Add($"loot:{item.Name}");
     }
 
+    public void ShowGoldPickup(int amount, int newTotal) { }
+    public void ShowItemPickup(Item item, int slotsCurrent, int slotsMax, int weightCurrent, int weightMax) { }
+    public void ShowItemDetail(Item item) { }
+
     public void ShowColoredMessage(string message, string color)
     {
         var plain = StripAnsi(message);

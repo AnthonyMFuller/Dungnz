@@ -32,6 +32,9 @@ public record ItemStats
 
     /// <summary>Whether this item can be placed in an equipment slot (weapons, armour, accessories).</summary>
     public bool IsEquippable { get; init; }
+
+    /// <summary>The power tier of this item; defaults to <see cref="ItemTier.Common"/> when absent from the JSON.</summary>
+    public string Tier { get; init; } = "Common";
 }
 
 /// <summary>
@@ -133,7 +136,8 @@ public static class ItemConfig
             DefenseBonus = stats.DefenseBonus,
             StatModifier = stats.StatModifier,
             Description = stats.Description,
-            IsEquippable = stats.IsEquippable
+            IsEquippable = stats.IsEquippable,
+            Tier = Enum.TryParse<ItemTier>(stats.Tier, ignoreCase: true, out var tier) ? tier : ItemTier.Common
         };
     }
 }
