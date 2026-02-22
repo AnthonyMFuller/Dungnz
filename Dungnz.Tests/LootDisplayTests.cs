@@ -47,7 +47,7 @@ public class LootDisplayTests : IDisposable
     public void ShowLootDrop_EachItemType_ShowsCorrectIcon(ItemType type, string expectedIcon)
     {
         var item = new Item { Name = "Test Item", Type = type };
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
         Output.Should().Contain(expectedIcon);
     }
 
@@ -59,7 +59,7 @@ public class LootDisplayTests : IDisposable
     public void ShowLootDrop_Weapon_ShowsAttackBonus()
     {
         var item = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 7 };
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
         Output.Should().Contain("Attack +7");
     }
 
@@ -67,7 +67,7 @@ public class LootDisplayTests : IDisposable
     public void ShowLootDrop_Armor_ShowsDefenseBonus()
     {
         var item = new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 4 };
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
         Output.Should().Contain("Defense +4");
     }
 
@@ -75,7 +75,7 @@ public class LootDisplayTests : IDisposable
     public void ShowLootDrop_Consumable_ShowsHealAmount()
     {
         var item = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 20 };
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
         Output.Should().Contain("Heals 20 HP");
     }
 
@@ -83,7 +83,7 @@ public class LootDisplayTests : IDisposable
     public void ShowLootDrop_AlwaysShowsItemName()
     {
         var item = new Item { Name = "Blessed Blade", Type = ItemType.Weapon, AttackBonus = 5 };
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
         Output.Should().Contain("Blessed Blade");
     }
 
@@ -100,7 +100,7 @@ public class LootDisplayTests : IDisposable
             Name = "Strange Relic", Type = ItemType.Accessory,
             AttackBonus = 0, DefenseBonus = 0, HealAmount = 0, Weight = 3
         };
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
         Output.Should().Contain("Accessory");
         Output.Should().Contain("3");  // weight is always shown
     }
@@ -109,7 +109,7 @@ public class LootDisplayTests : IDisposable
     public void ShowLootDrop_ItemWeight_IsAlwaysShown()
     {
         var item = new Item { Name = "Heavy Axe", Type = ItemType.Weapon, AttackBonus = 10, Weight = 5 };
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
         Output.Should().Contain("5");
     }
 
@@ -213,7 +213,7 @@ public class LootDisplayTests : IDisposable
     {
         var fake = new FakeDisplayService();
         var item = new Item { Name = "Test Blade", Type = ItemType.Weapon, AttackBonus = 3 };
-        fake.ShowLootDrop(item);
+        fake.ShowLootDrop(item, new Player());
         fake.AllOutput.Should().ContainMatch("*Test Blade*");
     }
 
@@ -290,7 +290,7 @@ public class ItemTierTests
         Console.SetOut(output);
         var svc = new ConsoleDisplayService();
         var item = new Item { Name = "Test Blade", Type = ItemType.Weapon, AttackBonus = 5, Tier = tier };
-        svc.ShowLootDrop(item);
+        svc.ShowLootDrop(item, new Player());
         output.ToString().Should().Contain(tierName);
     }
 
@@ -302,7 +302,7 @@ public class ItemTierTests
         Console.SetOut(output);
         var svc = new ConsoleDisplayService();
         var item = new Item { Name = "Frostmourne", Type = ItemType.Weapon, AttackBonus = 15, Tier = ItemTier.Legendary };
-        svc.ShowLootDrop(item);
+        svc.ShowLootDrop(item, new Player());
         output.ToString().Should().ContainAny("Legendary", "★★★", "🟨");
     }
 }

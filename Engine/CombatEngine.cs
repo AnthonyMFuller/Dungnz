@@ -667,9 +667,9 @@ public class CombatEngine : ICombatEngine
         if (loot.Item != null)
         {
             if (!_inventoryManager.TryAddItem(player, loot.Item))
-                _display.ShowMessage($"Your inventory is full — {loot.Item.Name} was lost.");
+                _display.ShowMessage($"{Systems.ColorCodes.Red}❌ Inventory full — {loot.Item.Name} was lost!{Systems.ColorCodes.Reset}\n   Drop something to make room.");
             else
-                _display.ShowLootDrop(loot.Item);
+                _display.ShowLootDrop(loot.Item, player, enemy.IsElite);
         }
         }
         

@@ -61,7 +61,9 @@ public interface IDisplayService
     /// box-drawn card with type icon and primary stat.
     /// </summary>
     /// <param name="item">The item that was dropped.</param>
-    void ShowLootDrop(Item item);
+    /// <param name="player">The player receiving the loot (used for equipped-weapon comparison).</param>
+    /// <param name="isElite">When true, shows an elite callout header.</param>
+    void ShowLootDrop(Item item, Player player, bool isElite = false);
 
     /// <summary>
     /// Displays a gold pickup notification showing the amount gained and the new running total.

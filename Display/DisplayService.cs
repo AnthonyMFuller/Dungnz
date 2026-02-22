@@ -173,24 +173,26 @@ public class ConsoleDisplayService : IDisplayService
             Console.WriteLine($"{weightColor}{currentWeight}/{maxWeight}{Systems.ColorCodes.Reset}");
             Console.WriteLine();
             
-            foreach (var item in player.Inventory)
+            foreach (var group in player.Inventory.GroupBy(i => i.Name))
             {
-                var icon = ItemTypeIcon(item.Type);
+                var item  = group.First();
+                var count = group.Count();
+                var icon  = ItemTypeIcon(item.Type);
                 var isEquipped = item == player.EquippedWeapon
                               || item == player.EquippedArmor
                               || item == player.EquippedAccessory;
                 var equippedTag = isEquipped
                     ? $" {Systems.ColorCodes.Green}[E]{Systems.ColorCodes.Reset}"
                     : string.Empty;
-                var statLabel = PrimaryStatLabel(item);
-                // Pad item name + equipped tag to column 28, stat to column 48
-                var nameField = $"{icon} {ColorizeItemName(item)}{equippedTag}";
-                // Strip color codes for length calculation
-                var namePlain = $"  {icon} {item.Name}{(isEquipped ? " [E]" : "")}";
-                int namePad = Math.Max(0, 30 - namePlain.Length);
+                var countTag    = count > 1 ? $" ×{count}" : string.Empty;
+                var statLabel   = PrimaryStatLabel(item);
+                var nameField   = $"{icon} {ColorizeItemName(item)}{equippedTag}{countTag}";
+                var namePlain   = $"  {icon} {item.Name}{(isEquipped ? " [E]" : "")}{countTag}";
+                int namePad     = Math.Max(0, 30 - namePlain.Length);
                 var statColored = $"{Systems.ColorCodes.Cyan}{statLabel}{Systems.ColorCodes.Reset}";
-                int statPad = Math.Max(0, 20 - statLabel.Length);
-                Console.WriteLine($"  {nameField}{new string(' ', namePad)}{statColored}{new string(' ', statPad)}{Systems.ColorCodes.Gray}[{item.Weight} wt]{Systems.ColorCodes.Reset}");
+                int statPad     = Math.Max(0, 20 - statLabel.Length);
+                var wtEach      = count > 1 ? $"[{item.Weight} wt each]" : $"[{item.Weight} wt]";
+                Console.WriteLine($"  {nameField}{new string(' ', namePad)}{statColored}{new string(' ', statPad)}{Systems.ColorCodes.Gray}{wtEach}{Systems.ColorCodes.Reset}");
             }
         }
         
@@ -200,16 +202,32 @@ public class ConsoleDisplayService : IDisplayService
     /// <summary>
     /// Renders a box-drawn loot drop card with type icon, item name, primary stat, and weight.
     /// </summary>
-    /// <param name="item">The item that was dropped.</param>
-    public void ShowLootDrop(Item item)
+    public void ShowLootDrop(Item item, Player player, bool isElite = false)
     {
         var icon = ItemTypeIcon(item.Type);
         var stat = PrimaryStatLabel(item);
         var namePad = new string(' ', Math.Max(0, 34 - (item.Name?.Length ?? 0)));
+        var header = isElite ? $"✦ {Systems.ColorCodes.Yellow}ELITE LOOT DROP{Systems.ColorCodes.Reset}" : "✦ LOOT DROP";
+        var tierLabel = item.Tier switch
+        {
+            ItemTier.Uncommon => $"[{Systems.ColorCodes.Green}Uncommon{Systems.ColorCodes.Reset}]",
+            ItemTier.Rare     => $"[{Systems.ColorCodes.BrightCyan}Rare{Systems.ColorCodes.Reset}]",
+            _                 => "[Common]"
+        };
         Console.WriteLine("╔══════════════════════════════════════╗");
-        Console.WriteLine("║  ✦ LOOT DROP                         ║");
+        Console.WriteLine($"║  {header,-36}║");
+        Console.WriteLine($"║  {tierLabel,-36}║");
         Console.WriteLine($"║  {icon} {ColorizeItemName(item)}{namePad}║");
-        Console.WriteLine($"║  {Systems.ColorCodes.Cyan}{stat,-36}{Systems.ColorCodes.Reset}• {item.Weight} wt  ║");
+
+        // Build stat line with optional "new best" indicator
+        string statLine = stat;
+        if (item.AttackBonus > 0 && player.EquippedWeapon != null)
+        {
+            int delta = item.AttackBonus - player.EquippedWeapon.AttackBonus;
+            if (delta > 0)
+                statLine += $"  {Systems.ColorCodes.Green}(+{delta} vs equipped!){Systems.ColorCodes.Reset}";
+        }
+        Console.WriteLine($"║  {Systems.ColorCodes.Cyan}{statLine,-36}{Systems.ColorCodes.Reset}• {item.Weight} wt  ║");
         Console.WriteLine("╚══════════════════════════════════════╝");
     }
 
@@ -238,6 +256,8 @@ public class ConsoleDisplayService : IDisplayService
                        : wtRatio > 0.80 ? Systems.ColorCodes.Yellow
                        : Systems.ColorCodes.Green;
         Console.WriteLine($"  Slots: {slotsColor}{slotsCurrent}/{slotsMax}{Systems.ColorCodes.Reset}  •  Weight: {wtColor}{weightCurrent}/{weightMax}{Systems.ColorCodes.Reset}");
+        if (weightCurrent > weightMax * 0.8)
+            Console.WriteLine($"  {Systems.ColorCodes.Yellow}⚠ Inventory weight: {weightCurrent}/{weightMax} — nearly full!{Systems.ColorCodes.Reset}");
     }
 
     /// <summary>
