@@ -110,11 +110,14 @@ public class EquipmentManager
         if (player.EquippedWeapon != null)
         {
             var w = player.EquippedWeapon;
-            var wStats = new System.Collections.Generic.List<string> { $"Attack +{w.AttackBonus}" };
-            if (w.DodgeBonus > 0) wStats.Add($"+{w.DodgeBonus:P0} dodge");
-            if (w.PoisonImmunity) wStats.Add("poison immune");
-            if (w.MaxManaBonus > 0) wStats.Add($"+{w.MaxManaBonus} max mana");
-            _display.ShowMessage($"Weapon: {w.Name} ({string.Join(", ", wStats)})");
+            var icon = ItemTypeIcon(w.Type);
+            var atkVal = $"{Systems.ColorCodes.BrightRed}+{w.AttackBonus}{Systems.ColorCodes.Reset}";
+            var extras = new System.Collections.Generic.List<string>();
+            if (w.DodgeBonus > 0) extras.Add($"+{w.DodgeBonus:P0} dodge");
+            if (w.PoisonImmunity) extras.Add("poison immune");
+            if (w.MaxManaBonus > 0) extras.Add($"+{w.MaxManaBonus} max mana");
+            var extrasStr = extras.Count > 0 ? $", {string.Join(", ", extras)}" : "";
+            _display.ShowMessage($"Weapon: {icon} {ColorizeItemName(w)} (Attack {atkVal}{extrasStr})");
         }
         else
         {
@@ -124,32 +127,56 @@ public class EquipmentManager
         if (player.EquippedArmor != null)
         {
             var a = player.EquippedArmor;
-            var aStats = new System.Collections.Generic.List<string> { $"Defense +{a.DefenseBonus}" };
-            if (a.DodgeBonus > 0) aStats.Add($"+{a.DodgeBonus:P0} dodge");
-            if (a.PoisonImmunity) aStats.Add("poison immune");
-            if (a.MaxManaBonus > 0) aStats.Add($"+{a.MaxManaBonus} max mana");
-            _display.ShowMessage($"Armor: {a.Name} ({string.Join(", ", aStats)})");
+            var icon = ItemTypeIcon(a.Type);
+            var defVal = $"{Systems.ColorCodes.Cyan}+{a.DefenseBonus}{Systems.ColorCodes.Reset}";
+            var extras = new System.Collections.Generic.List<string>();
+            if (a.DodgeBonus > 0) extras.Add($"+{a.DodgeBonus:P0} dodge");
+            if (a.PoisonImmunity) extras.Add("poison immune");
+            if (a.MaxManaBonus > 0) extras.Add($"+{a.MaxManaBonus} max mana");
+            var extrasStr = extras.Count > 0 ? $", {string.Join(", ", extras)}" : "";
+            _display.ShowMessage($"Armor:  {icon} {ColorizeItemName(a)} (Defense {defVal}{extrasStr})");
         }
         else
         {
-            _display.ShowMessage("Armor: (empty)");
+            _display.ShowMessage("Armor:  (empty)");
         }
 
         if (player.EquippedAccessory != null)
         {
             var acc = player.EquippedAccessory;
+            var icon = ItemTypeIcon(acc.Type);
             var stats = new System.Collections.Generic.List<string>();
-            if (acc.AttackBonus != 0) stats.Add($"Attack +{acc.AttackBonus}");
-            if (acc.DefenseBonus != 0) stats.Add($"Defense +{acc.DefenseBonus}");
+            if (acc.AttackBonus != 0)  stats.Add($"Attack {Systems.ColorCodes.BrightRed}+{acc.AttackBonus}{Systems.ColorCodes.Reset}");
+            if (acc.DefenseBonus != 0) stats.Add($"Defense {Systems.ColorCodes.Cyan}+{acc.DefenseBonus}{Systems.ColorCodes.Reset}");
             if (acc.StatModifier != 0) stats.Add($"HP +{acc.StatModifier}");
-            if (acc.DodgeBonus > 0) stats.Add($"+{acc.DodgeBonus:P0} dodge");
-            if (acc.PoisonImmunity) stats.Add("poison immune");
-            if (acc.MaxManaBonus > 0) stats.Add($"+{acc.MaxManaBonus} max mana");
-            _display.ShowMessage($"Accessory: {acc.Name} ({string.Join(", ", stats)})");
+            if (acc.DodgeBonus > 0)    stats.Add($"+{acc.DodgeBonus:P0} dodge");
+            if (acc.PoisonImmunity)    stats.Add("poison immune");
+            if (acc.MaxManaBonus > 0)  stats.Add($"+{acc.MaxManaBonus} max mana");
+            _display.ShowMessage($"Access: {icon} {ColorizeItemName(acc)} ({string.Join(", ", stats)})");
         }
         else
         {
-            _display.ShowMessage("Accessory: (empty)");
+            _display.ShowMessage("Access: (empty)");
         }
+    }
+
+    private static string ItemTypeIcon(ItemType type) => type switch
+    {
+        ItemType.Weapon     => "⚔",
+        ItemType.Armor      => "🛡",
+        ItemType.Consumable => "🧪",
+        ItemType.Accessory  => "💍",
+        _                   => "•"
+    };
+
+    private static string ColorizeItemName(Item item)
+    {
+        var color = item.Tier switch
+        {
+            ItemTier.Uncommon => Systems.ColorCodes.Green,
+            ItemTier.Rare     => Systems.ColorCodes.BrightCyan,
+            _                 => Systems.ColorCodes.BrightWhite
+        };
+        return $"{color}{item.Name}{Systems.ColorCodes.Reset}";
     }
 }

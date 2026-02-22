@@ -31,6 +31,9 @@ public static class ColorCodes
     
     /// <summary>ANSI code for bright white text (highlights, important values).</summary>
     public const string BrightWhite = "\u001b[97m";
+
+    /// <summary>ANSI code for bright cyan text (Rare item tier, high-value items).</summary>
+    public const string BrightCyan = "\u001b[96m";
     
     /// <summary>ANSI code for bold text formatting.</summary>
     public const string Bold = "\u001b[1m";

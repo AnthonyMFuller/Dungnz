@@ -432,3 +432,53 @@
 
 📌 Team update (2026-02-22): Process alignment protocol established — all code changes require a branch and PR before any commits. See decisions.md for full protocol. No exceptions.
 
+---
+
+### 2026-02-22: Phase 2.1–2.4 Proactive Tests — TierDisplayTests.cs
+
+**Task:** Write proactive tests for Phase 2.1–2.4 (loot-display-phase2 branch) before Hill's code lands.
+
+**File Written:** `Dungnz.Tests/TierDisplayTests.cs`
+
+**Test Count:** 16 tests total (11 pass on master today; 5 intentionally fail pending Phase 2.1/2.3)
+
+**Tests by category:**
+
+| Test | Status on master | Requires |
+|---|---|---|
+| `ShowLootDrop_CommonItem_DoesNotContainBrightCyan` | ✅ PASS | baseline |
+| `ShowLootDrop_CommonItem_ItemNameNotPrecededByGreen` | ✅ PASS | baseline |
+| `ShowLootDrop_UncommonItem_ItemNamePrecededByGreen` | ❌ FAIL | Phase 2.1 |
+| `ShowLootDrop_RareItem_OutputContainsBrightCyan` | ❌ FAIL | Phase 2.1 |
+| `ShowLootDrop_RareItem_ItemNamePrecededByBrightCyan` | ❌ FAIL | Phase 2.1 |
+| `ShowInventory_CommonItem_NoBrightCyanInOutput` | ✅ PASS | baseline |
+| `ShowInventory_RareItem_OutputContainsBrightCyan` | ❌ FAIL | Phase 2.1/2.3 |
+| `ShowInventory_UncommonItem_ItemNamePrecededByGreen` | ❌ FAIL | Phase 2.1/2.3 |
+| `FakeDisplayService_ShowLootDrop_RareItem_RecordsItemName` | ✅ PASS | baseline |
+| `FakeDisplayService_ShowInventory_RareItem_RecordsInventoryCount` | ✅ PASS | baseline |
+| `ShowLootDrop_EmptyItemName_DoesNotThrow` | ✅ PASS | edge case |
+| `ShowLootDrop_NullItemName_DoesNotThrow` | ✅ PASS | edge case |
+| `ShowInventory_EmptyInventory_DoesNotThrow` | ✅ PASS | edge case |
+| `ShowLootDrop_AllTiers_DoNotThrow` (Theory ×3) | ✅ PASS | edge case |
+
+**Phase 2.2 (ShowShop) and Phase 2.4 (ShowCraftRecipe):** Fully written but commented out — methods not yet on `IDisplayService`. Uncomment and adjust signatures when Hill's interface changes land.
+
+**Key Technical Notes:**
+- `BrightCyan` is not yet in `ColorCodes.cs`. Tests use local const `BrightCyanAnsi = "\u001b[96m"` (standard ANSI bright cyan). Once Hill adds `ColorCodes.BrightCyan`, update the constant to reference it.
+- Tests check `{color}{itemName}` pattern specifically (not just "output contains green") to distinguish tier color from other greens (equipped [E] tag, stat values, etc.)
+- `FakeDisplayService` strips ANSI — useless for color assertions. All ANSI checks must use `ConsoleDisplayService` with `Console.SetOut(StringWriter)` capture pattern.
+
+## Learnings
+
+### Test patterns for color/tier behavior
+
+1. **Use ConsoleDisplayService + Console capture for ANSI assertions** — `FakeDisplayService` strips all ANSI codes before recording. For any test that needs to assert color codes (e.g., tier color wrapping item names), redirect `Console.Out` to a `StringWriter` and use `new ConsoleDisplayService()` directly. Use `[Collection("console-output")]` to prevent parallel runs from competing on stdout.
+
+2. **Test the specific `{color}{itemName}` pattern, not just `{color}` presence** — Many existing display methods already emit `ColorCodes.Green` for equipped tags, health values, etc. Asserting `output.Contains(ColorCodes.Green)` is a weak signal. Asserting `output.Contains($"{ColorCodes.Green}ItemName")` confirms the colorization is specifically wrapping the intended content.
+
+3. **Define a local constant for not-yet-added color codes** — When a color code doesn't exist yet in `ColorCodes.cs`, use a local `private const string BrightCyanAnsi = "\u001b[96m"` in the test class. Add a comment to replace with `ColorCodes.BrightCyan` once Hill adds it. This lets tests compile and run without waiting for the constant to be defined.
+
+4. **Proactive test failure count = Phase gate signal** — The 5 failing tests in `TierDisplayTests.cs` are an exact checklist for Phase 2.1/2.3. When Hill's PR is reviewed, running `dotnet test --filter TierDisplay` should show exactly those 5 transitioning to green. If more tests fail, something regressed; if fewer, the implementation is incomplete.
+
+5. **Comment-in pattern for interface-gated tests** — When tests depend on interface methods that don't exist yet (ShowShop, ShowCraftRecipe), wrap the entire test class in `/* ... */` with a header comment `// Requires Phase 2.x: MethodName`. This preserves the test logic in version control without breaking compilation. Add a TODO listing the expected method signature so Hill can align implementation.
+
