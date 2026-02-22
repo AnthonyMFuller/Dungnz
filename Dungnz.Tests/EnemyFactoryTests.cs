@@ -6,15 +6,9 @@ using Xunit;
 
 namespace Dungnz.Tests;
 
+[Collection("EnemyFactory")]
 public class EnemyFactoryTests
 {
-    public EnemyFactoryTests()
-    {
-        // Initialize EnemyFactory with config files for tests
-        var enemyPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Data", "enemy-stats.json");
-        var itemPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Data", "item-stats.json");
-        EnemyFactory.Initialize(enemyPath, itemPath);
-    }
 
     [Fact]
     public void CreateRandom_ReturnsValidEnemy()
