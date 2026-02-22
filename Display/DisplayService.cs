@@ -453,4 +453,221 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine("╚═══════════════════════════════════════╝");
         Console.WriteLine();
     }
+
+    /// <summary>
+    /// Renders the enhanced ASCII art title screen with colors.
+    /// </summary>
+    public void ShowEnhancedTitle()
+    {
+        Console.Clear();
+        var cyan = Systems.ColorCodes.Cyan;
+        var yellow = Systems.ColorCodes.Yellow;
+        var reset = Systems.ColorCodes.Reset;
+
+        Console.WriteLine($"{cyan}╔══════════════════════════════════════╗{reset}");
+        Console.WriteLine($"{cyan}║{reset}  {yellow}██████╗ ██╗   ██╗███╗  ██╗ ██████╗{reset} {cyan}║{reset}");
+        Console.WriteLine($"{cyan}║{reset}  {yellow}██╔══██╗██║   ██║████╗ ██║██╔════╝{reset} {cyan}║{reset}");
+        Console.WriteLine($"{cyan}║{reset}  {yellow}██║  ██║██║   ██║██╔██╗██║██║  ███╗{reset}{cyan}║{reset}");
+        Console.WriteLine($"{cyan}║{reset}  {yellow}██╚══██╝╚██╗ ██╔╝██║╚████║╚██████╔╝{reset}{cyan}║{reset}");
+        Console.WriteLine($"{cyan}║{reset}  {yellow}╚═════╝  ╚═══╝  ╚═╝ ╚═══╝  ╚═════╝{reset} {cyan}║{reset}");
+        Console.WriteLine($"{cyan}║{reset}                                      {cyan}║{reset}");
+        Console.WriteLine($"{cyan}║{reset}         {cyan}D  U  N  G  N  Z{reset}             {cyan}║{reset}");
+        Console.WriteLine($"{cyan}║{reset}    {cyan}─────────────────────────────{reset}     {cyan}║{reset}");
+        Console.WriteLine($"{cyan}║{reset}       {yellow}Descend If You Dare{reset}            {cyan}║{reset}");
+        Console.WriteLine($"{cyan}╚══════════════════════════════════════╝{reset}");
+        Console.WriteLine();
+    }
+
+    /// <summary>
+    /// Displays the atmospheric lore introduction paragraph. Returns false (never skipped).
+    /// </summary>
+    public bool ShowIntroNarrative()
+    {
+        var gray = Systems.ColorCodes.Gray;
+        var yellow = Systems.ColorCodes.Yellow;
+        var reset = Systems.ColorCodes.Reset;
+
+        Console.WriteLine($"{gray}The ancient fortress of Dungnz has stood for a thousand years — a labyrinthine{reset}");
+        Console.WriteLine($"{gray}tomb carved into the mountain's heart by hands long since turned to dust. Adventurers{reset}");
+        Console.WriteLine($"{gray}who descend its spiral corridors speak of riches beyond imagination and horrors beyond{reset}");
+        Console.WriteLine($"{gray}comprehension. The air below reeks of sulfur and old blood. Torches flicker without wind.{reset}");
+        Console.WriteLine($"{gray}Something vast and patient watches from the deep.{reset}");
+        Console.WriteLine();
+        Console.WriteLine($"{yellow}[ Press Enter to begin your descent... ]{reset}");
+        Console.ReadLine();
+        Console.WriteLine();
+        return false;
+    }
+
+    /// <summary>
+    /// Displays prestige level card. Only called when prestige.PrestigeLevel > 0.
+    /// </summary>
+    public void ShowPrestigeInfo(Systems.PrestigeData prestige)
+    {
+        var yellow = Systems.ColorCodes.Yellow;
+        var reset = Systems.ColorCodes.Reset;
+
+        Console.WriteLine($"{yellow}╔═══════════════════════════════╗{reset}");
+        Console.WriteLine($"{yellow}║{reset}  {yellow}⭐ PRESTIGE LEVEL {prestige.PrestigeLevel,-10}{reset} {yellow}║{reset}");
+        Console.WriteLine($"{yellow}║{reset}  Wins: {prestige.TotalWins,-3} Runs: {prestige.TotalRuns,-10} {yellow}║{reset}");
+        
+        if (prestige.BonusStartAttack > 0)
+            Console.WriteLine($"{yellow}║{reset}  Bonus Attack:   +{prestige.BonusStartAttack,-11} {yellow}║{reset}");
+        if (prestige.BonusStartDefense > 0)
+            Console.WriteLine($"{yellow}║{reset}  Bonus Defense:  +{prestige.BonusStartDefense,-11} {yellow}║{reset}");
+        if (prestige.BonusStartHP > 0)
+            Console.WriteLine($"{yellow}║{reset}  Bonus HP:       +{prestige.BonusStartHP,-11} {yellow}║{reset}");
+        
+        Console.WriteLine($"{yellow}╚═══════════════════════════════╝{reset}");
+        Console.WriteLine();
+    }
+
+    /// <summary>
+    /// Shows colored difficulty cards with mechanical context and returns the player's validated choice.
+    /// </summary>
+    public Difficulty SelectDifficulty()
+    {
+        var green = Systems.ColorCodes.Green;
+        var yellow = Systems.ColorCodes.Yellow;
+        var red = Systems.ColorCodes.Red;
+        var reset = Systems.ColorCodes.Reset;
+
+        Console.WriteLine("Choose your difficulty:");
+        Console.WriteLine();
+        Console.WriteLine($"  {green}[1] CASUAL{reset}     (Enemy Power ×0.7 | Loot ×1.5 | Gold ×1.5)");
+        Console.WriteLine($"  {yellow}[2] NORMAL{reset}     (Enemy Power ×1.0 | Balanced)");
+        Console.WriteLine($"  {red}[3] HARD{reset}       (Enemy Power ×1.3 | Loot ×0.7 | Gold ×0.7)");
+        Console.WriteLine();
+
+        while (true)
+        {
+            Console.Write("> ");
+            var input = Console.ReadLine()?.Trim() ?? "";
+            
+            switch (input)
+            {
+                case "1": return Difficulty.Casual;
+                case "2": return Difficulty.Normal;
+                case "3": return Difficulty.Hard;
+                default:
+                    Console.WriteLine($"{Systems.ColorCodes.Red}Invalid choice. Please enter 1, 2, or 3.{reset}");
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Shows class cards with ASCII stat bars and inline prestige bonuses, returns the player's validated choice.
+    /// </summary>
+    public PlayerClassDefinition SelectClass(Systems.PrestigeData? prestige)
+    {
+        var cyan = Systems.ColorCodes.Cyan;
+        var yellow = Systems.ColorCodes.Yellow;
+        var gray = Systems.ColorCodes.Gray;
+        var reset = Systems.ColorCodes.Reset;
+
+        Console.WriteLine("Choose your class:");
+        Console.WriteLine();
+
+        // Base stats (from Player defaults)
+        const int baseHP = 100;
+        const int baseAttack = 10;
+        const int baseDefense = 5;
+        const int baseMana = 30;
+
+        var classes = new[] {
+            (def: PlayerClassDefinition.Warrior, icon: "⚔", number: 1),
+            (def: PlayerClassDefinition.Mage, icon: "🔮", number: 2),
+            (def: PlayerClassDefinition.Rogue, icon: "🗡", number: 3)
+        };
+
+        foreach (var (def, icon, number) in classes)
+        {
+            // Calculate effective stats
+            int effectiveHP = baseHP + def.BonusMaxHP;
+            int effectiveAttack = baseAttack + def.BonusAttack;
+            int effectiveDefense = baseDefense + def.BonusDefense;
+            int effectiveMana = baseMana + def.BonusMaxMana;
+
+            // Calculate prestige-boosted stats if applicable
+            string hpDisplay, atkDisplay, defDisplay;
+            if (prestige != null && prestige.PrestigeLevel > 0)
+            {
+                int prestigeHP = effectiveHP + prestige.BonusStartHP;
+                int prestigeAtk = effectiveAttack + prestige.BonusStartAttack;
+                int prestigeDef = effectiveDefense + prestige.BonusStartDefense;
+
+                hpDisplay = prestige.BonusStartHP > 0 
+                    ? $"{effectiveHP} → {yellow}{prestigeHP}{reset} (+{prestige.BonusStartHP} prestige)"
+                    : effectiveHP.ToString();
+                atkDisplay = prestige.BonusStartAttack > 0
+                    ? $"{effectiveAttack} → {yellow}{prestigeAtk}{reset} (+{prestige.BonusStartAttack} prestige)"
+                    : effectiveAttack.ToString();
+                defDisplay = prestige.BonusStartDefense > 0
+                    ? $"{effectiveDefense} → {yellow}{prestigeDef}{reset} (+{prestige.BonusStartDefense} prestige)"
+                    : effectiveDefense.ToString();
+            }
+            else
+            {
+                hpDisplay = effectiveHP.ToString();
+                atkDisplay = effectiveAttack.ToString();
+                defDisplay = effectiveDefense.ToString();
+            }
+
+            // Stat bars
+            string hpBar = StatBar(effectiveHP, 120);
+            string atkBar = StatBar(effectiveAttack, 13);
+            string defBar = StatBar(effectiveDefense, 7);
+            string manaBar = StatBar(effectiveMana, 60);
+
+            Console.WriteLine($"{cyan}┌──────────────────────────────────┐{reset}");
+            Console.WriteLine($"{cyan}│{reset} [{number}] {icon}  {def.Name.ToUpper(),-25} {cyan}│{reset}");
+            
+            // HP line with ANSI-aware padding
+            var hpLine = $" HP:      {hpBar}  {hpDisplay}";
+            var hpVisibleLen = Systems.ColorCodes.StripAnsiCodes(hpLine).Length;
+            Console.WriteLine($"{cyan}│{reset}{hpLine}{new string(' ', 34 - hpVisibleLen)}{cyan}│{reset}");
+            
+            // Attack line with ANSI-aware padding
+            var atkLine = $" Attack:  {atkBar}  {atkDisplay}";
+            var atkVisibleLen = Systems.ColorCodes.StripAnsiCodes(atkLine).Length;
+            Console.WriteLine($"{cyan}│{reset}{atkLine}{new string(' ', 34 - atkVisibleLen)}{cyan}│{reset}");
+            
+            // Defense line with ANSI-aware padding
+            var defLine = $" Defense: {defBar}  {defDisplay}";
+            var defVisibleLen = Systems.ColorCodes.StripAnsiCodes(defLine).Length;
+            Console.WriteLine($"{cyan}│{reset}{defLine}{new string(' ', 34 - defVisibleLen)}{cyan}│{reset}");
+            
+            Console.WriteLine($"{cyan}│{reset} Mana:    {manaBar}  {effectiveMana,-15} {cyan}│{reset}");
+            Console.WriteLine($"{cyan}│{reset} Trait: {def.TraitDescription,-24} {cyan}│{reset}");
+            Console.WriteLine($"{cyan}│{reset} {gray}\"{def.Description}\"{reset}{new string(' ', 32 - def.Description.Length)}{cyan}│{reset}");
+            Console.WriteLine($"{cyan}└──────────────────────────────────┘{reset}");
+            Console.WriteLine();
+        }
+
+        while (true)
+        {
+            Console.Write("> ");
+            var input = Console.ReadLine()?.Trim() ?? "";
+            
+            switch (input)
+            {
+                case "1": return PlayerClassDefinition.Warrior;
+                case "2": return PlayerClassDefinition.Mage;
+                case "3": return PlayerClassDefinition.Rogue;
+                default:
+                    Console.WriteLine($"{Systems.ColorCodes.Red}Invalid choice. Please enter 1, 2, or 3.{reset}");
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Creates an ASCII stat bar visualization.
+    /// </summary>
+    private static string StatBar(int value, int max, int width = 10)
+    {
+        var filled = Math.Clamp((int)Math.Round((double)value / max * width), 0, width);
+        return new string('█', filled) + new string('░', width - filled);
+    }
 }

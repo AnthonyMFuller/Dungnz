@@ -100,4 +100,19 @@ public class TestDisplayService : IDisplayService
     {
         AllOutput.Add($"equipment_compare:{oldItem?.Name ?? "none"}->{newItem.Name}");
     }
+
+    public bool ShowEnhancedTitleCalled { get; private set; }
+    public bool ShowIntroNarrativeCalled { get; private set; }
+    public PrestigeData? LastPrestigeInfo { get; private set; }
+
+    // For SelectDifficulty - configurable return value
+    public Difficulty SelectDifficultyResult { get; set; } = Difficulty.Normal;
+    // For SelectClass - configurable return value
+    public PlayerClassDefinition SelectClassResult { get; set; } = PlayerClassDefinition.Warrior;
+
+    public void ShowEnhancedTitle() { ShowEnhancedTitleCalled = true; }
+    public bool ShowIntroNarrative() { ShowIntroNarrativeCalled = true; return false; }
+    public void ShowPrestigeInfo(PrestigeData prestige) { LastPrestigeInfo = prestige; }
+    public Difficulty SelectDifficulty() => SelectDifficultyResult;
+    public PlayerClassDefinition SelectClass(PrestigeData? prestige) => SelectClassResult;
 }
