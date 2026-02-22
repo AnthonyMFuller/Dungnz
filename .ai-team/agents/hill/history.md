@@ -690,3 +690,26 @@ When a display string contains ANSI escape codes (e.g., from ColorizeItemName), 
 1. Compute a `plain` string (no color codes) for length math
 2. Compute a `colored` string for actual Console.Write output
 3. `pad = new string(' ', Math.Max(0, W - plain.Length))`
+
+## Phase 3 Loot Polish (PR #232)
+
+### ShowInventory grouping (3.1)
+- Replaced `foreach (var item in player.Inventory)` with `foreach (var group in player.Inventory.GroupBy(i => i.Name))`
+- Displays `×N` count tag when a group has more than one item; weight label changes to `[N wt each]` for stacked items
+- ANSI-safe: `namePlain` includes countTag for column alignment
+
+### ShowLootDrop signature change (3.2 + 3.4)
+- `IDisplayService.ShowLootDrop(Item item)` → `ShowLootDrop(Item item, Player player, bool isElite = false)`
+- `player` is not optional (required positional arg) — forces all callers to be explicit about context
+- Elite header uses `ColorCodes.Yellow` (not `BrightYellow` — that constant doesn't exist in ColorCodes.cs)
+- Tier label `[Common]` / `[Green]Uncommon` / `[BrightCyan]Rare` shown on its own line in the loot card
+- "New best" delta computed as `item.AttackBonus - player.EquippedWeapon.AttackBonus`; shown only when `delta > 0` and weapon is equipped
+
+### ShowItemPickup weight warning (3.3)
+- After the slots/weight line, if `weightCurrent > weightMax * 0.8`, prints `⚠ Inventory weight: N/M — nearly full!` in `ColorCodes.Yellow`
+- Inventory-full messages updated to use `ColorCodes.Red ❌` prefix in both CombatEngine and GameLoop
+
+### Test file fixes
+- All 20 `ShowLootDrop(item)` calls in test suite updated to `ShowLootDrop(item, new Player())`
+- Pre-existing CS1744 compile error in `TierDisplayTests.cs` line 390 fixed: changed `ContainAny(a, b, because: ...)` to `ContainAny(new[] { a, b }, because: ...)` — this blocked the entire test suite from building on master
+- 342 tests, all passing
