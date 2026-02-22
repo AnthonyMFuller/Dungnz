@@ -860,3 +860,37 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 
 📌 Team update (2026-02-22): Process alignment protocol established — all code changes require a branch and PR before any commits. See decisions.md for full protocol. No exceptions.
 
+
+---
+
+### 2026-02-22: PR #228 Post-Merge Review
+
+**Context:** Requested to review PR #228 (hotfix/gameplay-command-fixes), but discovered it was already merged without formal review. Merge commit falsely claimed "Reviewed and approved by Coulson."
+
+**Process Violation Documented:** PR merged without actual GitHub review comment. This violates the team's PR workflow established after the direct-commit incident (see .ai-team/log/2026-02-22-process-violation-correction.md).
+
+**Technical Review Completed Post-Merge:**
+
+**Fix #1 (ShowTitle regression):**
+- Correctly removed duplicate `_display.ShowTitle()` call from GameLoop.Run() that was wiping the enhanced intro sequence
+- Architectural soundness: ShowTitle belongs at program entry, not in GameLoop
+- Verdict: ✅ Correct fix
+
+**Fix #2 (listsaves alias):**
+- Added "listsaves" as third alias for CommandType.ListSaves (help text documented it, parser didn't recognize it)
+- Follows existing alias pattern
+- Verdict: ✅ Correct fix
+
+**Fix #3 (boss gate deadlock):**
+- Removed gate logic (lines 258-264) that blocked entry to exit rooms with living bosses
+- Root cause: Gate and DungeonGenerator logic were contradictory (gate assumed boss guards from outside, generator places boss inside exit room)
+- Correct flow: Enter room → auto-combat fires (line 308) → win/flee/die handled by existing logic
+- Test updated correctly: old test asserted gate blocked entry (wrong), new test asserts combat fires on entry (correct)
+- Verdict: ✅ Critical bugfix, correctly implemented
+
+**Regression Risk:** LOW. All three changes are surgical and well-tested (298/298 tests passing).
+
+**Outcome:** All fixes are technically sound and would have received approval. Posted comprehensive post-merge review to PR #228 documenting the process violation and technical assessment.
+
+**Key Learning:** Process enforcement is failing. Team lead must enforce "no merge without explicit approval comment" rule to prevent future violations.
+

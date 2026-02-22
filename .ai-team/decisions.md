@@ -9857,3 +9857,665 @@ This is a proper behavioral test that validates the intended game flow.
 
 **Verdict: APPROVED.** Ship it.
 
+
+---
+
+## Coulson's Looting UX Improvement Plan
+**Date:** 2026-02-22
+**Requested by:** Anthony
+**Status:** Plan delivered — awaiting approval before implementation
+
+### Audit Context
+
+**Hill** audited 10 looting display surfaces — all underutilize available item data.
+
+**Barton** audited loot systems and item data model — 14 properties on Item, only Name shown on drops.
+
+### Architectural Decision
+Add ItemTier enum (Common/Uncommon/Rare) as explicit property rather than deriving from LootTable.
+
+### Three-Phase Implementation Plan
+
+**Phase 1 (5h, display-only)**
+- Loot drop cards
+- Gold color highlighting
+- Room item type icons
+- Pickup stats
+- Examine stat card
+- Inventory enhancement
+
+**Phase 2 (5h, model change)**
+- Add ItemTier enum + dependent tier-colored names
+- Merchant affordability indication
+- Crafting status
+
+**Phase 3 (4h, polish)**
+- Consumable grouping
+- Elite loot callout
+- Weight warning
+- Upgrade indicator
+
+**Total effort:** 14 hours
+**Total value:** Transform 1-property display into 14-property rich loot experience
+### 2026-02-22: Looting UI/UX Improvement Plan
+**By:** Coulson
+**What:** Plan for improving the looting dialog and related loot/item display surfaces
+**Why:** All loot surfaces are monochromatic; rich item data exists but is hidden from the player
+
+---
+
+## Executive Summary
+
+The Item model carries 14 properties. Most display surfaces show only `Name`. The player has no way to evaluate loot at the moment it matters — when it drops, when they see it in a room, when they're deciding what to buy. The equipment comparison screen (already color-coded with deltas) proves we *can* do this well. This plan extends that quality bar to every other item surface.
+
+**Scope:** 10 display surfaces, organized into 3 phases by impact and dependency.
+**Estimated effort:** ~14 hours total (Hill ~8h, Barton ~4h, Romanoff ~2h).
+**Risk:** Low-to-moderate. Phase 1 is pure display changes. Phase 2 adds a model property. Phase 3 is polish.
+
+---
+
+## Architectural Decision: Tier/Rarity
+
+**The Question:** Items have no `Tier` or `Rarity` property. Tier is implicit — determined by which `LootTable` list (`Tier1Items`, `Tier2Items`, `Tier3Items`) the item lives in. Should we:
+
+**(A) Derive tier at display time** — scan LootTable lists to find which tier an item belongs to, or
+**(B) Add a `Tier` property to the Item model** — set it at definition time?
+
+**Decision: Option B — Add `ItemTier` enum and `Tier` property to Item.**
+
+Rationale:
+- **Option A is fragile.** Items from crafting, merchants, or future quest rewards won't appear in LootTable lists. Derivation breaks immediately.
+- **Option B is 2 lines of model change** (`public ItemTier Tier { get; set; } = ItemTier.Common;`) plus updating existing item definitions (~20 items across 3 lists).
+- The Tier property enables color-coding, filtering, and sorting everywhere without coupling display logic to LootTable internals.
+- Follows the principle: *data belongs on the model, not derived from infrastructure.*
+
+```csharp
+public enum ItemTier { Common, Uncommon, Rare }
+```
+
+Mapping: Tier1 → Common (white), Tier2 → Uncommon (green), Tier3 → Rare (cyan/bright).
+
+**Assigned to:** Barton (model change + LootTable annotation).
+
+---
+
+## Color Language (Established Palette, Extended)
+
+| Semantic           | Color       | ANSI Code | Usage                              |
+|--------------------|-------------|-----------|-------------------------------------|
+| Attack / Damage    | Red         | `\e[31m`  | AttackBonus, bleed, weapon stats   |
+| Defense / Shield   | Cyan        | `\e[36m`  | DefenseBonus, armor stats          |
+| Healing / HP       | Green       | `\e[32m`  | HealAmount, success                |
+| Mana               | Blue        | `\e[34m`  | ManaRestore, MaxManaBonus          |
+| Gold / Currency    | Yellow      | `\e[33m`  | Gold amounts, prices               |
+| Disabled / Flavor  | Gray        | `\e[90m`  | Weight, descriptions, unavailable  |
+| Highlights / Names | BrightWhite | `\e[97m`  | Item names, headers                |
+| Tier: Common       | White       | `\e[37m`  | Tier 1 items                       |
+| Tier: Uncommon     | Green       | `\e[32m`  | Tier 2 items                       |
+| Tier: Rare         | BrightCyan  | `\e[96m`  | Tier 3 items                       |
+
+Type icons (emoji, consistent across all surfaces):
+- ⚔ Weapon  |  🛡 Armor  |  💍 Accessory  |  🧪 Consumable
+
+---
+
+## Phase 1: High-Impact Quick Wins (5 hours)
+
+These are display-only changes. No model modifications. Immediate player-visible improvement.
+
+### 1.1 — Loot Drop Display (CombatEngine.cs → DisplayService)
+**Priority:** Highest — this is the #1 moment of excitement in a dungeon crawler.
+**Assigned to:** Hill
+**Effort:** 1 hour
+
+**Currently:**
+```
+✦ Dropped: Short Sword
+```
+
+**Proposed:**
+```
+╔══════════════════════════════════════╗
+║  ✦ LOOT DROP                        ║
+║  ⚔ Short Sword                      ║
+║  Attack +2  •  3 wt                  ║
+╚══════════════════════════════════════╝
+```
+
+For items with multiple stats:
+```
+╔══════════════════════════════════════╗
+║  ✦ LOOT DROP                        ║
+║  ⚔ Mythril Blade                    ║
+║  Attack +8  •  Bleed on hit          ║
+║  +5% dodge  •  5 wt                  ║
+╚══════════════════════════════════════╝
+```
+
+For consumables:
+```
+╔══════════════════════════════════════╗
+║  ✦ LOOT DROP                        ║
+║  🧪 Greater Healing Potion           ║
+║  Heals 50 HP  •  1 wt               ║
+╚══════════════════════════════════════╝
+```
+
+**File changes:**
+- `Display/ConsoleDisplayService.cs` — Rewrite `ShowLootDrop(Item)` to render stat card with box drawing, type icon, color-coded stats.
+- `Display/IDisplayService.cs` — Signature unchanged (`ShowLootDrop(Item)` already exists).
+
+**Implementation notes:**
+- Build a reusable `FormatItemStatLine(Item)` private helper in ConsoleDisplayService that produces the stat summary string. This helper will be reused across multiple surfaces.
+- Color: item name in BrightWhite, attack stats in Red, defense in Cyan, healing in Green, mana in Blue, weight in Gray.
+
+---
+
+### 1.2 — Gold Acquisition Display (CombatEngine.cs)
+**Priority:** High — gold drops are frequent and currently invisible against other text.
+**Assigned to:** Hill
+**Effort:** 30 minutes
+
+**Currently:**
+```
+You found 15 gold!
+```
+
+**Proposed:**
+```
+  💰 +15 gold  (Total: 47g)
+```
+
+**File changes:**
+- `Engine/CombatEngine.cs` — Change the `ShowMessage` call at line ~663 to use a new `ShowGoldPickup(int amount, int newTotal)` method.
+- `Display/IDisplayService.cs` — Add `void ShowGoldPickup(int amount, int newTotal)`.
+- `Display/ConsoleDisplayService.cs` — Implement with Yellow color for amount, Gray for total.
+
+---
+
+### 1.3 — Room Items Display (ConsoleDisplayService.cs)
+**Priority:** High — players scan room descriptions constantly.
+**Assigned to:** Hill
+**Effort:** 45 minutes
+
+**Currently:**
+```
+Items: Short Sword, Healing Potion
+```
+
+**Proposed:**
+```
+Items on the ground:
+  ⚔ Short Sword (Attack +2)
+  🧪 Healing Potion (Heals 25 HP)
+```
+
+**File changes:**
+- `Display/ConsoleDisplayService.cs` — Rewrite the room items block (lines 62-67) to iterate items individually with type icon and primary stat.
+- Uses the same `FormatItemStatLine` helper from 1.1.
+
+---
+
+### 1.4 — Item Pickup Display (GameLoop.cs)
+**Priority:** Medium — confirms the action, should show what player gained.
+**Assigned to:** Hill
+**Effort:** 30 minutes
+
+**Currently:**
+```
+You take the Short Sword.
+Every bit helps down here.
+```
+
+**Proposed:**
+```
+  ⚔ Picked up: Short Sword (Attack +2)
+  Weight: 18/50  •  Slots: 6/10
+  Every bit helps down here.
+```
+
+**File changes:**
+- `Engine/GameLoop.cs` — Replace `ShowMessage($"You take the {item.Name}.")` with call to new `ShowItemPickup(Item, Player)` method.
+- `Display/IDisplayService.cs` — Add `void ShowItemPickup(Item item, Player player)`.
+- `Display/ConsoleDisplayService.cs` — Implement with stat line + weight/slot status (reuse existing `WeightColor` helper).
+
+---
+
+### 1.5 — Item Examination Display (GameLoop.cs)
+**Priority:** Medium — this is the player's "tell me about this item" action.
+**Assigned to:** Hill
+**Effort:** 45 minutes
+
+**Currently:**
+```
+Short Sword: A basic blade.
+```
+
+**Proposed:**
+```
+═══════════════════════════════════
+  ⚔ Short Sword
+  "A basic blade."
+─────────────────────────────────
+  Attack +2
+  Weight: 3
+  Type: Weapon  •  Equippable
+═══════════════════════════════════
+```
+
+For a complex item:
+```
+═══════════════════════════════════
+  ⚔ Mythril Blade
+  "Forged in starlight."
+─────────────────────────────────
+  Attack +8
+  +5% Dodge
+  Bleed on Hit
+  Weight: 5
+  Type: Weapon  •  Equippable
+═══════════════════════════════════
+```
+
+**File changes:**
+- `Engine/GameLoop.cs` — Replace inline `ShowMessage` with call to new `ShowItemDetail(Item)` method.
+- `Display/IDisplayService.cs` — Add `void ShowItemDetail(Item item)`.
+- `Display/ConsoleDisplayService.cs` — Full stat card with all non-zero properties, color-coded.
+
+---
+
+### 1.6 — Inventory Display Enhancement (ConsoleDisplayService.cs)
+**Priority:** Medium — inventory is viewed often; currently lists names without stats.
+**Assigned to:** Hill
+**Effort:** 1 hour
+
+**Currently:**
+```
+═══ INVENTORY ═══
+Slots: 4/10 │ Weight: 12/50
+
+  • Short Sword (Weapon) [3 wt]
+  • Healing Potion (Consumable) [1 wt]
+  • Chain Mail (Armor) [8 wt]
+```
+
+**Proposed:**
+```
+═══ INVENTORY ═══
+Slots: 4/10 │ Weight: 12/50
+
+  ⚔ Short Sword         Attack +2           [3 wt]
+  🧪 Healing Potion      Heals 25 HP         [1 wt]
+  🛡 Chain Mail          Defense +10      [E] [8 wt]
+```
+
+Key improvements:
+- Type icons replace `(Type)` text — faster scanning.
+- Primary stat shown inline — player can evaluate without examining each item.
+- `[E]` marker on equipped items — currently no visual indicator.
+- Consumables with identical names could be grouped (e.g., `🧪 Healing Potion ×3`) — defer to Phase 3.
+
+**File changes:**
+- `Display/ConsoleDisplayService.cs` — Rewrite the `foreach` loop in `ShowInventory` to use columnar layout with type icons, stat summary, equipped marker.
+- Needs to check `player.EquippedWeapon == item`, `player.EquippedArmor == item`, `player.EquippedAccessory == item` for the `[E]` marker.
+
+---
+
+## Phase 2: Model Change + Dependent Surfaces (5 hours)
+
+Phase 2 requires the `Tier` property on Item (architectural change) and touches surfaces where the player makes economic decisions.
+
+### 2.0 — Add ItemTier to Item Model
+**Priority:** Required foundation for Phase 2.
+**Assigned to:** Barton
+**Effort:** 1.5 hours
+
+**Changes:**
+- `Models/Item.cs` — Add `public ItemTier Tier { get; set; } = ItemTier.Common;` and `ItemTier` enum.
+- `Models/LootTable.cs` — Set `Tier = ItemTier.Common` on all Tier1Items, `Tier = ItemTier.Uncommon` on Tier2Items, `Tier = ItemTier.Rare` on Tier3Items.
+- `Systems/CraftingSystem.cs` — Set appropriate Tier on crafted result items (crafted items should generally be Uncommon or Rare since they require investment).
+- Merchant stock items — Set Tier appropriately.
+
+**Testing note:** Existing tests don't assert on item properties beyond what's needed for logic. Adding a new property with a default value (`Common`) is non-breaking. Romanoff should add a test verifying all LootTable items have non-default Tier set explicitly.
+
+---
+
+### 2.1 — Tier-Colored Item Names (All Surfaces)
+**Priority:** High — once Tier exists, this is the single highest-impact visual change.
+**Assigned to:** Hill (after Barton completes 2.0)
+**Effort:** 1 hour
+
+**Change:** Add a `ColorizeItemName(Item)` helper to `ColorCodes` that wraps item name in tier-appropriate color:
+```csharp
+public static string ColorizeItemName(Item item) => item.Tier switch
+{
+    ItemTier.Common   => $"{White}{item.Name}{Reset}",
+    ItemTier.Uncommon => $"{Green}{item.Name}{Reset}",
+    ItemTier.Rare     => $"{BrightCyan}{item.Name}{Reset}",
+    _                 => item.Name
+};
+```
+
+Then replace all `item.Name` references in display code with `ColorCodes.ColorizeItemName(item)`. This single change cascades across loot drops, inventory, room items, pickup, examination, shop, crafting, and equipment — *every* surface lights up with tier color.
+
+**File changes:**
+- `Systems/ColorCodes.cs` — Add `ColorizeItemName` helper.
+- All display surfaces from Phase 1 — swap `item.Name` for `ColorizeItemName(item)`.
+
+---
+
+### 2.2 — Merchant Shop Display (GameLoop.cs)
+**Priority:** High — buying decisions need information.
+**Assigned to:** Hill (display) + Barton (affordability logic if needed)
+**Effort:** 1 hour
+
+**Currently:**
+```
+=== MERCHANT SHOP (Old Bones) ===
+[1] Steel Sword — A sturdy blade — 50g
+[2] Chain Mail — Solid protection — 75g
+[3] Healing Potion — Restores health — 15g
+Your gold: 47g
+[#] Buy  [X] Leave
+```
+
+**Proposed:**
+```
+╔═══════════════════════════════════════════════════╗
+║  🏪 OLD BONES' SHOP                    Gold: 47g ║
+╠═══════════════════════════════════════════════════╣
+║  [1] ⚔ Steel Sword          Attack +5      50g   ║
+║  [2] 🛡 Chain Mail           Defense +10    75g   ║
+║  [3] 🧪 Healing Potion       Heals 25 HP   15g   ║
+╚═══════════════════════════════════════════════════╝
+  [#] Buy  [X] Leave
+```
+
+Key improvements:
+- Type icons + inline stats (same pattern as inventory).
+- **Affordability coloring:** Price in Yellow if player can afford, Red+strikethrough-style dim if they can't.
+- Gold total shown in header so player doesn't have to look down.
+- Item names colored by tier (from 2.1).
+
+**File changes:**
+- `Engine/GameLoop.cs` — Replace inline shop rendering with call to new `ShowMerchantShop(Merchant, Player)`.
+- `Display/IDisplayService.cs` — Add `void ShowMerchantShop(Merchant merchant, Player player)`.
+- `Display/ConsoleDisplayService.cs` — Implement with box drawing, affordability colors, stat lines.
+
+---
+
+### 2.3 — Crafting Display (GameLoop.cs)
+**Priority:** Medium — crafting is less frequent but equally opaque.
+**Assigned to:** Hill (display) + Barton (ingredient availability check)
+**Effort:** 1 hour
+
+**Currently:**
+```
+=== CRAFTING RECIPES ===
+  Silver Blade: 1x Iron Ore, 1x Silver Dust + 30g → Silver Blade
+  Health Elixir: 2x Healing Herb + 10g → Health Elixir
+Type CRAFT <recipe name> to craft.
+```
+
+**Proposed:**
+```
+═══ CRAFTING RECIPES ═══
+
+  ✅ Silver Blade                           → ⚔ Silver Blade (Attack +6)
+     1x Iron Ore ✓  1x Silver Dust ✓  30g ✓
+
+  ❌ Health Elixir                          → 🧪 Health Elixir (Heals 40 HP)
+     2x Healing Herb ✗ (have 1)  10g ✓
+
+Type CRAFT <recipe name> to craft.
+```
+
+Key improvements:
+- ✅/❌ at-a-glance craftability indicator.
+- Ingredient availability check — ✓ if player has enough, ✗ with count if not.
+- Result item shows type icon + primary stat (so player knows what they're crafting *before* committing).
+- Result item name colored by tier.
+
+**File changes:**
+- `Engine/GameLoop.cs` — Replace inline crafting display with call to new `ShowCraftingMenu(List<Recipe>, Player)`.
+- `Display/IDisplayService.cs` — Add `void ShowCraftingMenu(List<CraftingRecipe> recipes, Player player)`.
+- `Display/ConsoleDisplayService.cs` — Implement with availability checks.
+- Barton: Add a `CanCraft(CraftingRecipe, Player)` helper to `CraftingSystem` if one doesn't exist, returning ingredient availability details. Display layer calls this, doesn't re-implement the logic.
+
+---
+
+### 2.4 — Equipped Items Display (EquipmentManager.cs)
+**Priority:** Medium — equipment screen currently has stats but no color or tier.
+**Assigned to:** Hill
+**Effort:** 30 minutes
+
+**Currently:**
+```
+=== EQUIPMENT ===
+Weapon: Short Sword (Attack +2)
+Armor: Chain Mail (Defense +10)
+Accessory: (empty)
+```
+
+**Proposed:**
+```
+═══ EQUIPMENT ═══
+  ⚔ Weapon:    Short Sword       Attack +2
+  🛡 Armor:     Chain Mail        Defense +10
+  💍 Accessory: (empty)
+```
+
+Key improvements:
+- Type icons for visual consistency.
+- Item names colored by tier.
+- Stats colored by type (Red for attack, Cyan for defense).
+- Box-drawing header for visual consistency with other surfaces.
+
+**File changes:**
+- `Systems/EquipmentManager.cs` — Update `ShowEquipment` to use tier-colored names and stat coloring.
+- This is a light touch-up since it already shows stats. Mainly adding color and icons.
+
+---
+
+## Phase 3: Polish & Grouping (4 hours)
+
+Lower-priority improvements that enhance scannability and delight.
+
+### 3.1 — Consumable Grouping in Inventory
+**Assigned to:** Hill
+**Effort:** 1 hour
+
+**Currently:** Three identical potions listed as three separate lines.
+
+**Proposed:**
+```
+  🧪 Healing Potion ×3      Heals 25 HP         [1 wt each]
+```
+
+**Implementation:** Group inventory items by Name, show count. Only for identical items (same Name + same stats). Display layer only — inventory model stays as a flat list.
+
+**File changes:**
+- `Display/ConsoleDisplayService.cs` — Add grouping logic in `ShowInventory`.
+
+---
+
+### 3.2 — Elite Loot Drop Callout
+**Assigned to:** Hill (display) + Barton (pass EnemyType to loot display)
+**Effort:** 1 hour
+
+**Currently:** Elite enemies drop better loot but the player doesn't know why or that it's special.
+
+**Proposed:**
+```
+╔══════════════════════════════════════╗
+║  ✦ ELITE LOOT DROP                   ║
+║  ⚔ Steel Sword [Uncommon]            ║
+║  Attack +5  •  Bleed on hit          ║
+║  4 wt                                ║
+╚══════════════════════════════════════╝
+```
+
+- Header says "ELITE LOOT DROP" instead of "LOOT DROP" for elite kills.
+- Tier label shown in brackets, colored by tier.
+
+**File changes:**
+- `Display/IDisplayService.cs` — Extend `ShowLootDrop(Item item, bool isElite = false)` with optional parameter (non-breaking).
+- `Engine/CombatEngine.cs` — Pass enemy type info when calling ShowLootDrop.
+- `Display/ConsoleDisplayService.cs` — Conditional header text.
+
+---
+
+### 3.3 — Loot Drop Weight Warning
+**Assigned to:** Hill
+**Effort:** 30 minutes
+
+When picking up an item would put the player over 80% weight capacity:
+
+```
+  ⚠ Inventory weight: 42/50 (84%)
+```
+
+When inventory is full and loot is lost:
+
+```
+  ❌ Inventory full — Steel Sword was lost!
+     Drop something and come back? (items stay on the ground)
+```
+
+**File changes:**
+- `Display/ConsoleDisplayService.cs` — Add weight warning line to `ShowItemPickup`.
+- `Engine/CombatEngine.cs` — The "inventory full" message already exists; enhance with color (Red) and suggestion.
+
+---
+
+### 3.4 — "New Best" Indicator on Loot Drop
+**Assigned to:** Hill + Barton
+**Effort:** 1.5 hours
+
+When a dropped weapon has higher AttackBonus than the currently equipped weapon:
+
+```
+╔══════════════════════════════════════╗
+║  ✦ LOOT DROP                        ║
+║  ⚔ Steel Sword [Uncommon]           ║
+║  Attack +5  (+3 vs equipped!)        ║
+║  4 wt                                ║
+╚══════════════════════════════════════╝
+```
+
+The `(+3 vs equipped!)` is shown in Green. Helps the player immediately recognize upgrades.
+
+**File changes:**
+- `Display/ConsoleDisplayService.cs` — In `ShowLootDrop`, compare against player's current equipment. Requires `ShowLootDrop` to accept Player reference or current equipment stats.
+- `Display/IDisplayService.cs` — May need signature change: `ShowLootDrop(Item item, Player player, bool isElite = false)`.
+- **Architectural note:** This couples the loot drop display to player state. Acceptable because the equipment comparison screen already does exactly this. Follow same pattern.
+
+---
+
+## Summary: Work Allocation
+
+| Phase | Item | Hill | Barton | Romanoff | Hours |
+|-------|------|------|--------|----------|-------|
+| 1 | 1.1 Loot Drop Display | ✅ | | | 1.0 |
+| 1 | 1.2 Gold Acquisition | ✅ | | | 0.5 |
+| 1 | 1.3 Room Items | ✅ | | | 0.75 |
+| 1 | 1.4 Item Pickup | ✅ | | | 0.5 |
+| 1 | 1.5 Item Examination | ✅ | | | 0.75 |
+| 1 | 1.6 Inventory Enhancement | ✅ | | | 1.0 |
+| 2 | 2.0 ItemTier Model | | ✅ | | 1.5 |
+| 2 | 2.1 Tier-Colored Names | ✅ | | | 1.0 |
+| 2 | 2.2 Merchant Shop | ✅ | ✅ | | 1.0 |
+| 2 | 2.3 Crafting Display | ✅ | ✅ | | 1.0 |
+| 2 | 2.4 Equipment Display | ✅ | | | 0.5 |
+| 3 | 3.1 Consumable Grouping | ✅ | | | 1.0 |
+| 3 | 3.2 Elite Loot Callout | ✅ | ✅ | | 1.0 |
+| 3 | 3.3 Weight Warning | ✅ | | | 0.5 |
+| 3 | 3.4 "New Best" Indicator | ✅ | ✅ | | 1.5 |
+| All | Test coverage for new display methods | | | ✅ | 2.0 |
+| | **Totals** | **~8h** | **~4h** | **~2h** | **~14h** |
+
+---
+
+## Implementation Order & Dependencies
+
+```
+Phase 1 (no dependencies — can start immediately)
+  ├── 1.1 Loot Drop ──┐
+  ├── 1.2 Gold         │
+  ├── 1.3 Room Items   ├── All independent, Hill can parallelize
+  ├── 1.4 Item Pickup  │
+  ├── 1.5 Examination  │
+  └── 1.6 Inventory ───┘
+
+Phase 2 (sequential dependency)
+  2.0 ItemTier Model (Barton) ──→ 2.1 Tier Colors (Hill) ──→ 2.2-2.4 (Hill)
+                                                              (tier colors cascade)
+
+Phase 3 (after Phase 1+2 merged)
+  ├── 3.1 Consumable Grouping (independent)
+  ├── 3.2 Elite Callout (independent)
+  ├── 3.3 Weight Warning (independent)
+  └── 3.4 "New Best" (depends on 1.1 loot drop format)
+```
+
+**Recommended branching:**
+- `feature/loot-display-phase1` — Hill, all Phase 1 items
+- `feature/item-tier-model` — Barton, 2.0 only
+- `feature/loot-display-phase2` — Hill, 2.1-2.4 (branched after 2.0 merges)
+- `feature/loot-display-phase3` — Hill + Barton, all Phase 3 items
+
+---
+
+## Risks & Mitigations
+
+| Risk | Likelihood | Impact | Mitigation |
+|------|-----------|--------|------------|
+| Box-drawing characters break on some terminals | Low | Medium | Test on Windows Terminal, macOS Terminal, Linux. We already use box drawing in equipment comparison — same risk. |
+| Tier assignment is subjective for crafted/merchant items | Low | Low | Barton assigns; Coulson reviews. Rule of thumb: merchant stock = Uncommon, crafted = Uncommon/Rare. |
+| New IDisplayService methods bloat the interface | Medium | Low | We're adding 4-5 methods. IDisplayService already has ~20. Acceptable. If it hits 30+, consider splitting into ILootDisplay, ICombatDisplay, etc. — but not now. |
+| Phase 2 model change breaks tests | Low | Medium | `ItemTier.Common` as default means existing items without explicit Tier still work. Romanoff adds assertion that LootTable items have explicit Tier. |
+| FormatItemStatLine helper becomes a god method | Medium | Low | Keep it simple: returns `"Attack +N"` / `"Heals N HP"` / `"Defense +N"` based on item type and non-zero stats. No layout logic — callers handle layout. |
+
+---
+
+## What This Plan Does NOT Cover
+
+- **Tooltip/hover system** — We're a console app. Stat cards on examination are the equivalent.
+- **Item comparison on pickup** — Phase 3.4 adds a light version ("new best" indicator). Full side-by-side comparison on pickup is deferred (the equip flow already has this).
+- **Rarity beyond Tier 3** — No Legendary/Epic tier. Three tiers matches three loot lists. Add more when content demands it.
+- **Loot animation/delay** — No typewriter effects or dramatic pauses. Console games benefit from snappy output.
+- **Sort/filter in inventory** — Useful but out of scope. Separate work item if Anthony wants it.
+
+---
+
+**Status:** Awaiting Anthony's approval before implementation begins.
+
+— Coulson, Lead
+
+---
+
+## Decision: PR Review Process Enforcement Required
+**Date:** 2026-02-22
+**Author:** Coulson (Lead)
+**Status:** Approved
+
+### Problem
+PR #228 was merged to master with a commit message claiming "Reviewed and approved by Coulson (Lead)" but no actual GitHub review was posted. The PR was merged without formal approval, violating the team's PR workflow.
+
+### Decision
+**All PRs must receive explicit GitHub approval review before merge.**
+
+The team established a "no direct commits to master" rule after the process violation on 2026-02-22 (see `.ai-team/log/2026-02-22-process-violation-correction.md`). However, the rule is incomplete without enforcement of the review step.
+
+### Requirements
+1. **No PR may be merged without at least one approval review posted via `gh pr review <number> --approve`**
+2. **Merge commit messages must NOT claim approval unless GitHub review exists**
+3. **If urgent hotfix required, reviewer must post approval comment before merge, even if brief**
+
+### Rationale
+- Reviews provide audit trail and accountability
+- Reviews force explicit technical assessment before code enters master
+- Reviews prevent merge-first-review-later scenarios that bypass quality gates
+
+### Applies To
+All team members, including the coordinator and Anthony (repository owner).
