@@ -117,7 +117,6 @@ public class GameLoop
         _stats = new RunStats();
         _runStart = DateTime.UtcNow;
         _currentFloor = 1;
-        _display.ShowTitle();
         _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
         _display.ShowMessage($"Floor {_currentFloor}");
         _display.ShowRoom(_currentRoom);
