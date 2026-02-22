@@ -553,15 +553,21 @@ public class ConsoleDisplayService : IDisplayService
             }
         }
 
-        // Determine grid bounds
-        int minX = positions.Values.Min(p => p.x);
-        int maxX = positions.Values.Max(p => p.x);
-        int minY = positions.Values.Min(p => p.y);
-        int maxY = positions.Values.Max(p => p.y);
+        // Fog of war: only render visited rooms (and the current room)
+        var visiblePositions = positions
+            .Where(kv => kv.Key.Visited || kv.Key == currentRoom)
+            .ToList();
 
-        // Build lookup: coordinate → room
+        if (visiblePositions.Count == 0) return;
+
+        int minX = visiblePositions.Min(kv => kv.Value.x);
+        int maxX = visiblePositions.Max(kv => kv.Value.x);
+        int minY = visiblePositions.Min(kv => kv.Value.y);
+        int maxY = visiblePositions.Max(kv => kv.Value.y);
+
+        // Build lookup: coordinate → visible room
         var grid = new Dictionary<(int x, int y), Room>();
-        foreach (var (room, pos) in positions)
+        foreach (var (room, pos) in visiblePositions)
             grid[pos] = room;
 
         // Render
@@ -571,39 +577,84 @@ public class ConsoleDisplayService : IDisplayService
 
         for (int y = minY; y <= maxY; y++)
         {
+            // === Room row ===
             Console.Write("  ");
             for (int x = minX; x <= maxX; x++)
             {
                 if (!grid.TryGetValue((x, y), out var r))
                 {
-                    Console.Write("    ");
+                    Console.Write(x < maxX ? "    " : "   ");
                     continue;
                 }
 
-                string symbol;
-                if (r == currentRoom)
-                    symbol = "[*]";
-                else if (!r.Visited)
-                    symbol = "[ ]";
-                else if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0)
-                    symbol = "[B]";
-                else if (r.IsExit)
-                    symbol = "[E]";
-                else if (r.Enemy != null && r.Enemy.HP > 0)
-                    symbol = "[!]";
-                else if (r.HasShrine && !r.ShrineUsed)
-                    symbol = "[S]";
-                else
-                    symbol = "[+]";
+                string symbol = GetRoomSymbol(r, currentRoom);
 
-                Console.Write(symbol + " ");
+                string color = (r == currentRoom)
+                    ? Systems.ColorCodes.Bold + Systems.ColorCodes.BrightWhite
+                    : (r.Enemy != null && r.Enemy.HP > 0)
+                        ? Systems.ColorCodes.Red
+                        : Systems.ColorCodes.GetRoomTypeColor(r.Type);
+
+                Console.Write($"{color}{symbol}{Systems.ColorCodes.Reset}");
+
+                if (x < maxX)
+                {
+                    bool hasConnector = r.Exits.ContainsKey(Direction.East)
+                        && grid.ContainsKey((x + 1, y));
+                    Console.Write(hasConnector ? "-" : " ");
+                }
             }
             Console.WriteLine();
+
+            // === Connector row (between this row and next) ===
+            if (y < maxY)
+            {
+                Console.Write("  ");
+                for (int x = minX; x <= maxX; x++)
+                {
+                    bool hasSouth = grid.TryGetValue((x, y), out var rS)
+                        && rS.Exits.ContainsKey(Direction.South)
+                        && grid.ContainsKey((x, y + 1));
+
+                    Console.Write(hasSouth ? " | " : "   ");
+                    if (x < maxX) Console.Write(" ");
+                }
+                Console.WriteLine();
+            }
         }
 
+        // === Color-coded legend ===
         Console.WriteLine();
-        Console.WriteLine("Legend: [*] You  [B] Boss  [E] Exit  [!] Enemy  [S] Shrine  [+] Cleared  [ ] Unknown");
+        Console.WriteLine("Legend:");
+        Console.Write($"  {Systems.ColorCodes.Bold}{Systems.ColorCodes.BrightWhite}[*]{Systems.ColorCodes.Reset} You       ");
+        Console.Write($"[E] Exit       ");
+        Console.Write($"{Systems.ColorCodes.Red}[!] Enemy{Systems.ColorCodes.Reset}      ");
+        Console.Write($"[S] Shrine     ");
+        Console.WriteLine($"[+] Cleared");
+        Console.Write($"  [B] Boss      ");
+        Console.Write($"- Corridor (E/W)    ");
+        Console.WriteLine($"| Corridor (N/S)");
+        Console.Write("  Room types: ");
+        string[] typeNames  = { "Standard", "Dark",     "Mossy",   "Flooded", "Scorched", "Ancient" };
+        RoomType[] types    = { RoomType.Standard, RoomType.Dark, RoomType.Mossy, RoomType.Flooded, RoomType.Scorched, RoomType.Ancient };
+        for (int i = 0; i < typeNames.Length; i++)
+        {
+            string c = Systems.ColorCodes.GetRoomTypeColor(types[i]);
+            Console.Write($"{c}{typeNames[i]}{Systems.ColorCodes.Reset}");
+            if (i < typeNames.Length - 1) Console.Write("  ");
+        }
         Console.WriteLine();
+        Console.WriteLine();
+    }
+
+    private static string GetRoomSymbol(Room r, Room currentRoom)
+    {
+        if (r == currentRoom)                              return "[*]";
+        if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0) return "[B]";
+        if (r.IsExit)                                      return "[E]";
+        if (r.Enemy != null && r.Enemy.HP > 0)             return "[!]";
+        if (r.HasShrine && !r.ShrineUsed)                  return "[S]";
+        return "[+]";
     }
 
     /// <summary>
