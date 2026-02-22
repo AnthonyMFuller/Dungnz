@@ -9,6 +9,7 @@ public class FakeDisplayService : IDisplayService
     public List<string> Messages { get; } = new();
     public List<string> Errors { get; } = new();
     public List<string> CombatMessages { get; } = new();
+    public List<string> RawCombatMessages { get; } = new();
     public List<string> AllOutput { get; } = new();
 
     /// <summary>
@@ -47,6 +48,7 @@ public class FakeDisplayService : IDisplayService
     public void ShowCombatMessage(string message)
     {
         var plain = StripAnsi(message);
+        RawCombatMessages.Add(message);
         CombatMessages.Add(plain);
         AllOutput.Add($"combatmsg:{plain}");
     }
