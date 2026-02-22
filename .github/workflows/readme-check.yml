@@ -1,0 +1,47 @@
+name: README up-to-date check
+
+on:
+  pull_request:
+    branches: [master]
+
+jobs:
+  readme-check:
+    name: Check README is updated
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect code changes without README update
+        id: check
+        run: |
+          BASE=${{ github.event.pull_request.base.sha }}
+          HEAD=${{ github.event.pull_request.head.sha }}
+          
+          # Files that indicate a system-level change requiring README review
+          CHANGED=$(git diff --name-only "$BASE" "$HEAD")
+          
+          CODE_CHANGED=false
+          README_CHANGED=false
+          
+          while IFS= read -r file; do
+            case "$file" in
+              Engine/*|Systems/*|Models/*|Data/*|Program.cs)
+                CODE_CHANGED=true ;;
+              README.md)
+                README_CHANGED=true ;;
+            esac
+          done <<< "$CHANGED"
+          
+          echo "code_changed=$CODE_CHANGED" >> "$GITHUB_OUTPUT"
+          echo "readme_changed=$README_CHANGED" >> "$GITHUB_OUTPUT"
+
+      - name: Warn if README not updated
+        if: steps.check.outputs.code_changed == 'true' && steps.check.outputs.readme_changed == 'false'
+        run: |
+          echo "::warning::README.md was not updated. Engine, Systems, Models, or Data files changed in this PR. Please review README.md and update any affected sections (commands, enemies, systems, architecture, etc.)."
+          echo ""
+          echo "If this change genuinely does not affect anything documented in README.md,"
+          echo "add a note in the PR description explaining why no README update is needed."
+          exit 1
