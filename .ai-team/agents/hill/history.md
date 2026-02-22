@@ -713,3 +713,19 @@ When a display string contains ANSI escape codes (e.g., from ColorizeItemName), 
 - All 20 `ShowLootDrop(item)` calls in test suite updated to `ShowLootDrop(item, new Player())`
 - Pre-existing CS1744 compile error in `TierDisplayTests.cs` line 390 fixed: changed `ContainAny(a, b, because: ...)` to `ContainAny(new[] { a, b }, because: ...)` — this blocked the entire test suite from building on master
 - 342 tests, all passing
+
+### Phase 4 — ShowMap Overhaul (#239, #243, #248)
+
+**PR:** #261 — `[Phase 4] ShowMap overhaul — fog of war, corridor connectors, and legend`
+**Branch:** `squad/phase4-showmap`
+
+**Files Modified:**
+- `Display/DisplayService.cs` — Rewrote `ShowMap()` render section; extracted `GetRoomSymbol()` private helper
+
+**Changes:**
+1. **Fog of war (#239):** BFS still traverses all rooms for stable coordinates. After BFS, filter to `visiblePositions` where `r.Visited || r == currentRoom`. Bounds and grid built from visible rooms only.
+2. **Corridor connectors (#243):** Interleaved room rows and connector rows. H-connector (`-`) printed after each room symbol (except last column) when `r.Exits.ContainsKey(Direction.East) && grid.ContainsKey((x+1, y))`. V-connector row printed between y-rows: ` | ` when south exit exists to a visible room.
+3. **Color-coded legend (#248):** Legend replaced with two-line format. Room types printed in their `GetRoomTypeColor()` color. Current room `[*]` uses `Bold+BrightWhite`. Enemy rooms use `Red`. Color reset after every colored segment.
+4. **`GetRoomSymbol()` helper:** Extracted symbol-selection logic into a private static method for readability.
+
+**Build/Test:** 0 errors, 359/359 tests passed.
