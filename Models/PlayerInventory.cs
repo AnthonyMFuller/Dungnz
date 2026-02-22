@@ -14,6 +14,7 @@ public partial class Player
     /// <summary>Gets the amount of gold the player is currently carrying.</summary>
     public int Gold { get; set; }
 
+
     /// <summary>
     /// Increases the player's gold by the specified amount.
     /// </summary>

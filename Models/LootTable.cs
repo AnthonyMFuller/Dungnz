@@ -43,8 +43,11 @@ public class LootTable
     /// </param>
     /// <param name="minGold">The minimum gold that can be dropped (inclusive). Defaults to 0.</param>
     /// <param name="maxGold">The maximum gold that can be dropped (inclusive). Defaults to 0.</param>
+    /// <exception cref="ArgumentException">Thrown when <paramref name="minGold"/> is greater than <paramref name="maxGold"/>.</exception>
     public LootTable(Random? rng = null, int minGold = 0, int maxGold = 0)
     {
+        if (minGold > maxGold)
+            throw new ArgumentException($"minGold ({minGold}) must not exceed maxGold ({maxGold}).", nameof(minGold));
         _rng = rng ?? new Random();
         _minGold = minGold;
         _maxGold = maxGold;
@@ -76,7 +79,7 @@ public class LootTable
         // Check configured drops first (boss key, etc.)
         foreach (var (item, chance) in _drops)
         {
-            if (_rng.NextDouble() < chance) { dropped = item; break; }
+            if (_rng.NextDouble() < chance) { dropped = item.Clone(); break; }
         }
 
         // 30% chance of a tiered item drop if none already rolled
@@ -89,7 +92,7 @@ public class LootTable
             // Elite enemies guarantee tier-2+ drop
             if (enemy?.IsElite == true && pool == Tier1Items) pool = Tier2Items;
 
-            dropped = pool[_rng.Next(pool.Count)];
+            dropped = pool[_rng.Next(pool.Count)].Clone();
         }
 
         return new LootResult { Item = dropped, Gold = gold };

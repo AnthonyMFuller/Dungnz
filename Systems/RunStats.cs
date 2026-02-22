@@ -8,6 +8,9 @@ using System.Text.Json;
 /// </summary>
 public class RunStats
 {
+    /// <summary>The total number of dungeon floors the player visited during the run.</summary>
+    public int FloorsVisited { get; set; }
+
     /// <summary>The total number of turns the player took during the run.</summary>
     public int TurnsTaken { get; set; }
 

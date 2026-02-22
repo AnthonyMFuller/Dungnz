@@ -740,9 +740,16 @@ public class GameLoop
             else
             {
                 _player.SpendGold(selected.Price);
-                _player.Inventory.Add(selected.Item);
-                merchant.Stock.RemoveAt(choice - 1);
-                _display.ShowMessage($"You bought {selected.Item.Name} for {selected.Price}g. Gold remaining: {_player.Gold}g");
+                if (!_inventoryManager.TryAddItem(_player, selected.Item))
+                {
+                    _player.AddGold(selected.Price); // refund — inventory was full or too heavy
+                    _display.ShowMessage("Your inventory is full. You can't carry that item.");
+                }
+                else
+                {
+                    merchant.Stock.RemoveAt(choice - 1);
+                    _display.ShowMessage($"You bought {selected.Item.Name} for {selected.Price}g. Gold remaining: {_player.Gold}g");
+                }
             }
         }
         else

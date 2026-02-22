@@ -46,6 +46,12 @@ public static class SaveSystem
         if (string.IsNullOrWhiteSpace(saveName))
             throw new ArgumentException("Save name cannot be empty", nameof(saveName));
 
+        // Sanitize: reject names containing path separators or other invalid filename chars
+        var invalid = Path.GetInvalidFileNameChars();
+        if (saveName.Contains('/') || saveName.Contains('\\') || saveName.Contains("..") ||
+            saveName.IndexOfAny(invalid) >= 0)
+            throw new ArgumentException($"Save name '{saveName}' contains invalid characters.", nameof(saveName));
+
         var roomMap = CollectRooms(state.CurrentRoom);
         var saveData = new SaveData
         {
@@ -53,6 +59,7 @@ public static class SaveSystem
             CurrentRoomId = state.CurrentRoom.Id,
             CurrentFloor = state.CurrentFloor,
             UnlockedSkills = state.Player.Skills.UnlockedSkills.Select(s => s.ToString()).ToList(),
+            StatusEffects = state.Player.ActiveEffects.ToList(),
             Version = 1,
             Rooms = roomMap.Values.Select(r => new RoomSaveData
             {
@@ -80,10 +87,20 @@ public static class SaveSystem
             }).ToList()
         };
 
-        var fileName = Path.Combine(SaveDirectory, $"{saveName}.json");
         Directory.CreateDirectory(SaveDirectory);
+        var finalPath = Path.Combine(SaveDirectory, $"{saveName}.json");
+        var tmpPath   = finalPath + ".tmp";
         var json = JsonSerializer.Serialize(saveData, JsonOptions);
-        File.WriteAllText(fileName, json);
+        try
+        {
+            File.WriteAllText(tmpPath, json);
+            File.Move(tmpPath, finalPath, overwrite: true);
+        }
+        catch
+        {
+            try { File.Delete(tmpPath); } catch { /* best effort */ }
+            throw;
+        }
     }
 
     /// <summary>
@@ -113,10 +130,13 @@ public static class SaveSystem
             if (saveData == null)
                 throw new InvalidDataException("Save file is corrupt or empty");
 
-            // v2 → v3 migration: Version 0 means an old save without the Version field
+            // v2 → v3 migration: Version 0 means an old save without the Version field.
+            // Apply safe defaults so old saves don't break on load.
             if (saveData.Version == 0)
             {
-                Console.WriteLine("[SaveSystem] Migrating v2 save to v3: applying default difficulty 'Normal'.");
+                // CurrentFloor defaults to 1 (already the field default).
+                // UnlockedSkills defaults to empty (already the field default).
+                // StatusEffects defaults to empty (already the field default).
             }
 
             var roomDict = new Dictionary<Guid, Room>();
@@ -167,6 +187,10 @@ public static class SaveSystem
                 if (Enum.TryParse<Dungnz.Systems.Skill>(skillName, out var skill))
                     saveData.Player.Skills.Unlock(skill);
             }
+
+            // Restore active status effects onto the player
+            saveData.Player.ActiveEffects.Clear();
+            saveData.Player.ActiveEffects.AddRange(saveData.StatusEffects);
 
             return new GameState(saveData.Player, currentRoom, saveData.CurrentFloor);
         }
@@ -258,6 +282,9 @@ internal class SaveData
 
     /// <summary>Names of skills the player had unlocked at save time.</summary>
     public List<string> UnlockedSkills { get; init; } = new();
+
+    /// <summary>Active status effects on the player at save time, restored on load.</summary>
+    public List<ActiveEffect> StatusEffects { get; init; } = new();
 
     /// <summary>Save format version. 0 = pre-v3 legacy save; 1 = v3+.</summary>
     [System.Text.Json.Serialization.JsonPropertyName("version")]

@@ -138,7 +138,7 @@ public class InventoryManagerTests
     public void TryAddItem_SlotsAtMax_ReturnsFalseAndDoesNotAdd()
     {
         var (player, _, _, manager) = Make();
-        for (var i = 0; i < InventoryManager.MaxSlots; i++)
+        for (var i = 0; i < Player.MaxInventorySize; i++)
             player.Inventory.Add(new Item { Name = $"Item{i}" });
 
         var overflow = new Item { Name = "One Too Many" };
