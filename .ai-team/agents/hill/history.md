@@ -617,3 +617,39 @@ Awaiting decision to proceed. If approved, estimate 6.5–8.5 hours to implement
 
 📌 Team update (2026-02-22): Process alignment protocol established — all code changes require a branch and PR before any commits. See decisions.md for full protocol. No exceptions.
 
+
+---
+
+## 2026-02-22: Phase 1 Loot Display Implementation
+
+**Branch:** `feature/loot-display-phase1`  
+**PR:** #230
+
+### What was implemented
+
+**Display/IDisplayService.cs** — 3 new methods added to the interface:
+- `ShowGoldPickup(int amount, int newTotal)` — replaces the plain ShowMessage gold notification
+- `ShowItemPickup(Item item, int slotsCurrent, int slotsMax, int weightCurrent, int weightMax)` — replaces "You take the X" with a stat-aware pickup line
+- `ShowItemDetail(Item item)` — full box-drawn stat card for EXAMINE command
+
+**Display/DisplayService.cs (ConsoleDisplayService)** — all 3 interface methods implemented plus:
+- `ShowLootDrop` rewritten as a 5-line box-drawn card (╔/╚ borders, type icon, Yellow item name, Cyan stats)
+- `ShowRoom` items section rewritten: "Items on the ground:" header, each item gets type icon + Gray inline stat
+- `ShowInventory` items loop rewritten: type icon, equipped [E] in Green, Cyan primary stat column, aligned weight column
+- Two private helpers added to the class: `ItemTypeIcon(ItemType)` and `PrimaryStatLabel(Item)`
+
+**Engine/CombatEngine.cs** — `ShowMessage("You found N gold!")` replaced with `ShowGoldPickup(amount, player.Gold)` (called after `AddGold` so total is accurate)
+
+**Engine/GameLoop.cs** — two changes:
+- EXAMINE for room/inventory items: `ShowMessage("Name: Desc")` replaced with `ShowItemDetail(item)`
+- TAKE item: `ShowMessage("You take the X")` replaced with `ShowItemPickup(...)` (passes live slot+weight counts)
+
+**Dungnz.Tests/Helpers/TestDisplayService.cs + FakeDisplayService.cs** — stub implementations added for all 3 new interface methods (no-op, keeps test suite compiling)
+
+### Patterns established for the display layer
+
+- **`ItemTypeIcon(ItemType)`** helper — single source of truth for ⚔🛡🧪💍 icons. All display methods use it.
+- **`PrimaryStatLabel(Item)`** helper — returns the "most interesting" stat string for an item (AttackBonus → DefenseBonus → HealAmount → ManaRestore → etc.). Used in room display, inventory, loot drop, and pickup confirmation.
+- **Box-drawn cards** for high-importance events (loot drop, item detail) use ╔═╗╠╣╚╝║ — consistent with equipment comparison screen.
+- **Color discipline:** item names in Yellow (loot), Cyan for stats everywhere, Green for positive statuses, Red/Yellow/Green for threshold-based slot/weight bars.
+- **No color in room item names** — plain white names, Gray inline stats. Saves color emphasis for when it matters.
