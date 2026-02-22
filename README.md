@@ -241,6 +241,32 @@ Use `craft <recipe>` to combine ingredients. Gold is consumed along with the lis
 
 ---
 
+## Display & Colours
+
+Dungnz uses native ANSI escape codes — no third-party dependencies. Colour support is automatic on modern terminals (Windows Terminal, macOS Terminal, Linux).
+
+### What's colour-coded
+
+| Element | Colour |
+|---------|--------|
+| HP — healthy (≥ 60%) | Green |
+| HP — injured (30–59%) | Yellow |
+| HP — critical (< 30%) | Red |
+| Mana — high / medium / low | Blue / Cyan / Gray |
+| Gold | Yellow |
+| XP gained | Green |
+| Attack stat | Bright Red |
+| Defense stat | Cyan |
+| Combat damage | Red |
+| Healing / regen | Green |
+| Critical hits | Yellow + Bold |
+| Room danger level | Scales green → red |
+| Ability on cooldown | Dimmed |
+
+All console output is routed through `IDisplayService` / `DisplayService` — colour constants live in `Systems/ColorCodes.cs`. When equipping items, `EquipmentManager` shows stat deltas with green `+` / red `−` indicators.
+
+---
+
 ## Save System
 
 Game state is persisted to JSON in the user's AppData folder:
@@ -301,8 +327,9 @@ Dungnz/
     ├── AchievementSystem.cs     # Run-end achievement evaluation and persistence
     ├── AmbientEvents.cs         # Random flavour events on room entry
     ├── BossNarration.cs         # Boss-specific combat flavour text
+    ├── ColorCodes.cs            # ANSI colour constants and helper methods
     ├── CraftingSystem.cs        # Recipe catalogue and TryCraft logic
-    ├── EquipmentManager.cs      # Equip/unequip with stat delta application
+    ├── EquipmentManager.cs      # Equip/unequip with stat delta application (colour-coded deltas)
     ├── InventoryManager.cs      # Take, use, and item dispatch
     ├── NarrationService.cs      # General combat and exploration flavour text
     ├── PrestigeSystem.cs        # Cross-run win tracking and prestige bonuses
