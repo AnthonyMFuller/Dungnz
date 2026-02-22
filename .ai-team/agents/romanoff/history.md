@@ -482,3 +482,48 @@
 
 5. **Comment-in pattern for interface-gated tests** — When tests depend on interface methods that don't exist yet (ShowShop, ShowCraftRecipe), wrap the entire test class in `/* ... */` with a header comment `// Requires Phase 2.x: MethodName`. This preserves the test logic in version control without breaking compilation. Add a TODO listing the expected method signature so Hill can align implementation.
 
+
+### 2026-02-20: Phase 3 Proactive Tests — Looting UX Polish
+
+**Task:** Write proactive tests targeting Phase 3 features before Hill's PR lands on feature/loot-display-phase3.
+**File:** `Dungnz.Tests/Phase3LootPolishTests.cs` (17 tests, all passing)
+
+**Branch status:** feature/loot-display-phase3 did not exist when task began. Hill had already merged Phase 3 production code (ConsoleDisplayService, IDisplayService) into the current branch. The test project had pre-existing build failures from the signature change; fixed TierDisplayTests.cs:390 (FluentAssertions named-arg error) so the project compiled cleanly.
+
+**Tests written (by section):**
+
+**3.1 Consumable Grouping (4 tests):**
+- `ShowInventory_ThreeIdenticalPotions_ShowsTimesThreeMultiplier` — 3 same-name items → output contains `×3`
+- `ShowInventory_DifferentNamedItems_StaySeparate` — different names don't group, no `×2`
+- `ShowInventory_SinglePotion_ShowsNoMultiplier` — single item, no `×` badge
+- `ShowInventory_EmptyInventory_ShowsNoGroupingArtifacts` — empty inventory, no stray `×`, shows "(empty)"
+
+**3.2 Elite Loot Callout (5 tests):**
+- `ShowLootDrop_IsEliteTrue_OutputContainsEliteLootDrop` — isElite:true → "ELITE LOOT DROP"
+- `ShowLootDrop_IsEliteFalse_OutputContainsLootDropButNotElite` — isElite:false → "LOOT DROP", no "ELITE"
+- `ShowLootDrop_UncommonItem_OutputContainsUncommonBadge` — tier badge shows "Uncommon"
+- `ShowLootDrop_RareItem_OutputContainsRareBadge` — tier badge shows "Rare"
+- `ShowLootDrop_CommonItem_OutputContainsCommonBadge` — tier badge shows "Common"
+
+**3.3 Weight Warning (4 tests):**
+- `ShowItemPickup_At85PercentWeight_ShowsWeightWarning` — 42/50 weight → ⚠ + "nearly full"
+- `ShowItemPickup_At79PercentWeight_ShowsNoWeightWarning` — 39/50 weight → no ⚠
+- `ShowItemPickup_AtExactly80PercentWeight_ShowsWeightWarning` — 40/50 weight (exactly 80%) → no ⚠ (strict `>` boundary, not `>=`)
+- `ShowItemPickup_AtJustOver80PercentWeight_ShowsWeightWarning` — 41/50 weight (82%) → ⚠
+
+**3.4 New Best Indicator (4 tests):**
+- `ShowLootDrop_NewWeaponBetterThanEquipped_ShowsPositiveDelta` — Attack +5 drop vs +2 equipped → "+3 vs equipped"
+- `ShowLootDrop_NewWeaponSameAsEquipped_ShowsNoVsEquipped` — Attack +5 drop vs +5 equipped → no "vs equipped"
+- `ShowLootDrop_NewWeaponWeakerThanEquipped_ShowsNoVsEquipped` — Attack +3 drop vs +5 equipped → no "vs equipped"
+- `ShowLootDrop_PlayerHasNoWeaponEquipped_ShowsNoVsEquipped` — no weapon equipped → no "vs equipped"
+
+**Key implementation observations:**
+- `ShowInventory` groups by `GroupBy(i => i.Name)`, shows `×{count}` only when count > 1
+- `ShowLootDrop(Item, Player, bool isElite)` already in production; uses `ColorCodes.Yellow` for elite header, tier switch for badge
+- `ShowItemPickup` uses strict `>` (not `>=`) for the 80% weight boundary — exactly 80% does NOT trigger warning
+- "vs equipped" indicator: only when `AttackBonus > 0 && EquippedWeapon != null && delta > 0`
+
+**Patterns learned:**
+- Boundary test important: the `>0.8` vs `>=0.8` distinction at exactly-80% is a common off-by-one risk; documented both sides in tests
+- `EquippedWeapon` can be set directly (`player.EquippedWeapon = equippedSword`) without going through `Equip()` — valid for unit tests
+- All 17 tests pass against existing production code with no mocking needed

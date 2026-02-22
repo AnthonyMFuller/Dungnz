@@ -386,8 +386,7 @@ public class ShopDisplayTests : IDisposable
         _svc.ShowShop(shopItems, player.Gold);
 
         // Assert — unaffordable item price shown in red or yellow as warning
-        Output.Should().ContainAny(new[] { ColorCodes.Red, ColorCodes.Yellow },
-            because: "items the player cannot afford must show a warning color on the price");
+        Output.Should().ContainAny(new[] { ColorCodes.Red, ColorCodes.Yellow });
     }
 
     // Requires Phase 2.2: ShowShop
