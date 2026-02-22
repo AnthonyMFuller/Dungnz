@@ -15,6 +15,7 @@ namespace Dungnz.Tests;
 /// line AFTER stripping them.  A line with an ANSI-coloured delta must have the
 /// same stripped length as a line without one.
 /// </summary>
+[Collection("console-output")]
 public class ShowEquipmentComparisonAlignmentTests : IDisposable
 {
     private readonly StringWriter _consoleCapture;

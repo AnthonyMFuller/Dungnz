@@ -9,6 +9,7 @@ namespace Dungnz.Tests;
 /// Tests for DisplayService that capture Console output.
 /// These validate that display methods produce expected output without throwing.
 /// </summary>
+[Collection("console-output")]
 public class DisplayServiceTests : IDisposable
 {
     private readonly StringWriter _output;

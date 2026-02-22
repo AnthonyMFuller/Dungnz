@@ -620,28 +620,29 @@ public class ConsoleDisplayService : IDisplayService
             string defBar = StatBar(effectiveDefense, 7);
             string manaBar = StatBar(effectiveMana, 60);
 
-            Console.WriteLine($"{cyan}┌──────────────────────────────────┐{reset}");
-            Console.WriteLine($"{cyan}│{reset} [{number}] {icon}  {def.Name.ToUpper(),-25} {cyan}│{reset}");
+            const int boxInner = 48;
+            Console.WriteLine($"{cyan}┌────────────────────────────────────────────────┐{reset}");
+            Console.WriteLine($"{cyan}│{reset} [{number}] {icon}  {def.Name.ToUpper(),-39} {cyan}│{reset}");
             
-            // HP line with ANSI-aware padding
+            // HP line with ANSI-aware padding (clamped to handle prestige overflow-safe)
             var hpLine = $" HP:      {hpBar}  {hpDisplay}";
             var hpVisibleLen = Systems.ColorCodes.StripAnsiCodes(hpLine).Length;
-            Console.WriteLine($"{cyan}│{reset}{hpLine}{new string(' ', 34 - hpVisibleLen)}{cyan}│{reset}");
+            Console.WriteLine($"{cyan}│{reset}{hpLine}{new string(' ', Math.Max(0, boxInner - hpVisibleLen))}{cyan}│{reset}");
             
             // Attack line with ANSI-aware padding
             var atkLine = $" Attack:  {atkBar}  {atkDisplay}";
             var atkVisibleLen = Systems.ColorCodes.StripAnsiCodes(atkLine).Length;
-            Console.WriteLine($"{cyan}│{reset}{atkLine}{new string(' ', 34 - atkVisibleLen)}{cyan}│{reset}");
+            Console.WriteLine($"{cyan}│{reset}{atkLine}{new string(' ', Math.Max(0, boxInner - atkVisibleLen))}{cyan}│{reset}");
             
             // Defense line with ANSI-aware padding
             var defLine = $" Defense: {defBar}  {defDisplay}";
             var defVisibleLen = Systems.ColorCodes.StripAnsiCodes(defLine).Length;
-            Console.WriteLine($"{cyan}│{reset}{defLine}{new string(' ', 34 - defVisibleLen)}{cyan}│{reset}");
+            Console.WriteLine($"{cyan}│{reset}{defLine}{new string(' ', Math.Max(0, boxInner - defVisibleLen))}{cyan}│{reset}");
             
-            Console.WriteLine($"{cyan}│{reset} Mana:    {manaBar}  {effectiveMana,-15} {cyan}│{reset}");
-            Console.WriteLine($"{cyan}│{reset} Trait: {def.TraitDescription,-24} {cyan}│{reset}");
-            Console.WriteLine($"{cyan}│{reset} {gray}\"{def.Description}\"{reset}{new string(' ', 32 - def.Description.Length)}{cyan}│{reset}");
-            Console.WriteLine($"{cyan}└──────────────────────────────────┘{reset}");
+            Console.WriteLine($"{cyan}│{reset} Mana:    {manaBar}  {effectiveMana,-25} {cyan}│{reset}");
+            Console.WriteLine($"{cyan}│{reset} Trait: {def.TraitDescription,-39} {cyan}│{reset}");
+            Console.WriteLine($"{cyan}│{reset} {gray}\"{def.Description}\"{reset}{new string(' ', Math.Max(0, 46 - def.Description.Length))}{cyan}│{reset}");
+            Console.WriteLine($"{cyan}└────────────────────────────────────────────────┘{reset}");
             Console.WriteLine();
         }
 
