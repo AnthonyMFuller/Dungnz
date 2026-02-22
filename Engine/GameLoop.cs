@@ -254,14 +254,6 @@ public class GameLoop
             return;
         }
 
-        // Check if trying to exit with boss still alive
-        if (nextRoom.IsExit && nextRoom.Enemy != null && nextRoom.Enemy.HP > 0)
-        {
-            _turnConsumed = false;
-            _display.ShowError("The boss blocks your path! Defeat it first.");
-            return;
-        }
-
         // Move to new room
         var previousRoom = _currentRoom;
         _currentRoom = nextRoom;

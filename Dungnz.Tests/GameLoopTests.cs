@@ -68,17 +68,22 @@ public class GameLoopTests
     }
 
     [Fact]
-    public void BossGate_CannotEnterExitRoomWithBossAlive()
+    public void BossRoom_CanEnterExitRoomWithBossAlive_CombatTriggered()
     {
         var (player, room, display, combat) = MakeSetup();
         var bossRoom = new Room { Description = "Boss room", IsExit = true };
         bossRoom.Enemy = new Enemy_Stub(100, 10, 5, 50);
         room.Exits[Direction.North] = bossRoom;
+        combat.Setup(c => c.RunCombat(It.IsAny<Player>(), It.IsAny<Enemy>(), It.IsAny<RunStats>()))
+              .Returns(CombatResult.Won);
 
         var loop = MakeLoop(display, combat.Object, "north", "quit");
         loop.Run(player, room);
 
-        display.Errors.Should().Contain(e => e.Contains("boss blocks"));
+        // Player should have entered the boss room — no "boss blocks" error
+        display.Errors.Should().NotContain(e => e.Contains("boss blocks"));
+        // Combat was triggered
+        combat.Verify(c => c.RunCombat(player, It.IsAny<Enemy>(), It.IsAny<RunStats>()), Times.Once);
     }
 
     [Fact]
