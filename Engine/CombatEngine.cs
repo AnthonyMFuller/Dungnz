@@ -17,8 +17,52 @@ public class CombatEngine : ICombatEngine
     private readonly GameEvents? _events;
     private readonly StatusEffectManager _statusEffects;
     private readonly AbilityManager _abilities;
+    private readonly NarrationService _narration;
     private readonly List<CombatTurn> _turnLog = new();
     private RunStats _stats = new();
+
+    private static readonly string[] _playerHitMessages =
+    {
+        "You strike {0} for {1} damage!",
+        "Your blade finds a gap — {1} damage on {0}!",
+        "A solid blow connects! {0} takes {1} damage!",
+        "You tear through {0}'s guard for {1} damage!",
+        "{0} staggers back — {1} damage!"
+    };
+
+    private static readonly string[] _playerMissMessages =
+    {
+        "{0} sidesteps your attack!",
+        "Your blow glances off harmlessly.",
+        "You swing wide — {0} ducks back!",
+        "{0} twists away at the last moment!",
+        "Your strike finds nothing but air."
+    };
+
+    private static readonly string[] _critMessages =
+    {
+        "💥 Critical hit! You slam {0} for {1} damage!",
+        "💥 Devastating blow! {1} damage to {0}!",
+        "💥 Perfect strike — {1} crushing damage!",
+        "💥 You find the weak point! {1} damage on {0}!"
+    };
+
+    private static readonly string[] _enemyHitMessages =
+    {
+        "{0} strikes you for {1} damage!",
+        "{0} lands a hit — {1} damage!",
+        "You take {1} damage from {0}'s attack!",
+        "{0}'s blow connects! {1} damage!",
+        "You fail to dodge — {0} deals {1} damage!"
+    };
+
+    private static readonly string[] _playerDodgeMessages =
+    {
+        "You dodge {0}'s attack!",
+        "You sidestep {0}'s blow just in time!",
+        "{0} swings and misses — you're too quick!",
+        "You slip past {0}'s strike!"
+    };
 
     /// <summary>
     /// Initialises a new <see cref="CombatEngine"/> with the required display and input
@@ -45,7 +89,11 @@ public class CombatEngine : ICombatEngine
     /// Optional pre-configured ability manager; a default instance is created when
     /// <see langword="null"/>.
     /// </param>
-    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null)
+    /// <param name="narration">
+    /// Optional narration service used to pick varied combat messages; a default instance
+    /// sharing <paramref name="rng"/> is created when <see langword="null"/>.
+    /// </param>
+    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null, NarrationService? narration = null)
     {
         _display = display;
         _input = input ?? new ConsoleInputReader();
@@ -53,6 +101,7 @@ public class CombatEngine : ICombatEngine
         _events = events;
         _statusEffects = statusEffects ?? new StatusEffectManager(display);
         _abilities = abilities ?? new AbilityManager();
+        _narration = narration ?? new NarrationService(_rng);
     }
 
     /// <summary>
@@ -72,7 +121,7 @@ public class CombatEngine : ICombatEngine
     public CombatResult RunCombat(Player player, Enemy enemy, RunStats? stats = null)
     {
         if (stats != null) _stats = stats;
-        _display.ShowCombat($"A {enemy.Name} attacks!");
+        _display.ShowCombat(_narration.Pick(EnemyNarration.GetIntros(enemy.Name), enemy.Name));
         _turnLog.Clear();
 
         // Ambush: Mimic gets a free first strike before the player can act
@@ -102,7 +151,7 @@ public class CombatEngine : ICombatEngine
             
             if (enemy.HP <= 0)
             {
-                _display.ShowCombat($"You defeated the {enemy.Name}!");
+                _display.ShowCombat(_narration.Pick(EnemyNarration.GetDeaths(enemy.Name), enemy.Name));
                 HandleLootAndXP(player, enemy);
                 return CombatResult.Won;
             }
@@ -149,7 +198,7 @@ public class CombatEngine : ICombatEngine
                 {
                     if (enemy.HP <= 0)
                     {
-                        _display.ShowCombat($"You defeated the {enemy.Name}!");
+                        _display.ShowCombat(_narration.Pick(EnemyNarration.GetDeaths(enemy.Name), enemy.Name));
                         HandleLootAndXP(player, enemy);
                         return CombatResult.Won;
                     }
@@ -165,7 +214,7 @@ public class CombatEngine : ICombatEngine
                 
                 if (enemy.HP <= 0)
                 {
-                    _display.ShowCombat($"You defeated the {enemy.Name}!");
+                    _display.ShowCombat(_narration.Pick(EnemyNarration.GetDeaths(enemy.Name), enemy.Name));
                     HandleLootAndXP(player, enemy);
                     return CombatResult.Won;
                 }
@@ -285,7 +334,7 @@ public class CombatEngine : ICombatEngine
 
         if (dodged)
         {
-            _display.ShowCombatMessage($"{enemy.Name} dodged your attack!");
+            _display.ShowCombatMessage(_narration.Pick(_playerMissMessages, enemy.Name));
             _turnLog.Add(new CombatTurn("You", "Attack", 0, false, true, null));
         }
         else
@@ -295,7 +344,6 @@ public class CombatEngine : ICombatEngine
             if (isCrit)
             {
                 playerDmg *= 2;
-                _display.ShowCombatMessage("Critical hit!");
             }
             // Warrior passive: +5% damage when HP < 50%
             if (player.Class == PlayerClass.Warrior && player.HP < player.MaxHP / 2.0)
@@ -305,7 +353,10 @@ public class CombatEngine : ICombatEngine
                 playerDmg = Math.Max(1, (int)(playerDmg * 1.15));
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
-            _display.ShowCombatMessage($"You hit {enemy.Name} for {playerDmg} damage!");
+            if (isCrit)
+                _display.ShowCombatMessage(_narration.Pick(_critMessages, enemy.Name, playerDmg));
+            else
+                _display.ShowCombatMessage(_narration.Pick(_playerHitMessages, enemy.Name, playerDmg));
 
             string? statusApplied = null;
             // Bug #110: bleed-on-hit from equipped weapon (10% chance, 3 turns)
@@ -371,7 +422,7 @@ public class CombatEngine : ICombatEngine
         // Bug #85: include equipment and class dodge bonuses for the player
         if (RollPlayerDodge(player))
         {
-            _display.ShowCombatMessage("You dodged the attack!");
+            _display.ShowCombatMessage(_narration.Pick(_playerDodgeMessages, enemy.Name));
             _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
         }
         else
@@ -399,7 +450,7 @@ public class CombatEngine : ICombatEngine
                 enemyDmg = Math.Max(1, enemyDmg - 3);
             player.TakeDamage(enemyDmg);
             _stats.DamageTaken += enemyDmg;
-            _display.ShowCombatMessage($"{enemy.Name} hits you for {enemyDmg} damage!");
+            _display.ShowCombatMessage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmg));
 
             string? statusApplied = null;
 
