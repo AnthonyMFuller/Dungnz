@@ -328,3 +328,31 @@
 **Recommended Fixes:** Inject RunStats into CombatEngine (fix damage tracking), add LoadGame() validation (prevent save corruption), correct OrderByDescending usage (UI quality-of-life).
 
 — decided by Romanoff (from Systems Pre-v3 Bug Hunt)
+
+### 2026-02-20: Tests for Issues #220 and #221
+
+**Task:** Write tests for two follow-up issues from PR #218 ahead of Barton/Hill's fix merges.
+
+**Deliverables:**
+- Branch: `squad/220-221-tests`
+- PR #225: test: edge cases for ColorizeDamage and equipment comparison alignment
+
+**New Test Files:**
+- `Dungnz.Tests/ColorizeDamageTests.cs` — 2 tests for `ColorizeDamage()` (private, tested via `FakeDisplayService.RawCombatMessages`)
+- `Dungnz.Tests/ShowEquipmentComparisonAlignmentTests.cs` — 2 tests for `ConsoleDisplayService.ShowEquipmentComparison()` (Console captured via `IDisposable` pattern)
+
+**Infrastructure Change:**
+- Added `RawCombatMessages` list to `FakeDisplayService` — stores un-stripped (ANSI-intact) combat messages alongside the existing stripped `CombatMessages` list. Additive change, no existing tests affected.
+
+**Test Results at time of commit:**
+- `ColorizeDamage` tests: 2/2 PASS — Barton's fix (PR #220, `ReplaceLastOccurrence` via `LastIndexOf`) is already merged
+- `ShowEquipmentComparison` alignment tests: 0/2 PASS (expected) — Hill's fix for item-name-row padding (Current/New lines are 40 chars, should be 41) is NOT yet merged. Tests will auto-pass once that PR lands.
+
+**Discoveries Made:**
+1. Barton's ColorizeDamage fix was already in the codebase — `ReplaceLastOccurrence` using `LastIndexOf` already present in `Engine/CombatEngine.cs`. Tests confirm and lock in the behavior.
+2. The alignment bug in `ShowEquipmentComparison` was more nuanced than described:
+   - The **stat rows** (Attack/Defense) were ALREADY correctly padded using `StripAnsiCodes`-aware dynamic padding — Hill's fix for those is already merged too
+   - The **item name rows** (Current/New) use `{name,-27}` with a fixed 1-char shortfall — these render as 40-char lines against a 41-char border
+   - My tests correctly detect the item-name row misalignment and will pass once that's fixed
+
+**Key Pattern:** `FakeDisplayService.RawCombatMessages` is now available for any future tests that need to inspect ANSI formatting rather than plain text.

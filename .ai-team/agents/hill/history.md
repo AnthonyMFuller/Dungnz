@@ -479,3 +479,19 @@
 ## Learnings
 
 - **README CI check (2026-02-23):** The `readme-check` CI workflow fails any PR that modifies `Engine/`, `Systems/`, `Models/`, or `Data/` without a corresponding change to `README.md`. Always update `README.md` when touching documented systems — this includes new utility classes like `ColorCodes.cs` in `Systems/`.
+
+### 2026-02-23: PR #224 — Display fixes from Coulson's PR #218 follow-up (issues #219, #221, #222)
+
+**Branch:** `squad/219-221-222-display-fixes`
+**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/224
+
+**Issues addressed:**
+1. **#219 — README health threshold table mismatch:** Updated `README.md` color table to match actual `ColorCodes.HealthColor()` thresholds (`> 70%` Green, `40–70%` Yellow, `20–40%` Red). Added missing 4th tier: `≤ 20%` Bright Red.
+2. **#221 — ShowEquipmentComparison box alignment:** Replaced `{"",20}` fixed padding with ANSI-aware calculation using `ColorCodes.StripAnsiCodes()`. Content string built first, then `visibleLen = prefixLen + StripAnsiCodes(content).Length`, then `padding = innerWidth - visibleLen`. Box stays aligned even when colored deltas (`+8`, `-3`) are present.
+3. **#222 — ShowPlayerStats uses ShowColoredStat:** Refactored `ShowPlayerStats()` to call `ShowColoredStat(label, value, color)` for all 6 stat lines (HP, Mana, Attack, Defense, Gold, XP). Eliminates duplicated inline `Colorize` pattern and validates the method is actually used.
+
+**Files changed:**
+- `README.md` — health threshold table (3 rows updated, 1 row added)
+- `Display/DisplayService.cs` — `ShowPlayerStats()` and `ShowEquipmentComparison()` refactored
+
+**Build/Test:** 0 errors, 267/267 tests pass.
