@@ -533,7 +533,7 @@ public class GameLoop
         float floorMult = 1.0f + (_currentFloor - 1) * 0.5f;
         var floorSeed = _seed.HasValue ? _seed.Value + _currentFloor : (int?)null;
         var gen = new DungeonGenerator(floorSeed);
-        var (newStart, _) = gen.Generate(floorMultiplier: floorMult, difficulty: _difficulty);
+        var (newStart, _) = gen.Generate(floorMultiplier: floorMult, difficulty: _difficulty, floor: _currentFloor);
         _currentRoom = newStart;
         _currentRoom.Visited = true;
         _display.ShowMessage($"Floor {_currentFloor}");
