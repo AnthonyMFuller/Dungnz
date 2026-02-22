@@ -275,6 +275,13 @@ public class GameLoop
                 HazardType.Fire   => _narration.Pick(_fireHazardLines, dmg),
                 _                 => $"⚠ You trigger a hazard and take {dmg} damage! HP: {_player.HP}/{_player.MaxHP}"
             };
+            string hazardMsg = _currentRoom.Hazard switch
+            {
+                HazardType.Spike  => _narration.Pick(_spikeHazardLines, dmg),
+                HazardType.Poison => _narration.Pick(_poisonHazardLines, dmg),
+                HazardType.Fire   => _narration.Pick(_fireHazardLines, dmg),
+                _                 => $"You trigger {hazardName} and take {dmg} damage!"
+            };
             _player.TakeDamage(dmg);
             _display.ShowMessage($"⚠ {hazardMsg} HP: {_player.HP}/{_player.MaxHP}");
             if (_player.HP <= 0)

@@ -30,6 +30,33 @@ public class CombatEngine : ICombatEngine
         "{0} staggers back — {1} damage!"
     };
 
+    private static readonly string[] _warriorHitMessages =
+    {
+        "You drive your blade deep — {0} takes {1} damage!",
+        "A bone-crunching blow! {0} reels back — {1} damage!",
+        "You hammer through {0}'s guard with brute force — {1} damage!",
+        "Pure power behind the swing — {0} staggers for {1} damage!",
+        "You crash into {0} like a battering ram — {1} damage!"
+    };
+
+    private static readonly string[] _mageHitMessages =
+    {
+        "Arcane force tears through {0} — {1} damage!",
+        "Eldritch energy crackles as it strikes {0} for {1} damage!",
+        "You channel raw magic into a focused bolt — {1} damage to {0}!",
+        "Reality bends around your attack — {0} takes {1} damage!",
+        "Your spell finds its mark — {1} crackling damage to {0}!"
+    };
+
+    private static readonly string[] _rogueHitMessages =
+    {
+        "You dart in for a precise cut — {0} takes {1} damage!",
+        "A lightning-quick strike to the weak point — {1} damage!",
+        "You find the gap in {0}'s defenses — {1} damage!",
+        "Quick as shadow — {0} barely registers the blow until it hurts. {1} damage!",
+        "A surgical strike — {0} bleeds from a wound it didn't see coming. {1} damage!"
+    };
+
     private static readonly string[] _playerMissMessages =
     {
         "{0} sidesteps your attack!",
@@ -39,12 +66,48 @@ public class CombatEngine : ICombatEngine
         "Your strike finds nothing but air."
     };
 
+    private static readonly string[] _warriorMissMessages =
+    {
+        "You swing with power but {0} isn't where you thought!",
+        "Too slow — {0} sidesteps your heavy blow!"
+    };
+
+    private static readonly string[] _mageMissMessages =
+    {
+        "Your spell fizzles at the last moment.",
+        "The incantation slips — {0} escapes unscathed!"
+    };
+
+    private static readonly string[] _rogueMissMessages =
+    {
+        "{0} anticipates your angle — the strike finds nothing.",
+        "You dart in but {0} reads your movement!"
+    };
+
     private static readonly string[] _critMessages =
     {
         "💥 Critical hit! You slam {0} for {1} damage!",
         "💥 Devastating blow! {1} damage to {0}!",
         "💥 Perfect strike — {1} crushing damage!",
         "💥 You find the weak point! {1} damage on {0}!"
+    };
+
+    private static readonly string[] _warriorCritMessages =
+    {
+        "💥 CRUSHING BLOW! You put your entire body into it — {1} devastating damage to {0}!",
+        "💥 SHATTERING STRIKE! {0} is sent reeling — {1} damage!"
+    };
+
+    private static readonly string[] _mageCritMessages =
+    {
+        "💥 ARCANE SURGE! Your spell overloads and detonates — {1} damage on {0}!",
+        "💥 CRITICAL RESONANCE! The magic tears through {0} for {1} damage!"
+    };
+
+    private static readonly string[] _rogueCritMessages =
+    {
+        "💥 VITAL STRIKE! You find the perfect spot — {1} piercing damage to {0}!",
+        "💥 BACKSTAB! {0} never saw it coming — {1} damage!"
     };
 
     private static readonly string[] _enemyHitMessages =
@@ -342,7 +405,13 @@ public class CombatEngine : ICombatEngine
 
         if (dodged)
         {
-            _display.ShowCombatMessage(_narration.Pick(_playerMissMessages, enemy.Name));
+            var missPool = player.Class switch {
+                PlayerClass.Warrior => _warriorMissMessages,
+                PlayerClass.Mage    => _mageMissMessages,
+                PlayerClass.Rogue   => _rogueMissMessages,
+                _                   => _playerMissMessages
+            };
+            _display.ShowCombatMessage(_narration.Pick(missPool, enemy.Name));
             _turnLog.Add(new CombatTurn("You", "Attack", 0, false, true, null));
         }
         else
@@ -361,10 +430,22 @@ public class CombatEngine : ICombatEngine
                 playerDmg = Math.Max(1, (int)(playerDmg * 1.15));
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
+            var hitPool = player.Class switch {
+                PlayerClass.Warrior => _warriorHitMessages,
+                PlayerClass.Mage    => _mageHitMessages,
+                PlayerClass.Rogue   => _rogueHitMessages,
+                _                   => _playerHitMessages
+            };
+            var critPool = player.Class switch {
+                PlayerClass.Warrior => _warriorCritMessages,
+                PlayerClass.Mage    => _mageCritMessages,
+                PlayerClass.Rogue   => _rogueCritMessages,
+                _                   => _critMessages
+            };
             if (isCrit)
-                _display.ShowCombatMessage(_narration.Pick(_critMessages, enemy.Name, playerDmg));
+                _display.ShowCombatMessage(_narration.Pick(critPool, enemy.Name, playerDmg));
             else
-                _display.ShowCombatMessage(_narration.Pick(_playerHitMessages, enemy.Name, playerDmg));
+                _display.ShowCombatMessage(_narration.Pick(hitPool, enemy.Name, playerDmg));
 
             string? statusApplied = null;
             // Bug #110: bleed-on-hit from equipped weapon (10% chance, 3 turns)
@@ -389,6 +470,7 @@ public class CombatEngine : ICombatEngine
         // Goblin Shaman: try to heal when below 50% HP
         if (enemy is GoblinShaman shaman && shaman.HP < shaman.MaxHP / 2)
         {
+            _display.ShowCombatMessage("The shaman mutters a guttural incantation. Dark energy knits its wounds closed!");
             int heal = (int)(shaman.MaxHP * 0.20);
             shaman.HP = Math.Min(shaman.MaxHP, shaman.HP + heal);
             _display.ShowCombatMessage($"The {shaman.Name} channels dark magic and heals for {heal}!");
@@ -398,6 +480,7 @@ public class CombatEngine : ICombatEngine
         // Troll: regenerates 5% max HP each turn
         if (enemy is Troll troll)
         {
+            _display.ShowCombatMessage("The troll's wounds close before your eyes with a wet, nauseating sound.");
             int regen = Math.Max(1, (int)(troll.MaxHP * 0.05));
             troll.HP = Math.Min(troll.MaxHP, troll.HP + regen);
             _display.ShowCombatMessage($"The Troll regenerates {regen} HP!");
@@ -416,6 +499,26 @@ public class CombatEngine : ICombatEngine
                 boss.IsCharging = true;
                 _display.ShowCombatMessage($"⚠ {enemy.Name} is charging a powerful attack! Prepare to defend!");
                 return; // warn turn — no damage this turn
+            }
+        }
+
+        // Elite special abilities: 15% chance per turn to use a random elite move
+        if (enemy.IsElite && _rng.Next(100) < 15)
+        {
+            switch (_rng.Next(3))
+            {
+                case 0:
+                    _display.ShowCombatMessage("The elite lands a stunning blow — your head rings!");
+                    _statusEffects.Apply(player, StatusEffect.Stun, 1);
+                    return;
+                case 1:
+                    _display.ShowCombatMessage("The elite roars and attacks with renewed fury!");
+                    enemy.Attack = (int)(enemy.Attack * 1.1);
+                    break;
+                case 2:
+                    _display.ShowCombatMessage("The elite lets out a war cry, bolstering its own resolve!");
+                    enemy.Defense = (int)(enemy.Defense * 1.1);
+                    break;
             }
         }
         
@@ -475,6 +578,7 @@ public class CombatEngine : ICombatEngine
                 var heal = (int)(enemyDmg * enemy.LifestealPercent);
                 if (heal > 0)
                 {
+                    _display.ShowCombatMessage("The Vampire Lord channels stolen life force, growing stronger!");
                     enemy.HP = Math.Min(enemy.MaxHP, enemy.HP + heal);
                     _display.ShowCombatMessage($"{enemy.Name} drains {heal} HP!");
                 }
