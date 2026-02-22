@@ -69,6 +69,12 @@ public class Item
     public bool IsEquippable { get; set; }
 
     /// <summary>
+    /// Gets or sets the amount of mana restored to the player when this consumable item is used.
+    /// Distinct from <see cref="MaxManaBonus"/>, which permanently raises the player's mana cap.
+    /// </summary>
+    public int ManaRestore { get; set; }
+
+    /// <summary>
     /// Gets or sets the carry weight of this item. Defaults to <c>1</c>.
     /// Used by <see cref="Dungnz.Systems.InventoryManager"/> to enforce the per-player weight limit.
     /// </summary>

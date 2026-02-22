@@ -599,6 +599,8 @@ public class CombatEngine : ICombatEngine
     
     private void HandleLootAndXP(Player player, Enemy enemy)
     {
+        if (enemy.LootTable != null)
+        {
         var loot = enemy.LootTable.RollDrop(enemy, player.Level);
         if (loot.Gold > 0)
         {
@@ -610,6 +612,7 @@ public class CombatEngine : ICombatEngine
         {
             player.Inventory.Add(loot.Item);
             _display.ShowLootDrop(loot.Item);
+        }
         }
         
         player.AddXP(enemy.XPValue);

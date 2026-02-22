@@ -159,8 +159,9 @@ public class DungeonGenerator
         // Verify path exists using BFS
         if (!PathExists(startRoom, exitRoom))
         {
-            // This should never happen with a full grid, but as a safety measure
-            // we could add corridors. For now, the full grid guarantees connectivity.
+            // Safety net: this should never happen with a fully connected grid, but if it
+            // does, reject the layout rather than silently handing the player an unwinnable dungeon.
+            throw new InvalidOperationException("Generated disconnected dungeon — this should never happen with current generator.");
         }
 
         return (startRoom, exitRoom);
@@ -183,6 +184,7 @@ public class DungeonGenerator
                 Name = "Iron Sword", 
                 Type = ItemType.Weapon, 
                 AttackBonus = 5, 
+                IsEquippable = true,
                 Description = "A sturdy iron blade" 
             },
             2 => new Item 
@@ -190,6 +192,7 @@ public class DungeonGenerator
                 Name = "Leather Armor", 
                 Type = ItemType.Armor, 
                 DefenseBonus = 3, 
+                IsEquippable = true,
                 Description = "Basic leather protection" 
             },
             _ => new Item 
