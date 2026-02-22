@@ -10789,3 +10789,7 @@ We will expand the game from a "tech demo" scope (10 items) to a "playable game"
 **4. UI Polish** (Hill)
 - Add a "Depth/Floor" indicator to the map header.
 - Ensure legend prints dynamically based on what is actually visible on the current map.
+### 2026-02-22: GitHub issues created for content expansion plan
+**By:** Coulson
+**What:** Created 16 GitHub issues covering all 4 phases of the content expansion plan
+**Why:** Anthony approved the plan — issues track implementation work

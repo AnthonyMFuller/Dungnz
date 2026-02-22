@@ -952,3 +952,11 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 - **Fog of War:** Adopted Hill's strict fog-of-war model (hide unknown, show adjacent as `[ ]`, show visited fully).
 - **Visuals:** Approved interleaved corridor rendering (`│`, `─`) and color-coded room types (Red=Enemy, Yellow=Hazard, Cyan=Loot).
 **Artifacts:** Created `.ai-team/decisions/inbox/coulson-map-amendment.md`.
+
+### 2026-02-22: Content Expansion Plan - Issue Creation
+**Outcome:** Created 16 GitHub issues to track the 4-phase content expansion plan.
+**Key Actions:**
+- **Labels:** Created labels for all 4 phases and squad assignments.
+- **Issues:** Created issues #233-#248 covering Code Prep, Content Injection, Verification, and Map Overhaul.
+- **Assignment:** Assigned issues to Hill (Code/Map), Barton (Content/Color), and Romanoff (Testing).
+**Artifacts:** Created `.ai-team/decisions/inbox/coulson-issues-created.md`.
