@@ -391,14 +391,14 @@ public class CombatEngine : ICombatEngine
         {
             string line;
             if (turn.IsDodge)
-                line = $"  {turn.Actor}: {turn.Action} → dodged";
+                line = $"  {turn.Actor}: {turn.Action} → {ColorCodes.Gray}dodged{ColorCodes.Reset}";
             else if (turn.IsCrit)
-                line = $"  {turn.Actor}: {turn.Action} → CRIT {turn.Damage} dmg";
+                line = $"  {turn.Actor}: {turn.Action} → {ColorCodes.Bold}{ColorCodes.Yellow}CRIT{ColorCodes.Reset} {ColorCodes.BrightRed}{turn.Damage}{ColorCodes.Reset} dmg";
             else
-                line = $"  {turn.Actor}: {turn.Action} → {turn.Damage} dmg";
+                line = $"  {turn.Actor}: {turn.Action} → {ColorCodes.BrightRed}{turn.Damage}{ColorCodes.Reset} dmg";
 
             if (turn.StatusApplied != null)
-                line += $" [{turn.StatusApplied}]";
+                line += $" [{ColorCodes.Green}{turn.StatusApplied}{ColorCodes.Reset}]";
 
             _display.ShowMessage(line);
         }
@@ -448,6 +448,7 @@ public class CombatEngine : ICombatEngine
             
             if (result == UseAbilityResult.Success)
             {
+                _display.ShowMessage($"{ColorCodes.Bold}{ColorCodes.Yellow}[{selectedAbility.Name} activated — {selectedAbility.Description}]{ColorCodes.Reset}");
                 // Bug #111: track ability damage in run stats
                 if (enemy.HP < hpBeforeAbility)
                     _stats.DamageDealt += hpBeforeAbility - enemy.HP;
@@ -676,7 +677,8 @@ public class CombatEngine : ICombatEngine
         }
         
         player.AddXP(enemy.XPValue);
-        _display.ShowMessage($"You gained {enemy.XPValue} XP. (Total: {player.XP})");
+        var xpToNext = 100 * player.Level;
+        _display.ShowMessage($"You gained {enemy.XPValue} XP. (Total: {player.XP}/{xpToNext} to next level)");
         CheckLevelUp(player);
         _events?.RaiseCombatEnded(player, enemy, CombatResult.Won);
         _statusEffects.Clear(player);
