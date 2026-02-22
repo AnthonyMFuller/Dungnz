@@ -68,7 +68,7 @@ public class FakeDisplayService : IDisplayService
         AllOutput.Add($"inventory:{player.Inventory.Count}");
     }
 
-    public void ShowLootDrop(Item item)
+    public void ShowLootDrop(Item item, Player player, bool isElite = false)
     {
         AllOutput.Add($"loot:{item.Name}");
     }

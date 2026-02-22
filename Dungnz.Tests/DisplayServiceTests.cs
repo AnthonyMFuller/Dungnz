@@ -67,7 +67,7 @@ public class DisplayServiceTests : IDisposable
     {
         var svc = new ConsoleDisplayService();
         var item = new Item { Name = "Magic Sword" };
-        svc.ShowLootDrop(item);
+        svc.ShowLootDrop(item, new Player());
         Output.Should().Contain("Magic Sword");
     }
 

@@ -438,7 +438,7 @@ public class GameLoop
         {
             _currentRoom.Items.Add(item);
             _turnConsumed = false;
-            _display.ShowMessage("Your inventory is full!");
+            _display.ShowMessage($"{Systems.ColorCodes.Red}❌ Inventory full!{Systems.ColorCodes.Reset}");
             return;
         }
         int slotsCurrent = _player.Inventory.Count;

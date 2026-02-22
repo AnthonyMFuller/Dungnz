@@ -904,3 +904,23 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 **Learnings:**
 - **Process:** When parallel work streams converge (Hill on display, Barton on logic), a combined PR is sometimes cleaner than artificial separation.
 - **Testing:** 321 passing tests gave high confidence to merge a large diff.
+
+### 2026-02-22: PR #231 Merge (Loot Display Phase 2)
+**Outcome:** Merged PR #231 (Tier Colors, Shop, Crafting)
+**Key Decisions Validated:**
+- **Decoupled Display:**  methods  and  use primitive types/tuples, enforcing separation of concerns.
+- **Test Integrity:** Caught and fixed commented-out tests () which were outdated. Ensures continued test coverage for critical UI.
+- **Visuals:** Implemented ASCII box drawing and tier-based coloring (Common=White, Uncommon=Green, Rare=Cyan) for immersive feedback.
+**Learnings:**
+- **Code Review:** Always check for commented-out tests in PRs claiming high test coverage. 337 tests passed, but critical new features were skipped.
+- **Maintenance:** Updated test signatures to match implementation changes immediately prevents technical debt.
+
+### 2026-02-22: PR #231 Merge (Loot Display Phase 2)
+**Outcome:** Merged PR #231 (Tier Colors, Shop, Crafting)
+**Key Decisions Validated:**
+- **Decoupled Display:** IDisplayService methods ShowShop and ShowCraftRecipe use primitive types/tuples, enforcing separation of concerns.
+- **Test Integrity:** Caught and fixed commented-out tests (ShopDisplayTests) which were outdated. Ensures continued test coverage for critical UI.
+- **Visuals:** Implemented ASCII box drawing and tier-based coloring (Common=White, Uncommon=Green, Rare=Cyan) for immersive feedback.
+**Learnings:**
+- **Code Review:** Always check for commented-out tests in PRs claiming high test coverage. 337 tests passed, but critical new features were skipped.
+- **Maintenance:** Updated test signatures to match implementation changes immediately prevents technical debt.

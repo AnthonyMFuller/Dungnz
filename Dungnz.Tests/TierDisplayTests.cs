@@ -66,7 +66,7 @@ public class TierDisplayTests : IDisposable
         var item = new Item { Name = "Rusty Dagger", Type = ItemType.Weapon, AttackBonus = 2, Tier = ItemTier.Common };
 
         // Act
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
 
         // Assert — BrightCyan must be absent; Common tier stays plain white
         Output.Should().NotContain(BrightCyanAnsi,
@@ -87,7 +87,7 @@ public class TierDisplayTests : IDisposable
         var item = new Item { Name = "Iron Shield", Type = ItemType.Armor, DefenseBonus = 3, Tier = ItemTier.Common };
 
         // Act
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
 
         // Assert — the item name must not be directly preceded by the Uncommon green code
         Output.Should().NotContain($"{ColorCodes.Green}Iron Shield",
@@ -105,7 +105,7 @@ public class TierDisplayTests : IDisposable
         var item = new Item { Name = "Steel Sword", Type = ItemType.Weapon, AttackBonus = 8, Tier = ItemTier.Uncommon };
 
         // Act
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
 
         // Assert — Uncommon tier must colorize the item name in Green
         Output.Should().Contain($"{ColorCodes.Green}Steel Sword",
@@ -125,7 +125,7 @@ public class TierDisplayTests : IDisposable
         var item = new Item { Name = "Void Blade", Type = ItemType.Weapon, AttackBonus = 15, Tier = ItemTier.Rare };
 
         // Act
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
 
         // Assert — BrightCyan must appear in output for Rare items
         Output.Should().Contain(BrightCyanAnsi,
@@ -144,7 +144,7 @@ public class TierDisplayTests : IDisposable
         var item = new Item { Name = "Frostmourne", Type = ItemType.Weapon, AttackBonus = 20, Tier = ItemTier.Rare };
 
         // Act
-        _svc.ShowLootDrop(item);
+        _svc.ShowLootDrop(item, new Player());
 
         // Assert — the item name must be directly preceded by BrightCyan
         Output.Should().Contain($"{BrightCyanAnsi}Frostmourne",
@@ -232,7 +232,7 @@ public class TierDisplayTests : IDisposable
         var item = new Item { Name = "Dragon Scale", Type = ItemType.Armor, DefenseBonus = 10, Tier = ItemTier.Rare };
 
         // Act
-        fake.ShowLootDrop(item);
+        fake.ShowLootDrop(item, new Player());
 
         // Assert — item name always present in AllOutput regardless of ANSI wrapping
         fake.AllOutput.Should().ContainMatch("*Dragon Scale*");
@@ -273,7 +273,7 @@ public class TierDisplayTests : IDisposable
         var item = new Item { Name = string.Empty, Type = ItemType.Weapon, AttackBonus = 5, Tier = ItemTier.Rare };
 
         // Act / Assert — must not throw
-        var act = () => _svc.ShowLootDrop(item);
+        var act = () => _svc.ShowLootDrop(item, new Player());
         act.Should().NotThrow(because: "an empty item name must be handled gracefully");
     }
 
@@ -289,7 +289,7 @@ public class TierDisplayTests : IDisposable
         var item = new Item { Name = null!, Type = ItemType.Consumable, HealAmount = 10, Tier = ItemTier.Common };
 
         // Act / Assert
-        var act = () => _svc.ShowLootDrop(item);
+        var act = () => _svc.ShowLootDrop(item, new Player());
         act.Should().NotThrow(because: "a null item name must not crash the display service");
     }
 
@@ -324,7 +324,7 @@ public class TierDisplayTests : IDisposable
         var item = new Item { Name = "Test Item", Type = ItemType.Weapon, AttackBonus = 5, Tier = tier };
 
         // Act / Assert
-        var act = () => _svc.ShowLootDrop(item);
+        var act = () => _svc.ShowLootDrop(item, new Player());
         act.Should().NotThrow(because: $"ShowLootDrop must handle ItemTier.{tier} without crashing");
     }
 }
@@ -386,7 +386,7 @@ public class ShopDisplayTests : IDisposable
         _svc.ShowShop(shopItems, player.Gold);
 
         // Assert — unaffordable item price shown in red or yellow as warning
-        Output.Should().ContainAny(ColorCodes.Red, ColorCodes.Yellow,
+        Output.Should().ContainAny(new[] { ColorCodes.Red, ColorCodes.Yellow },
             because: "items the player cannot afford must show a warning color on the price");
     }
 

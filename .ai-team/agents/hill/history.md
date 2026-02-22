@@ -653,3 +653,40 @@ Awaiting decision to proceed. If approved, estimate 6.5–8.5 hours to implement
 - **Box-drawn cards** for high-importance events (loot drop, item detail) use ╔═╗╠╣╚╝║ — consistent with equipment comparison screen.
 - **Color discipline:** item names in Yellow (loot), Cyan for stats everywhere, Green for positive statuses, Red/Yellow/Green for threshold-based slot/weight bars.
 - **No color in room item names** — plain white names, Gray inline stats. Saves color emphasis for when it matters.
+
+### 2026-02-20: Phase 2.1-2.4 — Tier-Colored Display (PR #231)
+
+**Branch:** feature/loot-display-phase2
+
+## Learnings
+
+### ColorizeItemName pattern
+
+Added `private static string ColorizeItemName(Item item)` to `ConsoleDisplayService`:
+- `ItemTier.Common` → `ColorCodes.BrightWhite` (plain visible white)
+- `ItemTier.Uncommon` → `ColorCodes.Green`
+- `ItemTier.Rare` → `ColorCodes.BrightCyan` (new constant added to ColorCodes.cs: `\u001b[96m`)
+- Returns `{color}{item.Name}{Reset}` — always wrapped, never bare name in display
+- Null-safe padding: use `item.Name?.Length ?? 0` where manual padding is computed from plain text lengths
+
+### Display surfaces with tier coloring
+
+- **ShowRoom** — room floor item names now tier-colored via ColorizeItemName
+- **ShowInventory** — inventory item names tier-colored; `namePlain` kept separate for ANSI-safe column alignment
+- **ShowLootDrop** — replaced hardcoded Yellow with ColorizeItemName + null-safe manual padding (`34 - (item.Name?.Length ?? 0)`)
+- **ShowItemPickup** — item name in pickup confirmation is tier-colored
+- **ShowItemDetail** — box title uses ANSI-safe padding: `titlePlain` for length calc, separate colored display string; title color matches tier
+- **ShowShop** (new) — per-item box cards: type icon + ColorizeItemName + tier badge (tier-colored), stat + weight + price (green=affordable, red=too expensive)
+- **ShowCraftRecipe** (new) — recipe box: result item with ColorizeItemName, Cyan stats, per-ingredient ✅/❌ availability
+- **EquipmentManager.ShowEquipment** — type icons + ColorizeItemName + Attack values in BrightRed, Defense values in Cyan
+
+### IDisplayService additions
+- `ShowShop(IEnumerable<(Item item, int price)> stock, int playerGold)`
+- `ShowCraftRecipe(string recipeName, Item result, List<(string ingredient, bool playerHasIt)> ingredients)`
+- Both stubs added to FakeDisplayService and TestDisplayService in test helpers
+
+### ANSI-safe padding pattern (established)
+When a display string contains ANSI escape codes (e.g., from ColorizeItemName), C# string `.Length` and format specifiers like `{x,-30}` count the invisible ANSI bytes. Always:
+1. Compute a `plain` string (no color codes) for length math
+2. Compute a `colored` string for actual Console.Write output
+3. `pad = new string(' ', Math.Max(0, W - plain.Length))`
