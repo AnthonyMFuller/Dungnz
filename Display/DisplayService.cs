@@ -407,13 +407,13 @@ public class ConsoleDisplayService : IDisplayService
         // Current item
         Console.Write("║ Current:  ");
         if (oldItem != null)
-            Console.Write($"{oldItem.Name,-27}");
+            Console.Write($"{oldItem.Name,-28}");
         else
-            Console.Write($"{"(none)",-27}");
+            Console.Write($"{"(none)",-28}");
         Console.WriteLine("║");
         
         // New item
-        Console.WriteLine($"║ New:      {newItem.Name,-27}║");
+        Console.WriteLine($"║ New:      {newItem.Name,-28}║");
         Console.WriteLine("╠═══════════════════════════════════════╣");
         
         // Calculate deltas
