@@ -9798,3 +9798,62 @@ Enable GitHub branch protection on `master` — disable direct pushes at the rep
 **Why:** The gap is enforcement, not documentation. Branch protection makes violations mechanically impossible.
 
 ---
+
+### 2026-02-22: PR #228 Review Verdict
+**By:** Coulson
+**What:** APPROVED — PR #228
+**Why:** All three fixes are correct, minimal, and well-tested. No regressions introduced.
+
+---
+
+## Detailed Review
+
+### Fix 1: Remove duplicate `ShowTitle()` call — ✅ CORRECT
+
+**File:** `Engine/GameLoop.cs` (line 120 removed)
+
+The `_display.ShowTitle()` call in `Run()` was clearing the screen and printing a basic header, wiping the enhanced intro sequence from PR #227. Removing it is the right call — the intro sequence is the new entry point, and `Run()` should not override it.
+
+**Concern:** None. The remaining `ShowMessage` calls for difficulty and floor info are appropriate post-intro context.
+
+### Fix 2: Add `"listsaves"` alias — ✅ CORRECT
+
+**File:** `Engine/CommandParser.cs` (line 153)
+
+Help text advertised `listsaves` as valid input; the parser only matched `"list"` and `"saves"` as separate tokens. Adding `"listsaves"` as a third pattern match is the minimal correct fix.
+
+**Architecture:** Clean — stays in the existing switch expression pattern. No separation-of-concerns issues.
+
+**Note:** `CommandParser.Parse()` splits on the first space, so `"list saves"` would match `"list"` with argument `"saves"`. The single-word `"listsaves"` correctly needed its own alias. Good catch.
+
+### Fix 3: Remove boss gate deadlock — ✅ CORRECT
+
+**File:** `Engine/GameLoop.cs` (lines 258-264 removed)
+
+The gate at line 258 checked `nextRoom.IsExit && nextRoom.Enemy != null && nextRoom.Enemy.HP > 0` and blocked entry. But `DungeonGenerator` places the boss *inside* the exit room, meaning:
+- Gate says: "Can't enter until boss is dead"
+- Boss location says: "Boss is inside — enter to fight"
+- Result: Circular deadlock. Boss is permanently unreachable.
+
+The existing auto-combat trigger at line 317 (`if (_currentRoom.Enemy != null && _currentRoom.Enemy.HP > 0)`) correctly handles this: player enters room → combat fires → if won, `Enemy` nulled → line 352 win condition checks `IsExit && Enemy == null`. The flow is sound without the gate.
+
+**Test update:** `Dungnz.Tests/GameLoopTests.cs` — Old test `BossGate_CannotEnterExitRoomWithBossAlive` correctly replaced with `BossRoom_CanEnterExitRoomWithBossAlive_CombatTriggered`. New test:
+- Sets up boss room with enemy
+- Mocks `RunCombat` to return `CombatResult.Won`
+- Asserts no "boss blocks" error
+- Verifies `RunCombat` was called exactly once
+
+This is a proper behavioral test that validates the intended game flow.
+
+### Overall Assessment
+
+| Criterion | Verdict |
+|-----------|---------|
+| Correctness | ✅ All three fixes address real bugs with minimal, targeted changes |
+| Architecture | ✅ No separation-of-concerns violations; changes stay in appropriate layers |
+| Regressions | ✅ No new regressions — `WinCondition_EnteringExitRoomWithBossDead` test still validates the boss-dead → exit path |
+| Test coverage | ✅ Boss gate test updated to match new behavior; 298/298 passing |
+| Commit hygiene | ✅ Two focused commits with clear messages and rationale |
+
+**Verdict: APPROVED.** Ship it.
+
