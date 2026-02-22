@@ -161,10 +161,11 @@ public class Phase1DisplayTests
         // Act
         engine.RunCombat(player, enemy);
 
-        // Assert: raw combat messages should contain Gray color codes for dodges/misses
+        // Assert: dodge messages appear in combat output; gray styling is applied in recent-turns
+        // summary via ShowRecentTurns → ShowMessage (ANSI stripped by FakeDisplayService).
         var rawMsgs = display.RawCombatMessages;
-        rawMsgs.Should().Contain(msg => msg.Contains(ColorCodes.Gray),
-            "miss/dodge message should contain gray color code");
+        rawMsgs.Should().Contain(msg => msg.Contains("dodge") || msg.Contains("Dodge"),
+            "dodge message should appear in combat output");
     }
 
     [Fact]
@@ -180,23 +181,23 @@ public class Phase1DisplayTests
         };
         player.EquippedWeapon = new Item 
         { 
-            Name = "Poison Blade", 
+            Name = "Bleed Blade", 
             Type = ItemType.Weapon, 
             AttackBonus = 10, 
-            PoisonChance = 1.0 // 100% poison application
+            AppliesBleedOnHit = true
         };
         var enemy = new Enemy_Stub(hp: 100, atk: 1, def: 0, xp: 10);
         var display = new FakeDisplayService();
         var input = new FakeInputReader("A", "F"); // attack once, then flee
-        var rng = new ControlledRandom();
+        var rng = new ControlledRandom(0.01); // 0.01 < 0.5 → flee succeeds; 0.01 < 0.10 → bleed procs
         var engine = new CombatEngine(display, input, rng);
 
         // Act
         engine.RunCombat(player, enemy);
 
-        // Assert: combat messages should mention poison being applied
+        // Assert: combat messages should mention a status effect being applied
         var allCombat = string.Join(" ", display.CombatMessages);
-        allCombat.Should().Contain("Poison", "poison effect should be mentioned");
+        allCombat.Should().ContainEquivalentOf("bleed", "bleed effect should be mentioned");
     }
 
     [Fact]
@@ -212,15 +213,16 @@ public class Phase1DisplayTests
         };
         player.EquippedWeapon = new Item 
         { 
-            Name = "Poison Blade", 
+            Name = "Bleed Blade", 
             Type = ItemType.Weapon, 
             AttackBonus = 10, 
-            PoisonChance = 1.0 // 100% poison attempt
+            AppliesBleedOnHit = true
         };
         var golem = new StoneGolem(null, null); // immune enemy
         var display = new FakeDisplayService();
         var input = new FakeInputReader("A", "F"); // attack once, then flee
-        var rng = new ControlledRandom();
+        // Queue: 0.9 → dodge(20)=0.5: not dodged; 0.9 → crit: miss; then 0.01 → bleed procs + flee succeeds
+        var rng = new ControlledRandom(0.01, 0.9, 0.9);
         var engine = new CombatEngine(display, input, rng);
 
         // Act
@@ -300,7 +302,7 @@ public class Phase1DisplayTests
     [Fact]
     public void CombatEngine_AbilityUsed_ShowsConfirmationMessage()
     {
-        // Arrange: mage with an ability
+        // Arrange: player with enough mana/level to use Power Strike (unlocks at level 1)
         var player = new Player 
         { 
             HP = 100, 
@@ -309,28 +311,19 @@ public class Phase1DisplayTests
             Defense = 5,
             Mana = 50,
             MaxMana = 50,
-            PlayerClass = PlayerClassDefinition.Mage,
-            Level = 3
+            Level = 1
         };
-        
-        // Give player an ability
-        var abilityManager = new AbilityManager();
-        var abilities = abilityManager.GetAbilitiesForClass(PlayerClassDefinition.Mage, player.Level);
-        if (abilities.Count > 0)
-        {
-            player.LearnedAbilities.AddRange(abilities.Take(1));
-        }
 
         var enemy = new Enemy_Stub(hp: 50, atk: 1, def: 0, xp: 10);
         var display = new FakeDisplayService();
-        var input = new FakeInputReader("S", "1", "F"); // use ability, then flee
-        var rng = new ControlledRandom();
+        var input = new FakeInputReader("B", "1", "F"); // use ability (B=ability menu), then flee
+        var rng = new ControlledRandom(0.01); // 0.01 < 0.5 → flee succeeds
         var engine = new CombatEngine(display, input, rng);
 
         // Act
         engine.RunCombat(player, enemy);
 
-        // Assert: confirmation message should appear
+        // Assert: confirmation message should contain "activated"
         var allMessages = string.Join(" ", display.Messages);
         allMessages.Should().Contain("activated", "ability confirmation should contain 'activated'");
     }
@@ -338,7 +331,7 @@ public class Phase1DisplayTests
     [Fact]
     public void CombatEngine_AbilityUsed_MessageContainsAbilityName()
     {
-        // Arrange: warrior with a specific ability
+        // Arrange: player with enough mana/level to use Power Strike (level 1+)
         var player = new Player 
         { 
             HP = 100, 
@@ -347,32 +340,20 @@ public class Phase1DisplayTests
             Defense = 5,
             Mana = 50,
             MaxMana = 50,
-            PlayerClass = PlayerClassDefinition.Warrior,
-            Level = 5
+            Level = 1
         };
-        
-        var abilityManager = new AbilityManager();
-        var abilities = abilityManager.GetAbilitiesForClass(PlayerClassDefinition.Warrior, player.Level);
-        if (abilities.Count > 0)
-        {
-            player.LearnedAbilities.AddRange(abilities.Take(1));
-        }
 
         var enemy = new Enemy_Stub(hp: 100, atk: 1, def: 0, xp: 10);
         var display = new FakeDisplayService();
-        var input = new FakeInputReader("S", "1", "F"); // use ability, then flee
-        var rng = new ControlledRandom();
+        var input = new FakeInputReader("B", "1", "F"); // use ability (B=ability menu), then flee
+        var rng = new ControlledRandom(0.01); // 0.01 < 0.5 → flee succeeds
         var engine = new CombatEngine(display, input, rng);
 
         // Act
         engine.RunCombat(player, enemy);
 
-        // Assert: confirmation message should contain ability name
+        // Assert: confirmation message should contain "Power Strike" (first unlocked ability at level 1)
         var allMessages = string.Join(" ", display.Messages);
-        if (player.LearnedAbilities.Count > 0)
-        {
-            var abilityName = player.LearnedAbilities[0].Name;
-            allMessages.Should().Contain(abilityName, "ability name should appear in confirmation");
-        }
+        allMessages.Should().Contain("Power Strike", "ability name should appear in confirmation");
     }
 }
