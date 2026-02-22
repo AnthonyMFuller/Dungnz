@@ -199,7 +199,7 @@ public class CombatEngineTests
         var input = new FakeInputReader("A", "F");
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.01));
         engine.RunCombat(player, enemy);
-        display.CombatMessages.Should().Contain(m => m.Contains("dodged"));
+        display.CombatMessages.Should().Contain(m => m.Contains("dodge"));
         player.HP.Should().Be(100);
     }
 
@@ -211,7 +211,7 @@ public class CombatEngineTests
         var input = new FakeInputReader("A", "F");
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.01));
         engine.RunCombat(player, enemy);
-        display.CombatMessages.Should().Contain(m => m.Contains("dodged"));
+        display.CombatMessages.Should().Contain(m => m.Contains("dodge"));
         player.HP.Should().Be(100);
     }
 
@@ -257,7 +257,7 @@ public class CombatEngineTests
         var input = new FakeInputReader("A", "F");
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.03));
         engine.RunCombat(player, enemy);
-        display.CombatMessages.Should().Contain(m => m.Contains("dodged"));
+        display.CombatMessages.Should().Contain(m => m.Contains("dodge"));
         player.HP.Should().Be(100);
     }
 
