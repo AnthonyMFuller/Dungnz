@@ -1059,3 +1059,59 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 
 **Bottom Line:**
 Strong execution velocity and clean architecture decisions. Primary improvement: sequencing. Tests, specs, and systems must precede implementation, not follow it. All four phases complete, 416 tests passing, no regressions. Team is aligned on process improvements for next cycle.
+
+### 2026-02-22: Phase 0 + Phase 1 Prep PR Review & Merge
+**Outcome:** Merged PR #298 (Hill's Phase 0) and PR #299 (Barton's Phase 1 prep).
+
+**PR #298 — Phase 0 UI/UX Shared Infrastructure (Hill)**
+- ✅ All checklist items verified:
+  1. `RenderBar()` helper implemented with correct signature
+  2. Three ANSI-safe padding helpers exist: `VisibleLength`, `PadRightVisible`, `PadLeftVisible`
+  3. All 9 IDisplayService methods added (ShowCombatStatus updated, ShowCommandPrompt updated, 7 new methods)
+  4. TestDisplayService/FakeDisplayService stubs exist for all new methods
+  5. Build: 0 errors, 24 pre-existing warnings
+  6. Tests: All 416 tests pass
+- **Architecture Validated:**
+  - RenderBar as private helper (not on interface) — correct decision
+  - ANSI padding helpers in display layer — keeps concerns separated
+  - Stub implementations for Phase 1-3 methods — contract in place, implementations deferred
+  - Backward-compatible ShowCommandPrompt default parameter
+- **Merged:** Squash-merged #298, deleted branch `squad/269-uiux-shared-infra`
+
+**PR #299 — Phase 1 Combat Systems Prep (Barton)**
+- Created PR from existing branch `squad/272-phase1-combat-prep` (no PR existed)
+- ✅ Changes verified:
+  1. Colorized turn log (ShowRecentTurns) — CRIT in yellow/bold, damage in bright red, dodges in gray, status effects in green
+  2. Post-combat XP feedback (HandleLootAndXP) — shows XP gained and progress to next level
+  3. Ability confirmation (HandleAbilityMenu) — displays activation message with effect description
+  4. Immunity feedback (StatusEffectManager.Apply) — notifies when enemy blocks status effect
+- **Architecture Notes:**
+  - All changes use existing display methods (ShowMessage) — no new dependencies
+  - Turn log colorization at display time (not CombatTurn creation) — keeps data model clean
+  - Achievement notifications (#1.9) correctly deferred — requires GameEvents extension design
+- **Merge Status:** Clean merge with Phase 0 changes (auto-merged, no conflicts)
+- **Build:** 0 errors, 22 pre-existing XML warnings
+- **Merged:** Squash-merged #299, deleted branch `squad/272-phase1-combat-prep`
+
+**Final Master State:**
+- Build: ✅ 0 errors, 24 pre-existing XML warnings (in enemy classes)
+- Tests: ✅ All 416 tests pass
+- Git: master @ c6d4c2d (both PRs merged)
+
+**Phase 1 Status:**
+- ✅ **Phase 0 complete** — all shared infrastructure in place
+- ✅ **4 Phase 1 items implemented** (1.4 colorized logs, 1.6 XP feedback, 1.7 ability confirmation, 1.8 immunity feedback)
+- ⏸ **5 Phase 1 items blocked** (1.1 HP/MP bars, 1.2 status effects header, 1.3 elite tags, 1.5 level-up menu, 1.10 combat start banner) — waiting for call-site wiring using Phase 0 methods
+- ⚠️ **1 Phase 1 item deferred** (1.9 achievement notifications) — requires GameEvents architecture extension
+
+**Next Steps:**
+- Phase 1 work can now proceed — Hill's infrastructure unblocks remaining 5 items
+- Barton can implement call-site wiring for 1.2, 1.3, 1.5, 1.10
+- Hill can implement 1.1 HP/MP bars using RenderBar helper
+- Achievement notifications (1.9) requires Coulson design decision on GameEvents extension
+
+**Key Decisions:**
+- **Phase 0 as critical path:** Correct sequencing — infrastructure before feature work prevented rework
+- **Parallel development with merge:** Barton and Hill worked simultaneously on compatible changes — clean merge demonstrated good separation of concerns
+- **Stub implementations:** Phase 0 PRs include method stubs rather than full implementations — enables parallel Phase 1 work without blocking
+- **Incremental delivery:** Systems-side changes (colorization, feedback messages) delivered immediately without waiting for display infrastructure
