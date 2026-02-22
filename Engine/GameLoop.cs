@@ -117,7 +117,6 @@ public class GameLoop
         _stats = new RunStats();
         _runStart = DateTime.UtcNow;
         _currentFloor = 1;
-        _display.ShowTitle();
         _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
         _display.ShowMessage($"Floor {_currentFloor}");
         _display.ShowRoom(_currentRoom);
@@ -252,14 +251,6 @@ public class GameLoop
         {
             _turnConsumed = false;
             _display.ShowError("You can't go that way.");
-            return;
-        }
-
-        // Check if trying to exit with boss still alive
-        if (nextRoom.IsExit && nextRoom.Enemy != null && nextRoom.Enemy.HP > 0)
-        {
-            _turnConsumed = false;
-            _display.ShowError("The boss blocks your path! Defeat it first.");
             return;
         }
 

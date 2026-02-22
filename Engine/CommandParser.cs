@@ -150,7 +150,7 @@ public static class CommandParser
             "equipment" or "gear" => new ParsedCommand { Type = CommandType.Equipment },
             "save" => new ParsedCommand { Type = CommandType.Save, Argument = argument },
             "load" => new ParsedCommand { Type = CommandType.Load, Argument = argument },
-            "list" or "saves" => new ParsedCommand { Type = CommandType.ListSaves },
+            "list" or "saves" or "listsaves" => new ParsedCommand { Type = CommandType.ListSaves },
             "descend" or "down" => new ParsedCommand { Type = CommandType.Descend },
             "map" or "m" => new ParsedCommand { Type = CommandType.Map },
             "shop" or "buy" => new ParsedCommand { Type = CommandType.Shop },
