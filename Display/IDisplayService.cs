@@ -33,7 +33,11 @@ public interface IDisplayService
     /// </summary>
     /// <param name="player">The player whose current and maximum HP is shown.</param>
     /// <param name="enemy">The enemy whose current and maximum HP is shown.</param>
-    void ShowCombatStatus(Player player, Enemy enemy);
+    /// <param name="playerEffects">Active status effects on the player.</param>
+    /// <param name="enemyEffects">Active status effects on the enemy.</param>
+    void ShowCombatStatus(Player player, Enemy enemy, 
+        IReadOnlyList<ActiveEffect> playerEffects, 
+        IReadOnlyList<ActiveEffect> enemyEffects);
 
     /// <summary>
     /// Displays a single line of flavour or mechanical text that describes what
@@ -112,7 +116,8 @@ public interface IDisplayService
     /// Renders the standard input prompt symbol that invites the player to
     /// type a command during normal exploration.
     /// </summary>
-    void ShowCommandPrompt();
+    /// <param name="player">Optional player for displaying mini status bar in prompt.</param>
+    void ShowCommandPrompt(Player? player = null);
 
     /// <summary>
     /// Renders an ASCII mini-map of the dungeon centred on <paramref name="currentRoom"/>,
@@ -198,4 +203,52 @@ public interface IDisplayService
     /// <param name="result">The item that will be produced when the recipe is crafted.</param>
     /// <param name="ingredients">Each ingredient name paired with whether the player currently holds it.</param>
     void ShowCraftRecipe(string recipeName, Dungnz.Models.Item result, List<(string ingredient, bool playerHasIt)> ingredients);
+
+    /// <summary>
+    /// Displays the combat start banner with enemy name.
+    /// </summary>
+    /// <param name="enemy">The enemy to show in the banner.</param>
+    void ShowCombatStart(Enemy enemy);
+
+    /// <summary>
+    /// Displays one-line flags for Elite, special abilities, etc.
+    /// </summary>
+    /// <param name="enemy">The enemy whose flags to display.</param>
+    void ShowCombatEntryFlags(Enemy enemy);
+
+    /// <summary>
+    /// Displays numbered menu of level-up stat choices.
+    /// </summary>
+    /// <param name="player">The player leveling up.</param>
+    void ShowLevelUpChoice(Player player);
+
+    /// <summary>
+    /// Displays box-drawn floor banner with floor number and variant.
+    /// </summary>
+    /// <param name="floor">Current floor number.</param>
+    /// <param name="maxFloor">Total floors in run.</param>
+    /// <param name="variant">Dungeon variant for display name.</param>
+    void ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant);
+
+    /// <summary>
+    /// Displays detailed enemy card with stats and abilities.
+    /// </summary>
+    /// <param name="enemy">The enemy to display details for.</param>
+    void ShowEnemyDetail(Enemy enemy);
+
+    /// <summary>
+    /// Displays full victory screen with run statistics.
+    /// </summary>
+    /// <param name="player">The player's final state.</param>
+    /// <param name="floorsCleared">Number of floors cleared.</param>
+    /// <param name="stats">Run statistics.</param>
+    void ShowVictory(Player player, int floorsCleared, Dungnz.Systems.RunStats stats);
+
+    /// <summary>
+    /// Displays game over screen with cause of death and run statistics.
+    /// </summary>
+    /// <param name="player">The player's final state.</param>
+    /// <param name="killedBy">Optional cause of death.</param>
+    /// <param name="stats">Run statistics.</param>
+    void ShowGameOver(Player player, string? killedBy, Dungnz.Systems.RunStats stats);
 }

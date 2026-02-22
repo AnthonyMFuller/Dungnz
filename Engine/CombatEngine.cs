@@ -295,7 +295,9 @@ public class CombatEngine : ICombatEngine
                 continue;
             }
             
-            _display.ShowCombatStatus(player, enemy);
+            _display.ShowCombatStatus(player, enemy, 
+                _statusEffects.GetActiveEffects(player), 
+                _statusEffects.GetActiveEffects(enemy));
             ShowRecentTurns();
             ShowCombatMenu(player);
             var choice = (_input.ReadLine() ?? string.Empty).Trim().ToUpperInvariant();

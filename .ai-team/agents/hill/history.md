@@ -8,6 +8,79 @@
 
 ## Learnings
 
+### 2026-02-22 — Phase 0: UI/UX Shared Infrastructure (#269, #270, #271)
+
+**PR:** #298 — `feat: Phase 0 — UI/UX shared infrastructure`  
+**Branch:** `squad/269-uiux-shared-infra`  
+**Context:** Critical path implementation blocking all Phase 1/2/3 UI/UX work
+
+**Files Modified:**
+- `Display/DisplayService.cs` — Added RenderBar(), VisibleLength(), PadRightVisible(), PadLeftVisible() helpers; fixed ANSI padding bugs in ShowLootDrop/ShowInventory; added stub implementations for 7 new Phase 1-3 methods
+- `Display/IDisplayService.cs` — Updated ShowCombatStatus signature (added playerEffects, enemyEffects parameters); updated ShowCommandPrompt signature (added optional Player parameter); added 7 new method signatures for Phase 1-3
+- `Engine/CombatEngine.cs` — Updated ShowCombatStatus call to pass effect lists from StatusEffectManager
+- `Dungnz.Tests/DisplayServiceTests.cs` — Updated ShowCombatStatus test to pass empty effect lists
+- `Dungnz.Tests/Helpers/TestDisplayService.cs` — Updated all method signatures; added stubs for 7 new methods
+- `Dungnz.Tests/Helpers/FakeDisplayService.cs` — Updated all method signatures; added stubs for 7 new methods
+
+**Implementation Details:**
+
+1. **RenderBar() Helper (#269)**
+   - Private static method in ConsoleDisplayService
+   - Signature: `RenderBar(int current, int max, int width, string fillColor, string emptyColor = Gray)`
+   - Returns colored progress bar: filled blocks (`█`) + empty blocks (`░`) with proper ANSI reset
+   - Math.Clamp protects against negative/overflow values
+   - Will be used by Phase 1.1 HP/MP bars, Phase 1.6 XP bar, Phase 2.3 command prompt, Phase 3.1 enemy detail
+
+2. **ANSI-Safe Padding Helpers (#270)**
+   - `VisibleLength(string)` — wraps ColorCodes.StripAnsiCodes().Length
+   - `PadRightVisible(string, int)` — pads right accounting for invisible ANSI codes
+   - `PadLeftVisible(string, int)` — pads left accounting for invisible ANSI codes
+   - **Bug fixes applied:**
+     - ShowLootDrop: Fixed header and tierLabel padding (lines 218-219) — replaced `.PadRight(-36)` with `PadRightVisible()`
+     - ShowInventory: Fixed item name column alignment (line 195) — replaced manual padding with `PadRightVisible(nameField, 32)` and `PadRightVisible(statColored, 22)`
+     - ShowMap legend already used hard-coded spacing — no changes needed
+
+3. **New IDisplayService Methods (#271)**
+   - **Signature changes:**
+     - `ShowCombatStatus` — added `IReadOnlyList<ActiveEffect> playerEffects, IReadOnlyList<ActiveEffect> enemyEffects`
+     - `ShowCommandPrompt` — added `Player? player = null` (backward compatible)
+   - **New methods (stubs in ConsoleDisplayService, full implementations in Phase 1-3):**
+     - `ShowCombatStart(Enemy enemy)` — Phase 1.2
+     - `ShowCombatEntryFlags(Enemy enemy)` — Phase 1.3
+     - `ShowLevelUpChoice(Player player)` — Phase 1.5
+     - `ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant)` — Phase 2.2
+     - `ShowEnemyDetail(Enemy enemy)` — Phase 3.1
+     - `ShowVictory(Player player, int floorsCleared, RunStats stats)` — Phase 3.2
+     - `ShowGameOver(Player player, string? killedBy, RunStats stats)` — Phase 3.2
+   - All stubs have XML doc comments to satisfy XML enforcement
+   - RunStats, ActiveEffect, DungeonVariant confirmed pre-existing in codebase
+
+**Integration Work:**
+- CombatEngine call site (line 298) updated to: `_display.ShowCombatStatus(player, enemy, _statusEffects.GetActiveEffects(player), _statusEffects.GetActiveEffects(enemy))`
+- DisplayServiceTests updated to pass `Array.Empty<ActiveEffect>()` for both effect lists
+- TestDisplayService and FakeDisplayService updated with matching signatures and stub implementations
+
+**Build & Test Status:**
+- ✅ `dotnet build` succeeds (0 errors, 24 pre-existing warnings in enemy classes)
+- ✅ `dotnet test` passes (all existing tests still pass)
+- Zero breaking changes for existing code (ShowCommandPrompt has default parameter)
+
+**Design Decisions:**
+1. **RenderBar location:** Private static helper in ConsoleDisplayService (not on IDisplayService) — internal rendering utility, not a public contract
+2. **Padding helper location:** Private static helpers in ConsoleDisplayService (not in ColorCodes) — keeps display concerns in display layer
+3. **Stub implementations:** All 7 new methods are no-op stubs `{ }` — implementations delivered by Barton in Phase 1-3
+4. **Effect list retrieval:** Used existing `StatusEffectManager.GetActiveEffects(target)` — no new types needed
+5. **Backward compatibility:** ShowCommandPrompt default parameter allows existing call sites to compile without changes
+
+**Blockers Cleared:**
+- Barton can begin Phase 1.1 (HP/MP bars using RenderBar)
+- Barton can begin Phase 1.2-1.6 (all call-site wiring using new methods)
+- Phase 2 and Phase 3 work unblocked (all method contracts in place)
+
+**Next Steps (Hill):**
+- Monitor PR #298 for Coulson's review
+- No further Hill work until Phase 4 (if UI/UX Phase 1-3 reveals architectural issues)
+
 ### 2026-02-20 — Phase 1: Project Scaffold and Core Models (WI-1, WI-2)
 
 **Files Created:**
