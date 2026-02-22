@@ -157,6 +157,11 @@ public class InventoryManager
                 player.Inventory.Remove(item);
                 return UseResult.Used;
 
+            case ItemType.Accessory:
+                player.EquipItem(item);
+                _display.ShowMessage($"You equipped {item.Name}.");
+                return UseResult.Used;
+
             default:
                 return UseResult.NotUsable;
         }
