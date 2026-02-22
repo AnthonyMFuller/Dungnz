@@ -594,3 +594,66 @@ Branch: `squad/272-phase1-combat-prep`
 - **Separation of concerns:** Systems produce data (turn type, damage, effect), display layer renders it
 - **No new data structures:** All enhancements use existing CombatTurn, Player, Enemy, StatusEffect models
 - **Progressive colorization:** Start with turn log, expand to other combat messages as Phase 0 enables
+
+---
+
+## 2026-02-23: Phase 1 Call-Site Wiring + Phase 3 Systems Integration
+
+**Branch:** `squad/273-phase1-display`
+**PR:** #302
+
+**Context:** Phase 0 shared infrastructure merged (ShowCombatStart, ShowCombatEntryFlags, ShowLevelUpChoice, ShowVictory, ShowGameOver methods now available). Task: wire up all Phase 1 display method call sites and implement Phase 3 systems-side work.
+
+**Phase 1 Call-Site Wiring Implemented:**
+
+1. **ShowCombatStart and ShowCombatEntryFlags (1.10, 1.3)** — `Engine/CombatEngine.cs:RunCombat()`
+   - Added `_display.ShowCombatStart(enemy);` at combat entry (before narration)
+   - Added `_display.ShowCombatEntryFlags(enemy);` immediately after ShowCombatStart
+   - Provides visual separator and elite/special ability flags before combat begins
+
+2. **ShowLevelUpChoice (1.5)** — `Engine/CombatEngine.cs:CheckLevelUp()`
+   - Replaced inline level-up menu (4 ShowMessage calls) with single `_display.ShowLevelUpChoice(player);` call
+   - Removed manual display of "[1] +5 Max HP", "[2] +2 Attack", "[3] +2 Defense"
+   - Input handling and stat application logic remains in CombatEngine (separation of concerns)
+
+3. **ShowCombatStatus (1.2)** — Already done in Phase 0
+   - Confirmed call site at `Engine/CombatEngine.cs:298` passes active effect lists correctly
+   - Uses `_statusEffects.GetActiveEffects(player)` and `_statusEffects.GetActiveEffects(enemy)`
+
+**Phase 3 Systems-Side Work Implemented:**
+
+1. **ShowVictory and ShowGameOver (3.2)** — `Engine/GameLoop.cs`
+   - Replaced 35-line inline ShowVictory() with `_display.ShowVictory(_player, _currentFloor, _stats);`
+   - Replaced 58-line inline ShowGameOver() with `_display.ShowGameOver(_player, killedBy, _stats);`
+   - RunStats object already tracked by GameLoop, passed directly to display layer
+   - Moved class-specific narration, floor-based death messages, and epitaphs to display layer
+
+2. **Full Loot Comparison (3.5)** — `Display/DisplayService.cs:ShowLootDrop()`
+   - Expanded comparison logic beyond weapons to include armor and accessories
+   - **Armor comparison:** Shows "+X vs equipped!" for DEF delta when dropping armor
+   - **Accessory comparison:** Shows multi-stat delta (e.g., "+5 HP, +2 ATK vs equipped!") when all relevant stats (StatModifier, AttackBonus, DefenseBonus) are compared
+   - Reuses existing "new best" indicator logic from weapon comparison
+
+3. **Shrine Menu Banner (3.6)** — `Engine/GameLoop.cs:HandleShrine()`
+   - Replaced "=== Shrine ===" header with cyan-colored banner: `✨ [Shrine Menu] — press H/B/F/M or L to leave.`
+   - Uses `_display.ShowColoredMessage(..., Systems.ColorCodes.Cyan);`
+   - Clarifies input model (single-char hotkeys) at point of interaction
+
+4. **Consumable Descriptions (3.3)** — Already present in data
+   - Verified `Data/item-stats.json` — all consumables have populated Description fields
+   - Examples: "A murky red liquid..." (Health Potion), "A fizzing amber vial..." (Elixir of Speed)
+   - No code changes needed
+
+**Build & Test Status:**
+- ✅ Build succeeded (24 XML doc warnings only, no errors)
+- ✅ All 416 tests pass
+
+**Files Changed:**
+- `Engine/CombatEngine.cs` — Added ShowCombatStart, ShowCombatEntryFlags, replaced level-up menu
+- `Engine/GameLoop.cs` — Replaced inline victory/game-over with display calls, added shrine banner
+- `Display/DisplayService.cs` — Expanded loot comparison logic for armor and accessories
+
+**Commit:** `a9edcaf`
+
+**Documentation:** Analysis and implementation notes in `.ai-team/plans/barton-phase1-analysis.md` and `.ai-team/decisions/inbox/barton-runstats.md`
+

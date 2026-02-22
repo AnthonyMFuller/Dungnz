@@ -226,6 +226,26 @@ public class ConsoleDisplayService : IDisplayService
             if (delta > 0)
                 statLine += $"  {Systems.ColorCodes.Green}(+{delta} vs equipped!){Systems.ColorCodes.Reset}";
         }
+        else if (item.DefenseBonus > 0 && player.EquippedArmor != null)
+        {
+            int delta = item.DefenseBonus - player.EquippedArmor.DefenseBonus;
+            if (delta > 0)
+                statLine += $"  {Systems.ColorCodes.Green}(+{delta} vs equipped!){Systems.ColorCodes.Reset}";
+        }
+        else if (item.Type == ItemType.Accessory && player.EquippedAccessory != null)
+        {
+            // Compare all relevant stats for accessories
+            var deltas = new List<string>();
+            if (item.StatModifier > player.EquippedAccessory.StatModifier)
+                deltas.Add($"+{item.StatModifier - player.EquippedAccessory.StatModifier} HP");
+            if (item.AttackBonus > player.EquippedAccessory.AttackBonus)
+                deltas.Add($"+{item.AttackBonus - player.EquippedAccessory.AttackBonus} ATK");
+            if (item.DefenseBonus > player.EquippedAccessory.DefenseBonus)
+                deltas.Add($"+{item.DefenseBonus - player.EquippedAccessory.DefenseBonus} DEF");
+            
+            if (deltas.Count > 0)
+                statLine += $"  {Systems.ColorCodes.Green}({string.Join(", ", deltas)} vs equipped!){Systems.ColorCodes.Reset}";
+        }
         Console.WriteLine($"║  {Systems.ColorCodes.Cyan}{statLine,-36}{Systems.ColorCodes.Reset}• {item.Weight} wt  ║");
         Console.WriteLine("╚══════════════════════════════════════╝");
     }

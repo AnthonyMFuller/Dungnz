@@ -635,7 +635,7 @@ public class GameLoop
             return;
         }
 
-        _display.ShowMessage("=== Shrine ===");
+        _display.ShowColoredMessage("✨ [Shrine Menu] — press H/B/F/M or L to leave.", Systems.ColorCodes.Cyan);
         _display.ShowMessage($"[H]eal fully       - 30g  (Your gold: {_player.Gold})");
         _display.ShowMessage("[B]less            - 50g  (+2 ATK/DEF permanently)");
         _display.ShowMessage("[F]ortify          - 75g  (MaxHP +10, permanent)");
@@ -849,62 +849,7 @@ public class GameLoop
     /// </param>
     private void ShowGameOver(string? killedBy = null, bool byTrap = false)
     {
-        _display.ShowMessage("");
-        _display.ShowMessage("╔═══════════════════════════════════════╗");
-        _display.ShowMessage("║           YOU HAVE FALLEN             ║");
-        _display.ShowMessage("╚═══════════════════════════════════════╝");
-        _display.ShowMessage("");
-
-        string floorLine = _currentFloor switch {
-            1 => "Your adventure ends here on Floor 1, cut short before it truly began.",
-            2 => "The dead of Floor 2 claim another victim for their silent halls.",
-            3 => "The trolls of Floor 3 have eaten better adventurers than you. Probably.",
-            4 => "Floor 4 takes you into the shadow. You won't be coming back.",
-            5 => "You made it to the Dragon's Lair — and that's where your story ends.",
-            _ => "The dungeon claims you."
-        };
-        _display.ShowMessage(floorLine);
-
-        if (byTrap)
-        {
-            var trapLines = new[] {
-                "The dungeon itself killed you — not by a monster's hand, but cold stone and cruel engineering.",
-                "A trap. Not a worthy end, perhaps. But the dungeon doesn't care about worthy.",
-                "Killed by the architecture. The dungeon laughs, if dungeons can laugh."
-            };
-            _display.ShowMessage(_narration.Pick(trapLines));
-        }
-        else if (killedBy != null)
-        {
-            var combatLines = new[] {
-                $"In the end, {killedBy} proved too much.",
-                $"You fought well. {killedBy} fought better.",
-                $"{killedBy} stands over your fallen form, victorious.",
-                $"The last thing you see is {killedBy}, and it is not merciful."
-            };
-            _display.ShowMessage(_narration.Pick(combatLines));
-        }
-
-        var epitaph = _player.Class switch {
-            PlayerClass.Warrior => _narration.Pick(new[] {
-                "A warrior's death, at least — fighting to the last breath.",
-                "You went down swinging. That counts for something.",
-                "Warriors die. Good warriors die well. You tried."
-            }),
-            PlayerClass.Mage => _narration.Pick(new[] {
-                "All that knowledge, and the dungeon didn't care.",
-                "The arcane arts could not save you here. A humbling lesson.",
-                "Perhaps the next mage who reads these runes will fare better."
-            }),
-            PlayerClass.Rogue => _narration.Pick(new[] {
-                "Every rogue's luck runs out eventually. Yours ran out here.",
-                "You played the odds. The odds won.",
-                "Even the best thief can't steal back a lost life."
-            }),
-            _ => "The dungeon remembers no one."
-        };
-        _display.ShowMessage(epitaph);
-        _display.ShowMessage("");
+        _display.ShowGameOver(_player, killedBy, _stats);
     }
 
     private void HandleLeaderboard()
@@ -931,39 +876,7 @@ public class GameLoop
     /// </summary>
     private void ShowVictory()
     {
-        _display.ShowMessage("");
-        _display.ShowMessage("╔═══════════════════════════════════════╗");
-        _display.ShowMessage("║           VICTORY                     ║");
-        _display.ShowMessage("╚═══════════════════════════════════════╝");
-        _display.ShowMessage("");
-
-        var classLines = _player.Class switch
-        {
-            PlayerClass.Warrior => new[] {
-                "Bloodied but unbroken, you drag yourself into the light.",
-                "The dungeon threw its worst at you. You threw it back harder.",
-                "Bards will argue about the details. The scars are real."
-            },
-            PlayerClass.Mage => new[] {
-                "The arcane energies sustaining you flicker out as daylight hits your face.",
-                "You survived on wit and magic where steel alone would have failed.",
-                "The dungeon underestimated you. They always underestimate the scholar."
-            },
-            PlayerClass.Rogue => new[] {
-                "You slip out of the dungeon like a shadow — pockets heavy, conscience light.",
-                "Nobody saw you go in. Nobody saw you come out. Perfect.",
-                "The dungeon never stood a chance against someone who cheats this well."
-            },
-            _ => new[] { "You escaped the dungeon alive. That's more than most can say." }
-        };
-
-        foreach (var line in classLines)
-            _display.ShowMessage(line);
-
-        _display.ShowMessage("");
-        _display.ShowMessage($"You conquered all {_currentFloor} floors and defeated the dungeon boss.");
-        _display.ShowMessage($"Final level: {_player.Level} | Gold: {_player.Gold}");
-        _display.ShowMessage("");
+        _display.ShowVictory(_player, _currentFloor, _stats);
     }
 
 }

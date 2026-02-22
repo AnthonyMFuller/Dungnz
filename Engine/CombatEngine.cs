@@ -227,6 +227,9 @@ public class CombatEngine : ICombatEngine
             _statusEffects.Apply(player, ae.Effect, ae.RemainingTurns);
         player.ActiveEffects.Clear();
 
+        _display.ShowCombatStart(enemy);
+        _display.ShowCombatEntryFlags(enemy);
+        
         if (enemy is DungeonBoss)
         {
             foreach (var line in BossNarration.GetIntro(enemy.Name))
@@ -696,10 +699,7 @@ public class CombatEngine : ICombatEngine
             // Every 2 levels, offer a trait bonus
             if (player.Level % 2 == 0)
             {
-                _display.ShowMessage("=== LEVEL UP BONUS — Choose a trait: ===");
-                _display.ShowMessage("[1] +5 Max HP");
-                _display.ShowMessage("[2] +2 Attack");
-                _display.ShowMessage("[3] +2 Defense");
+                _display.ShowLevelUpChoice(player);
                 var traitChoice = (_input.ReadLine() ?? "1").Trim();
                 switch (traitChoice)
                 {
