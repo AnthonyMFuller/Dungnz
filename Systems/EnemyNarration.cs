@@ -2,6 +2,8 @@ namespace Dungnz.Systems;
 
 /// <summary>
 /// Provides per-enemy encounter introduction and death narration line pools.
+/// Note: DungeonBoss subclasses are routed to <see cref="BossNarration"/> by CombatEngine
+/// and do not use this class.
 /// </summary>
 public static class EnemyNarration
 {
@@ -30,12 +32,6 @@ public static class EnemyNarration
             "Armour black as midnight, a Dark Knight charges forward with lethal purpose!",
             "A Dark Knight steps from the darkness, visor down, blade levelled at your throat!",
             "The clink of dark steel announces the Dark Knight before you see it — too late to run!"
-        },
-        ["Dungeon Boss"] = new[]
-        {
-            "The chamber trembles. Something ancient and terrible rises before you!",
-            "A monstrous roar shakes dust from the ceiling — the Dungeon Boss has found you!",
-            "Runes on the floor ignite as the Dungeon Boss manifests, radiating fury!"
         },
         ["Goblin Shaman"] = new[]
         {
@@ -94,12 +90,6 @@ public static class EnemyNarration
             "The Dark Knight staggers, then buckles — armour clanging as it hits the stone.",
             "The Dark Knight falls to one knee and is still, shadow fading from its visor.",
             "With a hollow groan the Dark Knight crumples, black steel ringing on the floor."
-        },
-        ["Dungeon Boss"] = new[]
-        {
-            "A deafening crack — the Dungeon Boss convulses and crashes to the ground!",
-            "The Dungeon Boss lets out a final, anguished roar before going silent.",
-            "The runes on the floor go dark as the Dungeon Boss falls, its power extinguished."
         },
         ["Goblin Shaman"] = new[]
         {

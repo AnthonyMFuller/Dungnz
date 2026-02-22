@@ -212,7 +212,7 @@ public class InventoryManagerTests
     public void IsFull_AtMaxSlots_ReturnsTrue()
     {
         var (player, _, _, manager) = Make();
-        for (var i = 0; i < InventoryManager.MaxSlots; i++)
+        for (var i = 0; i < Player.MaxInventorySize; i++)
             player.Inventory.Add(new Item { Name = $"Item{i}" });
 
         manager.IsFull(player).Should().BeTrue();

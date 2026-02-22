@@ -18,11 +18,13 @@ public class CombatEngine : ICombatEngine
     private readonly StatusEffectManager _statusEffects;
     private readonly AbilityManager _abilities;
     private readonly NarrationService _narration;
+    private readonly InventoryManager _inventoryManager;
     private readonly List<CombatTurn> _turnLog = new();
     private RunStats _stats = new();
     private int _baseEliteAttack;
     private int _baseEliteDefense;
     private int _shamanHealCooldown;
+    private const int MaxLevel = 20; // Fix #183
 
     private static readonly string[] _playerHitMessages =
     {
@@ -159,7 +161,7 @@ public class CombatEngine : ICombatEngine
     /// Optional narration service used to pick varied combat messages; a default instance
     /// sharing <paramref name="rng"/> is created when <see langword="null"/>.
     /// </param>
-    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null, NarrationService? narration = null)
+    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null, NarrationService? narration = null, InventoryManager? inventoryManager = null)
     {
         _display = display;
         _input = input ?? new ConsoleInputReader();
@@ -168,6 +170,7 @@ public class CombatEngine : ICombatEngine
         _statusEffects = statusEffects ?? new StatusEffectManager(display);
         _abilities = abilities ?? new AbilityManager();
         _narration = narration ?? new NarrationService(_rng);
+        _inventoryManager = inventoryManager ?? new InventoryManager(display);
     }
 
     /// <summary>
@@ -187,6 +190,12 @@ public class CombatEngine : ICombatEngine
     public CombatResult RunCombat(Player player, Enemy enemy, RunStats? stats = null)
     {
         if (stats != null) _stats = stats;
+
+        // Restore any status effects persisted on the player (e.g., across save/load)
+        foreach (var ae in player.ActiveEffects)
+            _statusEffects.Apply(player, ae.Effect, ae.RemainingTurns);
+        player.ActiveEffects.Clear();
+
         if (enemy is DungeonBoss)
         {
             foreach (var line in BossNarration.GetIntro(enemy.Name))
@@ -200,6 +209,7 @@ public class CombatEngine : ICombatEngine
         _baseEliteAttack = enemy.Attack;
         _baseEliteDefense = enemy.Defense;
         _shamanHealCooldown = 0;
+        _abilities.ResetCooldowns(); // Fix #190: clear cooldowns from previous combat
 
         // Ambush: Mimic gets a free first strike before the player can act
         if (enemy.IsAmbush)
@@ -211,9 +221,18 @@ public class CombatEngine : ICombatEngine
         
         while (true)
         {
+            // Fix #167: capture stun state BEFORE ProcessTurnStart decrements durations
+            bool playerStunnedThisTurn = _statusEffects.HasEffect(player, StatusEffect.Stun);
+            bool enemyStunnedThisTurn  = _statusEffects.HasEffect(enemy,  StatusEffect.Stun);
+
             _statusEffects.ProcessTurnStart(player);
             _statusEffects.ProcessTurnStart(enemy);
-            
+
+            // Fix #210: player death has priority over enemy death in simultaneous-tick kills
+            if (player.HP <= 0) return CombatResult.PlayerDied;
+            // Fix #209: guard against enraging/acting on an enemy killed by a DoT tick
+            if (enemy.HP <= 0) break;
+
             int manaRegen = player.Skills.IsUnlocked(Skill.ManaFlow) ? 15 : 10;
             player.RestoreMana(manaRegen);
             _abilities.TickCooldowns();
@@ -236,10 +255,11 @@ public class CombatEngine : ICombatEngine
             
             if (player.HP <= 0) return CombatResult.PlayerDied;
             
-            if (_statusEffects.HasEffect(player, StatusEffect.Stun))
+            // Fix #167/#187: use pre-ProcessTurnStart stun state; message printed only here
+            if (playerStunnedThisTurn)
             {
                 _display.ShowCombatMessage("You are stunned and cannot act this turn!");
-                PerformEnemyTurn(player, enemy);
+                PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
                 if (player.HP <= 0) return CombatResult.PlayerDied;
                 continue;
             }
@@ -256,12 +276,13 @@ public class CombatEngine : ICombatEngine
                     _display.ShowMessage("You fled successfully!");
                     _statusEffects.Clear(player);
                     _statusEffects.Clear(enemy);
+                    player.ActiveEffects.Clear();
                     return CombatResult.Fled;
                 }
                 else
                 {
                     _display.ShowMessage("You failed to flee!");
-                    PerformEnemyTurn(player, enemy);
+                    PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
                     if (player.HP <= 0) return CombatResult.PlayerDied;
                     continue;
                 }
@@ -280,13 +301,12 @@ public class CombatEngine : ICombatEngine
                         HandleLootAndXP(player, enemy);
                         return CombatResult.Won;
                     }
-                    PerformEnemyTurn(player, enemy);
+                    PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
                     if (player.HP <= 0) return CombatResult.PlayerDied;
                     continue;
                 }
             }
-            
-            if (choice == "A" || choice == "ATTACK")
+            else if (choice == "A" || choice == "ATTACK")
             {
                 PerformPlayerAttack(player, enemy);
                 
@@ -297,16 +317,21 @@ public class CombatEngine : ICombatEngine
                     return CombatResult.Won;
                 }
                 
-                PerformEnemyTurn(player, enemy);
+                PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
                 if (player.HP <= 0) return CombatResult.PlayerDied;
             }
             else
             {
+                // Fix #211: invalid input does not grant the enemy a free attack
                 _display.ShowError("Invalid choice. [A]ttack, [B]ability, or [F]lee.");
-                PerformEnemyTurn(player, enemy);
-                if (player.HP <= 0) return CombatResult.PlayerDied;
+                continue;
             }
         }
+
+        // Enemy died from a DoT tick at the start of the turn (break from loop above)
+        ShowDeathNarration(enemy);
+        HandleLootAndXP(player, enemy);
+        return CombatResult.Won;
     }
     
     private void ShowCombatMenu(Player player)
@@ -356,24 +381,25 @@ public class CombatEngine : ICombatEngine
         }
         
         _display.ShowMessage("\n=== Abilities ===");
-        int index = 1;
+        // Fix #194: use a sequential display counter so shown indices have no gaps
+        var displayToAbility = new Dictionary<int, Ability>();
+        int displayIndex = 1;
         foreach (var ability in unlocked)
         {
-            var status = "";
             if (_abilities.IsOnCooldown(ability.Type))
             {
-                status = $" (Cooldown: {_abilities.GetCooldown(ability.Type)} turns)";
+                _display.ShowMessage($" (Cooldown: {_abilities.GetCooldown(ability.Type)} turns) {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)");
             }
             else if (player.Mana < ability.ManaCost)
             {
-                status = $" (Need {ability.ManaCost} mana)";
+                _display.ShowMessage($" (Need {ability.ManaCost} mana) {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)");
             }
             else
             {
-                status = $" [{index}]";
+                displayToAbility[displayIndex] = ability;
+                _display.ShowMessage($" [{displayIndex}] {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)");
+                displayIndex++;
             }
-            _display.ShowMessage($"{status} {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)");
-            index++;
         }
         _display.ShowMessage("[C]ancel");
         
@@ -381,9 +407,8 @@ public class CombatEngine : ICombatEngine
         if (choice == "C" || choice == "CANCEL")
             return AbilityMenuResult.Cancel;
         
-        if (int.TryParse(choice, out int abilityIndex) && abilityIndex >= 1 && abilityIndex <= unlocked.Count)
+        if (int.TryParse(choice, out int selectedIndex) && displayToAbility.TryGetValue(selectedIndex, out var selectedAbility))
         {
-            var selectedAbility = unlocked[abilityIndex - 1];
             var hpBeforeAbility = enemy.HP;
             var result = _abilities.UseAbility(player, enemy, selectedAbility.Type, _statusEffects, _display);
             
@@ -466,9 +491,10 @@ public class CombatEngine : ICombatEngine
         }
     }
     
-    private void PerformEnemyTurn(Player player, Enemy enemy)
+    private void PerformEnemyTurn(Player player, Enemy enemy, bool stunOverride = false)
     {
-        if (_statusEffects.HasEffect(enemy, StatusEffect.Stun))
+        // Fix #167: accept pre-ProcessTurnStart stun state so 1-turn stuns are honoured
+        if (stunOverride || _statusEffects.HasEffect(enemy, StatusEffect.Stun))
         {
             _display.ShowCombatMessage($"{enemy.Name} is stunned and cannot act!");
             return;
@@ -547,7 +573,8 @@ public class CombatEngine : ICombatEngine
         }
         else
         {
-            var enemyDmg = Math.Max(1, enemy.Attack - player.Defense);
+            var playerEffDef = player.Defense + _statusEffects.GetStatModifier(player, "Defense"); // Fix #197: +50% DEF from Fortified via stat modifier system
+            var enemyDmg = Math.Max(1, enemy.Attack - playerEffDef);
 
             // Apply charge multiplier (3x)
             if (wasCharged)
@@ -565,9 +592,6 @@ public class CombatEngine : ICombatEngine
             // BattleHardened skill passive — 5% damage reduction (matches skill description)
             if (player.Skills.IsUnlocked(Skill.BattleHardened))
                 enemyDmg = Math.Max(1, (int)(enemyDmg * 0.95f));
-            // Bug #106: Fortified status effect â reduce incoming damage by 3 (minimum 1)
-            if (_statusEffects.HasEffect(player, StatusEffect.Fortified))
-                enemyDmg = Math.Max(1, enemyDmg - 3);
             player.TakeDamage(enemyDmg);
             _stats.DamageTaken += enemyDmg;
             _display.ShowCombatMessage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmg));
@@ -587,7 +611,7 @@ public class CombatEngine : ICombatEngine
                 var heal = (int)(enemyDmg * enemy.LifestealPercent);
                 if (heal > 0)
                 {
-                    _display.ShowCombatMessage("The Vampire Lord channels stolen life force, growing stronger!");
+                    _display.ShowCombatMessage($"{enemy.Name} channels stolen life force, growing stronger!"); // Fix #206
                     enemy.HP = Math.Min(enemy.MaxHP, enemy.HP + heal);
                     _display.ShowCombatMessage($"{enemy.Name} drains {heal} HP!");
                 }
@@ -608,8 +632,10 @@ public class CombatEngine : ICombatEngine
         }
         if (loot.Item != null)
         {
-            player.Inventory.Add(loot.Item);
-            _display.ShowLootDrop(loot.Item);
+            if (!_inventoryManager.TryAddItem(player, loot.Item))
+                _display.ShowMessage($"Your inventory is full — {loot.Item.Name} was lost.");
+            else
+                _display.ShowLootDrop(loot.Item);
         }
         
         player.AddXP(enemy.XPValue);
@@ -618,11 +644,12 @@ public class CombatEngine : ICombatEngine
         _events?.RaiseCombatEnded(player, enemy, CombatResult.Won);
         _statusEffects.Clear(player);
         _statusEffects.Clear(enemy);
+        player.ActiveEffects.Clear();
     }
     
     private void CheckLevelUp(Player player)
     {
-        while (player.XP / 100 + 1 > player.Level)
+        while (player.Level < MaxLevel && player.XP / 100 + 1 > player.Level)
         {
             player.LevelUp();
             _display.ShowMessage($"LEVEL UP! You are now level {player.Level}!");

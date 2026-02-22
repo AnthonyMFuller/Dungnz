@@ -73,4 +73,10 @@ public class Item
     /// Used by <see cref="Dungnz.Systems.InventoryManager"/> to enforce the per-player weight limit.
     /// </summary>
     public int Weight { get; set; } = 1;
+
+    /// <summary>
+    /// Creates a shallow copy of this item with all properties duplicated. Used when adding
+    /// crafted items to inventory to avoid sharing references.
+    /// </summary>
+    public Item Clone() => (Item)MemberwiseClone();
 }

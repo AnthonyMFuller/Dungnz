@@ -52,14 +52,16 @@ public class StatusEffectManagerTests
     }
 
     [Fact]
-    public void Stun_EnemyCannotAct_WhenStunned()
+    public void Stun_ProcessTurnStart_DecrementsStunDuration()
     {
+        // Stun message is now handled by CombatEngine; ProcessTurnStart only decrements duration.
         var (mgr, display, _, enemy) = MakeFixture();
-        mgr.Apply(enemy, StatusEffect.Stun, 1);
+        mgr.Apply(enemy, StatusEffect.Stun, 2);
 
         mgr.ProcessTurnStart(enemy);
 
-        display.CombatMessages.Should().Contain(m => m.Contains("stunned"));
+        mgr.GetActiveEffects(enemy).First(e => e.Effect == StatusEffect.Stun).RemainingTurns.Should().Be(1);
+        display.CombatMessages.Should().NotContain(m => m.Contains("stunned") && m.Contains("cannot act"));
     }
 
     [Fact]

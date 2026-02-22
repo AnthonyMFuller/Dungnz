@@ -13,11 +13,19 @@ public class NarrationService
         _rng = rng ?? new Random();
     }
 
-    /// <summary>Picks a random entry from the pool.</summary>
-    public string Pick(string[] pool) => pool[_rng.Next(pool.Length)];
+    /// <summary>Picks a random entry from the pool. Returns empty string if pool is null or empty.</summary>
+    public string Pick(string[] pool)
+    {
+        if (pool == null || pool.Length == 0) return string.Empty;
+        return pool[_rng.Next(pool.Length)];
+    }
 
-    /// <summary>Picks a random entry, formatting with the provided args.</summary>
-    public string Pick(string[] pool, params object[] args) => string.Format(Pick(pool), args);
+    /// <summary>Picks a random entry, formatting with the provided args. Returns empty string if pool is null or empty.</summary>
+    public string Pick(string[] pool, params object[] args)
+    {
+        if (pool == null || pool.Length == 0) return string.Empty;
+        return string.Format(Pick(pool), args);
+    }
 
     /// <summary>Returns a random entry from a weighted pool. Higher weight = more likely.</summary>
     public string PickWeighted(IEnumerable<(string text, int weight)> pool)

@@ -65,7 +65,7 @@ public class StatusEffectManager
                     else if (target is Enemy e3) { e3.HP = Math.Min(e3.MaxHP, e3.HP + 4); _display.ShowCombatMessage($"{GetTargetName(target)} regenerates 4 HP!"); }
                     break;
                 case StatusEffect.Stun:
-                    _display.ShowCombatMessage($"{GetTargetName(target)} is stunned and cannot act!");
+                    // Stun message is emitted by CombatEngine before ProcessTurnStart is called.
                     break;
             }
             ae.RemainingTurns--;
