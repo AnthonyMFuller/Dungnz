@@ -10755,3 +10755,37 @@ We will expand the game from a "tech demo" scope (10 items) to a "playable game"
 ## Technical Decisions
 *   **No new mechanics yet:** Stackable items and Two-handed weapons are deferred to Phase 2 to keep this expansion purely data-driven (mostly).
 *   **Strict Name Limits:** All item names must be <= 30 chars to avoid complete UI rewrite.
+### 2026-02-22: Map UI/UX improvement — added to content expansion plan
+**By:** Coulson
+**What:** Updated the Content Expansion Plan to include a "Phase 4: Map & UI Overhaul" focused on tactical readability and visual polish. This phase integrates strict fog-of-war, room type color coding, and corridor rendering.
+
+**Why:** Anthony requested map UI/UX improvements. The current map is monochromatic and lacks connectivity indicators, making navigation difficult and unrewarding.
+
+#### New Phase 4: Map & UI Overhaul
+*Prerequisites: Phase 1 (Core Content)*
+
+**1. Room Model Updates** (Hill)
+- Add `bool IsExplored` to `Room` class (true if visited OR seen from adjacent room).
+- Add `RoomType` metadata to support color mapping.
+
+**2. Enhanced Map Rendering** (Hill)
+- **Corridors:** Implement 2-pass rendering to draw `│` and `─` connectors between rooms based on `Exits`.
+- **Fog of War:**
+  - Hide completely unknown rooms.
+  - Render "seen" (adjacent to visited) rooms as `[ ]` (Gray).
+  - Render visited rooms with full state symbols.
+- **Colors:** Apply `Systems.ColorCodes` based on room state/type.
+
+**3. Map Symbols & Legibility** (Barton)
+- **Standardized Legend:**
+  - `[*]` **You** (Bright White)
+  - `[!]` **Enemy** (Red) / `[B]` **Boss** (Bold Red)
+  - `[E]` **Exit** (Green)
+  - `[~]` **Hazard** (Yellow - Dark/Scorched/Flooded)
+  - `[?]` **Lootable** (Cyan - Visited but has items/shrine)
+  - `[+]` **Cleared** (Dark Gray - Empty & safe)
+  - `[ ]` **Unexplored** (Dim Gray - Adjacent edge)
+
+**4. UI Polish** (Hill)
+- Add a "Depth/Floor" indicator to the map header.
+- Ensure legend prints dynamically based on what is actually visible on the current map.

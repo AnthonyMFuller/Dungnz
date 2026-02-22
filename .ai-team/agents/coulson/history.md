@@ -944,3 +944,11 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 - **Technical constraints:** No new mechanics (stacking/durability) in this phase to reduce risk.
 **Artifacts:** Created `.ai-team/decisions/inbox/coulson-content-expansion-plan.md`
 
+
+### 2026-02-22: Map UI/UX Redesign
+**Outcome:** Added "Phase 4: Map & UI Overhaul" to the content expansion plan.
+**Key Decisions:**
+- **Tactical Map:** Accepted Barton's proposal for a map that answers "Where am I? Where is danger? Where next?".
+- **Fog of War:** Adopted Hill's strict fog-of-war model (hide unknown, show adjacent as `[ ]`, show visited fully).
+- **Visuals:** Approved interleaved corridor rendering (`│`, `─`) and color-coded room types (Red=Enemy, Yellow=Hazard, Cyan=Loot).
+**Artifacts:** Created `.ai-team/decisions/inbox/coulson-map-amendment.md`.
