@@ -504,3 +504,93 @@
 
 📌 Team update (2026-02-22): Process alignment protocol established — all code changes require a branch and PR before any commits. See decisions.md for full protocol. No exceptions.
 
+
+---
+
+## 2026-02-22: Phase 1 UI/UX Combat Prep — RunStats Confirmation & Systems Analysis
+
+**Context:** Team implementing UI/UX improvement plan. Hill building Phase 0 shared infrastructure. Barton's task: confirm RunStats type exists, analyze Phase 1 combat items, implement systems-side changes that don't depend on Phase 0.
+
+**Task 1: RunStats Confirmation**
+
+✅ **CONFIRMED:** `RunStats` already exists in codebase.
+- **Location:** `Systems/RunStats.cs`
+- **Type:** Class (not record)
+- **Fully-qualified name:** `Dungnz.Systems.RunStats`
+- **Shape:** 10 properties including FloorsVisited, TurnsTaken, EnemiesDefeated, DamageDealt, DamageTaken, GoldCollected, ItemsFound, FinalLevel, Won, TimeElapsed
+- **Already integrated:** Used by GameLoop, CombatEngine, AchievementSystem
+- **Documentation created:** `.ai-team/decisions/inbox/barton-runstats.md` — confirms Hill can reference existing type for `ShowVictory`/`ShowGameOver` display methods
+
+**Task 2: Phase 1 Analysis**
+
+Created comprehensive analysis at `.ai-team/plans/barton-phase1-analysis.md` covering all 10 Phase 1 items:
+
+**Items Analyzed:**
+1. HP/MP bars (Hill owns, display-only)
+2. Status effects in header (needs Phase 0 signature change)
+3. Elite/enrage tags (needs ShowCombatEntryFlags method)
+4. Colorize turn log (✅ **can implement now**)
+5. Level-up menu (needs ShowLevelUpChoice method)
+6. XP progress bar (post-combat message ✅ **can implement now**, stats bar is Hill's)
+7. Ability confirmation (✅ **can implement now**)
+8. Immunity feedback (✅ **can implement now**)
+9. Achievement notifications (⚠️ **blocked** — needs GameEvents.OnAchievementUnlocked event)
+10. Combat start banner (needs ShowCombatStart method)
+
+**Task 3: Phase 1 Implementation (No Phase 0 Dependencies)**
+
+Branch: `squad/272-phase1-combat-prep`
+
+**Implemented:**
+
+1. **Colorized Turn Log (1.4)** — `Engine/CombatEngine.cs:ShowRecentTurns()`
+   - Crits: Bold+Yellow "CRIT" + BrightRed damage
+   - Dodges: Gray "dodged"
+   - Damage: BrightRed numbers
+   - Status effects: Green tags
+
+2. **Post-Combat XP Progress (1.6)** — `Engine/CombatEngine.cs:HandleLootAndXP()`
+   - After XP award, shows: "You gained 25 XP. (Total: 75/100 to next level)"
+   - XP threshold formula: `100 * player.Level`
+
+3. **Ability Confirmation Feedback (1.7)** — `Engine/CombatEngine.cs:HandleAbilityMenu()`
+   - On successful activation: `[Power Strike activated — 2× damage this turn]` (Bold+Yellow)
+   - Uses existing ability.Name and ability.Description
+
+4. **Status Effect Immunity Feedback (1.8)** — `Systems/StatusEffectManager.cs:Apply()`
+   - When enemy.IsImmuneToEffects blocks application: "Stone Golem is immune to status effects!"
+   - IDisplayService already injected in constructor
+
+**Not Implemented:**
+- **Achievement notifications (1.9):** Blocked — requires `GameEvents.OnAchievementUnlocked` event which doesn't exist. Achievement system currently only evaluates at run-end, not mid-combat. Needs architectural work (GameEvents extension + incremental evaluation). Beyond Barton's scope—requires Coulson design + Romanoff test wiring.
+
+**Build Status:** ✅ Build succeeded (0 errors, 22 XML doc warnings—pre-existing).
+
+**Changes Summary:**
+- `Engine/CombatEngine.cs`: Colorized turn log, ability confirmation, XP progress message
+- `Systems/StatusEffectManager.cs`: Immunity feedback message
+- `.ai-team/decisions/inbox/barton-runstats.md`: RunStats confirmation for Hill
+- `.ai-team/plans/barton-phase1-analysis.md`: Full Phase 1 systems analysis
+
+**Architecture Notes:**
+- All changes use existing `ColorCodes` constants and `ShowMessage` methods—no display interface changes
+- Turn log colorization happens at display time (in ShowRecentTurns), not at CombatTurn creation—keeps data model clean
+- XP progress message computes threshold inline (`100 * player.Level`)—no new data fields needed
+- Ability confirmation uses ability metadata from AbilityManager—single source of truth
+- Status effect immunity feedback leverages existing DisplayService injection in StatusEffectManager
+
+**Phase 1 Status:**
+- ✅ **4 items implemented** (1.4, 1.6 post-combat, 1.7, 1.8)
+- ⏸ **5 items blocked on Phase 0** (1.1, 1.2, 1.3, 1.5, 1.10) — waiting for Hill's RenderBar, ShowCombatEntryFlags, ShowLevelUpChoice, ShowCombatStart methods
+- ⚠️ **1 item blocked on architecture** (1.9) — needs GameEvents extension
+
+**Next Steps:**
+1. Open PR for `squad/272-phase1-combat-prep` — 4 implemented items ready for review
+2. Wait for Hill's Phase 0 merge before implementing 1.2, 1.3, 1.5, 1.10 call-site wiring
+3. Coordinate with Coulson on 1.9 achievement event design (deferred to future phase)
+
+**Design Principles Applied:**
+- **Immediate value:** Deliver combat feel improvements now without waiting for infrastructure dependencies
+- **Separation of concerns:** Systems produce data (turn type, damage, effect), display layer renders it
+- **No new data structures:** All enhancements use existing CombatTurn, Player, Enemy, StatusEffect models
+- **Progressive colorization:** Start with turn log, expand to other combat messages as Phase 0 enables

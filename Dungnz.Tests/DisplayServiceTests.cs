@@ -85,7 +85,7 @@ public class DisplayServiceTests : IDisposable
         var svc = new ConsoleDisplayService();
         var player = new Player { HP = 80, MaxHP = 100 };
         var enemy = new Enemy_Stub(30, 5, 2, 10);
-        svc.ShowCombatStatus(player, enemy);
+        svc.ShowCombatStatus(player, enemy, Array.Empty<ActiveEffect>(), Array.Empty<ActiveEffect>());
         Output.Should().Contain("80/100").And.Contain("30");
     }
 

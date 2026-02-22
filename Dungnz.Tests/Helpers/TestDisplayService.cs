@@ -50,7 +50,9 @@ public class TestDisplayService : IDisplayService
         AllOutput.Add($"combatmsg:{plain}");
     }
 
-    public void ShowCombatStatus(Player player, Enemy enemy)
+    public void ShowCombatStatus(Player player, Enemy enemy, 
+        IReadOnlyList<ActiveEffect> playerEffects, 
+        IReadOnlyList<ActiveEffect> enemyEffects)
     {
         AllOutput.Add($"status:{player.HP}/{player.MaxHP} vs {enemy.HP}/{enemy.MaxHP}");
     }
@@ -120,4 +122,12 @@ public class TestDisplayService : IDisplayService
     public PlayerClassDefinition SelectClass(PrestigeData? prestige) => SelectClassResult;
     public void ShowShop(IEnumerable<(Item item, int price)> stock, int playerGold) { AllOutput.Add($"shop:{playerGold}g"); }
     public void ShowCraftRecipe(string recipeName, Item result, List<(string ingredient, bool playerHasIt)> ingredients) { AllOutput.Add($"recipe:{recipeName}"); }
+    
+    public void ShowCombatStart(Enemy enemy) { AllOutput.Add($"combat_start:{enemy.Name}"); }
+    public void ShowCombatEntryFlags(Enemy enemy) { AllOutput.Add($"combat_flags:{enemy.Name}"); }
+    public void ShowLevelUpChoice(Player player) { AllOutput.Add($"levelup_choice:{player.Level}"); }
+    public void ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant) { AllOutput.Add($"floor_banner:{floor}/{maxFloor}"); }
+    public void ShowEnemyDetail(Enemy enemy) { AllOutput.Add($"enemy_detail:{enemy.Name}"); }
+    public void ShowVictory(Player player, int floorsCleared, RunStats stats) { AllOutput.Add($"victory:{player.Name}"); }
+    public void ShowGameOver(Player player, string? killedBy, RunStats stats) { AllOutput.Add($"gameover:{killedBy ?? "unknown"}"); }
 }

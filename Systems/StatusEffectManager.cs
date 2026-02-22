@@ -30,7 +30,11 @@ public class StatusEffectManager
     public void Apply(object target, StatusEffect effect, int duration)
     {
         // Stone Golem and other immune enemies cannot receive effects
-        if (target is Enemy enemy && enemy.IsImmuneToEffects) return;
+        if (target is Enemy enemy && enemy.IsImmuneToEffects)
+        {
+            _display.ShowMessage($"{enemy.Name} is immune to status effects!");
+            return;
+        }
 
         if (!_activeEffects.ContainsKey(target)) _activeEffects[target] = new List<ActiveEffect>();
         var existing = _activeEffects[target].FirstOrDefault(e => e.Effect == effect);
