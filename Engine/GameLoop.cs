@@ -30,6 +30,11 @@ public class GameLoop
     private readonly NarrationService _narration = new();
     private int _currentFloor = 1;
 
+    /// <summary>Set to <see langword="true"/> when the run ends (win, death) to break the Run() loop.</summary>
+    private bool _gameOver = false;
+
+    private const int FinalFloor = 5;
+
     private static readonly string[] _postCombatLines =
     {
         "The room falls silent. Nothing moves but the dust settling around the fallen {0}.",
@@ -199,6 +204,7 @@ public class GameLoop
                     _display.ShowError("Unknown command. Type HELP for commands.");
                     break;
             }
+            if (_gameOver) break;
         }
     }
 
@@ -268,14 +274,14 @@ public class GameLoop
                 HazardType.Fire => 7,
                 _ => 0
             };
+            _player.TakeDamage(dmg);
             string hazardMsg = _currentRoom.Hazard switch
             {
                 HazardType.Spike  => _narration.Pick(_spikeHazardLines, dmg),
                 HazardType.Poison => _narration.Pick(_poisonHazardLines, dmg),
                 HazardType.Fire   => _narration.Pick(_fireHazardLines, dmg),
-                _                 => $"⚠ You trigger a hazard and take {dmg} damage! HP: {_player.HP}/{_player.MaxHP}"
+                _                 => $"You trigger a hazard and take {dmg} damage!"
             };
-            _player.TakeDamage(dmg);
             _display.ShowMessage($"⚠ {hazardMsg} HP: {_player.HP}/{_player.MaxHP}");
             if (_player.HP <= 0)
             {
@@ -287,6 +293,7 @@ public class GameLoop
                 _stats.Display(_display.ShowMessage);
                 RunStats.AppendToHistory(_stats, won: false);
                 PrestigeSystem.RecordRun(won: false);
+                _gameOver = true;
                 return;
             }
         }
@@ -313,6 +320,7 @@ public class GameLoop
                 _stats.Display(_display.ShowMessage);
                 RunStats.AppendToHistory(_stats, won: false);
                 PrestigeSystem.RecordRun(won: false);
+                _gameOver = true;
                 return;
             }
             
@@ -328,8 +336,7 @@ public class GameLoop
         // Check win/floor condition
         if (_currentRoom.IsExit && _currentRoom.Enemy == null)
         {
-            const int finalFloor = 5;
-            if (_currentFloor >= finalFloor)
+            if (_currentFloor >= FinalFloor)
             {
                 _stats.FinalLevel = _player.Level;
                 _stats.TimeElapsed = DateTime.UtcNow - _runStart;
@@ -346,6 +353,7 @@ public class GameLoop
                     foreach (var a in unlocked)
                         _display.ShowMessage($"🏆 {a.Name} — {a.Description}");
                 }
+                _gameOver = true;
                 return;
             }
             else
@@ -528,6 +536,8 @@ public class GameLoop
         _player = state.Player;
         _currentRoom = state.CurrentRoom;
         _currentFloor = state.CurrentFloor;
+        _runStart = DateTime.UtcNow;
+        _stats = new RunStats();
         _display.ShowMessage($"Loaded save '{saveName}'.");
         _display.ShowRoom(_currentRoom);
     }
@@ -553,8 +563,7 @@ public class GameLoop
             return;
         }
 
-        const int finalFloor = 5;
-        if (_currentFloor >= finalFloor)
+        if (_currentFloor >= FinalFloor)
         {
             _stats.FinalLevel = _player.Level;
             _stats.TimeElapsed = DateTime.UtcNow - _runStart;
@@ -571,6 +580,7 @@ public class GameLoop
                 foreach (var a in unlocked)
                     _display.ShowMessage($"\U0001f3c6 {a.Name} \u2014 {a.Description}");
             }
+            _gameOver = true;
             return;
         }
 
@@ -613,7 +623,7 @@ public class GameLoop
 
         _display.ShowMessage("=== Shrine ===");
         _display.ShowMessage($"[H]eal fully       - 30g  (Your gold: {_player.Gold})");
-        _display.ShowMessage("[B]less            - 50g  (+2 ATK/DEF for 5 rooms)");
+        _display.ShowMessage("[B]less            - 50g  (+2 ATK/DEF permanently)");
         _display.ShowMessage("[F]ortify          - 75g  (MaxHP +10, permanent)");
         _display.ShowMessage("[M]editate         - 75g  (MaxMana +10, permanent)");
         _display.ShowMessage("[L]eave");
