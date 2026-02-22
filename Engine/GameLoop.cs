@@ -27,7 +27,42 @@ public class GameLoop
     private readonly AchievementSystem _achievements = new();
     private readonly EquipmentManager _equipment;
     private readonly InventoryManager _inventoryManager;
+    private readonly NarrationService _narration = new();
     private int _currentFloor = 1;
+
+    private static readonly string[] _postCombatLines =
+    {
+        "The room falls silent. Nothing moves but the dust settling around the fallen {0}.",
+        "You stand over {0}'s body, catching your breath. The dungeon feels momentarily less hostile.",
+        "The echo of combat fades. {0} is dead. You survived.",
+        "Silence returns. {0} won't be troubling anyone else."
+    };
+
+    private static readonly string[] _spikeHazardLines =
+    {
+        "Pressure plates click underfoot. Razor spikes lance from the walls! ({0} damage)",
+        "The floor drops a half-inch — then a volley of iron spikes erupts from the stone! ({0} damage)"
+    };
+
+    private static readonly string[] _poisonHazardLines =
+    {
+        "A hissing sound, then green mist floods the chamber. Your lungs burn! ({0} damage)",
+        "Pressure triggers a vial of alchemical poison — the fumes are immediate and agonising. ({0} damage)"
+    };
+
+    private static readonly string[] _fireHazardLines =
+    {
+        "A gout of magical fire roars from runes on the floor — you're caught in the blast! ({0} damage)",
+        "The floor glows red. Then the fire trap activates with a WHOMP that singes your eyebrows. ({0} damage)"
+    };
+
+    private static readonly string[] _lootLines =
+    {
+        "Every bit helps down here.",
+        "You tuck it away carefully.",
+        "Useful. Or sellable. Either way, it's yours now.",
+        "Into the pack it goes."
+    };
 
     /// <summary>
     /// Creates a new <see cref="GameLoop"/> wired to the specified display, combat,
@@ -215,6 +250,11 @@ public class GameLoop
         // Move to new room
         var previousRoom = _currentRoom;
         _currentRoom = nextRoom;
+
+        // ~15% chance of a brief atmospheric flavor message before the room description
+        if (_narration.Chance(0.15))
+            _display.ShowMessage(_narration.Pick(AmbientEvents.ForFloor(_currentFloor)));
+
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
         _events?.RaiseRoomEntered(_player, _currentRoom, previousRoom);
@@ -228,14 +268,15 @@ public class GameLoop
                 HazardType.Fire => 7,
                 _ => 0
             };
-            var hazardName = _currentRoom.Hazard switch {
-                HazardType.Spike => "hidden spikes",
-                HazardType.Poison => "poison gas",
-                HazardType.Fire => "a fire trap",
-                _ => "a hazard"
+            string hazardMsg = _currentRoom.Hazard switch
+            {
+                HazardType.Spike  => _narration.Pick(_spikeHazardLines, dmg),
+                HazardType.Poison => _narration.Pick(_poisonHazardLines, dmg),
+                HazardType.Fire   => _narration.Pick(_fireHazardLines, dmg),
+                _                 => $"⚠ You trigger a hazard and take {dmg} damage! HP: {_player.HP}/{_player.MaxHP}"
             };
             _player.TakeDamage(dmg);
-            _display.ShowMessage($"⚠ You trigger {hazardName} and take {dmg} damage! HP: {_player.HP}/{_player.MaxHP}");
+            _display.ShowMessage($"⚠ {hazardMsg} HP: {_player.HP}/{_player.MaxHP}");
             if (_player.HP <= 0)
             {
                 _display.ShowMessage("You died from a trap! Game over.");
@@ -276,8 +317,10 @@ public class GameLoop
             
             if (result == CombatResult.Won)
             {
+                var enemyName = _currentRoom.Enemy!.Name;
                 _currentRoom.Enemy = null;
                 _stats.EnemiesDefeated++;
+                _display.ShowMessage(_narration.Pick(_postCombatLines, enemyName));
             }
         }
 
@@ -287,11 +330,11 @@ public class GameLoop
             const int finalFloor = 5;
             if (_currentFloor >= finalFloor)
             {
-                _display.ShowMessage("You escaped the dungeon! You win!");
-                _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
-                if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
                 _stats.FinalLevel = _player.Level;
                 _stats.TimeElapsed = DateTime.UtcNow - _runStart;
+                ShowVictory();
+                _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
+                if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
                 _stats.Display(_display.ShowMessage);
                 RunStats.AppendToHistory(_stats, won: true);
                 PrestigeSystem.RecordRun(won: true);
@@ -387,6 +430,7 @@ public class GameLoop
             return;
         }
         _display.ShowMessage($"You take the {item.Name}.");
+        _display.ShowMessage(_narration.Pick(_lootLines));
         _events?.RaiseItemPicked(_player, item, _currentRoom);
         _stats.ItemsFound++;
         if (item.Type == ItemType.Gold) _stats.GoldCollected += item.StatModifier;
@@ -511,11 +555,11 @@ public class GameLoop
         const int finalFloor = 5;
         if (_currentFloor >= finalFloor)
         {
-            _display.ShowMessage("You escaped the dungeon! You win!");
-            _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
-            if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
             _stats.FinalLevel = _player.Level;
             _stats.TimeElapsed = DateTime.UtcNow - _runStart;
+            ShowVictory();
+            _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
+            if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
             _stats.Display(_display.ShowMessage);
             RunStats.AppendToHistory(_stats, won: true);
             PrestigeSystem.RecordRun(won: true);
@@ -748,6 +792,48 @@ public class GameLoop
             var won = r.Won ? "✅" : "💀";
             _display.ShowMessage($"#{i + 1} {won} Level {r.FinalLevel} | {r.EnemiesDefeated} enemies | {r.GoldCollected}g");
         }
+    }
+
+    /// <summary>
+    /// Displays the class-aware victory banner and run summary when the player wins the run.
+    /// Must be called after <see cref="RunStats.FinalLevel"/> and <see cref="RunStats.TimeElapsed"/>
+    /// have been set so that the summary line reflects accurate stats.
+    /// </summary>
+    private void ShowVictory()
+    {
+        _display.ShowMessage("");
+        _display.ShowMessage("╔═══════════════════════════════════════╗");
+        _display.ShowMessage("║           VICTORY                     ║");
+        _display.ShowMessage("╚═══════════════════════════════════════╝");
+        _display.ShowMessage("");
+
+        var classLines = _player.Class switch
+        {
+            PlayerClass.Warrior => new[] {
+                "Bloodied but unbroken, you drag yourself into the light.",
+                "The dungeon threw its worst at you. You threw it back harder.",
+                "Bards will argue about the details. The scars are real."
+            },
+            PlayerClass.Mage => new[] {
+                "The arcane energies sustaining you flicker out as daylight hits your face.",
+                "You survived on wit and magic where steel alone would have failed.",
+                "The dungeon underestimated you. They always underestimate the scholar."
+            },
+            PlayerClass.Rogue => new[] {
+                "You slip out of the dungeon like a shadow — pockets heavy, conscience light.",
+                "Nobody saw you go in. Nobody saw you come out. Perfect.",
+                "The dungeon never stood a chance against someone who cheats this well."
+            },
+            _ => new[] { "You escaped the dungeon alive. That's more than most can say." }
+        };
+
+        foreach (var line in classLines)
+            _display.ShowMessage(line);
+
+        _display.ShowMessage("");
+        _display.ShowMessage($"You conquered all {_currentFloor} floors and defeated the dungeon boss.");
+        _display.ShowMessage($"Final level: {_player.Level} | Gold: {_player.Gold}");
+        _display.ShowMessage("");
     }
 
 }
