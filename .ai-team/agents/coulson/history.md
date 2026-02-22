@@ -624,3 +624,5 @@ WI-1 (ColorCodes) → WI-2 (DisplayService) → WI-3 (Core Stats)
 **Outcome:** Comprehensive UI/UX improvement plan addressing all display gaps identified in analysis. Clean architectural approach with zero breaking changes. Ready for team review and implementation.
 
 — planned by Coulson with analysis from Hill, Barton
+
+📌 Team directive (2026-02-22): No commits directly to master. All work goes on a feature branch (squad/{slug}), even without a linked issue. Reaches master only via PR. — captured by Scribe after UI/UX commit landed on master directly.

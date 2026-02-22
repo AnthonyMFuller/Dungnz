@@ -473,3 +473,5 @@
 - Estimated effort: 4-6 hours (Enemy refactor 2h, Room 1h, Inventory 1h, testing 2h)
 
 — decided by Hill (from Encapsulation Audit findings)
+
+📌 Team directive (2026-02-22): No commits directly to master. Always create a feature branch (squad/{slug}) before starting work, even without a linked issue. — captured after UI/UX work committed to master directly.
