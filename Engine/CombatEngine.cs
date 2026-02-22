@@ -121,7 +121,15 @@ public class CombatEngine : ICombatEngine
     public CombatResult RunCombat(Player player, Enemy enemy, RunStats? stats = null)
     {
         if (stats != null) _stats = stats;
-        _display.ShowCombat(_narration.Pick(EnemyNarration.GetIntros(enemy.Name), enemy.Name));
+        if (enemy is DungeonBoss)
+        {
+            foreach (var line in BossNarration.GetIntro(enemy.Name))
+                _display.ShowCombat(line);
+        }
+        else
+        {
+            _display.ShowCombat(_narration.Pick(EnemyNarration.GetIntros(enemy.Name), enemy.Name));
+        }
         _turnLog.Clear();
 
         // Ambush: Mimic gets a free first strike before the player can act
@@ -151,7 +159,7 @@ public class CombatEngine : ICombatEngine
             
             if (enemy.HP <= 0)
             {
-                _display.ShowCombat(_narration.Pick(EnemyNarration.GetDeaths(enemy.Name), enemy.Name));
+                ShowDeathNarration(enemy);
                 HandleLootAndXP(player, enemy);
                 return CombatResult.Won;
             }
@@ -198,7 +206,7 @@ public class CombatEngine : ICombatEngine
                 {
                     if (enemy.HP <= 0)
                     {
-                        _display.ShowCombat(_narration.Pick(EnemyNarration.GetDeaths(enemy.Name), enemy.Name));
+                        ShowDeathNarration(enemy);
                         HandleLootAndXP(player, enemy);
                         return CombatResult.Won;
                     }
@@ -214,7 +222,7 @@ public class CombatEngine : ICombatEngine
                 
                 if (enemy.HP <= 0)
                 {
-                    _display.ShowCombat(_narration.Pick(EnemyNarration.GetDeaths(enemy.Name), enemy.Name));
+                    ShowDeathNarration(enemy);
                     HandleLootAndXP(player, enemy);
                     return CombatResult.Won;
                 }
@@ -534,6 +542,14 @@ public class CombatEngine : ICombatEngine
         }
     }
     
+    private void ShowDeathNarration(Enemy enemy)
+    {
+        if (enemy is DungeonBoss)
+            _display.ShowCombat(BossNarration.GetDeath(enemy.Name));
+        else
+            _display.ShowCombat(_narration.Pick(EnemyNarration.GetDeaths(enemy.Name), enemy.Name));
+    }
+
     private bool RollDodge(int defense)
     {
         var dodgeChance = defense / (double)(defense + 20);
