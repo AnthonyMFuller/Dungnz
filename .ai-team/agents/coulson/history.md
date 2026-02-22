@@ -1026,3 +1026,36 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 **Notes:**
 - Recovered documentation for "Map UI/UX Redesign" and "Issue Creation" which was temporarily lost/reverted during merge conflicts.
 - Verified all features on master.
+
+## Learnings
+
+### 2026-02-22: Retrospective — Content Expansion Complete
+
+**Process Outcomes:**
+- **Shift testing left:** Unanimous team feedback that balance tests, validation tests, and systems specs must precede implementation, not follow it. Phase 2 (8 enemies) shipped before Phase 3 (balance tests), leading to the Lich King being tuned blind.
+- **Systems before content:** Phase 4 (map UI overhaul) came after Phase 2 (content), creating retrofit work for Barton. Future roadmaps must sequence: primitives → content → polish.
+- **Guardrails before work:** Pre-push hook was added after two direct master commits. Repo setup (hooks, branch protection, CI) must be complete before agent work begins.
+- **Escalate stalls immediately:** gemini-3-pro-preview stalled twice with no handoff. Established 20-minute stall policy: no diff output for 20 minutes = immediate reassignment.
+
+**What Worked:**
+- ItemConfig validation made the 40-item expansion safe and mechanical
+- Combat balance suite caught the Lich King imbalance before production (100% win rate at Lvl 12 → HP 120→170, ATK 28→38)
+- Map UI overhaul (fog of war, corridor connectors, legend, color coding) landed cleanly due to structural rendering decisions
+- 416 tests total, up from 359 — strong coverage velocity
+
+**Action Items Committed:**
+1. Define balance budget upfront (damage ranges, HP tiers, win rate boundaries) before enemy content phases
+2. Establish "no enemy ships without balance test" policy — balance coverage gates content
+3. Enforce "systems spec before content spec" for future roadmaps
+4. Create repo setup checklist (hooks, CI, linting, branch protection) — must be complete before agent work begins
+5. Agent stall policy: 20-minute diff timeout triggers immediate escalation and reassignment
+
+**Decisions Created:**
+- `.ai-team/decisions/inbox/coulson-retro-balance-budget.md` — Define balance budget before enemy content
+- `.ai-team/decisions/inbox/coulson-retro-stall-policy.md` — Agent stall escalation policy
+- `.ai-team/decisions/inbox/coulson-retro-systems-before-content.md` — Systems spec before content spec
+- `.ai-team/decisions/inbox/coulson-retro-repo-setup-checklist.md` — Repo setup checklist before agent work
+- `.ai-team/decisions/inbox/coulson-retro-no-enemy-without-balance-test.md` — No enemy ships without balance test
+
+**Bottom Line:**
+Strong execution velocity and clean architecture decisions. Primary improvement: sequencing. Tests, specs, and systems must precede implementation, not follow it. All four phases complete, 416 tests passing, no regressions. Team is aligned on process improvements for next cycle.
