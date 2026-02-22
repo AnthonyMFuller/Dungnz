@@ -58,6 +58,9 @@ public class CraftingSystem
     /// </returns>
     public static (bool success, string message) TryCraft(Player player, CraftingRecipe recipe)
     {
+        if (player == null) throw new ArgumentNullException(nameof(player));
+        if (recipe == null) return (false, "Unknown recipe.");
+
         // Check inventory capacity
         if (player.Inventory.Count >= Player.MaxInventorySize)
             return (false, "Your inventory is full.");
@@ -91,7 +94,8 @@ public class CraftingSystem
             player.SpendGold(recipe.GoldCost);
 
         // Add result
-        player.Inventory.Add(recipe.Result);
+        // Add result — clone so the shared recipe definition is never mutated
+        player.Inventory.Add(recipe.Result.Clone());
         return (true, $"You crafted {recipe.Result.Name}!");
     }
 }

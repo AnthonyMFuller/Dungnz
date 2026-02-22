@@ -32,7 +32,7 @@ public class Merchant
     {
         var items = new List<MerchantItem>
         {
-            new() { Item = new Item { Name="Health Potion", Type=ItemType.Consumable, HealAmount=30, Description="A murky red liquid in a stoppered vial. Smells terrible. Works anyway." }, Price = 25 },
+            new() { Item = new Item { Name="Health Potion", Type=ItemType.Consumable, HealAmount=20, Description="A murky red liquid in a stoppered vial. Smells terrible. Works anyway." }, Price = 25 },
             new() { Item = new Item { Name="Mana Potion", Type=ItemType.Consumable, HealAmount=0, ManaRestore=20, Description="Faintly luminescent blue liquid. The arcane energy inside makes your fingers tingle." }, Price = 20 },
             new() { Item = new Item { Name="Iron Sword", Type=ItemType.Weapon, AttackBonus=4, IsEquippable=true, Description="A battered blade, nicked from hard use. It has drawn blood before and will draw it again." }, Price = 50 },
             new() { Item = new Item { Name="Iron Shield", Type=ItemType.Armor, DefenseBonus=4, IsEquippable=true, Description="Dented iron, dull as old pewter. It has stopped worse than whatever is down here." }, Price = 45 },

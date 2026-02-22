@@ -640,7 +640,6 @@ public class CombatEngine : ICombatEngine
                 _display.ShowLootDrop(loot.Item);
         }
         }
-        }
         
         player.AddXP(enemy.XPValue);
         _display.ShowMessage($"You gained {enemy.XPValue} XP. (Total: {player.XP})");

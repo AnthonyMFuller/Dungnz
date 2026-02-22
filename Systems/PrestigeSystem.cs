@@ -7,6 +7,9 @@ using System.Text.Json;
 /// </summary>
 public class PrestigeData
 {
+    /// <summary>Data format version. Used to detect corrupt or stale prestige files.</summary>
+    public int Version { get; set; } = 1;
+
     /// <summary>Gets or sets the player's current prestige level, incremented every three wins.</summary>
     public int PrestigeLevel { get; set; } = 0;
 
@@ -52,7 +55,13 @@ public static class PrestigeSystem
         {
             if (!File.Exists(ActualSavePath)) return new PrestigeData();
             var json = File.ReadAllText(ActualSavePath);
-            return JsonSerializer.Deserialize<PrestigeData>(json) ?? new PrestigeData();
+            var data = JsonSerializer.Deserialize<PrestigeData>(json) ?? new PrestigeData();
+            if (data.Version != 1)
+            {
+                Console.WriteLine($"[PrestigeSystem] Warning: prestige file version {data.Version} is unexpected. Resetting to defaults.");
+                return new PrestigeData();
+            }
+            return data;
         }
         catch { return new PrestigeData(); }
     }

@@ -8,9 +8,6 @@ using Dungnz.Display;
 /// </summary>
 public class InventoryManager
 {
-    /// <summary>Maximum number of item slots a player's inventory may hold.</summary>
-    public const int MaxSlots = 10;
-
     /// <summary>Maximum total carry weight a player's inventory may hold.</summary>
     public const int MaxWeight = 50;
 
@@ -25,7 +22,7 @@ public class InventoryManager
 
     /// <summary>
     /// Attempts to add <paramref name="item"/> to the player's inventory,
-    /// respecting both the slot limit (<see cref="MaxSlots"/>) and the weight limit (<see cref="MaxWeight"/>).
+    /// respecting both the slot limit (<see cref="Player.MaxInventorySize"/>) and the weight limit (<see cref="MaxWeight"/>).
     /// </summary>
     /// <param name="player">The player receiving the item.</param>
     /// <param name="item">The item to add.</param>
@@ -79,22 +76,22 @@ public class InventoryManager
 
     /// <summary>
     /// Determines whether the player's inventory has reached the maximum slot count
-    /// (<see cref="MaxSlots"/>).
+    /// (<see cref="Player.MaxInventorySize"/>).
     /// </summary>
     /// <param name="player">The player to check.</param>
     /// <returns><see langword="true"/> if the inventory is at or above the slot limit; otherwise <see langword="false"/>.</returns>
-    public bool IsFull(Player player) => player.Inventory.Count >= MaxSlots;
+    public bool IsFull(Player player) => player.Inventory.Count >= Player.MaxInventorySize;
 
     /// <summary>
     /// Moves an item matching <paramref name="itemName"/> from the <paramref name="room"/>
-    /// into the player's inventory.
+    /// into the player's inventory, enforcing slot and weight limits.
     /// </summary>
     /// <param name="player">The player picking up the item.</param>
     /// <param name="room">The room the player is currently in.</param>
     /// <param name="itemName">The name (or partial name) of the item to take.</param>
     /// <returns>
     /// <see langword="true"/> if the item was found and moved;
-    /// <see langword="false"/> if the item was not found in the room.
+    /// <see langword="false"/> if the item was not found or inventory is full.
     /// </returns>
     public bool TakeItem(Player player, Room room, string itemName)
     {
@@ -102,6 +99,19 @@ public class InventoryManager
         if (item == null)
         {
             _display.ShowError($"No '{itemName}' here.");
+            return false;
+        }
+
+        if (IsFull(player))
+        {
+            _display.ShowError("Your inventory is full.");
+            return false;
+        }
+
+        var currentWeight = player.Inventory.Sum(i => i.Weight);
+        if (currentWeight + item.Weight > MaxWeight)
+        {
+            _display.ShowError("That item is too heavy to carry.");
             return false;
         }
 

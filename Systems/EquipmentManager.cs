@@ -44,6 +44,24 @@ public class EquipmentManager
             return;
         }
 
+        // Weight check: equipping swaps new item into equipped slot and old item back into
+        // inventory. If the old item is heavier than the new one, inventory weight increases.
+        var currentlyEquipped = item.Type switch
+        {
+            ItemType.Weapon    => player.EquippedWeapon,
+            ItemType.Armor     => player.EquippedArmor,
+            ItemType.Accessory => player.EquippedAccessory,
+            _                  => null
+        };
+        int inventoryWeightAfterSwap = player.Inventory.Sum(i => i.Weight)
+            - item.Weight
+            + (currentlyEquipped?.Weight ?? 0);
+        if (inventoryWeightAfterSwap > InventoryManager.MaxWeight)
+        {
+            _display.ShowError($"Equipping {item.Name} would exceed your carry weight limit.");
+            return;
+        }
+
         try
         {
             player.EquipItem(item);
@@ -69,10 +87,7 @@ public class EquipmentManager
         try
         {
             var item = player.UnequipItem(slotName);
-            if (item == null)
-                _display.ShowMessage($"The {slotName} slot is already empty.");
-            else
-                _display.ShowMessage($"You unequip {item.Name} and return it to your inventory.");
+            _display.ShowMessage($"You unequip {item!.Name} and return it to your inventory.");
         }
         catch (InvalidOperationException ex)
         {

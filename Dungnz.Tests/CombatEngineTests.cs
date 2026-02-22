@@ -143,7 +143,7 @@ public class CombatEngineTests
 
         engine.RunCombat(player, enemy);
 
-        player.Inventory.Should().Contain(sword);
+        player.Inventory.Should().Contain(i => i.Name == sword.Name);
     }
 
     [Fact]
