@@ -960,3 +960,10 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 - **Issues:** Created issues #233-#248 covering Code Prep, Content Injection, Verification, and Map Overhaul.
 - **Assignment:** Assigned issues to Hill (Code/Map), Barton (Content/Color), and Romanoff (Testing).
 **Artifacts:** Created `.ai-team/decisions/inbox/coulson-issues-created.md`.
+
+### 2026-02-22: Structural enforcement of no-direct-master rule
+**Outcome:** Merged PR #252 implementing pre-push hook block on master.
+**Key Decisions:**
+- **Pre-push Hook:** Added scripts/pre-push to block direct pushes to master.
+- **Scribe Charter:** Updated to explicitly require branch+PR workflow.
+**Artifacts:** Created .ai-team/decisions/inbox/coulson-no-direct-master-enforcement.md.
