@@ -7,8 +7,13 @@ public partial class Player
     /// starting stat modifiers, the mana pool size, and passive combat traits.
     /// </summary>
     public PlayerClass Class { get; set; } = PlayerClass.Warrior;
+    /// <summary>
+    /// Gets or sets the additional flat dodge chance granted by the player's class passive
+    /// (e.g. +0.10 for Rogue). Added on top of the defense-based dodge formula during combat.
+    /// </summary>
     public float ClassDodgeBonus { get; set; }
 
+    /// <summary>Gets or sets the player's current hit points. Clamped to [0, <see cref="MaxHP"/>] by combat methods.</summary>
     public int HP { get; set; } = 100;
 
     /// <summary>

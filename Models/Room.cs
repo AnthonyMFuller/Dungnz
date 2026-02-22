@@ -1,10 +1,34 @@
 namespace Dungnz.Models;
 
 /// <summary>Describes the environmental flavour of a dungeon room.</summary>
-public enum RoomType { Standard, Dark, Mossy, Flooded, Scorched, Ancient }
+public enum RoomType
+{
+    /// <summary>Represents a standard, unremarkable dungeon room.</summary>
+    Standard,
+    /// <summary>Represents a darkened room with limited visibility.</summary>
+    Dark,
+    /// <summary>Represents a damp, moss-covered room.</summary>
+    Mossy,
+    /// <summary>Represents a partially flooded room with standing water.</summary>
+    Flooded,
+    /// <summary>Represents a scorched room blackened by fire or magic.</summary>
+    Scorched,
+    /// <summary>Represents an ancient room lined with old stonework and relics.</summary>
+    Ancient
+}
 
 /// <summary>Describes environmental hazards that can damage the player on entry.</summary>
-public enum HazardType { None, Spike, Poison, Fire }
+public enum HazardType
+{
+    /// <summary>Represents the absence of a hazard.</summary>
+    None,
+    /// <summary>Represents a spike trap that deals physical damage on entry.</summary>
+    Spike,
+    /// <summary>Represents a poison cloud that poisons the player on entry.</summary>
+    Poison,
+    /// <summary>Represents a fire hazard that deals burn damage on entry.</summary>
+    Fire
+}
 
 /// <summary>
 /// Represents a single room in the dungeon. Holds navigational connections to adjacent rooms,

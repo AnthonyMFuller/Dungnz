@@ -23,6 +23,9 @@ public class Skeleton : Enemy
     [System.Text.Json.Serialization.JsonConstructor]
     private Skeleton() { }
 
+    /// <summary>Initialises a Skeleton with the given stats and item configuration, or falls back to hard-coded defaults.</summary>
+    /// <param name="stats">External stats from config, or <see langword="null"/> to use defaults.</param>
+    /// <param name="itemConfig">Item configuration used to source loot drops, or <see langword="null"/> to use inline fallbacks.</param>
     public Skeleton(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         if (stats != null)

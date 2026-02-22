@@ -1,16 +1,29 @@
 namespace Dungnz.Systems;
 using Dungnz.Models;
 
+/// <summary>Defines a single crafting recipe, specifying the required ingredients, gold cost, and the item produced.</summary>
 public class CraftingRecipe
 {
+    /// <summary>Gets the display name of this recipe.</summary>
     public string Name { get; init; } = "";
+
+    /// <summary>Gets the list of ingredients required, each as a tuple of item name and required count.</summary>
     public List<(string ItemName, int Count)> Ingredients { get; init; } = new();
+
+    /// <summary>Gets the item that is produced when this recipe is crafted successfully.</summary>
     public Item Result { get; init; } = null!;
+
+    /// <summary>Gets the gold cost that must be paid in addition to providing the required ingredients.</summary>
     public int GoldCost { get; init; }
 }
 
+/// <summary>
+/// Provides the static list of available crafting recipes and the logic for attempting
+/// to craft an item from a player's inventory and gold.
+/// </summary>
 public class CraftingSystem
 {
+    /// <summary>Gets all crafting recipes available in the game.</summary>
     public static readonly List<CraftingRecipe> Recipes = new()
     {
         new CraftingRecipe {
@@ -33,6 +46,16 @@ public class CraftingSystem
         },
     };
 
+    /// <summary>
+    /// Attempts to craft the given recipe for the specified player, consuming ingredients
+    /// and gold from the player's inventory if all requirements are met.
+    /// </summary>
+    /// <param name="player">The player attempting the craft.</param>
+    /// <param name="recipe">The recipe to craft.</param>
+    /// <returns>
+    /// A tuple of <c>success</c> (<see langword="true"/> if crafting succeeded) and a
+    /// <c>message</c> describing the outcome or the reason for failure.
+    /// </returns>
     public static (bool success, string message) TryCraft(Player player, CraftingRecipe recipe)
     {
         // Check inventory capacity
