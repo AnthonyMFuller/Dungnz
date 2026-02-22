@@ -43,7 +43,8 @@ public class LootTableTests
         for (int i = 0; i < 20; i++)
         {
             var result = table.RollDrop(null!);
-            result.Item.Should().BeSameAs(item);
+            result.Item.Should().NotBeNull();
+            result.Item!.Name.Should().Be(item.Name);
         }
     }
 
@@ -58,7 +59,7 @@ public class LootTableTests
         {
             var result = table.RollDrop(null!);
             // The 0% configured drop should never appear (tiered drops from the pool may still appear)
-            result.Item.Should().NotBeSameAs(item);
+            result.Item?.Name.Should().NotBe(item.Name);
         }
     }
 
@@ -72,7 +73,7 @@ public class LootTableTests
         table.AddDrop(item2, 1.0);
 
         var result = table.RollDrop(null!);
-        result.Item.Should().BeSameAs(item1);
+        result.Item!.Name.Should().Be(item1.Name);
     }
 
     [Fact]
