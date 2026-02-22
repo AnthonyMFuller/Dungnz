@@ -187,7 +187,7 @@ public class ConsoleDisplayService : IDisplayService
                 var countTag    = count > 1 ? $" ×{count}" : string.Empty;
                 var statLabel   = PrimaryStatLabel(item);
                 var nameField   = $"{icon} {ColorizeItemName(item)}{equippedTag}{countTag}";
-                var namePlain   = $"  {icon} {item.Name}{(isEquipped ? " [E]" : "")}{countTag}";
+                var namePlain   = $"  {icon} {TruncateName(item.Name)}{(isEquipped ? " [E]" : "")}{countTag}";
                 int namePad     = Math.Max(0, 30 - namePlain.Length);
                 var statColored = $"{Systems.ColorCodes.Cyan}{statLabel}{Systems.ColorCodes.Reset}";
                 int statPad     = Math.Max(0, 20 - statLabel.Length);
@@ -206,7 +206,7 @@ public class ConsoleDisplayService : IDisplayService
     {
         var icon = ItemTypeIcon(item.Type);
         var stat = PrimaryStatLabel(item);
-        var namePad = new string(' ', Math.Max(0, 34 - (item.Name?.Length ?? 0)));
+        var namePad = new string(' ', Math.Max(0, 34 - (TruncateName(item.Name).Length)));
         var header = isElite ? $"✦ {Systems.ColorCodes.Yellow}ELITE LOOT DROP{Systems.ColorCodes.Reset}" : "✦ LOOT DROP";
         var tierLabel = item.Tier switch
         {
@@ -268,7 +268,7 @@ public class ConsoleDisplayService : IDisplayService
         const int W = 36;
         var border     = new string('═', W);
         var icon       = ItemTypeIcon(item.Type);
-        var titleName  = item.Name.ToUpperInvariant();
+        var titleName  = TruncateName(item.Name).ToUpperInvariant();
         var titleColor = item.Tier switch
         {
             ItemTier.Uncommon => Systems.ColorCodes.Green,
@@ -350,7 +350,7 @@ public class ConsoleDisplayService : IDisplayService
 
             // ANSI-safe padding: compute lengths from plain (uncolored) strings
             var l1Lead  = $"  [{idx}] {icon} ";
-            var pad1    = new string(' ', Math.Max(0, Inner - l1Lead.Length - item.Name.Length - tierBadge.Length - 2));
+            var pad1    = new string(' ', Math.Max(0, Inner - l1Lead.Length - TruncateName(item.Name).Length - tierBadge.Length - 2));
             var l2Lead  = $"  {stat}  •  {item.Weight} wt";
             var priceStr = $"{price} gold";
             // "💰 " → U+1F4B0 is a surrogate pair (2 C# chars) + space = 3 chars
@@ -377,7 +377,7 @@ public class ConsoleDisplayService : IDisplayService
 
         // Plain-text lengths for ANSI-safe padding
         var hdrPlain    = $"  \U0001F528 RECIPE: {recipeName}";  // 🔨 = U+1F528, surrogate pair
-        var resultPlain = $"  Result: {icon} {result.Name}";
+        var resultPlain = $"  Result: {icon} {TruncateName(result.Name)}";
         var statPlain   = $"  Stats:  {stat}";
         var ingHeader   = "  Ingredients:";
 
@@ -426,10 +426,22 @@ public class ConsoleDisplayService : IDisplayService
     /// <summary>
     /// Returns the item's name wrapped in the ANSI color appropriate for its tier:
     /// BrightWhite (Common), Green (Uncommon), BrightCyan (Rare).
+    /// Truncates the name via TruncateName before applying color codes.
     /// </summary>
     private static string ColorizeItemName(Item item)
     {
-        return Systems.ColorCodes.ColorizeItemName(item.Name, item.Tier);
+        return Systems.ColorCodes.ColorizeItemName(TruncateName(item.Name), item.Tier);
+    }
+
+    /// <summary>
+    /// Safety guard for the display layer: returns the name as-is if 30 chars or fewer,
+    /// otherwise truncates to the first 27 characters and appends "...".
+    /// </summary>
+    private static string TruncateName(string? name, int maxLength = 30)
+    {
+        if (string.IsNullOrEmpty(name) || name.Length <= maxLength)
+            return name ?? string.Empty;
+        return name[..27] + "...";
     }
 
     /// <summary>
@@ -651,13 +663,13 @@ public class ConsoleDisplayService : IDisplayService
         // Current item
         Console.Write("║ Current:  ");
         if (oldItem != null)
-            Console.Write($"{oldItem.Name,-28}");
+            Console.Write($"{TruncateName(oldItem.Name),-28}");
         else
             Console.Write($"{"(none)",-28}");
         Console.WriteLine("║");
         
         // New item
-        Console.WriteLine($"║ New:      {newItem.Name,-28}║");
+        Console.WriteLine($"║ New:      {TruncateName(newItem.Name),-28}║");
         Console.WriteLine("╠═══════════════════════════════════════╣");
         
         // Calculate deltas
