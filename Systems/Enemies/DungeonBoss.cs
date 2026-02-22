@@ -86,7 +86,8 @@ public class DungeonBoss : Enemy
                 Name = "Boss Key",
                 Type = ItemType.Consumable,
                 Description = "Proof of your victory.",
-                StatModifier = 0
+                StatModifier = 0,
+                Tier = ItemTier.Rare
             }, 1.0);
         }
     }

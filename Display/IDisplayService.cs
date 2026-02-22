@@ -57,10 +57,35 @@ public interface IDisplayService
     void ShowInventory(Player player);
 
     /// <summary>
-    /// Announces that an enemy dropped an item after being defeated.
+    /// Announces that an enemy dropped an item after being defeated, rendered as a
+    /// box-drawn card with type icon and primary stat.
     /// </summary>
     /// <param name="item">The item that was dropped.</param>
     void ShowLootDrop(Item item);
+
+    /// <summary>
+    /// Displays a gold pickup notification showing the amount gained and the new running total.
+    /// </summary>
+    /// <param name="amount">The amount of gold picked up.</param>
+    /// <param name="newTotal">The player's gold total after the pickup.</param>
+    void ShowGoldPickup(int amount, int newTotal);
+
+    /// <summary>
+    /// Displays a pickup confirmation for an item, including its primary stat and
+    /// the player's updated slot and weight usage.
+    /// </summary>
+    /// <param name="item">The item that was picked up.</param>
+    /// <param name="slotsCurrent">Items currently in inventory after pickup.</param>
+    /// <param name="slotsMax">Maximum inventory slot capacity.</param>
+    /// <param name="weightCurrent">Total carry weight after pickup.</param>
+    /// <param name="weightMax">Maximum carry weight.</param>
+    void ShowItemPickup(Item item, int slotsCurrent, int slotsMax, int weightCurrent, int weightMax);
+
+    /// <summary>
+    /// Renders a full stat card for an item when the player uses the EXAMINE command.
+    /// </summary>
+    /// <param name="item">The item to examine.</param>
+    void ShowItemDetail(Item item);
 
     /// <summary>
     /// Displays an informational message to the player (e.g. narrative text,

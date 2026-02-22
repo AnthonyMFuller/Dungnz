@@ -662,7 +662,7 @@ public class CombatEngine : ICombatEngine
         {
             player.AddGold(loot.Gold);
             _stats.GoldCollected += loot.Gold;
-            _display.ShowMessage($"You found {loot.Gold} gold!");
+            _display.ShowGoldPickup(loot.Gold, player.Gold);
         }
         if (loot.Item != null)
         {

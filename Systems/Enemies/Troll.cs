@@ -64,7 +64,8 @@ public class Troll : Enemy
                 Name = "Troll Hide", 
                 Type = ItemType.Armor, 
                 DefenseBonus = 4, 
-                Description = "Thick, resilient leather." 
+                Description = "Thick, resilient leather.",
+                Tier = ItemTier.Common
             }, 0.4);
         }
     }
