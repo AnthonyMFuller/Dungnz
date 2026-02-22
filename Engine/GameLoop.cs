@@ -275,18 +275,11 @@ public class GameLoop
                 HazardType.Fire   => _narration.Pick(_fireHazardLines, dmg),
                 _                 => $"⚠ You trigger a hazard and take {dmg} damage! HP: {_player.HP}/{_player.MaxHP}"
             };
-            string hazardMsg = _currentRoom.Hazard switch
-            {
-                HazardType.Spike  => _narration.Pick(_spikeHazardLines, dmg),
-                HazardType.Poison => _narration.Pick(_poisonHazardLines, dmg),
-                HazardType.Fire   => _narration.Pick(_fireHazardLines, dmg),
-                _                 => $"You trigger {hazardName} and take {dmg} damage!"
-            };
             _player.TakeDamage(dmg);
             _display.ShowMessage($"⚠ {hazardMsg} HP: {_player.HP}/{_player.MaxHP}");
             if (_player.HP <= 0)
             {
-                _display.ShowMessage("You died from a trap! Game over.");
+                ShowGameOver(byTrap: true);
                 _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
                 if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
                 _stats.FinalLevel = _player.Level;
@@ -307,11 +300,12 @@ public class GameLoop
         // Check for enemy encounter
         if (_currentRoom.Enemy != null && _currentRoom.Enemy.HP > 0)
         {
+            var killerName = _currentRoom.Enemy.Name;
             var result = _combat.RunCombat(_player, _currentRoom.Enemy, _stats);
             
             if (result == CombatResult.PlayerDied)
             {
-                _display.ShowMessage("You have been defeated. Game over.");
+                ShowGameOver(killedBy: killerName);
                 _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
                 if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
                 _stats.FinalLevel = _player.Level;
@@ -782,6 +776,75 @@ public class GameLoop
         var (success, msg) = CraftingSystem.TryCraft(_player, recipe);
         if (success) _display.ShowMessage(msg);
         else _display.ShowError(msg);
+    }
+
+    /// <summary>
+    /// Displays a contextual death banner, a floor-specific opening line, a cause-of-death
+    /// line (trap or named killer), and a class-specific epitaph. Stats and achievements
+    /// should be displayed by the caller after this method returns.
+    /// </summary>
+    /// <param name="killedBy">Name of the enemy that killed the player, or <see langword="null"/> for non-combat deaths.</param>
+    /// <param name="byTrap">
+    /// <see langword="true"/> when the player was killed by an environmental hazard rather than a monster.
+    /// </param>
+    private void ShowGameOver(string? killedBy = null, bool byTrap = false)
+    {
+        _display.ShowMessage("");
+        _display.ShowMessage("╔═══════════════════════════════════════╗");
+        _display.ShowMessage("║           YOU HAVE FALLEN             ║");
+        _display.ShowMessage("╚═══════════════════════════════════════╝");
+        _display.ShowMessage("");
+
+        string floorLine = _currentFloor switch {
+            1 => "Your adventure ends here on Floor 1, cut short before it truly began.",
+            2 => "The dead of Floor 2 claim another victim for their silent halls.",
+            3 => "The trolls of Floor 3 have eaten better adventurers than you. Probably.",
+            4 => "Floor 4 takes you into the shadow. You won't be coming back.",
+            5 => "You made it to the Dragon's Lair — and that's where your story ends.",
+            _ => "The dungeon claims you."
+        };
+        _display.ShowMessage(floorLine);
+
+        if (byTrap)
+        {
+            var trapLines = new[] {
+                "The dungeon itself killed you — not by a monster's hand, but cold stone and cruel engineering.",
+                "A trap. Not a worthy end, perhaps. But the dungeon doesn't care about worthy.",
+                "Killed by the architecture. The dungeon laughs, if dungeons can laugh."
+            };
+            _display.ShowMessage(_narration.Pick(trapLines));
+        }
+        else if (killedBy != null)
+        {
+            var combatLines = new[] {
+                $"In the end, {killedBy} proved too much.",
+                $"You fought well. {killedBy} fought better.",
+                $"{killedBy} stands over your fallen form, victorious.",
+                $"The last thing you see is {killedBy}, and it is not merciful."
+            };
+            _display.ShowMessage(_narration.Pick(combatLines));
+        }
+
+        var epitaph = _player.Class switch {
+            PlayerClass.Warrior => _narration.Pick(new[] {
+                "A warrior's death, at least — fighting to the last breath.",
+                "You went down swinging. That counts for something.",
+                "Warriors die. Good warriors die well. You tried."
+            }),
+            PlayerClass.Mage => _narration.Pick(new[] {
+                "All that knowledge, and the dungeon didn't care.",
+                "The arcane arts could not save you here. A humbling lesson.",
+                "Perhaps the next mage who reads these runes will fare better."
+            }),
+            PlayerClass.Rogue => _narration.Pick(new[] {
+                "Every rogue's luck runs out eventually. Yours ran out here.",
+                "You played the odds. The odds won.",
+                "Even the best thief can't steal back a lost life."
+            }),
+            _ => "The dungeon remembers no one."
+        };
+        _display.ShowMessage(epitaph);
+        _display.ShowMessage("");
     }
 
     private void HandleLeaderboard()
