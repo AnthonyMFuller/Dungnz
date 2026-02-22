@@ -92,6 +92,15 @@ public class AbilityManager
     }
     
     /// <summary>
+    /// Clears all active cooldowns. Should be called at the start of each new combat so
+    /// cooldowns from a previous fight do not carry over.
+    /// </summary>
+    public void ResetCooldowns()
+    {
+        _cooldowns.Clear();
+    }
+
+    /// <summary>
     /// Decrements the remaining cooldown for every ability currently on cooldown by one turn.
     /// Should be called once at the end of each player turn.
     /// </summary>

@@ -261,13 +261,14 @@ public class CombatEngineTests
         player.HP.Should().Be(100);
     }
 
-    // ── Bug #106 ─────────────────────────────────────────────────────────────
+    // ── Bug #197 ─────────────────────────────────────────────────────────────
 
     [Fact]
-    public void Bug106_Fortified_ReducesIncomingDamageByThree()
+    public void Bug197_Fortified_AppliesFiftyPercentDefBonus()
     {
-        // Enemy atk=10, player def=0 -> normally 10; Fortified -> 7
-        var player = new Player { HP = 100, MaxHP = 100, Attack = 1, Defense = 0 };
+        // Player Defense=4, Fortified adds +50% DEF = +2, effective DEF=6
+        // Enemy atk=10 → damage = Max(1, 10-6) = 4 → player HP = 96
+        var player = new Player { HP = 100, MaxHP = 100, Attack = 1, Defense = 4 };
         var enemy = new Enemy_Stub(hp: 999, atk: 10, def: 0, xp: 1);
         var display = new FakeDisplayService();
         var statusEffects = new StatusEffectManager(display);
@@ -276,7 +277,7 @@ public class CombatEngineTests
         var rng = new ControlledRandom(defaultDouble: 0.1, 0.95, 0.95, 0.95, 0.95);
         var engine = new CombatEngine(display, input, rng, statusEffects: statusEffects);
         engine.RunCombat(player, enemy);
-        player.HP.Should().Be(93); // 100 - 7
+        player.HP.Should().Be(96); // 100 - (10 - (4 + 4/2)) = 100 - 4
     }
 
     // ── Bug #107 ─────────────────────────────────────────────────────────────
