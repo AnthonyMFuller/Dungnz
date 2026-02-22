@@ -9763,3 +9763,11 @@ These ideas are cool but out of scope:
 **Barton (Systems Dev):** ✅ UX flow validated  
 
 **Pending:** Anthony approval before implementation begins
+### 2026-02-22: User directive — no direct commits to master
+
+**By:** Anthony (via Copilot)
+**What:** ALL changes must go through feature/hotfix branches and PRs. Commits must NEVER be made directly to `master`. No exceptions. This applies to ALL squad members, including the coordinator.
+**Why:** User request — captured after second violation in same session. Direct master commits bypass review gates and break the team's PR workflow.
+
+---
+
