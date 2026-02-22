@@ -924,3 +924,13 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 **Learnings:**
 - **Code Review:** Always check for commented-out tests in PRs claiming high test coverage. 337 tests passed, but critical new features were skipped.
 - **Maintenance:** Updated test signatures to match implementation changes immediately prevents technical debt.
+
+### 2026-02-22: PR #232 Merge (Loot Display Phase 3)
+**Outcome:** Merged PR #232 (Inventory Grouping, Elite Loot, Weight Warnings)
+**Key Decisions Validated:**
+- **Loot Display:** `ShowInventory` now groups identical items and highlights elite drops, enhancing readability.
+- **Player Feedback:** Weight warnings implemented at >80% capacity to prevent accidental overfill. "Vs Equipped" comparisons provide immediate upgrade context.
+- **Architecture:** Display layer remains decoupled; only necessary context (`Player`, `isElite`) is passed.
+**Learnings:**
+- **Boundary Testing:** Verified exact boundary conditions (e.g., >80% vs >=80%) crucial for UX consistency.
+- **Display Logic:** Grouping logic in `ShowInventory` is acceptable in the display layer as it doesn't mutate game state.

@@ -10519,3 +10519,172 @@ The team established a "no direct commits to master" rule after the process viol
 
 ### Applies To
 All team members, including the coordinator and Anthony (repository owner).
+
+---
+
+## PR #230 Final Verdict
+**Date:** 2026-02-22  
+**Author:** Coulson (Lead)  
+**Status:** APPROVED and MERGED
+
+### Scope
+Phase 1 + Phase 2.0 combined delivery: core models, DisplayService foundation, initial loot display.
+
+### Findings
+- ✅ Tests pass: 321/321
+- ✅ Display logic properly separated in DisplayService
+- ✅ New methods (`ShowLootDrop`, `ShowItemPickup`, `ShowItemDetail`) follow established pattern
+- ✅ ItemTier enum clean and integrated into Item model and LootTable
+- ✅ Color usage consistent (Cyan for stats, Yellow for loot)
+- ✅ Backward compatibility maintained via default `ItemTier.Common`
+
+### Decision
+**Approved.** Master branch ready for Phase 2.1 build.
+
+---
+
+## PR #231 Verdict
+**Date:** 2026-02-22  
+**Author:** Coulson (Lead)  
+**Status:** APPROVED and MERGED
+
+### Scope
+Phase 2.1–2.4: tier-colored display system (`ShowShop`, `ShowCraftRecipe`, centralized tier colorization).
+
+### Findings
+- ✅ Code Quality: `ShowShop` and `ShowCraftRecipe` implementations clean, properly decoupled via DTOs/tuples
+- ✅ Tests: Found `ShopDisplayTests` and `CraftRecipeDisplayTests` commented out in `TierDisplayTests.cs`
+  - Action taken: Uncommented and updated to match new `IDisplayService` signatures
+  - All tests now passing
+- ✅ Design: Tier colorization logic centralized in `ColorizeItemName` as requested
+- ✅ Merge: Squashed and merged to master
+
+### Decision
+**Approved.** Master ready for Phase 3 work.
+
+---
+
+## PR #232 Verdict: Phase 3 Loot Polish
+**Date:** 2026-02-22  
+**Author:** Coulson (Lead)  
+**Status:** APPROVED and MERGED
+
+### Scope
+Phase 3 loot UX polish: consumable grouping, elite loot callout + tier labels, weight warning, "new best" indicator.
+
+### Findings
+- ✅ Tests: 359/359 tests passed (100% green, up from 342)
+- ✅ Implementation Quality:
+  - `ShowInventory` grouping logic is purely presentational and effective
+  - `ShowLootDrop` correctly handles elite status and "new best" comparisons
+  - `ShowItemPickup` weight warnings respect `>80%` threshold (confirmed by tests)
+  - `IDisplayService` changes consistent with plan
+- ✅ Architecture:
+  - No coupling violations; display logic remains in `DisplayService`
+  - Game loop and combat engine only pass necessary data (`isElite`, `player`)
+
+### Learnings
+- Use of `Action` delegates for display injection remains robust
+- Pattern emerging: passing `Player` context to display methods for feature richness acceptable but warrants monitoring
+- Current state: display methods only read properties (no mutations), no logic leakage observed
+
+### Decision
+**Approved.** Squashed and merged to master. Commit: 4b839bf
+
+---
+
+## Decision: ShowLootDrop `player` Parameter is Required, Not Optional
+**Date:** 2026-02-22  
+**Author:** Hill (Developer)  
+**Status:** Informational
+
+### Technical Detail
+```csharp
+void ShowLootDrop(Item item, Player player, bool isElite = false)
+```
+
+The `player` parameter has **no default value**. This was intentional.
+
+### Rationale
+- All loot drop scenarios have player in scope
+- Making `player` optional would allow callers to silently skip "new best" comparison
+- Forcing explicit required parameter prevents accidental null comparisons and regressions
+- Consistency with Phase 3 design: feature richness requires player context
+
+---
+
+## Decision: Color Code Substitution (BrightYellow/BrightGreen Missing)
+**Date:** 2026-02-22  
+**Author:** Hill (Developer)  
+**Status:** Informational
+
+### Issue
+Phase 3 spec referenced `ColorCodes.BrightYellow` and `ColorCodes.BrightGreen` for elite and Uncommon tier labels. Neither constant exists in `ColorCodes.cs`.
+
+### Resolution
+- **Elite header:** Used `ColorCodes.Yellow` (closest equivalent)
+- **Uncommon tier label:** Used `ColorCodes.Green`
+- Pre-existing constants maintain color scheme consistency
+
+### Rationale
+Avoid breaking builds with missing references. If BrightYellow/BrightGreen are added to ColorCodes in future, they can be substituted back.
+
+---
+
+## Decision: Phase 3 Loot UX — Test Coverage Scope
+**Date:** 2026-02-22  
+**Author:** Romanoff (Tester)  
+**Status:** Informational
+
+### Scope
+Test coverage for Phase 3 looting UX features. New test file: `Dungnz.Tests/Phase3LootPolishTests.cs` with 17 unit tests, all passing.
+
+### Coverage Details
+
+#### 3.1 — Consumable Grouping (ShowInventory)
+- Three identical potions → `×3` badge ✅
+- Different items stay separate (name-only grouping) ✅
+- Single item → no multiplier badge ✅
+- Empty inventory → clean output (edge case) ✅
+
+#### 3.2 — Elite Loot Callout (ShowLootDrop)
+- `isElite: true` → "ELITE LOOT DROP" header ✅
+- `isElite: false` → "LOOT DROP" without "ELITE" ✅
+- Uncommon item → `[Uncommon]` badge ✅
+- Rare item → `[Rare]` badge ✅
+- Common item → `[Common]` badge ✅
+
+#### 3.3 — Weight Warning (ShowItemPickup)
+- 85% weight → ⚠️ + "nearly full" ✅
+- 79% weight → no warning ✅
+- Exactly 80% weight → no warning (boundary: strict `>` not `>=`) ✅
+- 82% weight → confirms threshold behavior ✅
+
+#### 3.4 — New Best Indicator (ShowLootDrop)
+- Attack +5 vs +2 equipped → "+3 vs equipped" (delta + improvement) ✅
+- Attack +5 vs +5 equipped → no indicator (no improvement) ✅
+- Attack +3 vs +5 equipped → no indicator (downgrade) ✅
+- No weapon equipped → no indicator (null guard) ✅
+
+### Key Design Observations
+
+1. **Exact 80% boundary is exclusive**
+   - Uses `weightCurrent > weightMax * 0.8` (strict greater-than)
+   - Exactly 80% does NOT trigger warning
+   - Tests document both sides of boundary
+
+2. **"New best" only for positive delta, weapons, equipped context**
+   - Non-weapon items don't trigger comparison
+   - Zero-delta and negative-delta skip indicator
+   - Requires weapon equipped
+
+3. **Grouping is name-based**
+   - Items with same Name but different stats would group
+   - Acceptable for Phase 3; potential edge case for future (crafted upgrades)
+
+### Infrastructure Fix
+Pre-existing `CS1744` error in `TierDisplayTests.cs` line 390 (FluentAssertions `ContainAny` named-arg conflict) fixed during test work. Removed redundant `because:` argument. This was blocking all 342 tests from compiling.
+
+### Verdict
+Phase 3 test coverage complete. All 17 tests pass. Hill's implementation confirmed correct against all specified Phase 3 behaviors.
+
