@@ -1115,3 +1115,61 @@ Strong execution velocity and clean architecture decisions. Primary improvement:
 - **Parallel development with merge:** Barton and Hill worked simultaneously on compatible changes — clean merge demonstrated good separation of concerns
 - **Stub implementations:** Phase 0 PRs include method stubs rather than full implementations — enables parallel Phase 1 work without blocking
 - **Incremental delivery:** Systems-side changes (colorization, feedback messages) delivered immediately without waiting for display infrastructure
+
+---
+
+## 2026-02-23: PR Review & Merge — Phase 1 Call-Site Wiring + Display Tests
+
+**Context:** Two PRs ready for review and merge:
+- PR #302: Barton's Phase 1 call-site wiring + Phase 3 systems integration (squad/273-phase1-display)
+- PR #301: Romanoff's Phase 0/Phase 1 display test coverage (squad/301-phase1-tests)
+
+**PR #302 Review — Phase 1 Call-Site Wiring + Phase 3 Systems Integration**
+- **Branch:** squad/273-phase1-display
+- **Changes Verified:**
+  1. ✅ CombatEngine.RunCombat() — ShowCombatStart, ShowCombatEntryFlags calls at combat entry (lines 230-231)
+  2. ✅ CombatEngine.CheckLevelUp() — ShowLevelUpChoice replaces inline level-up menu (line 702)
+  3. ✅ GameLoop.ShowGameOver() — replaced 58-line inline method with _display.ShowGameOver call (line 852)
+  4. ✅ GameLoop.ShowVictory() — replaced 35-line inline method with _display.ShowVictory call (line 879)
+  5. ✅ GameLoop.HandleShrine() — added cyan-colored shrine banner (line 638)
+  6. ✅ DisplayService.ShowLootDrop() — expanded comparison logic for armor and accessories (lines 229-247)
+- **Build:** ✅ 0 errors, 24 pre-existing XML warnings
+- **Tests:** ✅ All tests pass (exit code 0)
+- **Merged:** Squash-merged #302 @ 17a5fb3, deleted branch squad/273-phase1-display
+
+**PR #301 Review — Phase 0/Phase 1 Display Test Coverage**
+- **Branch:** squad/301-phase1-tests
+- **File Added:** Dungnz.Tests/Phase1DisplayTests.cs (378 lines)
+- **Test Categories:**
+  1. ANSI-safe padding tests (ShowLootDrop, ShowInventory with colorized tier labels)
+  2. Colorized turn log tests (critical hits, misses, status effects, immunity feedback)
+  3. XP progress message tests (gain amount, total, next level threshold)
+  4. Ability confirmation tests (activation message contains ability name)
+- **Merge Conflicts:** ✅ None — clean merge with master after #302 landed
+- **Build:** ✅ 0 errors, 24 pre-existing XML warnings
+- **Tests:** ✅ All tests pass (exit code 0)
+- **Merged:** Squash-merged #301 @ 0985693, deleted branch squad/301-phase1-tests
+
+**Final Master State:**
+- **Commit:** master @ 0985693
+- **Build:** ✅ 0 errors, 24 pre-existing XML warnings
+- **Tests:** ✅ All ~373 test methods pass (416+ total test cases with Theory data rows)
+- **Phase 1 Status:** ✅ Call-site wiring complete, test coverage in place
+
+**Phase Status Update:**
+- ✅ **Phase 0 complete** — all shared infrastructure merged
+- ✅ **Phase 1 call-site wiring complete** — all display methods wired into CombatEngine and GameLoop
+- ✅ **Phase 1 systems-side work complete** — colorized logs, XP feedback, ability confirmation, immunity feedback
+- ⏸ **Phase 2 (Hill)** — Stub implementations need bodies (ShowCombatStart, ShowVictory, etc. currently empty)
+- ✅ **Phase 3 systems integration complete** — shrine banner, loot comparison, game-over/victory routing
+
+**Key Observations:**
+- **Empty stub implementations:** ShowVictory/ShowGameOver/ShowCombatStart/etc. are empty bodies — this is expected, Hill will implement in follow-up PR
+- **Test stability:** No test failures from stub implementations — tests correctly validate call sites, not output content
+- **Clean merge order:** #302 first, then #301 after master pull — prevented conflicts
+- **Code quality:** All changes follow established patterns, no architectural deviations
+
+**Lessons Learned:**
+- **Stub-first approach works:** Call-site wiring can proceed with empty method bodies — separates integration from implementation
+- **Test design resilience:** Tests validate behavior (call sites, colorization) without asserting on final output — prevents brittleness
+- **Sequential merge strategy:** Merge systems work before tests — ensures test suite validates actual implementation state
