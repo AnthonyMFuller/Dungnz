@@ -174,6 +174,17 @@ public class CombatEngine : ICombatEngine
     }
 
     /// <summary>
+    /// Replaces only the last occurrence of <paramref name="find"/> in <paramref name="source"/>.
+    /// Safe because damage values always appear at the end of narration strings.
+    /// </summary>
+    private static string ReplaceLastOccurrence(string source, string find, string replace)
+    {
+        int lastIndex = source.LastIndexOf(find);
+        if (lastIndex < 0) return source;
+        return source.Substring(0, lastIndex) + replace + source.Substring(lastIndex + find.Length);
+    }
+
+    /// <summary>
     /// Colorizes damage numbers in combat messages. Damage in red, healing in green,
     /// crits in yellow + bold.
     /// </summary>
@@ -187,10 +198,10 @@ public class CombatEngine : ICombatEngine
         if (isCrit)
         {
             // Crits get bold yellow wrapper
-            return ColorCodes.Colorize(message.Replace(damageStr, coloredDamage), ColorCodes.Yellow + ColorCodes.Bold);
+            return ColorCodes.Colorize(ReplaceLastOccurrence(message, damageStr, coloredDamage), ColorCodes.Yellow + ColorCodes.Bold);
         }
         
-        return message.Replace(damageStr, coloredDamage);
+        return ReplaceLastOccurrence(message, damageStr, coloredDamage);
     }
 
     /// <summary>
