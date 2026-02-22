@@ -88,12 +88,6 @@ public interface IDisplayService
     void ShowCommandPrompt();
 
     /// <summary>
-    /// Renders the combat-specific input prompt presenting the player with
-    /// their available actions (Attack / Flee).
-    /// </summary>
-    void ShowCombatPrompt();
-
-    /// <summary>
     /// Renders an ASCII mini-map of the dungeon centred on <paramref name="currentRoom"/>,
     /// using BFS to discover all reachable rooms and infer their grid positions from
     /// exit directions. The map shows fog-of-war for unvisited rooms and distinct

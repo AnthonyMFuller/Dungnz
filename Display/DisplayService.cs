@@ -201,15 +201,6 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <summary>
-    /// Writes the combat action prompt "[A]ttack or [F]lee?" without a trailing newline,
-    /// indicating to the player that they must choose a combat action.
-    /// </summary>
-    public void ShowCombatPrompt()
-    {
-        Console.Write("[A]ttack or [F]lee? ");
-    }
-
-    /// <summary>
     /// Renders an ASCII mini-map by performing a BFS from <paramref name="currentRoom"/>
     /// to infer every reachable room's grid coordinates (current room = 0,0;
     /// North = y−1, South = y+1, East = x+1, West = x−1), then drawing a labelled

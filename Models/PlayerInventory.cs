@@ -2,6 +2,8 @@ namespace Dungnz.Models;
 
 public partial class Player
 {
+    public const int MaxInventorySize = 20;
+
     /// <summary>
     /// Gets the collection of items the player is currently carrying but not equipped.
     /// Equipped items are removed from this list and tracked in the corresponding equipment slot.
