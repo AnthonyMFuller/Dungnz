@@ -249,9 +249,10 @@ Dungnz uses native ANSI escape codes — no third-party dependencies. Colour sup
 
 | Element | Colour |
 |---------|--------|
-| HP — healthy (≥ 60%) | Green |
-| HP — injured (30–59%) | Yellow |
-| HP — critical (< 30%) | Red |
+| HP — healthy (> 70%) | Green |
+| HP — injured (40–70%) | Yellow |
+| HP — critical (20–40%) | Red |
+| HP — near death (≤ 20%) | Bright Red |
 | Mana — high / medium / low | Blue / Cyan / Gray |
 | Gold | Yellow |
 | XP gained | Green |
