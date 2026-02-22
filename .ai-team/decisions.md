@@ -10798,3 +10798,152 @@ We will expand the game from a "tech demo" scope (10 items) to a "playable game"
 **By:** Coulson (Lead)
 **What:** Added scripts/pre-push git hook that blocks all pushes to master. git config core.hooksPath=scripts activates it. Scribe charter updated to explicitly require branch+PR workflow for .ai-team/ commits.
 **Why:** Direct commits to master occurred twice (commits 402fa5f, 41b7acf from Scribe). Process-only reminders failed. Hook enforces the rule mechanically — a push to master fails with an error regardless of agent instructions.
+# Decision: Define Balance Budget Before Enemy Content
+
+**Status:** Proposed  
+**Owner:** Coulson  
+**Date:** 2026-02-22  
+**Context:** Retrospective finding
+
+## Problem
+Combat balance tests in Phase 3 caught the Lich King imbalance, but those tests were written *after* 8 enemies were tuned by hand. Balance tests should assert a spec, not discover one.
+
+## Proposal
+For future enemy content phases, define a balance budget upfront:
+- Damage ranges per enemy tier (e.g., Lvl 1-3: 5-8 ATK, Lvl 4-6: 10-15 ATK)
+- HP tiers per zone (e.g., Zone 1: 20-40 HP, Zone 2: 50-80 HP)
+- Win rate boundaries at target level ranges (e.g., Lvl 12 vs. Lich King: 40-60% win rate)
+
+Balance tests then assert conformance to the budget. Enemy tuning becomes spec-driven, not ad-hoc.
+
+## Impact
+- Tests become validators, not explorers
+- Enemy design has clear constraints
+- Balance issues surface during design, not after implementation
+
+## Open Questions
+- Who owns the balance budget definition? (Coulson? Barton? Anthony?)
+- Should we retrofit a budget for existing enemies?
+# Decision: No Enemy Ships Without Balance Test
+
+**Status:** Proposed  
+**Owner:** Romanoff (enforcer), Barton (implementer)  
+**Date:** 2026-02-22  
+**Context:** Retrospective finding
+
+## Problem
+Phase 2 added 8 enemies before Phase 3 added balance tests. Those 8 enemies were tuned blind. The Lich King imbalance was caught retroactively by tests that should have been gates, not validators.
+
+## Proposal
+Establish a policy: **No enemy ships without at least a win-rate boundary test at its target level range.**
+
+Example:
+- Enemy: Lich King (Lvl 10-12 content)
+- Required test: Assert 40-60% win rate for Lvl 12 player with median gear
+
+This test must exist and pass before the enemy is merged. Balance tests gate content, not validate it after the fact.
+
+## Impact
+- Balance issues surface during design, not after merge
+- Romanoff has clear acceptance criteria for enemy PRs
+- Reduces balance rework and post-merge tuning
+
+## Consequences
+- Slower enemy addition initially (tests must be written first)
+- Requires stat ranges to be defined upfront (see balance budget decision)
+
+## Open Questions
+- What's the minimum acceptable test? (just win rate? damage variance? duration?)
+- Who writes the test? (Barton with the enemy? Romanoff before merge?)
+# Decision: Repo Setup Checklist Before Agent Work
+
+**Status:** Proposed  
+**Owner:** Coulson  
+**Date:** 2026-02-22  
+**Context:** Retrospective finding
+
+## Problem
+Two direct master commits occurred before pre-push hook enforcement. The hook was added reactively after violations, not proactively as a setup step. Guardrails should precede agent work, not follow mistakes.
+
+## Proposal
+Define a repo setup checklist that must be completed before any agent begins feature work:
+
+**Guardrails:**
+- [ ] Pre-push hook installed (prevents direct master commits)
+- [ ] Branch protection rules configured (if using hosted Git)
+- [ ] Linting enforcement at pre-commit (if applicable)
+- [ ] CI pipeline validates on all branches
+
+**Tooling:**
+- [ ] Test runner configured and passing baseline
+- [ ] Build scripts tested and documented
+- [ ] Agent model assignments documented (who uses which model)
+
+**Documentation:**
+- [ ] README reflects current architecture
+- [ ] Team charter and agent roles defined
+- [ ] Decisions log initialized
+
+## Impact
+- Prevents process violations before they happen
+- Makes onboarding deterministic (checklist, not tribal knowledge)
+- Shifts quality enforcement left (setup, not cleanup)
+
+## Open Questions
+- Who owns checklist execution? (Coulson? Anthony?)
+- Should this be a script that validates the repo state?
+# Decision: Agent Stall Escalation Policy
+
+**Status:** Proposed  
+**Owner:** Coulson  
+**Date:** 2026-02-22  
+**Context:** Retrospective finding
+
+## Problem
+gemini-3-pro-preview stalled twice during this session with no immediate escalation. Each stall burned time that could have been reallocated. Currently there's no defined policy on when to escalate vs. retry.
+
+## Proposal
+Establish a stall policy:
+- **Stall definition:** No meaningful diff output for 20 consecutive minutes
+- **Action:** Immediate escalation to Lead (Coulson)
+- **Lead response:** Reassign work to a different agent/model or break the task into smaller chunks
+- **No retries without change:** If the same agent stalls twice on the same task, the task is too large or the model is unsuitable
+
+## Impact
+- Reduces time waste from unproductive agent loops
+- Makes stalls a first-class signal, not a "wait and see" situation
+- Creates a clear handoff protocol
+
+## Open Questions
+- Should the 20-minute threshold be configurable per task type? (e.g., longer for complex refactors)
+- Who monitors for stalls? (manual observation? automated timeout?)
+# Decision: Systems Spec Before Content Spec
+
+**Status:** Proposed  
+**Owner:** Coulson  
+**Date:** 2026-02-22  
+**Context:** Retrospective finding
+
+## Problem
+Phase 4 (map UI overhaul) came after Phase 2 (enemy/item content). This created retrofit work — Barton had to untangle draw-order assumptions and room population logic that Phase 2 had already hardcoded. Content defined the box instead of filling it.
+
+## Proposal
+For future roadmaps, enforce sequencing:
+1. **Systems primitives first:** Lock map rendering layers, combat stat ranges, inventory constraints
+2. **Content second:** Add enemies, items, rooms within the system constraints
+3. **Polish third:** UI/UX refinements, balance tuning, test expansion
+
+Content should fill the box; it should not define the box.
+
+## Impact
+- Reduces retrofit work and dependency inversions
+- Makes content addition more mechanical and parallelizable
+- Systems changes become less risky (no content to break)
+
+## Consequences
+- Requires upfront systems design before content work begins
+- May feel slower initially (more planning phase) but faster overall (less rework)
+
+## Open Questions
+- How much systems design is "enough" before content can start?
+- Can content and systems run in parallel if seams are well-defined?
