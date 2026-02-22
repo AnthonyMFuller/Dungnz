@@ -232,9 +232,9 @@ public class CombatEngineTests
     }
 
     [Fact]
-    public void Bug86_BattleHardenedSkill_ReducesIncomingDamageByOne()
+    public void Bug86_BattleHardenedSkill_ReducesIncomingDamageBy5Percent()
     {
-        // Enemy attack=10, player def=0 -> normally 10; BattleHardened -> 9
+        // Enemy attack=10, player def=0 -> normally 10; BattleHardened 5% -> (int)(10*0.95)=9
         var player = new Player { HP = 100, MaxHP = 100, Attack = 1, Defense = 0, Level = 6 };
         player.Skills.TryUnlock(player, Skill.BattleHardened);
         var enemy = new Enemy_Stub(hp: 999, atk: 10, def: 0, xp: 1);
