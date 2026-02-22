@@ -527,3 +527,54 @@
 - Boundary test important: the `>0.8` vs `>=0.8` distinction at exactly-80% is a common off-by-one risk; documented both sides in tests
 - `EquippedWeapon` can be set directly (`player.EquippedWeapon = equippedSword`) without going through `Equip()` — valid for unit tests
 - All 17 tests pass against existing production code with no mocking needed
+
+---
+
+### 2026-02-22: Phase 0 + Phase 1 Display Test Coverage (#301)
+
+**Task:** Write comprehensive test coverage for merged Phase 0 (ANSI-safe padding) and Phase 1 (colorized combat messages, XP feedback, ability confirmation, immunity feedback).
+
+**Branch:** `squad/301-phase1-tests`
+**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/301
+
+**File Written:** `Dungnz.Tests/Phase1DisplayTests.cs` (10 tests total, all passing)
+
+**Tests by category:**
+
+**Phase 0: ANSI-Safe Padding (2 tests):**
+- `ShowLootDrop_ColorizedTier_BoxBordersAlign` (Theory × Rare/Uncommon) — Tests that colorized tier labels don't break box border alignment. Verifies `VisibleLength` and `PadRightVisible` helpers indirectly by checking all border lines have the same visible length after stripping ANSI codes.
+- `ShowInventory_ColorizedItems_AlignCorrectly` — Tests that inventory lines with colorized item names maintain proper alignment. Checks weight indicator appears in consistent format via regex.
+
+**Phase 1.4: Colorized Turn Log (3 tests):**
+- `CombatEngine_CriticalHit_ProducesColorizedMessage` — Forces crit with ControlledRandom(0.01), verifies raw combat messages contain Yellow/BrightRed/Bold ANSI codes
+- `CombatEngine_Miss_ProducesGrayColoredMessage` — Forces dodge with ControlledRandom(0.01), verifies raw combat messages contain Gray color codes
+- `CombatEngine_StatusEffectApplied_MessageContainsEffectColor` — Player with 100% poison weapon, verifies "Poison" appears in combat messages
+
+**Phase 1.6: XP Progress Messages (2 tests):**
+- `CombatEngine_AfterWinningCombat_ShowsXPProgress` — Verifies XP progress message contains "XP", "Total:", and "to next level"
+- `CombatEngine_XPProgressMessage_ContainsCorrectValues` — Starts with 80 XP, gains 15, verifies message shows "15 XP" and "95"
+
+**Phase 1.7: Ability Confirmation (2 tests):**
+- `CombatEngine_AbilityUsed_ShowsConfirmationMessage` — Mage with ability, input "S", "1", "F", verifies "activated" appears in messages
+- `CombatEngine_AbilityUsed_MessageContainsAbilityName` — Warrior with ability, verifies ability name appears in confirmation message
+
+**Phase 1.8: Immunity Feedback (1 test):**
+- `CombatEngine_ImmunityFeedback_MessageAppears` — Player with poison weapon vs Stone Golem (immune), verifies "immune" appears in messages
+
+**Key Technical Patterns:**
+
+1. **Testing private static helpers indirectly** — `RenderBar`, `VisibleLength`, `PadRightVisible` are private static in DisplayService. Can't test by name, so test them via their call sites (ShowLootDrop, ShowInventory, ShowCombatStatus). Verify box alignment by checking all border lines have consistent visible length after ANSI stripping.
+
+2. **Capturing ANSI codes before stripping** — `FakeDisplayService.RawCombatMessages` field added to capture raw messages before ANSI stripping. This lets tests verify colorization without checking the stripped message list. For ShowLootDrop/ShowInventory, use `ConsoleDisplayService` with `Console.SetOut(StringWriter)` pattern.
+
+3. **Forcing specific combat outcomes** — Use `ControlledRandom(defaultDouble: 0.01)` to force crits (< 0.05 threshold) or dodges. Use 100% status effect chance on weapons to guarantee application. Use Stone Golem for immunity tests (IsImmuneToEffects = true).
+
+4. **Ability testing requires class + level** — Player needs `PlayerClass = Mage/Warrior/Rogue` and `Level >= 3` to have abilities. Use `AbilityManager.GetAbilitiesForClass()` to populate `LearnedAbilities`. Input sequence: "S" (ability menu), "1" (first ability), "F" (flee to end combat early).
+
+5. **XP progress message appears in Messages, not CombatMessages** — After combat ends, XP feedback goes to `ShowMessage()`, which FakeDisplayService records in `Messages` list. Combat log entries go to `CombatMessages`. Know which list to check for each feature.
+
+**Test Status:** ✅ All 10 tests pass
+**Build Status:** ✅ Build succeeds (24 XML doc warnings pre-existing)
+**Coverage Gaps:** None identified — all Phase 0 and Phase 1 display features covered
+
+**PR Status:** Open, awaiting review
