@@ -123,25 +123,12 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine("═══ PLAYER STATS ═══");
         Console.WriteLine($"Name:    {player.Name}");
         
-        // HP with threshold-based coloring
-        var hpColor = Systems.ColorCodes.HealthColor(player.HP, player.MaxHP);
-        Console.WriteLine($"HP:      {hpColor}{player.HP}/{player.MaxHP}{Systems.ColorCodes.Reset}");
-        
-        // Mana with threshold-based coloring
-        var manaColor = Systems.ColorCodes.ManaColor(player.Mana, player.MaxMana);
-        Console.WriteLine($"💧 Mana: {manaColor}{player.Mana}/{player.MaxMana}{Systems.ColorCodes.Reset}");
-        
-        // Attack in bright red
-        Console.WriteLine($"Attack:  {Systems.ColorCodes.BrightRed}{player.Attack}{Systems.ColorCodes.Reset}");
-        
-        // Defense in cyan
-        Console.WriteLine($"Defense: {Systems.ColorCodes.Cyan}{player.Defense}{Systems.ColorCodes.Reset}");
-        
-        // Gold in yellow
-        Console.WriteLine($"Gold:    {Systems.ColorCodes.Yellow}{player.Gold}{Systems.ColorCodes.Reset}");
-        
-        // XP in green
-        Console.WriteLine($"XP:      {Systems.ColorCodes.Green}{player.XP}{Systems.ColorCodes.Reset}");
+        ShowColoredStat("HP:", $"{player.HP}/{player.MaxHP}", Systems.ColorCodes.HealthColor(player.HP, player.MaxHP));
+        ShowColoredStat("💧 Mana:", $"{player.Mana}/{player.MaxMana}", Systems.ColorCodes.ManaColor(player.Mana, player.MaxMana));
+        ShowColoredStat("Attack:", $"{player.Attack}", Systems.ColorCodes.BrightRed);
+        ShowColoredStat("Defense:", $"{player.Defense}", Systems.ColorCodes.Cyan);
+        ShowColoredStat("Gold:", $"{player.Gold}", Systems.ColorCodes.Yellow);
+        ShowColoredStat("XP:", $"{player.XP}", Systems.ColorCodes.Green);
         
         Console.WriteLine($"Level:   {player.Level}");
         var classDef = PlayerClassDefinition.All.FirstOrDefault(c => c.Class == player.Class);
@@ -438,26 +425,30 @@ public class ConsoleDisplayService : IDisplayService
         int defenseDelta = newDefense - oldDefense;
         
         // Show attack
-        Console.Write("║ Attack:   ");
-        Console.Write($"{player.Attack - oldAttack} → {player.Attack - oldAttack + attackDelta}");
+        const string attackPrefix = "║ Attack:   ";
+        const string defensePrefix = "║ Defense:  ";
+        const int innerWidth = 39; // box inner width (between the two ║ chars)
+
+        var attackContent = $"{player.Attack - oldAttack} → {player.Attack - oldAttack + attackDelta}";
         if (attackDelta != 0)
         {
             var deltaColor = attackDelta > 0 ? Systems.ColorCodes.Green : Systems.ColorCodes.Red;
             var deltaSign = attackDelta > 0 ? "+" : "";
-            Console.Write($" {deltaColor}({deltaSign}{attackDelta}){Systems.ColorCodes.Reset}");
+            attackContent += $" {deltaColor}({deltaSign}{attackDelta}){Systems.ColorCodes.Reset}";
         }
-        Console.WriteLine($"{"",20}║");
-        
+        var attackVisibleLen = attackPrefix.Length - 1 + Systems.ColorCodes.StripAnsiCodes(attackContent).Length;
+        Console.WriteLine(attackPrefix + attackContent + new string(' ', innerWidth - attackVisibleLen) + "║");
+
         // Show defense
-        Console.Write("║ Defense:  ");
-        Console.Write($"{player.Defense - oldDefense} → {player.Defense - oldDefense + defenseDelta}");
+        var defenseContent = $"{player.Defense - oldDefense} → {player.Defense - oldDefense + defenseDelta}";
         if (defenseDelta != 0)
         {
             var deltaColor = defenseDelta > 0 ? Systems.ColorCodes.Green : Systems.ColorCodes.Red;
             var deltaSign = defenseDelta > 0 ? "+" : "";
-            Console.Write($" {deltaColor}({deltaSign}{defenseDelta}){Systems.ColorCodes.Reset}");
+            defenseContent += $" {deltaColor}({deltaSign}{defenseDelta}){Systems.ColorCodes.Reset}";
         }
-        Console.WriteLine($"{"",20}║");
+        var defenseVisibleLen = defensePrefix.Length - 1 + Systems.ColorCodes.StripAnsiCodes(defenseContent).Length;
+        Console.WriteLine(defensePrefix + defenseContent + new string(' ', innerWidth - defenseVisibleLen) + "║");
         
         Console.WriteLine("╚═══════════════════════════════════════╝");
         Console.WriteLine();

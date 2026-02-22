@@ -392,3 +392,19 @@
 **Recommended Actions:** Fix stat modifiers, poison-on-hit, and enemy spawning before starting v3 boss variety/environmental hazard work. Boss mechanics need hardening before inheriting more complexity.
 
 — decided by Barton (from Pre-v3 Critical Bug Hunt)
+
+### Issue #220: ColorizeDamage — Replace Last Occurrence Fix
+
+**File Modified:** `Engine/CombatEngine.cs`
+
+**Problem:** `ColorizeDamage()` used `string.Replace(damageStr, coloredDamage)` which replaces ALL occurrences of the damage number in the narration string. A message like "5 damage! You deal 5!" would colorize both `5`s — including any that appear earlier in the string and don't represent the damage value.
+
+**Fix Applied:**
+- Added private static helper `ReplaceLastOccurrence(string source, string find, string replace)` using `LastIndexOf` to target only the final occurrence of the damage number.
+- Updated both call sites in `ColorizeDamage()` (normal damage and crit path) to use `ReplaceLastOccurrence` instead of `string.Replace`.
+
+**Rationale:** Damage values always appear at the end of narration strings by convention, so targeting the last occurrence is semantically correct and avoids false colorization of coincidental number matches earlier in the message.
+
+**Build/Test Status:** Build succeeded (0 errors), all 267 existing tests pass.
+
+**PR:** #223 — `squad/220-colorize-damage-fix`

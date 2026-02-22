@@ -475,3 +475,7 @@
 — decided by Hill (from Encapsulation Audit findings)
 
 📌 Team directive (2026-02-22): No commits directly to master. Always create a feature branch (squad/{slug}) before starting work, even without a linked issue. — captured after UI/UX work committed to master directly.
+
+## Learnings
+
+- **README CI check (2026-02-23):** The `readme-check` CI workflow fails any PR that modifies `Engine/`, `Systems/`, `Models/`, or `Data/` without a corresponding change to `README.md`. Always update `README.md` when touching documented systems — this includes new utility classes like `ColorCodes.cs` in `Systems/`.

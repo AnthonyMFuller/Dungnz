@@ -626,3 +626,104 @@ WI-1 (ColorCodes) → WI-2 (DisplayService) → WI-3 (Core Stats)
 — planned by Coulson with analysis from Hill, Barton
 
 📌 Team directive (2026-02-22): No commits directly to master. All work goes on a feature branch (squad/{slug}), even without a linked issue. Reaches master only via PR. — captured by Scribe after UI/UX commit landed on master directly.
+
+---
+
+## 2026-02-22: PR #218 Code Review (squad/ui-ux-color-system)
+
+**Reviewer:** Coulson  
+**Branch:** squad/ui-ux-color-system  
+**Status:** ✅ APPROVED
+
+### Review Scope
+- **Files changed:** 19 files, +2642 lines, -53 lines
+- **CI Status:** ✅ All 267 tests pass, README updated
+- **Implementation:** 3-phase color system (Foundation → Enhancement → Polish)
+
+### Architecture Review
+
+**✅ Core Architecture Compliance:**
+- All color constants centralized in `Systems/ColorCodes.cs` (151 lines, well-documented)
+- Display interface properly extended with 4 new methods: `ShowColoredMessage`, `ShowColoredCombatMessage`, `ShowColoredStat`, `ShowEquipmentComparison`
+- Test infrastructure correctly strips ANSI codes via `ColorCodes.StripAnsiCodes()` in both `TestDisplayService` and `FakeDisplayService`
+- Zero Console.Write/Console.WriteLine calls in game logic (only IInputReader uses Console.ReadLine as designed)
+
+**✓ Minor Pragmatic Deviation:**
+- `CombatEngine` uses `ColorCodes.Colorize()` helper directly before passing strings to DisplayService (8 occurrences)
+- **Verdict:** Acceptable. ColorCodes is a pure utility class with no side effects. CombatEngine still routes all output through DisplayService. The alternative (DisplayService knowing combat damage semantics) would violate SRP.
+- Pattern: `_display.ShowCombatMessage(ColorCodes.Colorize("message", ColorCodes.Red))` — color logic in engine, rendering in display layer
+
+**✅ Interface Design Quality:**
+- `ShowColoredMessage(string, string)` — clean, composable
+- `ShowColoredCombatMessage(string, string)` — respects combat indentation convention
+- `ShowColoredStat(string label, string value, string color)` — separates label from colored value
+- `ShowEquipmentComparison(Player, Item?, Item)` — encapsulates complex comparison rendering
+- All methods have XML docs with clear semantics
+
+**✅ Test Compatibility:**
+- ANSI stripping correctly implemented: `ColorCodes.StripAnsiCodes()` uses regex `\u001b\[[0-9;]*m`
+- Both test display services (Fake and Test) call `StripAnsi()` before storing messages
+- All 267 tests pass without modification — zero breaking changes
+
+### Implementation Quality
+
+**✅ Phase 1 (Foundation):**
+- `ColorCodes` utility with threshold helpers: `HealthColor(int, int)`, `ManaColor(int, int)`, `WeightColor(double, double)`
+- Color constants: Red, Green, Yellow, Blue, Cyan, BrightRed, Gray, BrightWhite, Bold, Reset
+- `ShowPlayerStats` colorizes HP (threshold), Mana (threshold), Gold (yellow), XP (green), Attack (bright red), Defense (cyan)
+
+**✅ Phase 2 (Enhancement):**
+- `ShowCombatStatus` adds color-coded HP/Mana in combat HUD: `[You: <green>45/60</green> HP | <blue>15/30</blue> MP]`
+- `CombatEngine.ColorizeDamage()` helper colorizes damage numbers: red for damage, green for healing, yellow+bold for crits
+- `ShowEquipmentComparison` displays before/after stats with delta indicators: `Attack: 12 → 20 <green>(+8)</green>`
+- `ShowInventory` adds capacity tracking: `Slots: <color>5/10</color> │ Weight: <color>45/100</color>`
+
+**✅ Phase 3 (Polish):**
+- `ShowRoom` color-codes room type prefixes: Dark (red), Scorched/Flooded (yellow), Mossy (green), Ancient (cyan)
+- Enemy warnings: `<bright-red><bold>⚠ Goblin is here!</bold></bright-red>`
+- Item names in rooms: `<yellow>Iron Sword</yellow>`
+- Ability menu: ready (green+bold), on cooldown (gray), insufficient mana (red)
+
+**✅ Accessibility:**
+- Color enhances existing semantic indicators (emoji `⚠`, labels, prefixes) — never replaces them
+- Color-blind players retain full functionality through text indicators
+- Follows plan's "Accessibility-First Design" decision
+
+### README Accuracy
+- New section "Display & Colours" accurately documents color scheme
+- Lists threshold values: HP healthy (≥60%), injured (30-59%), critical (<30%)
+- Correctly notes ANSI is native (no dependencies), automatic on modern terminals
+- Explains architecture: "All console output is routed through IDisplayService / DisplayService"
+
+### No Logic Regressions
+- Zero changes to game logic: all modifications are display-only
+- HP/Mana/Gold/XP calculations unchanged
+- Combat damage calculations unchanged
+- Inventory weight/slot logic unchanged
+- Color is purely additive visual enhancement
+
+### Verdict: ✅ APPROVE
+
+**What I approve:**
+1. **Clean architecture** — Color system properly layered through DisplayService with zero Console calls in game logic
+2. **Test infrastructure** — ANSI stripping correctly preserves all 267 tests without modification
+3. **Interface design** — Four new IDisplayService methods are minimal, composable, and well-scoped
+4. **Zero breaking changes** — Entirely additive feature, no modifications to existing game logic
+5. **README accuracy** — Documentation clearly explains color scheme and architecture
+
+**Why it's solid:**
+- Follows architectural plan from design review (see 2026-02-22 UI/UX planning above)
+- Pragmatic deviation (CombatEngine using ColorCodes helper) is justified and controlled
+- Test coverage maintained through automatic ANSI stripping
+- Accessibility preserved via semantic indicators (emoji, labels)
+- No external dependencies (native ANSI codes)
+
+**Pattern established for future work:**
+- Use `ColorCodes` utility class for ANSI constants and threshold helpers
+- Game logic may use `ColorCodes.Colorize()` helper before passing to DisplayService (acceptable for complex formatting)
+- All rendering must route through IDisplayService methods (no raw Console calls)
+- Test display services must strip ANSI codes before storing output
+
+**Recommendation:** Merge to master. This implementation establishes a solid pattern for future UI enhancements.
+
+— reviewed by Coulson, 2026-02-22
