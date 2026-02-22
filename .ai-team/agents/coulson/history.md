@@ -727,3 +727,133 @@ WI-1 (ColorCodes) → WI-2 (DisplayService) → WI-3 (Core Stats)
 **Recommendation:** Merge to master. This implementation establishes a solid pattern for future UI enhancements.
 
 — reviewed by Coulson, 2026-02-22
+
+### 2026-02-22: Introduction Sequence Architecture Design
+**Context:** Designed comprehensive intro sequence improvements (title screen, lore, character creation UX) for implementation by Hill/Barton.
+
+**Design Artifacts:**
+- Enhanced ASCII title with color-coded sections (gold title, cyan borders, red tagline)
+- Atmospheric 3-4 sentence lore intro with Enter-to-continue pacing
+- Prestige "Returning Champion" screen showing win rate and narrative reinforcement
+- Character creation flow: name prompt with flavor text, difficulty with mechanical details, class selection with calculated stats
+- Seed input repositioned to post-class (advanced feature, silent by default)
+
+**Key Architectural Decisions:**
+- **Display ownership:** All intro presentation logic lives in IDisplayService methods (ShowEnhancedTitle, ShowIntroNarrative, ShowNamePrompt, ShowDifficultySelection, ShowClassSelection)
+- **Input validation:** DisplayService owns validation loops for difficulty/class prompts (return validated enums, no caller validation needed)
+- **Stat calculation:** ShowClassSelection(PrestigeData?) accepts prestige to display accurate starting stats (base + class + prestige) without mutating Player model
+- **IntroSequenceManager deferred:** Keep orchestration in Program.cs for now; extract to Systems.IntroSequenceManager in v4 if launcher/menu system added
+- **Seed UX change:** Silent random generation by default; display seed after class selection for power users to note
+
+**Implementation Plan:**
+1. Extend IDisplayService with 4 new methods (interface definition)
+2. Hill implements ConsoleDisplayService methods (~150 LOC)
+3. Add PrestigeSystem.ShowPrestigeIntro static method (~30 LOC)
+4. Refactor Program.cs intro flow (lines 7-54 replaced with display calls)
+5. Romanoff adds unit + integration tests (~200 LOC)
+
+**Files Impacted:**
+- Display/IDisplayService.cs — 4 new method signatures
+- Display/ConsoleDisplayService.cs — Implementation of enhanced intro screens
+- Systems/PrestigeSystem.cs — ShowPrestigeIntro method
+- Systems/ColorCodes.cs — Add BrightYellow if missing
+- Program.cs — Refactor intro sequence orchestration
+
+**Design Rationale:**
+- Narrative flow: Title → Lore → Prestige (if applicable) → Character Creation → Game Start
+- Prestige celebration: Surface hidden stats (win rate), narrative reinforcement ("dungeon remembers")
+- Class selection shows calculated stats to help players make informed choice without guessing
+- Seed moved to end: advanced feature, doesn't interrupt narrative flow of name→class→adventure
+- All presentation via DisplayService: maintains clean separation, enables future headless testing
+
+**Acceptance Criteria:**
+- Enhanced ASCII title uses full terminal width with color coding
+- Difficulty descriptions include mechanical impact (damage %, reward %)
+- Class selection shows accurate starting stats (base + class + prestige bonuses)
+- Prestige screen only shown if prestige > 0
+- All intro screens use consistent box-drawing characters and color scheme
+- No hardcoded Console.Write in Program.cs (all via DisplayService)
+
+**Effort:** 6-8 hours (Hill: 5h, Romanoff: 2h, Coulson: 1h review)  
+**Risk:** Low (pure presentation layer, no game logic changes)
+
+Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architecture.md`
+
+---
+
+## 2026-02-22: Team Decision Merge
+
+📌 **Team update:** Intro sequence architecture, PR review decisions (223-226), and core sequence extraction patterns — decided by Coulson, Romanoff (via PR reviews and intro documentation). Decisions merged into `.ai-team/decisions.md` by Scribe.
+
+---
+
+## 2026-02-22: Intro Sequence Improvement Planning
+
+**Status:** Comprehensive design plan produced; awaiting Anthony approval before implementation  
+**Lead:** Coulson  
+**Participants:** Hill (implementation), Barton (UX/psychology), Coulson (architecture)
+
+### Key Planning Decisions
+
+**1. Flow Reordering (Psychology-Driven)**
+- Current: Title → Name → Seed → Difficulty → Class
+- Proposed: Title → Lore (skip) → Prestige → **Name first** (investment) → **Class next** (identity) → Difficulty → Seed (auto)
+- Rationale: Players care more about mechanics *after* naming their character. Establishing class identity before tuning difficulty feels more natural narratively.
+
+**2. Seed UX Transformation**
+- Current: Blocks flow with "Enter seed or random" prompt (serves 5% speedrunners, blocks 95% casuals)
+- Proposed: Auto-generate silently, display at end for reference/sharing. Add `--seed` CLI flag for power users (future).
+- Result: Removes cognitive friction for casuals, still serves speedrunners (shown seed for replay, optional CLI override)
+
+**3. Stat Transparency in Selections**
+- Difficulty: Show mechanical impact (damage % multipliers, loot %, elite spawn %)
+- Class: Display full starting stats (base + class bonuses + prestige bonuses), not just deltas. Named passive traits with descriptions.
+- Rationale: Informed choice requires seeing totals. "HP: 100 → 120" more meaningful than "+20". Players understand playstyle from trait names.
+
+**4. Architecture: Keep Now, Extract Later**
+- Program.cs: Currently ~80 lines; adding 5 new DisplayService methods + moving validation loops keeps it readable
+- Don't extract to GameSetupService yet (no load/resume system yet). When that's implemented, extract to avoid duplicating setup logic.
+- Pattern: Display layer owns validation loops (re-prompt on invalid input), guarantees valid return values, zero null checks in caller
+
+**5. Color & Presentation Strategy**
+- Title: Cyan borders + white ASCII art + yellow tagline (sets dark/mysterious tone)
+- Class cards: Bright white class names, green stats/bonuses, red penalties, yellow passives, cyan playstyle text
+- Consistency: Use color system from PR #226 (health thresholds, mana, gold, etc.)
+- Accessibility: Color enhances existing semantic info (emoji, labels, text), never replaces
+
+**6. Prestige Display Repositioning**
+- Current: Shown immediately after ShowTitle() (before player investment)
+- Proposed: Shown *after* prestige is loaded but *before* class selection, with win rate, victory count, and progression hints ("6 more wins to Prestige 4")
+- Benefit: Celebrates returning players after they've named character, positioned where it reinforces achievement before they re-build
+
+### Implementation Approach
+
+**5 new IDisplayService methods:**
+- `void ShowEnhancedTitle()` — ASCII art + tagline + colors
+- `bool ShowIntroNarrative()` — Optional lore (returns true if player skipped)
+- `void ShowPrestigeInfo(PrestigeData)` — Stat card for returning players
+- `Difficulty SelectDifficulty()` — Card-based selection with mechanics, returns validated enum
+- `PlayerClassDefinition SelectClass()` — Full stat cards, returns validated class
+
+**Validation logic location:** Display service owns input loops. Callers in Program.cs get guaranteed-valid Difficulty/PlayerClassDefinition objects (no null checks).
+
+**Code in Program.cs:** ~10 new lines (calling new display methods). No validation loops, no input parsing in Program.cs.
+
+### Success Criteria
+
+**Functional:** All 267 tests pass, invalid inputs re-prompt without crashing, seed displayed before game starts  
+**Visual:** Title conveys atmosphere, difficulty/class show tradeoffs clearly, colors consistent with PR #226 scheme  
+**UX:** New intro <1 min for experienced players, removed seed friction, prestige celebrated for veterans  
+**Technical:** Zero game logic changes (purely presentation), no Console.Write in Program.cs
+
+### Learnings for Future Work
+
+1. **Player psychology matters in architecture:** Reordering flow (name first) isn't just cosmetic — it changes how players perceive choices. Consider behavioral UX early.
+2. **Stat transparency builds trust:** Showing full totals (not just deltas) lets players make informed decisions. "Mage has 15 fewer HP" feels less scary than "Mage HP: 75" when listed with raw number.
+3. **Remove friction for 95%, empower 5%:** Seed prompt blocks casuals but serves speedrunners. Solution: auto-generate, display, optional override (not a front-and-center prompt).
+4. **Display layer owns validation:** Return guaranteed-valid domain types from display service. This eliminates null checks and error handling logic from game logic, keeping it clean.
+5. **Extract timing:** Don't prematurely extract setup logic. Wait until duplication pressure (e.g., load game system) exists. Current Program.cs ~80 lines is readable and cohesive.
+
+**Plan location:** `.ai-team/decisions/inbox/coulson-intro-plan.md`  
+**Implementation ready when:** Anthony approves visual design
+

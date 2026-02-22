@@ -32,6 +32,15 @@ cd Dungnz
 dotnet run
 ```
 
+### Enhanced Intro Sequence
+
+The game features an immersive introduction with:
+- **ASCII art title screen** with color-coded borders and dramatic tagline
+- **Atmospheric lore narrative** setting the scene before your descent
+- **Prestige card display** showing your accumulated bonuses from previous wins
+- **Interactive class selection** with ASCII stat bars showing HP, Attack, Defense, and Mana with prestige bonuses highlighted
+- **Difficulty cards** with clear mechanical impact summaries (enemy power, loot, and gold multipliers)
+
 ---
 
 ## Gameplay

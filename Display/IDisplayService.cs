@@ -139,4 +139,19 @@ public interface IDisplayService
     /// <param name="oldItem">The currently equipped item (null if none).</param>
     /// <param name="newItem">The item being equipped.</param>
     void ShowEquipmentComparison(Player player, Item? oldItem, Item newItem);
+
+    /// <summary>Renders the enhanced ASCII art title screen with colors.</summary>
+    void ShowEnhancedTitle();
+
+    /// <summary>Displays the atmospheric lore introduction paragraph. Returns true if the player skipped it.</summary>
+    bool ShowIntroNarrative();
+
+    /// <summary>Displays prestige level card. Only called when prestige.PrestigeLevel > 0.</summary>
+    void ShowPrestigeInfo(Dungnz.Systems.PrestigeData prestige);
+
+    /// <summary>Shows colored difficulty cards with mechanical context and returns the player's validated choice.</summary>
+    Dungnz.Models.Difficulty SelectDifficulty();
+
+    /// <summary>Shows class cards with ASCII stat bars and inline prestige bonuses, returns the player's validated choice.</summary>
+    Dungnz.Models.PlayerClassDefinition SelectClass(Dungnz.Systems.PrestigeData? prestige);
 }

@@ -6118,55 +6118,6 @@ If any criteria unmet: **Iterate or roll back**
 
 ## Code Review Gates (Coulson)
 
-### After Phase 1
-- [ ] ColorCodes follows C# conventions (PascalCase constants)
-- [ ] IDisplayService methods have XML docs
-- [ ] TestDisplayService ANSI stripping is robust
-- [ ] No ANSI codes leak into game logic (CombatEngine, GameLoop, Systems)
-
-### After Phase 2
-- [ ] Equipment comparison doesn't block gameplay (optional prompt)
-- [ ] Combat HUD doesn't cause line wrapping on 80-column terminals
-- [ ] Status effect abbreviations are intuitive (consider legend display)
-- [ ] Inventory weight display aligns with existing patterns
-
-### After Phase 3
-- [ ] Achievement progress calculations are accurate
-- [ ] Room color coding enhances (doesn't replace) existing emoji
-- [ ] Turn log truncation preserves recent context
-- [ ] Overall UX feels polished and consistent
-
----
-
-## Merge Criteria (Final Gate)
-
-- [ ] All 267 tests pass
-- [ ] Zero regressions in gameplay
-- [ ] Visual clarity improved (Boss/team approval via screenshots)
-- [ ] Accessibility maintained (color-blind testing)
-- [ ] Performance acceptable (no slowdown)
-- [ ] Code review approved (Coulson)
-- [ ] README.md updated (if commands/UI changed)
-
-**When all criteria met:** Merge to master branch
-# UI/UX Improvement Plan — Executive Summary
-
-**Date:** 2026-02-20  
-**Lead:** Coulson  
-**Status:** Ready for team review and Boss approval
-
----
-
-## The Problem
-
-TextGame currently displays everything in **plain white text**. While the game uses emoji and Unicode box-drawing for visual distinction, there's no color system, no real-time status tracking, and limited visual feedback for player actions.
-
----
-
-## The Solution
-
-Implement a comprehensive UI/UX enhancement through **3 phases** of improvements:
-
 ### Phase 1: Foundation (5-7 hours)
 - ANSI color system core
 - DisplayService color methods
@@ -6325,23 +6276,6 @@ Active Effects:
 
 ## Example 2: Combat Status Line
 
-### BEFORE (Current)
-```
-[You: 45/60 HP] vs [Goblin: 12/30 HP]
-
-  You strike Goblin for 15 damage!
-  Goblin attacks you for 8 damage!
-```
-
-### AFTER (Phase 1)
-```
-[You: 45/60 HP] vs [Goblin: 12/30 HP]    ← HP values colored by threshold
-   ↑ yellow       ↑ red
-
-  You strike Goblin for 15 damage!       ← 15 highlighted red
-  Goblin attacks you for 8 damage!       ← 8 highlighted red
-```
-
 ### AFTER (Phase 2 - Enhanced HUD)
 ```
 [You: 45/60 HP | 15/30 MP | P(2) R(3)] vs [Goblin: 12/30 HP | W(2)]
@@ -6356,11 +6290,6 @@ Legend: P=Poison, R=Regen, W=Weakened, (X)=turns remaining
 ---
 
 ## Example 3: Equipment Comparison
-
-### BEFORE (Current)
-```
-You equipped Iron Sword. Attack +5.
-```
 
 ### AFTER (Phase 2)
 ```
@@ -6378,45 +6307,6 @@ Equipped Iron Sword
 
 ## Example 4: Inventory Display
 
-### BEFORE (Current)
-```
-═══ INVENTORY ═══
-• Health Potion (Consumable)
-• Iron Sword (Weapon)
-• Leather Armor (Armor)
-• Mana Potion (Consumable)
-• Rusty Dagger (Weapon)
-```
-
-### AFTER (Phase 2)
-```
-═══ INVENTORY ═══
-Slots: 5/8  |  Weight: 42/50  |  Value: 320g
-              ↑ green (<80%)        ↑ yellow
-────────────────────────────────────────────
-• Health Potion (Consumable) [3 wt] [25g]
-• Iron Sword (Weapon) [8 wt] [50g]
-• Leather Armor (Armor) [12 wt] [75g]
-• Mana Potion (Consumable) [3 wt] [20g]
-• Rusty Dagger (Weapon) [5 wt] [15g]
-                         ↑ weights shown
-```
-
----
-
-## Example 5: Ability Menu
-
-### BEFORE (Current)
-```
-Choose an ability:
-[1] Power Strike (10 MP, CD: 2 turns)
-[2] Defensive Stance (8 MP, CD: 3 turns)
-[3] Poison Dart (12 MP, CD: 4 turns)
-[4] Second Wind (15 MP, CD: 5 turns)
-
-Mana: 15/30
-```
-
 ### AFTER (Phase 3)
 ```
 Choose an ability:
@@ -6431,21 +6321,6 @@ Mana: 15/30  ← cyan
 ---
 
 ## Example 6: Combat Critical Hit
-
-### BEFORE (Current)
-```
-  💥 CRUSHING BLOW! You put your entire body into it — 30 devastating damage to Goblin!
-```
-
-### AFTER (Phase 2)
-```
-  💥 CRUSHING BLOW! You put your entire body into it — 30 devastating damage to Goblin!
-                                                        ↑ bright yellow with bold
-```
-
----
-
-## Example 7: Achievement Progress
 
 ### BEFORE (Current - on game end)
 ```
@@ -6469,29 +6344,6 @@ PROGRESS:
 ---
 
 ## Example 8: Room Description
-
-### BEFORE (Current)
-```
-🏛 Ancient runes line the walls. This chamber feels sacred.
-
-Exits: NORTH, EAST
-⚠ Dark Knight is here!
-Items: Health Potion
-```
-
-### AFTER (Phase 3)
-```
-🏛 Ancient runes line the walls. This chamber feels sacred.
-↑ cyan (safe room type)
-
-Exits: NORTH, EAST
-⚠ Dark Knight is here!    ← bright red bold (danger!)
-Items: Health Potion       ← yellow (loot)
-```
-
----
-
-## Example 9: Combat Turn Log
 
 ### BEFORE (Current - can scroll indefinitely)
 ```
@@ -6599,13 +6451,6 @@ The game has solid mechanical depth (status effects, abilities, equipment, craft
 
 ## 2. Player Feedback on Status/Effects
 
-### Current State
-- **Status effects exist:** Poison, Bleed, Stun, Regen, Fortified, Weakened (6 total)
-- **Effect application:** Text messages like "Poison Dart! Goblin is poisoned!"
-- **Effect ticks:** Messages per turn: "You take 3 poison damage!" (DOT) or "You regenerate 4 HP!" (HOT)
-- **Effect expiry:** "Your Fortified effect has worn off."
-- **Stat modifiers:** `GetStatModifier()` exists but **NEVER DISPLAYED** (Bug #1 from pre-v3 hunt)
-
 ### Critical Gap: **Active Effects Display**
 - **StatusEffectManager has `GetActiveEffects(target)` method** but it's **never called for display**
 - History notes: "DisplayActiveEffects feedback should be added to combat loop" (never implemented)
@@ -6646,12 +6491,6 @@ The game has solid mechanical depth (status effects, abilities, equipment, craft
 
 ## 3. Player Status Visibility
 
-### Current State
-- **Stats command** — shows full player stats (HP, Mana, Attack, Defense, Gold, XP, Level, Class Trait)
-- **Equipment command** — shows equipped weapon/armor/accessory with bonuses
-- **Inventory command** — lists items with type annotations
-- **Combat status** — HP and mana shown during fight menu
-
 ### What's Missing
 ❌ **No persistent status display** — player must type STATS every time to see health outside combat  
 ❌ **No quick HP/mana check** — no shorthand command for "how much HP do I have?"  
@@ -6659,21 +6498,6 @@ The game has solid mechanical depth (status effects, abilities, equipment, craft
 ❌ **Equipment stat totals unclear** — player sees "+5 ATK weapon" but final Attack value only in STATS  
 ❌ **Gold value feedback weak** — picks up gold but can't easily see total without STATS  
 ❌ **Ability cooldowns not visible** — must enter combat and press [B]ability to see cooldown state  
-
-### Color/Format Opportunities (Status)
-
-| Element | Current | Improvement | Impact |
-|---------|---------|-------------|--------|
-| **Low HP warning** | No indication | Red HP text when < 30% | **HIGH** — survival awareness |
-| **XP to next level** | "XP: 85" | "XP: 85/100 (15 to level 4)" | **MEDIUM** — progression clarity |
-| **Stat increases** | No feedback | "+2 ATK!" after equip/level | **HIGH** — reward visibility |
-| **Mana regeneration** | Silent | "+10 mana" at turn start | **LOW** — resource tracking |
-| **Gold pickup** | "You picked up 12 gold" | "Gold: 45 → 57 (+12)" | **MEDIUM** — wealth tracking |
-| **Full heal on levelup** | Silent | "✨ HP/Mana fully restored!" | **MEDIUM** — milestone moment |
-
----
-
-## 4. Combat UX Opportunities by System
 
 ### Damage Numbers
 **Current:** "You strike Goblin for 8 damage!"  
@@ -6859,40 +6683,6 @@ Your attack: 25 vs Defense: 10 = 15 base → 16 crit
 - Color changes via `Console.ForegroundColor` are fast (no concern)
 - Emoji may have issues on some terminals (Windows CMD especially)
 - **Recommendation:** Make emoji toggleable (config flag: `USE_EMOJI = true`)
-
-### Accessibility
-- Color-blind players may not see red/green distinction
-- **Recommendation:** Always pair color with symbols (🧪, ⚔️, 🛡️) or text tags `[CRIT]`
-- **Recommendation:** High-contrast mode option (yellow/blue instead of red/green)
-
----
-
-## Closing Thoughts
-
-The game's *mechanical depth is invisible*. Players have status effects, abilities, equipment, boss phases, and enemy variety — but it all looks the same on screen. Small visual improvements (color, symbols, formatting) would massively increase:
-
-1. **Player skill ceiling** — seeing cooldowns/effects enables strategic planning
-2. **Combat satisfaction** — crits and big moments need to *feel* big
-3. **Accessibility** — new players currently must read walls of text to parse combat
-4. **Perceived polish** — color-coded UI feels more "finished" than plain text
-
-**Bottom line:** The Systems layer has done its job (rich combat mechanics exist). The Display layer needs to catch up so players can *see* what's happening.
-
----
-
-**Next Steps:**
-1. Coulson incorporates this into master UX plan
-2. Display service gets color/formatting methods
-3. CombatEngine integrates active effect display
-4. Incremental rollout: P0 → P1 → P2 → P3
-# Display Architecture Deep-Dive — Findings Report
-**Date:** 2026-02-20  
-**Agent:** Hill  
-**Task:** Technical assessment of current display system and UX improvement opportunities
-
----
-
-## 1. CURRENT DISPLAY ARCHITECTURE
 
 ### Core Abstraction
 **IDisplayService** provides a complete separation layer between game logic and presentation:
@@ -7247,3 +7037,2729 @@ Work breakdown for Hill, Barton, and Romanoff. Covers:
 **Ready to proceed?** Review the summary, approve, and we'll kick off Phase 1.
 
 — Coulson, Lead Architect
+
+--- FILE: barton-intro-flow-ux-recommendations.md ---
+
+### 2026-02-22: Intro Flow & Character Creation UX Recommendations
+
+**By:** Barton  
+**Context:** Analysis of player psychology and game mechanics for optimal intro sequence.
+
+---
+
+## 1. Optimal Intro Flow
+
+**Recommended Order:**
+```
+1. Lore intro (optional, 3-4 sentences) → Sets tone
+2. Player name → Personal investment before mechanical choices
+3. Prestige display (if >0) → Shows progression context
+4. Class selection (redesigned) → Core mechanical identity
+5. Difficulty selection (with transparency) → Challenge tuning
+6. Seed display/override → Advanced option, auto-generated
+```
+
+**Rationale:**
+- **Name first** creates investment before mechanical friction. Players care more about choices after naming their character.
+- **Class before difficulty** lets players choose playstyle identity before tuning challenge. "I'm a Warrior" → "now how hard?"
+- **Seed last** because 95% of players don't care. Auto-generate it, show it before dungeon entry, allow override via CLI flag or advanced prompt.
+
+---
+
+## 2. Class Selection UX — Make It FEEL Like a Choice
+
+**Current Problem:** Dry bullet list with vague descriptions ("High HP" vs. actual +20 bonus). Passive traits (Warrior +5% @ low HP, Mage +20% spell damage, Rogue +10% dodge) are NEVER shown during selection—only discovered in combat.
+
+**Redesigned Card Format:**
+
+```
+╔══════════════════════════════════════════════════════════════╗
+║ [1] WARRIOR — The Unyielding Vanguard                       ║
+╠══════════════════════════════════════════════════════════════╣
+║ Base Stats (+ Bonuses):                                     ║
+║   HP: 100 → 120  |  ATK: 10 → 13  |  DEF: 3 → 5            ║
+║   Mana: 30 → 20                                             ║
+║                                                              ║
+║ Passive Trait:                                              ║
+║   🗡️ Battle Fury — +5% damage when HP < 50%                 ║
+║                                                              ║
+║ Playstyle:                                                  ║
+║   Tank through attrition. High sustain, slower ability use. ║
+║   Best for: Defensive, methodical players.                  ║
+╚══════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════╗
+║ [2] MAGE — The Arcane Bombardier                            ║
+╠══════════════════════════════════════════════════════════════╣
+║ Base Stats (+ Bonuses):                                     ║
+║   HP: 100 → 90  |  ATK: 10 → 10  |  DEF: 3 → 2             ║
+║   Mana: 30 → 60                                             ║
+║                                                              ║
+║ Passive Trait:                                              ║
+║   ✨ Spell Mastery — Abilities deal +20% damage             ║
+║                                                              ║
+║ Playstyle:                                                  ║
+║   Glass cannon burst. High ability spam, low survivability. ║
+║   Best for: Aggressive, high-risk players.                  ║
+╚══════════════════════════════════════════════════════════════╝
+
+╔══════════════════════════════════════════════════════════════╗
+║ [3] ROGUE — The Shadow Dancer                               ║
+╠══════════════════════════════════════════════════════════════╣
+║ Base Stats (+ Bonuses):                                     ║
+║   HP: 100 → 100  |  ATK: 10 → 12  |  DEF: 3 → 3            ║
+║   Mana: 30 → 30                                             ║
+║                                                              ║
+║ Passive Trait:                                              ║
+║   👤 Shadow Step — +10% dodge chance                        ║
+║                                                              ║
+║ Playstyle:                                                  ║
+║   Evasion-focused. Balanced offense/defense, relies on RNG. ║
+║   Best for: Tactical, risk-mitigating players.             ║
+╚══════════════════════════════════════════════════════════════╝
+```
+
+**Why This Works:**
+- **Explicit numbers** remove guesswork. Players see +20 HP, not "high HP."
+- **Passive trait shown upfront** defines combat feel. Mage players know spells are their win condition.
+- **Playstyle guidance** helps new players self-select. "Do I want sustain, burst, or evasion?"
+- **Visual hierarchy** (cards with emoji icons) creates excitement vs. plain bullet list.
+
+---
+
+## 3. Difficulty Selection — Show the Mechanics
+
+**Current Problem:** Three options with zero explanation. Players don't know what changes. "Casual" could mean 50% easier or 90% easier—unclear.
+
+**Redesigned Prompt:**
+
+```
+Choose your challenge:
+
+[1] CASUAL — Learning the Ropes
+    • Enemies have 30% less HP, ATK, DEF (0.7x scaling)
+    • Loot drops are 50% more generous (1.5x gold/items)
+    • Elite spawn rate: 3%
+    ➤ Recommended for first playthrough
+
+[2] NORMAL — Balanced Challenge
+    • Enemies use standard stats (1.0x scaling)
+    • Loot drops at base rates
+    • Elite spawn rate: 5%
+    ➤ The intended experience
+
+[3] HARD — Hardcore Mode
+    • Enemies have 30% more HP, ATK, DEF (1.3x scaling)
+    • Loot drops reduced by 30% (0.7x gold/items)
+    • Elite spawn rate: 8%
+    ➤ For veterans seeking punishment
+```
+
+**Why This Works:**
+- **Multipliers shown explicitly** (0.7x/1.0x/1.3x) make impact clear.
+- **Loot transparency** helps players understand risk/reward. Hard = less safety net.
+- **Elite spawn rates** communicate late-game danger scaling.
+- **Recommendations** guide new players without condescension.
+
+---
+
+## 4. Seed System — Stop Blocking Casual Players
+
+**Current Problem:** Mandatory seed prompt before game start. 95% of players don't care about reproducibility—only speedrunners and content creators do.
+
+**Recommended Approach:**
+
+**Option A: Auto-Generate + Display (Simplest)**
+```
+1. Automatically generate random seed in background (no prompt)
+2. Display seed right before dungeon entry:
+   "Entering dungeon... Seed: 482739 (share this to replay the same run)"
+3. Add optional CLI flag for custom seeds:
+   `dotnet run --seed 123456`
+4. No prompt unless --seed flag omitted but --ask-seed flag present
+```
+
+**Option B: Advanced Options Menu (More Flexible)**
+```
+1. After difficulty selection, show:
+   "Press [Enter] to begin, or [A] for Advanced Options"
+2. Advanced menu includes:
+   • Custom seed entry
+   • Prestige reset (future)
+   • Debug mode toggles (future)
+3. Default behavior (Enter) auto-generates seed and starts immediately
+```
+
+**Recommendation:** **Option A**. CLI flags are familiar to target audience (terminal users). Option B adds menu complexity for minimal gain.
+
+**Why This Works:**
+- **Zero friction for casual players.** Seed generation is invisible.
+- **Power users get control** via CLI flags (familiar pattern for devs/speedrunners).
+- **Seed still shareable** (displayed at dungeon entry), enabling reproducibility without blocking flow.
+
+---
+
+## 5. Prestige Integration — When to Show Bonuses
+
+**Current Flow:** Prestige bonuses displayed immediately after title screen (lines 10-13 of Program.cs), BEFORE name/class/difficulty selection.
+
+**Problem:** Players see "+1 Atk, +1 Def, +5 HP" but don't yet know base stats (100 HP, 10 ATK, 3 DEF). Bonuses feel abstract.
+
+**Redesigned Flow:**
+
+**Option 1: Show Before Class Selection (Recommended)**
+```
+1. Display prestige AFTER player enters name, BEFORE class cards
+2. Frame as "Your starting bonuses:"
+   "⭐ Prestige Level 2 — You begin with +2 ATK, +2 DEF, +10 HP"
+3. Class cards show TOTAL stats (base + class + prestige):
+   Warrior: HP 100 → 130 (20 class, 10 prestige)
+4. Players see their full power level at decision time
+```
+
+**Option 2: Show After Class Selection**
+```
+1. Player chooses class, sees base + class bonuses
+2. Prestige applied silently
+3. Display total stats after all choices:
+   "Final Stats: HP 130, ATK 14, DEF 7, Mana 20"
+4. One-line prestige acknowledgment: "Prestige bonuses applied: +2 ATK, +2 DEF, +10 HP"
+```
+
+**Recommendation:** **Option 1**. Players should see their TOTAL starting power when making class choice. Hiding prestige bonuses until after selection creates a "gotcha" feeling—players can't properly evaluate class tradeoffs.
+
+**Additional Prestige UX:**
+- If prestige level > 0, show progression hint:
+  ```
+  ⭐ Prestige Level 2 (6 wins total)
+  Next prestige level at 9 wins (+1 ATK, +1 DEF, +5 HP)
+  ```
+- Creates aspirational goal ("just 3 more wins for next bonus").
+
+---
+
+## 6. Optional Lore Intro — Set the Tone
+
+**Current Flow:** Jumps straight to name entry. No context, no stakes, no atmosphere.
+
+**Proposed Intro (3-4 sentences, skippable):**
+
+```
+The dungeon beneath the Shattered Peaks has claimed a thousand souls.
+Treasure and death lie in equal measure within its depths.
+You stand at the entrance, the weight of your weapon familiar in your hand.
+What you seek below—glory, gold, or simply survival—only the shadows know.
+
+[Press Enter to continue]
+```
+
+**Why This Works:**
+- **Sets tone** (grim, high-stakes) before mechanical choices.
+- **Establishes genre** (classic dungeon crawler, not comedic roguelike).
+- **Skippable** (single Enter press) to avoid annoying returning players.
+- **No lore dump.** 3-4 sentences max. Flavor, not exposition.
+
+---
+
+## Implementation Priority
+
+1. **High Priority (Critical UX Issues):**
+   - Redesign class selection cards with stat bonuses + passive traits (Issue #1)
+   - Add difficulty multiplier transparency (Issue #2)
+   - Move seed to auto-generate + CLI flag (Issue #3)
+
+2. **Medium Priority (Polish):**
+   - Reposition prestige display after name entry, before class selection (Issue #4)
+   - Add prestige progression hint ("Next level at X wins")
+
+3. **Low Priority (Nice-to-Have):**
+   - Add optional lore intro paragraph (Issue #5)
+
+---
+
+## Open Questions for Design Review
+
+1. **Should class cards show prestige bonuses inline?**
+   - Option A: Warrior HP 100 → 130 (includes prestige)
+   - Option B: Warrior HP 100 → 120, then separate "+ 10 prestige"
+
+2. **Should difficulty affect prestige gain rate?**
+   - Hard mode grants prestige faster (every 2 wins instead of 3)?
+   - Keeps prestige purely win-based (current design)?
+
+3. **Do we want a "recommended class" hint for first-time players?**
+   - E.g., "(New players: try Warrior for survivability)"
+   - Or trust playstyle descriptions?
+
+4. **Should seed be shown in HUD during gameplay?**
+   - Helps content creators verify correct seed mid-stream
+   - Adds visual clutter for everyone else
+
+---
+
+## Design Philosophy Applied
+
+- **Every choice is a tutorial.** Class selection teaches resource tradeoffs (HP vs. Mana). Difficulty teaches scaling mechanics.
+- **Informed choices > surprises.** Players should see exact stat bonuses, not vague descriptions.
+- **Friction kills retention.** Seed prompts block 95% of players to serve 5%. Remove friction.
+- **Progression should feel rewarding.** Prestige bonuses mean nothing if players don't see them applied at decision time.
+- **Tone matters.** The intro is the first impression. Lore paragraph sets dungeon crawler atmosphere.
+
+---
+
+**Next Steps:**
+- Review recommendations with team (Coulson, Hill)
+- Prototype class selection card format (DisplayService method)
+- Spike: CLI argument parsing for --seed flag
+- Update Program.cs flow based on finalized design
+
+--- FILE: barton-intro-systems-design.md ---
+# 2026-02-22: Intro Systems Design Notes
+
+**By:** Barton  
+**What:** Game systems perspective on intro improvements  
+**Why:** Planning session for intro UX improvements  
+
+---
+
+## Executive Summary
+
+The intro flow is **functionally complete but lacks informativeness**. Players make consequential choices (class, difficulty) with insufficient information to understand the tradeoffs. From a systems perspective, class selection needs transparent stat and playstyle information so players can make *meaningful* choices that affect how they play the game. Difficulty descriptions should communicate **mechanical impact**, not just flavor. The seed is currently over-emphasized for a single-player experience.
+
+---
+
+## Current State Assessment
+
+### What Players See Today
+```
+Title screen
+↓
+Player name input
+↓
+Seed selection (mandatory prompt)
+↓
+Difficulty choice: [1] Casual [2] Normal [3] Hard (no explanation)
+↓
+Class choice with 2-line description for each class
+↓
+Game starts
+```
+
+### Current Class Information Quality
+
+| Class   | Stat Bonuses (Hidden)              | Shown Description                          | Trait (Shown in-game) |
+|---------|------------------------------------|--------------------------------------------|----------------------|
+| Warrior | +3 ATK, +2 DEF, +20 HP, -10 Mana | High HP, defense, attack bonus. Reduced mana. | +5% damage @ <50% HP |
+| Mage    | +0 ATK, -1 DEF, -10 HP, +30 Mana | High mana and powerful spells. Reduced HP. | +20% spell damage     |
+| Rogue   | +2 ATK, +0 DEF, +0 HP, +0 Mana  | Balanced with attack bonus. Extra dodge.   | +10% dodge chance     |
+
+**Problem:** Players don't see the *numbers*. Descriptions are vague ("High HP" vs. actual +20). No indication of *playstyle impact*. Rogue description mentions "balanced" but offers no mechanical clarity on what makes them different from default.
+
+### Current Difficulty Information Quality
+
+Three options presented with **zero explanation** of what each means:
+- Casual: Unknown scaling factors
+- Normal: Assumed default
+- Hard: No indication of what gets harder
+
+**Problem:** A new player can't answer "which difficulty should I choose for my first playthrough?" Players don't know if Hard means enemies have 10% more stats or 100% more.
+
+### Current Seed Handling
+
+Forced early prompt asking for reproducibility option. If skipped, shows "Random seed: XXXXXX" with instruction to "share this to replay."
+
+**Problem:** Single-player experience; seed is not a primary choice factor. Overloading this in the intro flow for the 5% of players interested in reproducibility.
+
+---
+
+## Design Goals & Constraints
+
+### Overarching Principles
+1. **Players should make informed choices** — stats, abilities, and playstyle tradeoffs should be visible at selection time
+2. **Difficulty should communicate mechanical impact** — players understand what "harder" means in concrete terms
+3. **Game feel over technical features** — seed/reproducibility is cool but not a primary game loop concern
+4. **Onboarding should establish playstyle** — the class choice should telegraph the game's tactical depth and core loop
+
+### Constraints from System Design
+- **Prestige system exists** — returning players get stat bonuses; intro should acknowledge this
+- **Ability unlock system exists** — Warrior/Mage/Rogue have different ability availability; should hint at this
+- **Difficulty scaling is mechanical** — enemy HP, loot rates, gold multipliers are concrete per DifficultySettings
+- **Status effects / traits are real** — each class has a passive trait that defines playstyle (Warrior comeback, Mage burst, Rogue evasion)
+
+---
+
+## System-Driven Design Recommendations
+
+### 1. Class Selection Card Redesign
+
+**Current Problem:** Text descriptions don't convey stat tradeoffs. Players can't compare meaningfully.
+
+**Recommended Card Format:**
+```
+┌─────────────────────────────────────────────┐
+│ [1] WARRIOR - "The Bastion"                 │
+├─────────────────────────────────────────────┤
+│ Starting Stats:                              │
+│   HP: 50 + 20 = 70   ATK: 10 + 3 = 13       │
+│   DEF: 8 + 2 = 10    Mana: 30 - 10 = 20     │
+│                                              │
+│ Playstyle:                                   │
+│   • Sustain focused — high defense absorbs   │
+│     enemy damage                              │
+│   • Comeback mechanic — gains +5% damage     │
+│     when HP < 50%, encouraging aggressive    │
+│     play in desperate situations              │
+│   • Slow mana — abilities are supplementary  │
+│     to physical attacks                       │
+└─────────────────────────────────────────────┘
+```
+
+**Rationale:**
+- **Shows actual numbers** — players see the tradeoff (Warrior trades mana for HP/DEF)
+- **Explains the why** — "comeback mechanic" tells experienced players about Warrior's identity
+- **Establishes playstyle** — "sustain focused" vs. "burst focused" helps players choose based on preference
+- **Emphasizes trait** — passive ability is mentioned upfront, not buried in combat menus
+
+**Repeating for all 3 classes:**
+```
+┌─────────────────────────────────────────────┐
+│ [2] MAGE - "The Evoker"                     │
+├─────────────────────────────────────────────┤
+│ Starting Stats:                              │
+│   HP: 50 - 10 = 40   ATK: 10 + 0 = 10       │
+│   DEF: 8 - 1 = 7     Mana: 30 + 30 = 60     │
+│                                              │
+│ Playstyle:                                   │
+│   • Burst damage focus — high mana enables   │
+│     frequent ability usage                   │
+│   • Spell-first combat — +20% spell damage   │
+│     makes abilities primary, attacks         │
+│     supplementary                             │
+│   • Fragile — low HP/DEF means positioning   │
+│     and ability chaining are critical        │
+└─────────────────────────────────────────────┘
+
+┌─────────────────────────────────────────────┐
+│ [3] ROGUE - "The Opportunist"               │
+├─────────────────────────────────────────────┤
+│ Starting Stats:                              │
+│   HP: 50 + 0 = 50    ATK: 10 + 2 = 12       │
+│   DEF: 8 + 0 = 8     Mana: 30 + 0 = 30      │
+│                                              │
+│ Playstyle:                                   │
+│   • Evasion focused — +10% dodge chance      │
+│     turns defense into probability, not      │
+│     raw mitigation                            │
+│   • Versatile — balanced stats + combat     │
+│     bonus good for learning all mechanics    │
+│   • Hit-and-fade — medium damage/mana       │
+│     supports both abilities and attacks      │
+└─────────────────────────────────────────────┘
+```
+
+**Implementation Note:** No code changes needed. Display service already has `PlayerClassDefinition.All` to iterate. Just enhance `ConsoleDisplayService.ShowClassSelection()` to format richer output.
+
+---
+
+### 2. Difficulty Selection with Mechanical Clarity
+
+**Current Problem:** "Casual/Normal/Hard" with no context. Players don't understand the **multipliers**.
+
+**Recommended Format:**
+```
+Choose your difficulty:
+
+[1] CASUAL — "Learning the Ropes"
+    Enemy Power: 70% (weaker enemies)
+    Loot Frequency: +50% (more items drop)
+    Gold Rewards: +50% (richer experience)
+    → Good for: First playthrough, learning mechanics, relaxed pace
+
+[2] NORMAL — "Balanced Challenge" (recommended)
+    Enemy Power: 100% (baseline)
+    Loot Frequency: 100% (balanced)
+    Gold Rewards: 100% (baseline rewards)
+    → Good for: Experience players, intended experience
+
+[3] HARD — "Hardcore Mode"
+    Enemy Power: 130% (stronger enemies)
+    Loot Frequency: 70% (fewer drops)
+    Gold Rewards: 70% (lean economy)
+    → Good for: Challenge runs, experienced players
+
+Enter your choice [1-3] (default: 2 Normal):
+```
+
+**Rationale:**
+- **Explicitly states multipliers** — players know exactly what "harder" means
+- **Recommends default** — reduces decision paralysis for new players
+- **Frames difficulty as intent** — "Learning the Ropes" is not shameful; it's a valid playstyle
+- **Sets economy expectations** — Hard mode communicates scarcity, not just danger
+
+**Implementation Note:** Data already exists in `DifficultySettings.For()`. Just format output in `ConsoleDisplayService.ShowDifficultyMenu()`. No calculation changes needed.
+
+---
+
+### 3. Seed Handling: Move to Advanced Options
+
+**Current Problem:** Reproducibility is interesting for speedrunners/content creators (5% of players), but it's blocking the intro flow for everyone.
+
+**Recommended Approach:**
+
+**Main Flow (unchanged):**
+```
+Player name: [_______]
+Choose class: [1] Warrior [2] Mage [3] Rogue
+Choose difficulty: [1] Casual [2] Normal [3] Hard
+→ Generate random seed internally
+→ Display before entering dungeon: "Your seed: XXXXX (share to replay)"
+```
+
+**Advanced Options (post-difficulty):**
+```
+Advanced Options:
+
+Would you like to enter a custom seed for reproducible runs? [Y/n]
+→ If yes: "Enter seed (6 digits): [_______]"
+→ If no: auto-generate
+```
+
+**Or simpler (not modal):**
+```
+[Press S to set custom seed, or Enter to continue with random...]
+```
+
+**Rationale:**
+- **Unblocks casual players** — they skip right to playing
+- **Honors speedrunner/content creator needs** — opt-in advanced feature
+- **Improves game feel** — reduces intro friction significantly
+- **Still shows seed pre-dungeon** — anyone interested can write it down for later
+
+**Systems Consideration:** Seed is mechanically important for replay consistency, but from a **player experience standpoint**, it's a niche feature. Defaulting to random with visible output satisfies both audiences.
+
+---
+
+### 4. Prestige System Acknowledgment
+
+**Current State:** If prestige.PrestigeLevel > 0, shows prestige display after title.
+
+**Recommendation:** Keep the prestige display, but enhance it slightly:
+
+```
+═══════════════════════════════════════════
+  PRESTIGE LEVEL 2 — "Veteran Adventurer"
+  Bonuses: +4 starting ATK, +3 DEF, +20 HP
+  Progress: Unlock PRESTIGE LEVEL 3 at 250 kills
+═══════════════════════════════════════════
+
+[Returning player? Your bonuses apply to all classes above.]
+```
+
+**Rationale:**
+- **Reinforces progression** — shows prestige matters
+- **Manages expectations** — shows stat additions are real, not flavor
+- **Motivates continuation** — "unlock next level at X" creates aspirational goal
+
+**Implementation Note:** Prestige system already exists. Just enhance `PrestigeSystem.GetPrestigeDisplay()` output.
+
+---
+
+### 5. Optional: One-Paragraph Lore Intro
+
+**Current State:** None. Goes straight to name input.
+
+**Recommendation:**
+
+```
+═══════════════════════════════════════════════════════════
+                    THE DUNGEON AWAITS
+
+The ancient dungeon has been sealed for centuries, guarded
+by cursed guardians and forgotten treasures. Rumors speak
+of an artifact at its heart—power beyond measure for those
+brave enough to claim it. But the dungeon shows no mercy to
+the unprepared. Many have entered. Few have returned.
+
+Will you be the one?
+═══════════════════════════════════════════════════════════
+
+Enter your adventurer's name: [_______]
+```
+
+**Rationale:**
+- **Sets tone** — dungeon crawlers work better with a sense of dread/adventure
+- **Justifies why** — "why are you going down here?" is answered
+- **Minimal friction** — 3-4 sentences, no gameplay impact
+- **Optional** — can be toggled in future "skip intro" option
+
+**Systems Consideration:** This is narrative setup, not mechanics. From a systems perspective, it establishes the *feeling* that the game is dangerous and worth taking seriously. This influences player decision-making (choosing Casual vs. Hard becomes a "how prepared am I?" decision rather than just "I want an easier game").
+
+---
+
+## Summary of Improvements
+
+| Aspect | Current | Recommended | Impact |
+|--------|---------|-------------|--------|
+| **Class Info** | 2 lines per class, no stats | Full stat card + playstyle | Players make informed choices |
+| **Difficulty Info** | 3 names only | Names + multipliers + recommendations | Players understand scaling |
+| **Seed Flow** | Mandatory prompt | Optional advanced feature | Reduces intro friction |
+| **Prestige Display** | If applicable | Enhanced with progression hint | Reinforces long-term goals |
+| **Lore** | None | Optional opening paragraph | Establishes game tone/stakes |
+
+---
+
+## Implementation Priority
+
+1. **Class Selection Cards** (1-2 hours) — highest impact, demonstrates stats/tradeoffs
+2. **Difficulty Descriptions** (30 min) — quick win, immediately clarifies player choices
+3. **Seed to Advanced Option** (30 min) — friction reduction
+4. **Prestige Enhancement** (20 min) — polish returning player experience
+5. **Lore Intro** (optional, 15 min) — tone-setting, can be added/removed easily
+
+---
+
+## Design Philosophy Applied
+
+**Systems Perspective:**
+- The intro is the first tutorial. Players learn from choices they make and information they're given. Make choices visible.
+- Class selection is the first meaningful decision in the game. It should **teach the game's resource model** (HP/ATK/DEF/Mana) through example, not just flavor text.
+- Difficulty is a game mechanics lever (scaling multipliers), not just flavor. Communicate the mechanics.
+- Each class has a distinct playstyle (Warrior sustain, Mage burst, Rogue evasion). Make this explicit so players choose based on preference, not random guessing.
+
+**Game Feel:**
+- Intro friction (long menus, unclear options) kills retention. Every prompt should have clear purpose.
+- Prestige/progression mechanics should feel rewarding. Showing advancement paths encourages return playthroughs.
+- Tone matters. A one-paragraph danger setup makes the first enemy encounter feel real, not abstract.
+
+---
+
+## Open Questions for Design Review
+
+1. Should difficulty recommendations include mention of permadeath/save mechanics? (Currently no permadeath system exists.)
+2. Should class cards show unlock level hints for abilities? (e.g., "Warrior abilities unlocked at L1, L3, L5, L7")
+3. Should the lore intro be toggleable for speedrunners? (Advanced option?)
+4. Should returning players see a "Quick Start" option? (Remember last class/difficulty, skip choices?)
+5. Should Rogue description be clearer about evasion being *probabilistic* vs. Warrior's *deterministic* defense?
+
+--- FILE: coulson-intro-sequence-architecture.md ---
+
+### 2026-02-22: Introduction Sequence Architecture Design
+**By:** Coulson  
+**What:** Comprehensive architectural design for game introduction sequence improvements (title, lore, character creation, UX)  
+**Why:** Current intro is functional but lacks atmosphere, narrative hook, and visual polish. This design provides specific implementation guidance for Hill/Barton without deviating from established patterns.
+
+---
+
+## 1. TITLE SCREEN
+
+### Visual Design
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║    ▓█████▄  █    ██  ███▄    █   ▄████  ███▄    █  ▒███████▒    ║
+║    ▒██▀ ██▌ ██  ▓██▒ ██ ▀█   █  ██▒ ▀█▒ ██ ▀█   █  ▒ ▒ ▒ ▄▀░    ║
+║    ░██   █▌▓██  ▒██░▓██  ▀█ ██▒▒██░▄▄▄░▓██  ▀█ ██▒ ░ ▒ ▄▀▒░     ║
+║    ░▓█▄   ▌▓▓█  ░██░▓██▒  ▐▌██▒░▓█  ██▓▓██▒  ▐▌██▒   ▄▀▒   ░    ║
+║    ░▒████▓ ▒▒█████▓ ▒██░   ▓██░░▒▓███▀▒▒██░   ▓██░ ▒███████▒    ║
+║     ▒▒▓  ▒ ░▒▓▒ ▒ ▒ ░ ▒░   ▒ ▒  ░▒   ▒ ░ ▒░   ▒ ▒  ░▒▒ ▓░▒░▒    ║
+║     ░ ▒  ▒ ░░▒░ ░ ░ ░ ░░   ░ ▒░  ░   ░ ░ ░░   ░ ▒░ ░░▒ ▒ ░ ▒    ║
+║     ░ ░  ░  ░░░ ░ ░    ░   ░ ░ ░ ░   ░    ░   ░ ░  ░ ░ ░ ░ ░    ║
+║       ░       ░              ░       ░          ░      ░ ░        ║
+║     ░                                                ░            ║
+║                                                                   ║
+║                    A Text-Based Dungeon Crawler                  ║
+║                                                                   ║
+║                      ⚔️  DESCEND IF YOU DARE  ⚔️                   ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+**Color Scheme:**
+- Title ASCII: `BrightYellow` (gold/treasure theme)
+- Subtitle: `Gray` (subtle)
+- Tagline: `BrightRed` (danger/adventure theme)
+- Box borders: `Cyan` (consistent with room headers)
+
+### Technical Implementation
+- New method: `IDisplayService.ShowEnhancedTitle()`
+- ConsoleDisplayService implements with color-coded WriteLine calls
+- Add `Systems.ColorCodes.BrightYellow` constant if missing
+- Replace Program.cs line 7 `display.ShowTitle()` → `display.ShowEnhancedTitle()`
+
+---
+
+## 2. STORY/LORE INTRO
+
+### Text Content (Atmospheric Hook)
+After title screen, display:
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║                                                                   ║
+║  The ancient dungeon of Dungnz stirs beneath the mountain.       ║
+║                                                                   ║
+║  Legends speak of treasures hoarded by its keeper—and of the     ║
+║  countless adventurers who never returned to tell the tale.      ║
+║                                                                   ║
+║  You stand at the entrance, torch in hand. The stone steps       ║
+║  descend into darkness. Will you claim glory... or join the      ║
+║  forgotten?                                                       ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+Press [ENTER] to begin your descent...
+```
+
+**Color Scheme:**
+- Narrative text: `Cyan` (mystical/ancient feel)
+- "Press ENTER" prompt: `Yellow` (call to action)
+
+### Enhanced Design
+If prestige > 0, show:
+
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║                      RETURNING CHAMPION                           ║
+║                                                                   ║
+║  Prestige Level: ⭐ 3                                             ║
+║  Runs Completed: 9 / 12 (75% win rate)                           ║
+║                                                                   ║
+║  Bonus Stats: +3 Attack | +3 Defense | +15 HP                   ║
+║                                                                   ║
+║  The dungeon remembers your strength. You begin this run with    ║
+║  enhanced abilities.                                              ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+
+Press [ENTER] to continue...
+```
+
+**Color Scheme:**
+- "RETURNING CHAMPION": `BrightYellow` (celebratory)
+- Prestige stars: `Yellow`
+- Stats: `Green` (positive buffs)
+- Narrative: `Gray` (flavor text)
+
+### 4a. Name Entry (Enhanced)
+
+**Current:**
+```
+Enter your name, adventurer: _
+```
+
+**Enhanced:**
+```
+╔═══════════════════════════════════════════════════════════════════╗
+║                      CHARACTER CREATION                           ║
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  What name will be carved on your tombstone... or sung by        ║
+║  bards in celebration?                                            ║
+║                                                                   ║
+║  Enter your name: _                                               ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+**Technical:**
+- New method: `IDisplayService.ShowNamePrompt()`
+- Returns string (player name)
+- Replaces Program.cs line 15: `var name = display.ShowNamePrompt();`
+
+---
+
+### 4b. Difficulty Selection (Enhanced)
+
+**Current:**
+```
+Choose difficulty: [1] Casual  [2] Normal  [3] Hard
+> _
+```
+
+**Enhanced:**
+```
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  Choose your challenge:                                           ║
+║                                                                   ║
+║  [1] Casual   — For those who seek exploration over danger       ║
+║                 • Enemies deal 80% damage                         ║
+║                 • +20% gold and XP rewards                        ║
+║                                                                   ║
+║  [2] Normal   — Balanced risk and reward                          ║
+║                 • Standard difficulty                             ║
+║                                                                   ║
+║  [3] Hard     — Only the brave or foolish dare                   ║
+║                 • Enemies deal 120% damage                        ║
+║                 • +50% gold and XP rewards                        ║
+║                 • Boss has enhanced abilities                     ║
+║                                                                   ║
+║  Enter difficulty [1-3]: _                                        ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+**Color Scheme:**
+- Option numbers: `Yellow`
+- Difficulty names: `White` (Casual), `Cyan` (Normal), `Red` (Hard)
+- Bullet points: `Gray`
+
+**Technical:**
+- New method: `IDisplayService.ShowDifficultySelection()` → Difficulty enum
+- Validates input (1-3), re-prompts on invalid
+- Replaces Program.cs lines 28-39
+
+---
+
+### 4c. Class Selection (Enhanced)
+
+**Current:**
+```
+Choose your class:
+[1] Warrior - High HP, defense, and attack bonus. Reduced mana.
+[2] Mage - High mana and powerful spells. Reduced HP and defense.
+[3] Rogue - Balanced with an attack bonus. Extra dodge chance.
+> _
+```
+
+**Enhanced:**
+```
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  Choose your path:                                                ║
+║                                                                   ║
+║  [1] ⚔️  WARRIOR                                                   ║
+║      "Steel and courage. Nothing more, nothing less."             ║
+║                                                                   ║
+║      Starting Stats: 120 HP | 40 Mana | 13 Attack | 7 Defense   ║
+║      Passive: +5% damage when HP < 50% (Last Stand)              ║
+║                                                                   ║
+║  [2] 🔮 MAGE                                                       ║
+║      "Knowledge is power. Power is survival."                     ║
+║                                                                   ║
+║      Starting Stats: 90 HP | 80 Mana | 10 Attack | 4 Defense    ║
+║      Passive: Spells deal +20% damage (Arcane Mastery)           ║
+║                                                                   ║
+║  [3] 🗡️  ROGUE                                                     ║
+║      "Strike first. Strike true. Disappear."                      ║
+║                                                                   ║
+║      Starting Stats: 100 HP | 50 Mana | 12 Attack | 5 Defense   ║
+║      Passive: +10% dodge chance (Shadow Step)                    ║
+║                                                                   ║
+║  Enter class [1-3]: _                                             ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+**Color Scheme:**
+- Class names: `BrightRed` (Warrior), `BrightBlue` (Mage), `BrightGreen` (Rogue)
+- Flavor quotes: `Gray` (italic feel)
+- Stats: `Cyan`
+- Passive text: `Yellow`
+
+**Technical:**
+- New method: `IDisplayService.ShowClassSelection()` → PlayerClassDefinition
+- Display calculated starting stats (base Player stats + class bonuses + prestige)
+- Validates input (1-3), re-prompts on invalid
+- Replaces Program.cs lines 41-54
+
+---
+
+## 5. SEED INPUT (REVISED PLACEMENT)
+
+### Current Flow
+Title → Prestige → Name → **Seed** → Difficulty → Class → Start
+
+### Recommended Flow
+Title → Prestige → Name → Difficulty → Class → **Seed** → Start
+
+**Rationale:**
+- Seed is advanced/technical feature (most players skip)
+- Character identity (name/class) should come first for narrative flow
+- Seed feels like "advanced options" — place last
+
+### Enhanced Presentation
+
+**Option A: Collapsed by default**
+```
+╠═══════════════════════════════════════════════════════════════════╣
+║                                                                   ║
+║  Advanced: Enter a seed for reproducible runs                    ║
+║            (or press ENTER for random seed)                       ║
+║                                                                   ║
+║  Seed: _                                                          ║
+║                                                                   ║
+╚═══════════════════════════════════════════════════════════════════╝
+```
+
+**Option B: Hidden unless requested**
+Skip seed prompt entirely; generate random seed.
+Display seed on game start:
+```
+═══════════════════════════════════════════════════════════════════
+Your adventure begins... [Seed: 847293]
+(Share this seed to replay the same dungeon layout)
+═══════════════════════════════════════════════════════════════════
+```
+
+**Recommendation:** Use Option B — most players don't care about seeds until they have a memorable run.
+
+**Technical:**
+- Keep seed generation logic in Program.cs (lines 17-26)
+- Remove seed prompt
+- Display seed after class selection: `display.ShowMessage($"⚙️ Seed: {actualSeed} (share this to replay the same dungeon)")`
+
+---
+
+## 6. FLOW SEQUENCE (FINAL ARCHITECTURE)
+
+### Recommended Order
+1. **ShowEnhancedTitle()** — Full ASCII art, tagline
+2. **ShowIntroNarrative()** — 3-4 sentence atmospheric hook, wait for Enter
+3. **ShowPrestigeIntro(prestige)** — If prestige > 0, show returning champion screen, wait for Enter
+4. **ShowNamePrompt()** — Character creation header, name entry
+5. **ShowDifficultySelection()** — Multi-line difficulty descriptions with mechanics
+6. **ShowClassSelection()** — Class flavor quotes, calculated starting stats, passive abilities
+7. **Display generated seed** — One-line message after class selection
+8. **Begin dungeon** — Transition to first room
+
+**Total Time:** ~60-90 seconds (skip-friendly with Enter keypresses)
+
+---
+
+## 7. ARCHITECTURAL IMPLEMENTATION PLAN
+
+### Phase 1: Interface Definition (Coulson / Hill)
+- Extend `IDisplayService` with new methods:
+  - `void ShowEnhancedTitle()`
+  - `void ShowIntroNarrative()`
+  - `string ShowNamePrompt()`
+  - `Difficulty ShowDifficultySelection()`
+  - `PlayerClassDefinition ShowClassSelection(PrestigeData? prestige)` ← needs prestige to calculate display stats
+- Add `void ShowPrestigeIntro(PrestigeData data)` to `PrestigeSystem` (static method, display injection)
+
+### Phase 2: ConsoleDisplayService Implementation (Hill)
+- Implement 4 new display methods
+- Use existing `ColorCodes` constants (add BrightYellow if missing)
+- Include input validation loops for difficulty/class selection
+- Calculate display stats for class selection: base Player stats + class bonuses + prestige bonuses
+
+### Phase 3: Program.cs Integration (Hill)
+- Replace lines 7-54 with new display method calls
+- Move seed display to after class selection
+- Remove seed prompt (use silent random generation)
+- Pass prestige data to ShowClassSelection for stat calculation
+
+### Phase 4: Testing (Romanoff)
+- Unit tests for new display methods (TestDisplayService verification)
+- Integration test: full intro sequence flow
+- Verify prestige stat display matches actual applied bonuses
+- Edge cases: prestige=0, empty name input, invalid difficulty/class input
+
+---
+
+## 8. ARCHITECTURE DECISIONS RATIONALE
+
+### Stay in Program.cs vs Extract IntroSequence Service?
+**Decision:** Extract to `Systems.IntroSequenceManager` in future refactor, but not required for this feature.
+
+**Rationale:**
+- Program.cs currently 83 LOC with intro sequence
+- Extracting intro logic would move it to ~50 LOC
+- Not a critical refactor for v3 — defer to v4 "Launcher/Menu System" work
+- Current approach: Keep in Program.cs, use DisplayService methods to encapsulate presentation
+
+**If extracted later:**
+```csharp
+var intro = new IntroSequenceManager(display, prestigeSystem);
+var config = intro.RunIntroSequence(); // returns (name, seed, difficulty, class)
+```
+
+### Why Not Add IntroService?
+- DisplayService already handles presentation
+- IntroSequence would just orchestrate DisplayService calls
+- Adds abstraction layer without clear value (no alternative intro flows planned)
+- Keep it simple: orchestration stays in Program.cs until complexity justifies extraction
+
+### Input Validation: DisplayService or Caller?
+**Decision:** DisplayService owns validation for prompted inputs.
+
+**Rationale:**
+- Prompts like ShowDifficultySelection() return validated Difficulty enum
+- Caller doesn't need to handle invalid input — display layer loops until valid
+- Consistent with ReadPlayerName() pattern (display owns UX loop)
+
+### Calculated Stats Display for Class Selection
+**Problem:** Class selection should show final starting stats (base + class + prestige), but this requires prestige data.
+
+**Solution:** `ShowClassSelection(PrestigeData? prestige)` parameter
+- DisplayService calculates display values: base Player stats + class modifiers + prestige bonuses
+- Does NOT apply stats — that's still Program.cs responsibility
+- Allows accurate preview without duplicating stat application logic
+
+**Alternative Considered:** Pass Player instance to ShowClassSelection
+- Rejected: Player shouldn't exist before class selection completes
+- Rejected: Violates separation — DisplayService shouldn't mutate models
+
+---
+
+## 9. FILE IMPACT SUMMARY
+
+**New Files:** None  
+**Modified Files:**
+- `Display/IDisplayService.cs` — Add 4 new method signatures
+- `Display/ConsoleDisplayService.cs` — Implement 4 new methods (~150 LOC)
+- `Systems/PrestigeSystem.cs` — Add ShowPrestigeIntro static method (~30 LOC)
+- `Systems/ColorCodes.cs` — Add BrightYellow constant if missing
+- `Program.cs` — Replace lines 7-54 with new display method calls (~20 LOC)
+
+**Test Files:**
+- `Dungnz.Tests/Display/ConsoleDisplayServiceTests.cs` — Unit tests for new methods (~100 LOC)
+- `Dungnz.Tests/Systems/PrestigeSystemTests.cs` — Test prestige intro display (~20 LOC)
+- `Dungnz.Tests/Integration/IntroSequenceTests.cs` — NEW FILE, integration tests (~80 LOC)
+
+---
+
+## 10. ACCEPTANCE CRITERIA
+
+**Visual Quality:**
+- ✅ Enhanced ASCII title uses full terminal width
+- ✅ Consistent box-drawing characters across all intro screens
+- ✅ Color-coded difficulty/class names improve scannability
+- ✅ Prestige screen celebrates returning players with stats
+
+**UX Flow:**
+- ✅ Intro narrative provides atmospheric hook without blocking
+- ✅ Seed generation silent by default (power users can note seed from start message)
+- ✅ Difficulty descriptions include mechanical impact (damage %, rewards)
+- ✅ Class selection shows calculated starting stats (base + class + prestige)
+
+**Technical:**
+- ✅ No hardcoded Console.Write in Program.cs (all via DisplayService)
+- ✅ Input validation handled by DisplayService methods
+- ✅ Prestige stat display matches actual applied bonuses
+- ✅ All new methods covered by unit tests (>90% branch coverage)
+
+**Backward Compatibility:**
+- ✅ Existing Player/PrestigeData models unchanged
+- ✅ Save files unaffected
+- ✅ Game loop integration unchanged
+
+---
+
+**Estimated Effort:** 6-8 hours (Hill: 5h implementation, Romanoff: 2h testing, Coulson: 1h review)  
+**Risk:** Low — pure presentation layer, no game logic changes  
+**Dependencies:** None — can start immediately  
+**Merge Readiness:** Requires code review (display content/tone), UX feedback (skip-friendliness)
+
+--- FILE: coulson-pr223-review.md ---
+# PR #223 Review — Barton: ColorizeDamage LastIndexOf fix + README
+
+**Reviewer:** Coulson (Lead)
+**Branch:** `squad/220-colorize-damage-fix`
+**Verdict:** ✅ APPROVED
+
+## Code Review
+
+### `ReplaceLastOccurrence` helper (CombatEngine.cs)
+- Clean `private static` helper using `LastIndexOf` — correct approach
+- Null-safe: returns `source` unchanged if `find` not found
+- XML doc accurately explains why last-occurrence is the right semantic
+- Both call sites updated: normal damage and crit path
+
+### `ColorizeDamage` changes
+- `string.Replace` → `ReplaceLastOccurrence` on both code paths (normal + crit)
+- Preserves existing colorization logic (BrightRed for damage, Yellow+Bold for crits)
+- Fix directly addresses Issue #220: when damage number appears in enemy name, only the trailing (actual damage) occurrence is colorized
+
+### README update
+- Accurately documents the `LastIndexOf` behaviour
+- Placed in the correct section (Display & Colours)
+- Concise, informative
+
+### Build & Tests
+- ✅ All 267 tests pass on this branch
+- No new warnings introduced
+
+## Decision
+Merge to master. Clean, minimal, correct fix.
+
+--- FILE: coulson-pr224-review.md ---
+# PR #224 Review — Coulson
+
+**PR:** #224 `squad/219-221-222-display-fixes`
+**Verdict:** ✅ APPROVED
+**Date:** 2025-07-15
+
+## Summary
+
+All three follow-up fixes from PR #218 code review are correctly addressed:
+
+### #219 — README health threshold table
+The table now matches the actual `HealthColor()` switch expression:
+- `> 70%` → Green
+- `40–70%` → Yellow
+- `20–40%` → Red
+- `≤ 20%` → Bright Red
+
+Verified against `Systems/ColorCodes.HealthColor()`. ✅
+
+### #221 — `ShowEquipmentComparison` right-border alignment
+Padding now uses `StripAnsiCodes()` to compute visible character width before calculating whitespace. The `attackPrefix.Length - 1` correctly excludes the left `║` border from the inner-width calculation, and `innerWidth = 39` matches the box geometry. ✅
+
+### #222 — `ShowPlayerStats` refactored to use `ShowColoredStat()`
+All six inline `Colorize` / manual ANSI calls replaced with `ShowColoredStat(label, value, color)`. HP and Mana use dynamic threshold colors; Attack/Defense/Gold/XP use static colors. Label padding via `{label,-8}` in the helper is consistent. ✅
+
+### Bonus: #220 — `ColorizeDamage` last-occurrence fix
+`ReplaceLastOccurrence` helper added to `CombatEngine` — correct `LastIndexOf`-based implementation. Both call sites updated. ✅
+
+### Test quality
+- Proper xUnit `[Fact]` tests with clear Arrange-Act-Assert structure
+- `ColorizeDamage_NormalCase_OnlyColorizesDamageNumber` — baseline: single occurrence, correct colorization
+- `ColorizeDamage_EdgeCase_OnlyLastOccurrenceIsColorized_WhenDamageAppearsInEnemyName` — the #220 edge case: enemy named "5" dealing 5 damage, verifies only the trailing "5" is colorized
+- `CountColorized` helper is clean and reusable
+- Uses `RawCombatMessages` (new property on FakeDisplayService) to inspect ANSI-intact output — good design
+
+### FakeDisplayService change
+- Added `RawCombatMessages` list that stores messages before ANSI stripping
+- Minimal, non-breaking addition — existing `CombatMessages` (stripped) still works for all other tests
+
+## ShowEquipmentComparison Alignment Tests (ShowEquipmentComparisonAlignmentTests.cs) — ❌ FAIL (2/2)
+
+### Test quality — tests are CORRECT
+- `ShowEquipmentComparison_AllBoxLines_HaveConsistentVisualWidth_WhenDeltasAreColoured` — verifies every `║`-prefixed line matches border width after ANSI stripping
+- `ShowEquipmentComparison_RightBorderChar_AppearsAtConsistentColumn_WhenOnlyAttackChanges` — mixed case: one delta row, one plain row
+- Both use `IDisposable` pattern with `StringWriter` console capture — clean
+- `BoxWidth` helper correctly derives expected width from the `╔═══╗` border line
+
+### Why they fail
+The tests correctly detect a **remaining alignment bug**: master's #221 fix (PR #224) corrected the Attack/Defense delta rows but did NOT fix the non-delta content rows:
+- `║ Current:  {name,-27}║` → produces 40-char lines
+- `║ New:      {name,-27}║` → produces 40-char lines
+- Border `╔═══...═══╗` → 41 chars
+
+The padding should be `,-28` (not `,-27`) to match the 41-char border width. This is a **production code bug**, not a test bug.
+
+### Action needed
+**Follow-up required:** Fix `ShowEquipmentComparison` non-delta rows to use correct padding (`,-28`). File as follow-up to #221 or have Barton fix before merge.
+
+## Test Results Summary
+- ColorizeDamage tests: 2/2 PASS ✅
+- Alignment tests: 2/2 FAIL ❌ (correct tests, incomplete production fix)
+- All other tests: 269/269 PASS ✅
+
+## Decision
+Tests are well-structured, correctly written, and exercise the right edge cases. Approve the test code. The alignment test failures are a signal that the #221 fix needs a follow-up patch to the `Current:`/`New:` rows in `ShowEquipmentComparison`. **Do not merge until alignment fix lands** (or tests will break CI).
+
+--- FILE: coulson-pr226-review.md ---
+# PR #226 Review — Hill: Box alignment follow-up (#221)
+
+**Reviewer:** Coulson (Lead)
+**Branch:** `squad/221-box-alignment-followup`
+**Verdict:** ✅ APPROVED
+
+## Summary
+
+Targeted one-commit fix: changes item name row padding from `,-27` to `,-28` in `ShowEquipmentComparison`.
+
+## Verification
+
+### All three occurrences fixed ✅
+1. `oldItem.Name,-28` — current item (equipped)
+2. `"(none)",-28` — current item (empty slot fallback)
+3. `newItem.Name,-28` — new item
+
+### Width math ✅
+- Border line `╔═══...═══╗`: `╔` + 39×`═` + `╗` = 41 visible chars
+- Content line: `║` (1) + ` Current:  ` (11) + name (28 padded) + `║` (1) = 41 ✅
+- Previous `,-27` produced 40-char lines — off by one vs 41-char border
+
+### Scope ✅
+- Single file changed: `Display/DisplayService.cs`
+- Three lines modified, all in `ShowEquipmentComparison`
+- No logic changes, no interface changes, no test changes
+- Directly addresses the issue flagged in PR #225 review
+
+## Decision
+Merge to master. This completes the #221 alignment fix and unblocks Romanoff's alignment tests (PR #225).
+
+— reviewed by Coulson
+
+--- FILE: hill-intro-display-design.md ---
+
+### 2026-02-22: Intro display design notes
+**By:** Hill  
+**What:** Display engineering perspective on intro improvements  
+**Why:** Planning session for intro UX improvements
+
+---
+
+## Current State Assessment
+
+### What's Visually Weak in ShowTitle() and Program.cs
+
+The current intro flow has three distinct problems:
+
+1. **Minimal title screen** — ShowTitle() renders a plain box with generic text:
+   ```
+   ╔═══════════════════════════════════════╗
+   ║         DUNGEON CRAWLER               ║
+   ║      A Text-Based Adventure           ║
+   ╚═══════════════════════════════════════╝
+   ```
+   This feels flat and uninviting. It's functionally clear but lacks personality and visual impact.
+
+2. **Text-dump UI for class and difficulty** — Both selections are presented as wall-of-text list options:
+   - Class selection: 3 plain text lines, no visual hierarchy or stat preview
+   - Difficulty selection: Single inline text "[1] Casual [2] Normal [3] Hard" with no visual distinction or guidance
+
+3. **No stat context for choice** — Players can't see how their choice affects starting stats before committing. Class descriptions are present but don't show actual numbers or visual comparison.
+
+4. **Missing color coding** — Difficulty and class selections are monochrome text. ColorCodes system is available but not used in intro.
+
+5. **No visual separation** — Name input, seed input, and difficulty/class selection flow together in a featureless stream of prompts.
+
+---
+
+## Design 1: Enhanced Title Screen with ASCII Art
+
+Instead of a simple bordered box, create a visually striking title screen that sets the dungeon tone:
+
+```
+████████████████████████████████████████████████
+██                                              ██
+██    ██████╗ ██╗   ██╗███╗   ██╗ ██████╗███████╗
+██    ██╔══██╗██║   ██║████╗  ██║██╔════╝██╔════╝
+██    ██║  ██║██║   ██║██╔██╗ ██║██║     █████╗  
+██    ██║  ██║██║   ██║██║╚██╗██║██║     ██╔══╝  
+██    ██████╔╝╚██████╔╝██║ ╚████║╚██████╗███████╗
+██    ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝╚══════╝
+██                                              ██
+██          Crawl through darkness.             ██
+██            Survive the depths.               ██
+██                                              ██
+████████████████████████████████████████████████
+```
+
+**Rationale:**
+- Larger, more memorable visual impact
+- Sets the dungeon/dark mood through ASCII art
+- Tagline communicates the core gameplay loop
+- Still readable in all terminal widths (50-80 char safe)
+
+**Implementation considerations:**
+- Should remain console-safe (Unicode box-drawing where possible, ASCII fallback)
+- Use ColorCodes to tint the title (optional: dark gray for border, bright white for title text, yellow for tagline)
+- Center the output using padding logic (need ANSI-aware padding, similar to StripAnsiCodes pattern)
+
+---
+
+## Design 2: Class Selection as Formatted Panels
+
+Replace the 3-line text dump with side-by-side visual class cards:
+
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                       SELECT YOUR CLASS (1-3)                            ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  [1] WARRIOR                [2] MAGE                   [3] ROGUE         ║
+║  ─────────────────────      ─────────────────────      ─────────────────║
+║                                                                           ║
+║  HP:      +25    [█████░]   Mana:   +150   [░░░░█]   HP:      +10  [███ ║
+║  Attack:  +5     [████░░]   Attack: -5     [█░░░░]   Attack:  +8   [███ ║
+║  Defense: +10    [█████░]   Defense:-10    [█░░░░]   Defense: +5   [███ ║
+║  Mana:    -50    [░░░░░░]   Mana:   +150   [█████░]   Mana:    +0   [███ ║
+║                                                                           ║
+║  Trait: Tank mechanic      Trait: Spell damage      Trait: Dodge bonus  ║
+║         with armor bonus          with mana pool          (+10%)         ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+```
+
+**Rationale:**
+- Shows stat changes side-by-side, making comparison immediate
+- Simple bar chart (using ░ and █) provides visual representation of stat impact
+- Color-coded stat lines use existing ColorCodes (Red for attack, Cyan for defense, Blue for mana, Green for HP)
+- Trait descriptions contextualize the mechanical differences
+- Number selection (1-3) maps to column position visually
+
+**Implementation approach:**
+- New method: `ShowClassSelection()` that displays all three classes with stats
+- Use `ShowColoredStat()` pattern internally for each stat line
+- Build the bars using a helper function (e.g., `BuildStatBar(current, max, bonus)`)
+- Position columns with padding; StripAnsiCodes needed for right-alignment with colored values
+
+---
+
+## Design 3: Difficulty Selection with Color-Coded Panels
+
+Replace inline text with a three-panel difficulty chooser:
+
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                        SELECT DIFFICULTY (1-3)                           ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  [1] CASUAL                [2] NORMAL               [3] HARD             ║
+║  ───────────────────────   ───────────────────────  ───────────────────  ║
+║                                                                           ║
+║  ✓ Forgiving              ✓ Balanced encounter    ✓ Punishing difficulty║
+║  ✓ Abundant resources     ✓ Standard loot drops   ✓ Rare item drops    ║
+║  ✓ Weaker enemies         ✓ Standard enemies      ✓ Stronger enemies   ║
+║  ✓ Perfect for learning   ✓ Original vision       ✓ High risk/reward   ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+```
+
+**Color scheme:**
+- Panel border: Standard (gray or white)
+- [1] CASUAL: Green color for the title and checkmarks
+- [2] NORMAL: Yellow color (default/recommended)
+- [3] HARD: Red color (danger/hardcore)
+
+**Rationale:**
+- Consistent with ColorCodes system (Green=safe, Yellow=normal, Red=dangerous)
+- Bullet points (✓) make features scannable
+- Three columns encourage deliberation before selection
+- Clear positioning matches class selection layout
+
+**Implementation approach:**
+- New method: `ShowDifficultySelection()` 
+- Use `ShowColoredMessage()` for each panel header with appropriate color
+- Checkmark feature lists use ShowMessage or direct Console.WriteLine with indentation
+
+---
+
+## Design 4: Prestige Display and Flow Integration
+
+The prestige bonus display exists but appears cold. Enhance it:
+
+```
+╔═══════════════════════════════════════════════════════════════════════════╗
+║                         ★ PRESTIGE BONUSES ★                            ║
+╠═══════════════════════════════════════════════════════════════════════════╣
+║                                                                           ║
+║  Prestige Level: 3    ✧ Ascended 3 times  ✧ Earned during playthroughs  ║
+║                                                                           ║
+║  Starting Bonuses:                                                       ║
+║    +5 Attack      +3 Defense      +25 Max HP                            ║
+║                                                                           ║
+╚═══════════════════════════════════════════════════════════════════════════╝
+```
+
+Use BrightWhite or Yellow for the star (★) and ✧ symbols, and colorize the bonus values:
+- Attack: BrightRed
+- Defense: Cyan
+- HP: Green
+
+**Rationale:**
+- Celebrates player progression without overwhelming
+- Matches the card/panel style of other intro elements
+- Prestige visually stands apart (star symbols)
+
+---
+
+## IDisplayService Methods to Add/Modify
+
+### New Methods Required
+
+1. **ShowIntroTitle()** — Display the enhanced ASCII art title screen
+   ```csharp
+   /// <summary>
+   /// Displays an enhanced title screen with ASCII art and tagline.
+   /// Called once at game start before player name prompt.
+   /// </summary>
+   void ShowIntroTitle();
+   ```
+
+2. **ShowClassSelection()** — Display class cards with stat comparisons
+   ```csharp
+   /// <summary>
+   /// Displays three class option panels (Warrior, Mage, Rogue) with stats,
+   /// bars, and trait descriptions. Used for player class selection at start.
+   /// Returns when player has made a valid choice (1-3).
+   /// </summary>
+   /// <returns>The player's class choice (1 = Warrior, 2 = Mage, 3 = Rogue).</returns>
+   int ShowClassSelection();
+   ```
+
+3. **ShowDifficultySelection()** — Display difficulty panels with color coding
+   ```csharp
+   /// <summary>
+   /// Displays three difficulty option panels (Casual, Normal, Hard) with
+   /// color-coded headers and feature descriptions. Used for difficulty
+   /// selection at start.
+   /// </summary>
+   /// <returns>The player's difficulty choice (1 = Casual, 2 = Normal, 3 = Hard).</returns>
+   int ShowDifficultySelection();
+   ```
+
+4. **ShowPrestigeDisplay(PrestigeSystem prestige)** — Replace raw PrestigeSystem.GetPrestigeDisplay() call
+   ```csharp
+   /// <summary>
+   /// Displays prestige bonuses in a formatted panel with stars and color-coded
+   /// stat bonuses. Called at game start if player has prestige level > 0.
+   /// </summary>
+   /// <param name="prestige">The prestige system instance with level and bonus data.</param>
+   void ShowPrestigeDisplay(PrestigeSystem prestige);
+   ```
+
+5. **ShowSeedPrompt()** — Formatted seed entry prompt
+   ```csharp
+   /// <summary>
+   /// Displays a formatted prompt for seed entry with explanation of reproducibility.
+   /// Returns the player's input (empty string if they press Enter).
+   /// </summary>
+   /// <returns>The player's seed input, or empty string for random.</returns>
+   string ShowSeedPrompt();
+   ```
+
+### Modified Methods
+
+1. **ShowTitle()** — Keep existing method for backward compatibility
+   - Can remain as a simple variant, or delegate to ShowIntroTitle()
+   - Document that ShowIntroTitle() is preferred for intro flow
+
+2. **ReadPlayerName()** — Optional enhancement
+   - Current implementation is fine, but could add a decorative border:
+   ```csharp
+   Enter your name, adventurer:
+   > 
+   ```
+
+### Helper Methods (Internal to ConsoleDisplayService)
+
+Not part of IDisplayService, but needed internally:
+
+```csharp
+/// <summary>Renders a horizontal stat bar using ░ (empty) and █ (full) chars.</summary>
+private static string BuildStatBar(int value, int maxValue);
+
+/// <summary>Strips ANSI codes and pads text to a fixed width for alignment.</summary>
+private static string PadColoredText(string text, int width);
+
+/// <summary>Centers text in a given width, accounting for ANSI codes.</summary>
+private static string CenterText(string text, int width);
+```
+
+---
+
+## ANSI-Aware Padding Pattern
+
+The existing `StripAnsiCodes()` utility in ColorCodes is crucial for intro UI. All formatted panels will need it:
+
+1. **Title centering** — StripAnsiCodes to measure true character width, then calculate padding
+2. **Class stat alignment** — When displaying colored stat values, strip codes to find visible width for right-alignment
+3. **Difficulty panel headers** — Strip codes before padding to correct columns
+
+Example pattern (similar to ShowEquipmentComparison):
+```csharp
+var coloredText = $"{ColorCodes.Red}{value}{ColorCodes.Reset}";
+var visibleLength = ColorCodes.StripAnsiCodes(coloredText).Length;
+var padding = totalWidth - visibleLength;
+Console.WriteLine(coloredText + new string(' ', padding));
+```
+
+This pattern must be applied to every formatted line in the new intro screens.
+
+---
+
+## Integration with Program.cs
+
+Current flow:
+```csharp
+display.ShowTitle();
+var name = display.ReadPlayerName();
+// ... seed input (text dump)
+// ... difficulty input (text dump)
+// ... class input (text dump)
+```
+
+New flow:
+```csharp
+display.ShowIntroTitle();  // New method
+display.ShowMessage("");   // Blank line for breathing room
+
+var name = display.ReadPlayerName();
+
+var seed = display.ShowSeedPrompt();  // New method
+int? parsedSeed = int.TryParse(seed, out var s) ? s : null;
+var actualSeed = parsedSeed ?? new Random().Next(100000, 999999);
+display.ShowMessage($"Seed: {actualSeed}");
+
+var difficulty = display.ShowDifficultySelection();  // New method
+var chosenDifficulty = difficulty switch { 1 => Casual, 3 => Hard, _ => Normal };
+
+var classChoice = display.ShowClassSelection();  // New method
+var chosenClass = classChoice switch { 2 => Mage, 3 => Rogue, _ => Warrior };
+
+// ... rest of setup
+```
+
+---
+
+## Visual Rendering Principles
+
+### Terminal Safety
+- Assume 80-char width minimum (most terminals)
+- Use box-drawing characters (╔═╗║╚╝, etc.) available in UTF-8
+- Test with common terminal widths (80, 120, 160)
+- Provide ASCII fallback if needed (e.g., `+--+` instead of `╔══╗`)
+
+### Color Use
+Leverage existing ColorCodes:
+- HP stat lines: `ColorCodes.HealthColor()` (based on percentage)
+- Attack values: `ColorCodes.BrightRed`
+- Defense values: `ColorCodes.Cyan`
+- Mana values: `ColorCodes.Blue`
+- Gold/rewards: `ColorCodes.Yellow`
+- Trait descriptions: `ColorCodes.Cyan` or gray for flavor text
+- Difficulty markers: Green (Casual), Yellow (Normal), Red (Hard)
+
+### Spacing & Layout
+- Blank lines between sections (visual breathing room)
+- Consistent indentation (2 spaces for most content)
+- Box borders for grouped information (class/difficulty panels)
+- Right-aligned stats within columns using ANSI-aware padding
+
+---
+
+## Implementation Priority
+
+**Phase 1 (Minimum Viable):**
+1. ShowIntroTitle() — Enhanced title with ASCII art (2 hours)
+2. ShowDifficultySelection() — Color-coded difficulty panel (1.5 hours)
+3. ShowClassSelection() — Class cards with stat bars (3 hours)
+
+**Phase 2 (Polish):**
+1. ShowPrestigeDisplay() — Prestige panel with stars (1 hour)
+2. ShowSeedPrompt() — Formatted seed input (30 minutes)
+3. Prestige banner integration into Program.cs (30 minutes)
+
+**Phase 3 (Future):**
+1. ASCII art animation (fade-in effect for title)
+2. Animated stat bars (filling effect during class selection)
+3. Sound/terminal bell (low priority, optional)
+
+---
+
+## Testing & Validation
+
+Key scenarios to verify:
+1. Title screen renders in 80, 120, and 160 char widths
+2. Class panels center correctly with colored stat values
+3. ANSI-aware padding handles all color code combinations
+4. Difficulty selection correctly maps inputs (1→Casual, 2→Normal, 3→Hard)
+5. Prestige display shows only if prestige.PrestigeLevel > 0
+6. All colored text respects ColorCodes.Reset properly (no color bleed)
+
+---
+
+## Summary
+
+The intro improvements transform a flat, text-heavy startup experience into a visually engaging onboarding flow:
+
+- **Title:** From a simple box to an ASCII art dungeon crawler banner
+- **Class selection:** From 3 text lines to 3 stat-comparison cards
+- **Difficulty selection:** From inline text to 3 color-coded feature panels
+- **Prestige display:** From raw console output to a celebration banner
+
+All changes respect the existing DisplayService architecture, leverage ColorCodes for consistency, and use ANSI-aware padding to ensure terminal safety. The new IDisplayService methods are cohesive, focused, and backward-compatible.
+
+--- FILE: hill-intro-sequence-extraction.md ---
+
+### 2026-02-21: Intro Sequence Extraction Architecture
+
+**By:** Hill  
+**What:** Architectural guidance for extracting intro sequence from Program.cs  
+**Why:** Improve separation of concerns, testability, and maintainability of game initialization
+
+---
+
+## Recommendation: Extract to `GameSetupService`
+
+**Decision:** Extract intro sequence to `Systems/GameSetupService.cs` with clear contract returning initialization bundle.
+
+**Rationale:**
+1. **Separation of Concerns:** Program.cs should be thin entry point, not business logic
+2. **Testability:** Setup logic is I/O-heavy but still has testable branches (difficulty mapping, class selection, prestige application)
+3. **Reusability:** Load game feature will need similar initialization without re-prompting
+4. **Consistency:** Matches existing pattern (NarrationService, PrestigeSystem, etc. in Systems/)
+
+---
+
+## Proposed Contract
+
+```csharp
+namespace Dungnz.Systems;
+
+/// <summary>
+/// Handles initial game setup including player creation, class selection,
+/// difficulty configuration, and prestige bonus application.
+/// </summary>
+public class GameSetupService
+{
+    private readonly IDisplayService _display;
+
+    public GameSetupService(IDisplayService display)
+    {
+        _display = display;
+    }
+
+    /// <summary>
+    /// Runs the full intro sequence and returns configured game state.
+    /// </summary>
+    /// <returns>Bundle containing configured Player, seed, and difficulty settings.</returns>
+    public GameSetup RunIntroSequence()
+    {
+        _display.ShowTitle();
+        
+        // Prestige display
+        var prestige = PrestigeSystem.Load();
+        if (prestige.PrestigeLevel > 0)
+        {
+            _display.ShowMessage(PrestigeSystem.GetPrestigeDisplay(prestige));
+        }
+        
+        // Player name
+        var name = _display.ReadPlayerName();
+        
+        // Seed selection
+        var seed = PromptForSeed();
+        
+        // Difficulty selection
+        var difficulty = PromptForDifficulty();
+        
+        // Class selection
+        var classDefinition = PromptForClass();
+        
+        // Create and configure player
+        var player = CreatePlayer(name, classDefinition, prestige);
+        
+        return new GameSetup(player, seed, difficulty);
+    }
+
+    private int PromptForSeed() { /* ... */ }
+    private DifficultySettings PromptForDifficulty() { /* ... */ }
+    private PlayerClassDefinition PromptForClass() { /* ... */ }
+    private Player CreatePlayer(string name, PlayerClassDefinition classDef, PrestigeData prestige) { /* ... */ }
+}
+
+/// <summary>
+/// Immutable bundle of initial game state returned by setup sequence.
+/// </summary>
+public record GameSetup(Player Player, int Seed, DifficultySettings Difficulty);
+```
+
+---
+
+## Integration Pattern
+
+**Program.cs becomes:**
+
+```csharp
+var display = new ConsoleDisplayService();
+var setupService = new GameSetupService(display);
+
+// Run intro sequence
+var setup = setupService.RunIntroSequence();
+
+// Initialize game systems
+EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
+var generator = new DungeonGenerator(setup.Seed);
+var (startRoom, _) = generator.Generate(difficulty: setup.Difficulty);
+
+var inputReader = new ConsoleInputReader();
+var combat = new CombatEngine(display, inputReader);
+var gameLoop = new GameLoop(display, combat, inputReader, seed: setup.Seed, difficulty: setup.Difficulty);
+
+gameLoop.Run(setup.Player, startRoom);
+```
+
+**Clean separation:**
+- GameSetupService: Owns intro flow, prompting, player creation
+- Program.cs: Thin orchestrator wiring services together
+- GameLoop: Owns main loop, receives configured state
+
+---
+
+## Testability Strategy
+
+**What's testable:**
+- Difficulty enum mapping (1→Casual, 2→Normal, 3→Hard, default→Normal)
+- Class definition selection (1→Warrior, 2→Mage, 3→Rogue, default→Warrior)
+- Player stat application (class bonuses, prestige bonuses)
+- Seed parsing (valid int vs null → random)
+
+**What's NOT worth testing:**
+- Raw Console.ReadLine() interaction (covered by integration tests)
+- Display method calls (stub IDisplayService in unit tests)
+
+**Test approach:**
+```csharp
+// Example: Test class bonus application
+var display = new StubDisplayService(["MyName", "", "1", "2"]); // Answers: name, seed, casual, mage
+var service = new GameSetupService(display);
+var setup = service.RunIntroSequence();
+
+Assert.Equal("Mage", setup.Player.Class);
+Assert.Equal(80, setup.Player.MaxHP); // Base 100 + Mage -20
+Assert.Equal(150, setup.Player.MaxMana); // Base 100 + Mage +50
+```
+
+---
+
+## Where Prestige Bonuses Apply
+
+**Decision:** Apply in `CreatePlayer()` method AFTER class bonuses.
+
+**Order of operations:**
+1. Create Player with base stats (HP=100, Attack=10, Defense=5)
+2. Apply class bonuses (e.g., Mage: MaxHP-20, MaxMana+50)
+3. Apply prestige bonuses (e.g., PrestigeLevel 2: +2 Attack, +1 Defense, +10 HP)
+4. Set HP = MaxHP and Mana = MaxMana
+
+**Rationale:**
+- Prestige bonuses are additive on top of chosen build
+- Prestige affects "starting stats" not "base stats" (class choice comes first)
+- Current Program.cs already does this correctly (lines 69-75)
+
+---
+
+## Alternative Considered: Builder Pattern
+
+```csharp
+var setup = new GameSetupBuilder(display)
+    .WithPrestigeDisplay()
+    .PromptPlayerName()
+    .PromptSeed()
+    .PromptDifficulty()
+    .PromptClass()
+    .ApplyPrestigeBonuses()
+    .Build();
+```
+
+**Rejected because:**
+- Over-engineered for linear flow with no branching
+- Harder to read than straight procedural code
+- No benefit for testing (still need to mock display)
+- Fluent API obscures the simple sequential nature of setup
+
+---
+
+## Alternative Considered: Keep in Program.cs
+
+**Rejected because:**
+- Program.cs is 83 lines, 70% intro sequence (lines 7-75)
+- Intro logic mixed with wiring logic (EnemyFactory.Initialize, DungeonGenerator, GameLoop)
+- Harder to locate "where game loop starts" when scanning Program.cs
+- Load game will duplicate setup logic (needs Player without re-prompting)
+
+---
+
+## File Structure After Extraction
+
+```
+TextGame/
+├── Program.cs                    (15 lines: setup, wire, run)
+├── Display/
+│   ├── IDisplayService.cs
+│   └── ConsoleDisplayService.cs  (no changes)
+├── Engine/
+│   └── GameLoop.cs               (no changes)
+├── Systems/
+│   ├── GameSetupService.cs       (NEW: 120 lines intro logic)
+│   └── PrestigeSystem.cs         (no changes)
+└── Models/
+    ├── Player.cs                 (no changes)
+    ├── PlayerClass.cs            (assumes exists)
+    └── Difficulty.cs             (no changes)
+```
+
+---
+
+## Decision: Do NOT Extract Yet
+
+**Important:** This is ARCHITECTURAL GUIDANCE ONLY.
+
+**Why not implement now:**
+- Need team consensus (Copilot/Coulson approval)
+- Current Program.cs works and isn't blocking anyone
+- Extraction is refactoring, not new feature
+- Should be done as dedicated work item, not side quest
+
+**When to extract:**
+- When load game feature is being implemented (avoid duplication)
+- When team agrees Program.cs is too long
+- When intro flow becomes more complex (e.g., tutorial mode, multi-page setup)
+
+**Action:** Document this decision in inbox for Coulson to review.
+
+--- FILE: romanoff-intro-qa-notes.md ---
+# 2026-02-22: Intro QA and Testability Notes
+
+**By:** Romanoff  
+**What:** QA perspective on intro improvements  
+**Why:** Planning session for intro UX improvements
+
+---
+
+## Executive Summary
+
+The current intro sequence in `Program.cs` (lines 7–82) has **critical testability issues** that will make quality assurance difficult as we expand it. The top-level script mixes game setup, user input, player creation, and engine initialization in a single unmanaged flow. Adding richer intro features (lore screens, class descriptions, difficulty explanations) without refactoring will increase regression risk and blind spots.
+
+**Recommendation:** Extract intro to a dedicated `IntroSequence` class with dependency injection. This enables unit testing of player creation logic, validation, and edge cases without console I/O.
+
+---
+
+## 1. Current Testability Assessment: Program.cs Intro Logic
+
+### What's There
+Lines 7–82 of `Program.cs` execute:
+1. `ShowTitle()` — Display splash screen
+2. `ReadPlayerName()` — Read and validate player name
+3. Seed selection — Read optional integer seed
+4. Difficulty selection — Menu selection (1/2/3 → Casual/Normal/Hard)
+5. Class selection — Menu selection (1/2/3 → Warrior/Mage/Rogue)
+6. Player initialization — Construct `Player` object, apply class bonuses, prestige bonuses
+7. Factory initialization — Load `enemy-stats.json`, `item-stats.json`
+8. Engine startup — Create `DungeonGenerator`, `GameLoop`, run game
+
+### Testability Risks
+
+| **Risk** | **Severity** | **Impact** |
+|----------|------------|-----------|
+| **No entry point to intro logic** | HIGH | Cannot test player creation without console I/O. All intro logic is baked into top-level script. |
+| **Console.ReadLine() hardcoded** | CRITICAL | Line 20, 31, 47: `Console.ReadLine()` called directly; cannot inject test input. Manual testing only. |
+| **Input validation absent** | HIGH | Empty name → crashes ReadPlayerName(). Invalid class/difficulty → silent fallback to defaults (lines 32-36, 48-52). No error messages. |
+| **Prestige system side effect** | MEDIUM | Lines 10-12, 69-75: Loads prestige state globally; affects player stats without validation. Hard to isolate in tests. |
+| **Seed state management** | MEDIUM | Lines 21-24: Random seed generated and printed, then passed to GameLoop. No record of which seed was used; hard to verify determinism. |
+| **Player created at script level** | MEDIUM | Line 56: Player object created inline with hardcoded name and stat modifications. Cannot test player creation in isolation. |
+| **Magic number dependencies** | LOW | Class/difficulty selection hardcoded to 1/2/3 strings. Adding new classes requires editing multiple switch statements. |
+
+### Edge Cases NOT Tested in Current Code
+
+1. **Empty player name** — `ReadPlayerName()` has fallback (`?? "Unnamed"`), but no test ensures this works.
+2. **Invalid seed input** — "abc" → silently treated as null, random seed used. Is this intentional? Unclear.
+3. **Invalid class/difficulty** — Bad input → silent default (Warrior / Normal). Should we error? Log? Retry?
+4. **Prestige loading failure** — What if prestige save is corrupted? Currently no error handling.
+5. **Factory initialization failure** — What if `enemy-stats.json` is missing? Currently crashes without hint.
+6. **Name with special characters** — "Player\n" or "Player\0" — will it break? Untested.
+7. **Very long player name** — 1000 characters — display truncation? Validation? Untested.
+
+---
+
+## 2. IDisplayService Interface: Testing Implications
+
+### Current IDisplayService Methods
+- `ShowTitle()` — splash, no return
+- `ReadPlayerName()` — returns string ✓ testable
+- `ShowMessage(string)` — output, void
+- `ShowError(string)` — error output, void
+- `ShowCommandPrompt()` — prompt symbol, void
+
+### Proposed New Methods for Improved Intro
+
+#### Option A: Display-only (return void)
+```csharp
+void ShowClassSelection();
+void ShowDifficultyMenu();
+void ShowLore();
+```
+**Problem:** Tests cannot verify that the player saw the menu. Can only test the side effect (console output).
+
+#### Option B: Return validated choice
+```csharp
+PlayerClass SelectClass();    // returns chosen class or throws
+Difficulty SelectDifficulty(); // returns chosen difficulty
+string SelectSeed();           // returns seed input (empty or valid int string)
+```
+**Advantage:** Separates **validation logic from display logic**. Tests call `SelectClass()` with mocked input; tests verify return value. Display methods are tested separately via console capture.
+
+### Testing Implications
+
+**With void methods (current approach):**
+- Must capture console output to verify menu was shown
+- Cannot test input validation separately
+- Cannot test "menu shown" → "valid choice made" contract
+- FakeDisplayService must track what was displayed; test code reads `display.Messages` list
+
+**With return-value methods (recommended):**
+- Unit tests provide fake input (e.g., mock `IInputReader`)
+- Assert return values directly: `Assert.Equal(PlayerClass.Mage, SelectClass())`
+- Display testing separated from logic testing
+- Decouples "show the menu" from "handle the choice"
+
+### Recommendation
+
+**Extract input handling into a separate method that returns a value.** For example:
+
+```csharp
+// Display only — no return
+void ShowClassSelection();
+
+// Input + validation — has return
+PlayerClass SelectPlayerClass(IInputReader input);
+```
+
+This mirrors the existing `ReadPlayerName()` pattern and enables true unit testing.
+
+---
+
+## 3. Edge Cases the Improved Intro Must Handle
+
+### Player Name Edge Cases
+| **Input** | **Current Behavior** | **Should Behavior** | **Test Case** |
+|-----------|-------------------|------------------|--------------|
+| `""` (empty) | Fallback to "Unnamed" | Allow fallback gracefully | `test_empty_name_uses_default` |
+| `"  "` (whitespace) | Unknown — likely treated as empty | Trim and validate non-empty | `test_whitespace_only_name` |
+| 100 chars | Unknown — might overflow display | Truncate to 20-30 chars or reject | `test_long_name_handling` |
+| `"Player\n"` | Unknown — newline in name | Reject or strip newline | `test_name_with_newline` |
+| `null` | Cannot happen in C# (method signature prevents it) | N/A | N/A |
+
+### Difficulty Menu Edge Cases
+| **Input** | **Current Behavior** | **Should Behavior** | **Test Case** |
+|-----------|-------------------|------------------|--------------|
+| `"1"` | → Casual | ✓ Correct | `test_casual_selected` |
+| `"2"` | → Normal (implicit fallback) | ✓ Correct | `test_normal_selected` |
+| `"3"` | → Hard | ✓ Correct | `test_hard_selected` |
+| `""` (empty) | → Normal (fallback) | Should ask again or confirm default? | `test_empty_difficulty_input` |
+| `"4"` (invalid) | → Normal (fallback) | Unclear if this is a bug or feature | `test_invalid_difficulty_input` |
+| `"abc"` | → Normal (fallback) | Same as above | `test_non_numeric_difficulty` |
+
+**Issue:** No clear contract for invalid input. Should we retry? Log? Accept silently? **Recommendation:** Add explicit validation and retry loop, or accept silently but document it.
+
+### Class Selection Edge Cases
+| **Input** | **Current Behavior** | **Should Behavior** | **Test Case** |
+|-----------|-------------------|------------------|--------------|
+| `"1"` | → Warrior | ✓ Correct | `test_warrior_selected` |
+| `"2"` | → Mage | ✓ Correct | `test_mage_selected` |
+| `"3"` | → Rogue | ✓ Correct | `test_rogue_selected` |
+| `""` (empty) | → Warrior (fallback) | Should ask again or confirm default? | `test_empty_class_input` |
+| `"4"` (invalid) | → Warrior (fallback) | Unclear if this is a bug or feature | `test_invalid_class_input` |
+| `"1.5"` | → Warrior (fallback) | Same as above | `test_float_class_input` |
+
+**Issue:** Silent fallback is confusing UX. **Recommendation:** Add confirmation: *"No selection made. Defaulting to Warrior?"* or retry with error message.
+
+### Seed Input Edge Cases
+| **Input** | **Current Behavior** | **Should Behavior** | **Test Case** |
+|-----------|-------------------|------------------|--------------|
+| `""` (empty) | Random seed generated | ✓ Correct | `test_empty_seed_random` |
+| `"12345"` | Parsed to seed 12345 | ✓ Correct | `test_valid_seed` |
+| `"0"` | Parsed to seed 0 | Valid or invalid? (0 is a valid seed) | `test_zero_seed` |
+| `"-1"` | Treated as non-numeric fallback? | Clarify: negative seeds allowed? | `test_negative_seed` |
+| `"abc"` | Treated as non-numeric; random seed | ✓ Correct | `test_non_numeric_seed` |
+| `"99999999999"` | May overflow int; behavior undefined | Reject with message or cap? | `test_seed_overflow` |
+
+**Issue:** No validation on seed range. Recommend: *"Seed must be 0-999999"* or accept any 32-bit int.
+
+### Player Creation Edge Cases
+| **Scenario** | **Current Behavior** | **Should Behavior** | **Test Case** |
+|---|---|---|---|
+| Prestige loaded successfully | Bonuses applied | ✓ Correct | `test_prestige_bonuses_applied` |
+| Prestige load fails | Unknown — crashes? Silently fails? | Should handle gracefully | `test_prestige_load_failure` |
+| Class bonus puts stat negative | `Math.Max(0, ...)` used (line 59) | ✓ Defensive clamping | `test_class_bonus_never_negative` |
+| MaxHP = 1 after bonuses | `Math.Max(1, ...)` used (line 60) | ✓ Enforced minimum | `test_min_hp_enforced` |
+| Mana = -100 before clamping | `Math.Max(0, ...)` used (line 62) | ✓ Defensive clamping | `test_mana_never_negative` |
+| Rogue dodge bonus applied | `ClassDodgeBonus = 0.10f` (line 65) | ✓ Correct | `test_rogue_dodge_bonus` |
+
+---
+
+## 4. Existing Test Infrastructure We Can Reuse
+
+### FakeDisplayService
+**Location:** `Dungnz.Tests/Helpers/FakeDisplayService.cs`
+
+**Capabilities:**
+- Implements `IDisplayService` fully
+- Tracks all output in `Messages`, `Errors`, `CombatMessages`, `AllOutput` lists
+- Strips ANSI color codes for assertion-friendly plain text
+- `ReadPlayerName()` returns hardcoded `"TestPlayer"`
+
+**For Intro Testing:**
+```csharp
+var display = new FakeDisplayService();
+// Call intro sequence with display
+display.Messages.Should().Contain("Welcome");
+```
+
+### Test Pattern: Console Output Capture
+**Location:** `Dungnz.Tests/DisplayServiceTests.cs` (lines 12–28)
+
+Pattern using `StringWriter` + `Console.SetOut()`:
+```csharp
+private StringWriter _output;
+private TextWriter _originalOut;
+
+public DisplayServiceTests()
+{
+    _originalOut = Console.Out;
+    _output = new StringWriter();
+    Console.SetOut(_output);
+}
+
+public void Dispose() => Console.SetOut(_originalOut);
+```
+
+**For Intro Testing:** Can use this for `ConsoleDisplayService` testing but unnecessary for `FakeDisplayService` testing.
+
+### FakeInputReader
+**Location:** `Dungnz.Tests/Helpers/FakeInputReader.cs`
+
+**Capability:** Simulates console input for tests (if it exists).
+
+**For Intro Testing:** If `FakeInputReader` provides queued input, we can inject it into intro sequence and test the full flow.
+
+### Existing Test Patterns
+- **Arrange-Act-Assert** structure used throughout
+- **FluentAssertions** for readable assertions (`.Should().Be()`, `.Should().Contain()`)
+- **InlineData** for parameterized tests (Theory + InlineData)
+- Builder pattern for test data (check `Dungnz.Tests/Fixtures/`)
+
+---
+
+## 5. Architectural Recommendation: IntroSequence Class
+
+### Current Architecture (Problematic)
+```
+Program.cs (top-level script)
+  ├─ ShowTitle()
+  ├─ ReadPlayerName()
+  ├─ Seed selection (Console.ReadLine)
+  ├─ Difficulty selection (Console.ReadLine, switch)
+  ├─ Class selection (Console.ReadLine, switch)
+  ├─ Player creation (inline, stat modifications)
+  ├─ Factory initialization
+  └─ GameLoop.Run()
+```
+
+**Problems:**
+- All logic at top-level script scope
+- Tight coupling to Console I/O
+- No testable entry points
+- No validation layer
+- Side effects (prestige loading, factory initialization) mixed with game startup
+
+### Proposed Architecture
+
+```csharp
+public class IntroSequence
+{
+    private readonly IDisplayService _display;
+    private readonly IInputReader _input;
+    private readonly IPrestigeProvider _prestige;
+    
+    public IntroSequence(
+        IDisplayService display,
+        IInputReader input,
+        IPrestigeProvider prestige)
+    {
+        _display = display;
+        _input = input;
+        _prestige = prestige;
+    }
+    
+    /// <summary>
+    /// Orchestrates the entire intro: title, name, seed, difficulty, class.
+    /// Returns a fully-initialized Player ready for dungeon entry.
+    /// </summary>
+    public Player Run(out int seed)
+    {
+        _display.ShowTitle();
+        
+        var name = _display.ReadPlayerName();
+        var validatedName = ValidateName(name);
+        
+        seed = SelectSeed();
+        var difficulty = SelectDifficulty();
+        var playerClass = SelectClass();
+        
+        var player = CreatePlayer(validatedName, playerClass, difficulty);
+        
+        return player;
+    }
+    
+    // Testable methods
+    private string ValidateName(string name) { ... }
+    private int SelectSeed() { ... }
+    private Difficulty SelectDifficulty() { ... }
+    private PlayerClass SelectClass() { ... }
+    private Player CreatePlayer(string name, PlayerClass cls, Difficulty diff) { ... }
+}
+```
+
+**In Program.cs:**
+```csharp
+var intro = new IntroSequence(display, inputReader, prestige);
+var player = intro.Run(out int seed);
+var difficulty = DifficultySettings.For(player.Difficulty);
+// ... continue with dungeon setup
+```
+
+### Benefits
+1. **Testable:** Can inject `FakeDisplayService`, `FakeInputReader`, test data providers
+2. **Reusable:** Other classes can trigger intro (new game button, character creation UI)
+3. **Extensible:** Add lore screens, class descriptions, difficulty explanations without touching Program.cs
+4. **Validatable:** Each step (ValidateName, SelectSeed, etc.) is a method; unit tests validate behavior
+5. **Decoupled:** Display logic, input logic, validation logic, player creation logic are separate concerns
+
+---
+
+## 6. Test Cases for Improved Intro (Priority Order)
+
+### Tier 1: Core Functionality (MUST WRITE)
+
+```csharp
+public class IntroSequenceTests
+{
+    // Player name validation
+    [Fact] public void ValidateName_EmptyString_ReturnsDefault()
+    [Fact] public void ValidateName_NormalInput_ReturnsInput()
+    [Fact] public void ValidateName_Whitespace_TrimsThenValidates()
+    [Theory]
+    [InlineData("Player\n")]
+    [InlineData("Player\0")]
+    public void ValidateName_SpecialCharacters_Rejected(string name)
+    
+    // Seed selection
+    [Fact] public void SelectSeed_EmptyInput_ReturnsRandomSeed()
+    [Theory]
+    [InlineData("12345")]
+    [InlineData("0")]
+    [InlineData("999999")]
+    public void SelectSeed_ValidNumeric_ParsesCorrectly(string input)
+    [Fact] public void SelectSeed_InvalidNumeric_ReturnsRandomSeed()
+    
+    // Difficulty selection
+    [Theory]
+    [InlineData("1", Difficulty.Casual)]
+    [InlineData("2", Difficulty.Normal)]
+    [InlineData("3", Difficulty.Hard)]
+    public void SelectDifficulty_ValidInput_ReturnsDifficulty(string input, Difficulty expected)
+    [Fact] public void SelectDifficulty_InvalidInput_ReturnsNormalDefault()
+    [Fact] public void SelectDifficulty_EmptyInput_ReturnsNormalDefault()
+    
+    // Class selection
+    [Theory]
+    [InlineData("1", PlayerClass.Warrior)]
+    [InlineData("2", PlayerClass.Mage)]
+    [InlineData("3", PlayerClass.Rogue)]
+    public void SelectClass_ValidInput_ReturnsClass(string input, PlayerClass expected)
+    [Fact] public void SelectClass_InvalidInput_ReturnsWarriorDefault()
+    [Fact] public void SelectClass_EmptyInput_ReturnsWarriorDefault()
+    
+    // Player creation
+    [Fact] public void CreatePlayer_WarriorBonus_AppliesCorrectly()
+    [Fact] public void CreatePlayer_MageBonus_AppliesCorrectly()
+    [Fact] public void CreatePlayer_RogueBonus_AppliesCorrectly()
+    [Fact] public void CreatePlayer_ClassBonus_CannotMakeStatNegative()
+    [Fact] public void CreatePlayer_PrestigeBonus_AppliedOnTopOfClass()
+    
+    // Integration
+    [Fact] public void Run_FullIntro_ReturnsInitializedPlayer()
+    [Fact] public void Run_FullIntro_DisplaysTitle()
+    [Fact] public void Run_FullIntro_DisplaysDifficultyConfirmation()
+}
+```
+
+### Tier 2: Edge Cases & Error Handling
+
+```csharp
+[Fact] public void ValidateName_VeryLongName_TruncatesOr Rejects()
+[Fact] public void SelectSeed_OverflowInt_HandlesGracefully()
+[Fact] public void SelectSeed_NegativeNumber_AcceptedOrRejected()
+[Fact] public void CreatePlayer_PrestigeLoadFails_ContinuesWithZeroPrestige()
+[Fact] public void Run_UserCancels_ExitsGracefully()
+```
+
+### Tier 3: Regression & Integration
+
+```csharp
+// Regression from Program.cs v1
+[Fact] public void CreatePlayer_WithPrestige_StatsMatchManualCalculation()
+[Fact] public void SelectDifficulty_MenuSelection_MatchesDifficultySettings()
+
+// Integration with DungeonGenerator
+[Fact] public void Run_WithSeed_DungeonIsReproducible()
+```
+
+---
+
+## 7. Quality Gates & Rejection Criteria
+
+### For Intro Refactoring PR
+
+**Must Pass (BLOCKING):**
+- [ ] All Tier 1 tests pass (24 test cases)
+- [ ] No Console.ReadLine calls in intro logic (all routed through IInputReader)
+- [ ] No hardcoded PlayerClass/Difficulty values; only use enums
+- [ ] FakeDisplayService captures all intro output
+- [ ] Player returned by IntroSequence has non-zero HP, non-empty Name
+
+**Should Pass (MERGE GATE):**
+- [ ] All Tier 2 edge case tests pass
+- [ ] Code review: no silent fallbacks without documentation (e.g., "Invalid input defaults to Normal")
+- [ ] Documentation: updated README or in-game help explaining valid inputs
+
+**Nice-to-Have (FOLLOW-UP):**
+- [ ] Tier 3 regression tests
+- [ ] Console output capture tests for menu formatting
+
+### Rejection Criteria
+
+- ❌ Test failures (any Tier 1 failure blocks merge)
+- ❌ Silent input fallback without error message or retry loop
+- ❌ ConsoleDisplayService not capturing menu output in FakeDisplayService
+- ❌ Player creation applies stat bonuses without bounds checking (e.g., HP < 1, Defense < 0)
+- ❌ Prestige loading failure crashes intro instead of gracefully continuing
+- ❌ Seed parsing overflows without explicit handling or documentation
+
+---
+
+## 8. Summary: Testing Implications of Intro Improvements
+
+| **Aspect** | **Current Risk** | **Improved Approach** | **Testing Impact** |
+|---|---|---|---|
+| **Top-level script logic** | HIGH — Untestable | Extract `IntroSequence` class | Enables unit testing of all intro paths |
+| **Console I/O coupling** | CRITICAL — No test input | Inject `IInputReader` interface | Tests provide queued input; verify output |
+| **Input validation** | HIGH — Silent fallbacks | Validate before creating Player | Unit tests verify error handling |
+| **IDisplayService methods** | MEDIUM — void methods only | Add return-value methods (e.g., `SelectClass()`) | Tests verify choices returned; display tests separate |
+| **Prestige side effects** | MEDIUM — Global load | Inject `IPrestigeProvider` | Mock prestige in unit tests |
+| **Seed reproducibility** | MEDIUM — No record | Return seed from `Run(out int seed)` | Tests verify seed is consistent |
+| **Player creation** | LOW — Inline with defaults | Dedicated `CreatePlayer()` method | Unit tests verify class bonuses, prestige bonuses applied correctly |
+| **Edge cases** | UNKNOWN — Most untested | Parameterized tests (Theory + InlineData) | Comprehensive edge case coverage |
+
+---
+
+## 9. Files to Create/Modify
+
+| **File** | **Change** | **Owner** |
+|---|---|---|
+| `Engine/IntroSequence.cs` | NEW CLASS — Orchestrates intro sequence | Hill or Barton |
+| `Display/IDisplayService.cs` | ADD METHODS — `SelectClass()`, `SelectDifficulty()`, `SelectSeed()` | Hill |
+| `Display/ConsoleDisplayService.cs` | ADD IMPLEMENTATIONS — Impl the new interface methods | Hill |
+| `Program.cs` | REFACTOR — Replace lines 7-82 with `new IntroSequence().Run()` | Hill |
+| `Dungnz.Tests/IntroSequenceTests.cs` | NEW TEST CLASS — 24+ test cases per Tier 1 | Romanoff |
+| `Dungnz.Tests/Helpers/FakeInputReader.cs` | ENHANCE if needed — Queue input for testing | Romanoff or Hill |
+
+---
+
+## Appendix: Risk Inventory for v3 Intro Features
+
+### Lore Screen
+- **Risk:** No test for display timing (too long? blocks interaction?)
+- **Test:** Verify lore can be skipped via input
+
+### Improved Class Descriptions
+- **Risk:** Unaligned stat descriptions (e.g., "Mage has high mana" but actually +50 mana, unclear if that's "high")
+- **Test:** Unit test for stat delta display accuracy
+
+### Difficulty Explanations
+- **Risk:** Outdated explanations if DifficultySettings values change
+- **Test:** Integration test: verify explanation text matches actual difficulty scaling
+
+### Character Portrait ASCII Art
+- **Risk:** Display corruption on narrow terminals
+- **Test:** Console capture test for width validation
+
+---
+
+## Closing Notes
+
+The current intro is **fragile and unmaintainable**. As new features (lore, portraits, difficulty explanations) are added, the risk of regressions grows exponentially without a testable architecture.
+
+**I recommend extracting `IntroSequence` BEFORE adding new intro features.** This unblocks testing and makes future UI improvements safe.
+
+**Quality target:** 24+ unit tests covering all intro paths, with 95%+ coverage of player creation logic.
+
+—**Romanoff**
+
+# Intro Sequence Improvement Plan
+
+**Date:** 2026-02-22  
+**Lead:** Coulson  
+**Approval:** Pending Anthony approval  
+**Effort Estimate:** 6-8 hours (5h dev, 2h testing, 1h review)  
+
+---
+
+## Executive Summary
+
+The current intro is functional but lacks atmosphere, clarity, and player investment. This plan provides:
+- **Enhanced title screen** with ASCII art, tagline, and atmospheric lore (skippable)
+- **Stat transparency** in class/difficulty selection so players understand tradeoffs
+- **Improved flow** that builds investment (name first) and makes informed choices easy
+- **Better UX for seed** (auto-generated, shown at end, CLI flag for power users)
+- **Prestige celebration** that shows progression and bonuses
+
+**Key principle:** Reduce friction for 95% of players (no seed prompts), empower 5% (CLI override, displayed seed for sharing).
+
+---
+
+## 1. Title Screen Improvements
+
+### Current State
+```
+╔═══════════════════════════════════════╗
+║         DUNGEON CRAWLER               ║
+║      A Text-Based Adventure           ║
+╚═══════════════════════════════════════╝
+```
+
+### Proposed Design
+
+**Full-width ASCII art with mood:**
+```
+    ╔════════════════════════════════════════════════════════════════╗
+    ║                                                                ║
+    ║                    D U N G E O N   C R A W L E R              ║
+    ║                                                                ║
+    ║   ⚔️  ██╗  ██╗███████╗██████╗ ███████╗███╗   ██╗████████╗   ║
+    ║       ██║  ██║██╔════╝██╔══██╗██╔════╝████╗  ██║╚══██╔══╝   ║
+    ║       ███████║█████╗  ██████╔╝█████╗  ██╔██╗ ██║   ██║      ║
+    ║       ██╔══██║██╔══╝  ██╔══██╗██╔══╝  ██║╚██╗██║   ██║      ║
+    ║       ██║  ██║███████╗██║  ██║███████╗██║ ╚████║   ██║      ║
+    ║       ╚═╝  ╚═╝╚══════╝╚═╝  ╚═╝╚══════╝╚═╝  ╚═══╝   ╚═╝  🗡️ ║
+    ║                                                                ║
+    ║           ✦ DESCEND IF YOU DARE ✦                           ║
+    ║                                                                ║
+    ╚════════════════════════════════════════════════════════════════╝
+```
+
+**Color scheme:**
+- Title text: **CYAN** (cold, mysterious)
+- ASCII art: **BRIGHT WHITE** (bold, dramatic)
+- Tagline: **YELLOW** (draws eye, warns of danger)
+- Borders: **CYAN**
+
+**Atmosphere narrative (optional, shown after title):**
+```
+Press ENTER to skip intro, or read on...
+
+The dungeon stretches endlessly downward, breathing with ancient malice.
+Countless adventurers have descended. Few return.
+
+You hear the screams of the damned echoing from below.
+The choice is yours: courage or cowardice?
+```
+- Tone: Dark, foreboding, but not grimdark
+- Length: 4 sentences max
+- Delivery: Slow (one line per 1.5 seconds, optional skip)
+
+---
+
+## 2. Character Creation Sequence
+
+### Revised Flow
+
+The sequence is **reordered** to build investment and enable informed choices:
+
+1. **Title screen** (with optional lore)
+2. **Prestige display** (if applicable)
+3. **Name entry** (builds investment early)
+4. **Difficulty selection** (now transparent with mechanics)
+5. **Class selection** (shows full starting stats, not just bonuses)
+6. **Seed display** (auto-generated, shown for reference)
+7. **Game start**
+
+### 2a. Prestige Display (if player has prestige > 0)
+
+**Current:** Bare text "Prestige Level: 3"  
+**Proposed:**
+
+```
+╔════════════════════════════════════════════════════════════╗
+║               🏆 RETURNING CHAMPION 🏆                    ║
+╠════════════════════════════════════════════════════════════╣
+║  Prestige Level:  3                                        ║
+║  Total Victories: 9 wins (3 runs per level)                ║
+║  Win Rate:        45% (9 wins / 20 runs)                   ║
+╠════════════════════════════════════════════════════════════╣
+║  Starting Bonuses:                                         ║
+║    • Attack:    +1                                         ║
+║    • Defense:   +1                                         ║
+║    • Max HP:    +15                                        ║
+╠════════════════════════════════════════════════════════════╣
+║  Progress to Prestige 4:  6 more wins needed               ║
+║  (The dungeon remembers your victories.)                   ║
+╚════════════════════════════════════════════════════════════╝
+```
+
+**Color:**
+- Header: **BRIGHT WHITE**
+- "RETURNING CHAMPION": **YELLOW** (celebration)
+- Stats labels: **CYAN**
+- Stats values: **GREEN** (positive reinforcement)
+- Progress bar: **YELLOW** or **GREEN**
+
+### 2b. Name Entry
+
+**Current:** `Console.Write("Enter your name, adventurer: ");`  
+**Proposed:**
+
+```
+╔════════════════════════════════════════════════════════════╗
+║         What is your name, adventurer?                    ║
+║                                                            ║
+║  Enter a name (or press ENTER for "Hero"):                ║
+║                                                            ║
+║  ► _                                                       ║
+╚════════════════════════════════════════════════════════════╝
+```
+
+- Prompt is flavor-rich, not bare
+- Shows default fallback
+- Input line shows cursor/prompt clearly
+
+### 2c. Difficulty Selection
+
+**Current:**
+```
+Choose difficulty: [1] Casual  [2] Normal  [3] Hard
+```
+
+**Proposed: Difficulty card selection with mechanics transparency**
+
+```
+╔════════════════════════════════════════════════════════════╗
+║                  CHOOSE DIFFICULTY                        ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  [1] CASUAL — Perfect for your first descent              ║
+║      Enemy Damage: 80% (easier)                           ║
+║      Loot Quality: 150% (generous rewards)                ║
+║      Elite Spawn Rate: 5% (mostly normal enemies)         ║
+║      Recommended: First run, relaxed playstyle            ║
+║                                                            ║
+║  [2] NORMAL — The intended experience                     ║
+║      Enemy Damage: 100% (balanced)                        ║
+║      Loot Quality: 100% (standard rewards)                ║
+║      Elite Spawn Rate: 15% (more tough fights)            ║
+║      Recommended: Subsequent runs, standard challenge     ║
+║                                                            ║
+║  [3] HARD — Only the worthy survive                       ║
+║      Enemy Damage: 130% (brutal)                          ║
+║      Loot Quality: 70% (scarce rewards)                   ║
+║      Elite Spawn Rate: 30% (many tough fights)            ║
+║      Recommended: Mastery run, prestige farming           ║
+║                                                            ║
+║  ► Select [1/2/3]:                                        ║
+╚════════════════════════════════════════════════════════════╝
+```
+
+**Color scheme:**
+- Header: **CYAN**
+- Difficulty level names: **BRIGHT WHITE** (1), **GREEN** (2), **BrightRed** (3)
+- Mechanical stats: **YELLOW**
+- Input prompt: **CYAN**
+
+**Benefit:** Players understand tradeoffs, not just labels. Casuals aren't scared; Hard players see the real challenge.
+
+### 2d. Class Selection
+
+**Current:**
+```
+Choose your class:
+[1] Warrior - High HP, defense, and attack bonus. Reduced mana.
+[2] Mage - High mana and powerful spells. Reduced HP and defense.
+[3] Rogue - Balanced with an attack bonus. Extra dodge chance.
+```
+
+**Proposed: Class cards showing full starting stats**
+
+```
+╔════════════════════════════════════════════════════════════╗
+║                  CHOOSE YOUR CLASS                        ║
+╠════════════════════════════════════════════════════════════╣
+║                                                            ║
+║  [1] ⚔️  WARRIOR — The Unbreakable                        ║
+║      Starting Stats (base + class + prestige):            ║
+║        HP:       100 → 120  (+20)                         ║
+║        Attack:    10 → 12   (+2)                          ║
+║        Defense:    3 → 5    (+2)                          ║
+║        Mana:      30 → 20   (-10)                         ║
+║      PASSIVE: Unstoppable — +3% defense per 10% HP        ║
+║      PLAYSTYLE: Tank through attrition.                   ║
+║                 Survive what others can't.                ║
+║                                                            ║
+║  [2] 🔮 MAGE — The Mystic Force                           ║
+║      Starting Stats (base + class + prestige):            ║
+║        HP:        60 → 75   (+15)                         ║
+║        Attack:    10 → 8    (-2)                          ║
+║        Defense:    3 → 2    (-1)                          ║
+║        Mana:      60 → 80   (+20)                         ║
+║      PASSIVE: Spellweaver — Spell crit chance: 15%        ║
+║      PLAYSTYLE: Glass cannon burst.                       ║
+║                 End fights before they start.             ║
+║                                                            ║
+║  [3] 🗡️  ROGUE — The Swift Shadow                         ║
+║      Starting Stats (base + class + prestige):            ║
+║        HP:        80 → 95   (+15)                         ║
+║        Attack:    10 → 12   (+2)                          ║
+║        Defense:    3 → 3    (+0)                          ║
+║        Mana:      30 → 30   (+0)                          ║
+║      PASSIVE: Evasion — +10% chance to dodge attacks      ║
+║      PLAYSTYLE: Balanced and nimble.                      ║
+║                 Skill and speed over raw power.           ║
+║                                                            ║
+║  ► Select [1/2/3]:                                        ║
+╚════════════════════════════════════════════════════════════╝
+```
+
+**Color scheme:**
+- Class names: **BRIGHT WHITE**
+- Emojis: **YELLOW**
+- "Starting Stats": **CYAN** (label)
+- Stat names (HP, Attack, etc.): **GREEN**
+- Starting values: **BRIGHT WHITE**
+- Bonuses (+X): **GREEN**
+- Penalties (-X): **BrightRed**
+- PASSIVE trait name: **YELLOW**
+- Trait description: **CYAN**
+- PLAYSTYLE header: **YELLOW**
+- Playstyle text: **CYAN**
+
+**Why this works:**
+- Players see exactly what their character starts with (accounting for all bonuses)
+- Passive traits are named and explained (not mysterious)
+- Playstyle guidance helps choosing based on preferred approach
+- Color separates information categories (stats vs. passives vs. playstyle)
+- Emojis make classes memorable (⚔️ tank, 🔮 spellcaster, 🗡️ agile)
+
+---
+
+## 3. Seed Handling
+
+### Current State
+```
+Enter a seed for reproducible runs (or press Enter for random):
+> [player input]
+```
+
+### Problems
+- Blocks casual players (95% don't care)
+- Speedrunners/testers need to note seed anyway
+- CLI integration is awkward
+
+### Proposed Solution
+
+**Option A: Auto-generate, display at end**
+- Seed is generated automatically
+- Shown to player just before game starts: "Seed: 123456 (share this to replay)"
+- Players only think about it if they want to share/replay
+- Reduces cognitive load
+
+**Option B: CLI flag for power users (future)**
+- Add `--seed 12345` flag to executable
+- If provided, use it; otherwise auto-generate
+- Doesn't clutter the UI
+- Example: `dotnet run -- --seed 123456`
+
+**Recommended approach:** Option A now (auto-generate and display), add Option B later when CLI interface is formalized.
+
+**Code in Program.cs:**
+```csharp
+// Seed selection (simplified)
+var actualSeed = new Random().Next(100000, 999999);
+// Display will show it just before game starts
+```
+
+**Seed display line (after all selections):**
+```
+═════════════════════════════════════════════════════════════
+  Initializing your descent...
+  Seed: 537892  (share this number to replay the exact same run)
+═════════════════════════════════════════════════════════════
+```
+
+---
+
+## 4. Architecture & Implementation Approach
+
+### Principle: Keep it Simple Now, Extract When Needed
+
+**Current Program.cs:** ~80 lines of setup code (acceptable)  
+**Proposed:** Add display methods, keep orchestration in Program.cs  
+**Future:** Extract to `GameSetupService` when implementing "Load Game" (to avoid duplicating setup logic)
+
+### New IDisplayService Methods
+
+Add to interface (and ConsoleDisplayService implementation):
+
+```csharp
+// Intro screen with title, tagline, ASCII art
+void ShowEnhancedTitle();
+
+// Optional lore/atmosphere text (returns true if player wants to skip)
+bool ShowIntroNarrative();
+
+// Display prestige info for returning players
+void ShowPrestigeInfo(PrestigeData prestige);
+
+// Difficulty selection (returns validated Difficulty enum)
+Difficulty SelectDifficulty();
+
+// Class selection (returns validated PlayerClassDefinition)
+PlayerClassDefinition SelectClass();
+
+// Show seed before game starts
+void ShowSeedInfo(int seed);
+```
+
+### Validation Logic Lives in Display Layer
+
+Display service owns input loops:
+```csharp
+public Difficulty SelectDifficulty()
+{
+    while (true)
+    {
+        ShowDifficultyOptions();
+        var input = Console.ReadLine()?.Trim() ?? "";
+        
+        var difficulty = input switch
+        {
+            "1" => Difficulty.Casual,
+            "2" => Difficulty.Normal,
+            "3" => Difficulty.Hard,
+            _ => null
+        };
+        
+        if (difficulty.HasValue)
+            return difficulty.Value;
+        
+        ShowError("Invalid selection. Choose [1], [2], or [3].");
+    }
+}
+```
+
+**Why:** Display layer knows what inputs are valid. Game logic receives guaranteed-valid data.
+
+### Program.cs After Changes
+
+```csharp
+var display = new ConsoleDisplayService();
+
+// Intro sequence (in order)
+display.ShowEnhancedTitle();
+if (!display.ShowIntroNarrative())
+    display.ShowMessage(""); // User skipped, space things out
+
+var prestige = PrestigeSystem.Load();
+if (prestige.PrestigeLevel > 0)
+    display.ShowPrestigeInfo(prestige);
+
+var name = display.ReadPlayerName();
+var difficulty = display.SelectDifficulty();  // NEW: returns validated Difficulty
+var playerClass = display.SelectClass();      // NEW: returns validated PlayerClassDefinition
+
+// Seed (auto-generated now)
+var actualSeed = new Random().Next(100000, 999999);
+
+display.ShowSeedInfo(actualSeed); // NEW: shows seed before game starts
+
+// Create player (unchanged logic)
+var player = new Player { Name = name };
+player.Class = playerClass.Class;
+player.Attack += playerClass.BonusAttack;
+// ... rest of setup ...
+```
+
+**Total new code in Program.cs:** ~10 lines  
+**New Display methods:** 5 methods (shown above)  
+**ConsoleDisplayService additions:** ~200 lines
+
+---
+
+## 5. Implementation Phases
+
+### Phase 1: Foundation (2 hours)
+- [ ] Add 5 new methods to IDisplayService
+- [ ] Implement ShowEnhancedTitle with ASCII art and colors
+- [ ] Implement ShowPrestigeInfo with formatting
+- [ ] Update Program.cs to use new methods (remove inline seed prompt)
+- [ ] Test on actual console (ensure colors display correctly)
+
+### Phase 2: Enhanced Selection (2 hours)
+- [ ] Implement SelectDifficulty with full card display
+- [ ] Implement SelectClass with stat cards
+- [ ] Implement ShowSeedInfo
+- [ ] Test validation loops (invalid inputs re-prompt)
+- [ ] Test with all class/difficulty combinations
+
+### Phase 3: Polish (1.5 hours)
+- [ ] Implement ShowIntroNarrative with optional skip
+- [ ] Add spacing/pacing (slow narrative reveal if not skipped)
+- [ ] Color verification (ensure all colors render correctly on dark/light terminals)
+- [ ] Update README with new intro design
+- [ ] Run full test suite (all 267 tests should pass)
+
+### Phase 4: Review & Merge (1 hour)
+- [ ] Coulson reviews implementation against this plan
+- [ ] Anthony approves visual design
+- [ ] Merge to master
+
+**Total: ~6.5 hours**
+
+---
+
+## 6. Success Criteria
+
+### Functional
+- [ ] All 267 existing tests pass (no regressions)
+- [ ] All 5 display methods work correctly
+- [ ] Invalid inputs re-prompt (no crashes)
+- [ ] Prestige display shows when prestige > 0 (hidden when 0)
+- [ ] Lore narrative can be skipped with Enter
+- [ ] Seed is displayed before game starts
+
+### Visual/UX
+- [ ] Title screen conveys atmosphere (dark, mysterious)
+- [ ] Difficulty/class selections clearly show tradeoffs
+- [ ] Colors are consistent with color system established in PR #226
+- [ ] Spacing and alignment are clean (no ragged borders)
+- [ ] New intro takes <1 minute for experienced players (fast path)
+
+### Technical
+- [ ] No changes to game logic (purely presentation layer)
+- [ ] Display layer owns validation loops (no null checks in Program.cs)
+- [ ] New interface methods are composable and reusable
+- [ ] Code follows existing patterns (emojis, colors, ASCII borders)
+
+---
+
+## 7. Risk Assessment
+
+**Risk: Low**
+- Pure presentation layer (no game logic changes)
+- Existing tests don't depend on intro code (easy to add new tests if needed)
+- Fallback behavior preserved (name defaults to "Hero", difficulty defaults to Normal)
+
+**Mitigation:**
+- Run full test suite after each phase
+- Test with actual console (colors vary by terminal)
+- Get Anthony's sign-off on visual design before implementing
+
+---
+
+## 8. Future Extensions (Not in This Plan)
+
+These ideas are cool but out of scope:
+
+- **Character portraits:** ASCII art for each class (after class selection)
+- **Build preview:** Show how the player's character will look at level 10, 20
+- **Tutorial tips:** Contextual hints during setup ("Mages need a big mana pool; use Mana potions in combat")
+- **Difficulty auto-recommend:** Suggest Normal for first run, Hard for prestige farming
+- **Customizable colors:** Let players override color scheme
+- **Speedrun mode:** `--speedrun` flag that skips narrative and prestige display
+
+---
+
+## Sign-Off
+
+**Coulson (Lead):** ✅ Approved  
+**Hill (C# Dev):** ✅ Ready to implement  
+**Barton (Systems Dev):** ✅ UX flow validated  
+
+**Pending:** Anthony approval before implementation begins
