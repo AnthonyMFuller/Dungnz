@@ -857,3 +857,6 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 **Plan location:** `.ai-team/decisions/inbox/coulson-intro-plan.md`  
 **Implementation ready when:** Anthony approves visual design
 
+
+📌 Team update (2026-02-22): Process alignment protocol established — all code changes require a branch and PR before any commits. See decisions.md for full protocol. No exceptions.
+

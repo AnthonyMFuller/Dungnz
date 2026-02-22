@@ -429,3 +429,6 @@
 ## 2026-02-22: Team Decision Merge
 
 📌 **Team update:** Intro QA strategy, edge case testing framework, and quality assurance patterns — decided by Romanoff (via comprehensive intro QA assessment). Decisions merged into `.ai-team/decisions.md` by Scribe.
+
+📌 Team update (2026-02-22): Process alignment protocol established — all code changes require a branch and PR before any commits. See decisions.md for full protocol. No exceptions.
+

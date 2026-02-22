@@ -614,3 +614,6 @@ Awaiting decision to proceed. If approved, estimate 6.5–8.5 hours to implement
 ## 2026-02-22: Team Decision Merge
 
 📌 **Team update:** Display design patterns, sequence extraction architecture, and intro rendering strategy — decided by Hill (via design documentation). Decisions merged into `.ai-team/decisions.md` by Scribe.
+
+📌 Team update (2026-02-22): Process alignment protocol established — all code changes require a branch and PR before any commits. See decisions.md for full protocol. No exceptions.
+

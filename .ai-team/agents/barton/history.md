@@ -501,3 +501,6 @@
 ## 2026-02-22: Team Decision Merge
 
 📌 **Team update:** Intro flow UX design, systems design patterns, and player creation flow strategy — decided by Barton (via intro systems and UX documentation). Decisions merged into `.ai-team/decisions.md` by Scribe.
+
+📌 Team update (2026-02-22): Process alignment protocol established — all code changes require a branch and PR before any commits. See decisions.md for full protocol. No exceptions.
+
