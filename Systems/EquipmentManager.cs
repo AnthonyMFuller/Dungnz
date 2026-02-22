@@ -12,6 +12,9 @@ public class EquipmentManager
 {
     private readonly IDisplayService _display;
 
+    /// <summary>Initialises a new <see cref="EquipmentManager"/> with the given display service.</summary>
+    /// <param name="display">The display service used to output messages and errors to the player.</param>
+    /// <exception cref="ArgumentNullException">Thrown when <paramref name="display"/> is <see langword="null"/>.</exception>
     public EquipmentManager(IDisplayService display)
     {
         _display = display ?? throw new ArgumentNullException(nameof(display));

@@ -2,6 +2,7 @@ namespace Dungnz.Models;
 
 public partial class Player
 {
+    /// <summary>The maximum number of items the player's inventory can hold.</summary>
     public const int MaxInventorySize = 20;
 
     /// <summary>

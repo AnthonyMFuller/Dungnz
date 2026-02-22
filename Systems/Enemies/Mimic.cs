@@ -21,6 +21,9 @@ public class Mimic : Enemy
     [System.Text.Json.Serialization.JsonConstructor]
     private Mimic() { }
 
+    /// <summary>Initialises a Mimic with the given stats and item configuration, or falls back to hard-coded defaults. Enables the ambush mechanic.</summary>
+    /// <param name="stats">External stats from config, or <see langword="null"/> to use defaults.</param>
+    /// <param name="itemConfig">Item configuration; currently unused for this enemy.</param>
     public Mimic(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         IsAmbush = true; // first-turn surprise: player cannot act

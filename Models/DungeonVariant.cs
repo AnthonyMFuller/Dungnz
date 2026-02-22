@@ -1,11 +1,25 @@
 namespace Dungnz.Models;
 
+/// <summary>
+/// Describes the themed name and narrative messages associated with a specific dungeon floor.
+/// </summary>
 public class DungeonVariant
 {
+    /// <summary>Gets the display name of this dungeon variant (e.g. "Goblin Caves").</summary>
     public string Name { get; init; } = "Dungeon";
+
+    /// <summary>Gets the flavour text shown to the player when they descend into this floor.</summary>
     public string EntryMessage { get; init; } = "";
+
+    /// <summary>Gets the flavour text shown to the player when they leave this floor.</summary>
     public string ExitMessage { get; init; } = "";
 
+    /// <summary>
+    /// Returns the <see cref="DungeonVariant"/> appropriate for the given floor number,
+    /// cycling through themed variants for floors 1–5 and falling back to a generic variant beyond that.
+    /// </summary>
+    /// <param name="floor">The 1-based dungeon floor number.</param>
+    /// <returns>A <see cref="DungeonVariant"/> with matching name and entry/exit messages.</returns>
     public static DungeonVariant ForFloor(int floor) => floor switch {
         1 => new() { Name = "Goblin Caves",
             EntryMessage = "You descend into damp, torch-lit goblin caves.",

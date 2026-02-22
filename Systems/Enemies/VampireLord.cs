@@ -21,6 +21,9 @@ public class VampireLord : Enemy
     [System.Text.Json.Serialization.JsonConstructor]
     private VampireLord() { }
 
+    /// <summary>Initialises a Vampire Lord with the given stats and item configuration, or falls back to hard-coded defaults. Sets 50% lifesteal.</summary>
+    /// <param name="stats">External stats from config, or <see langword="null"/> to use defaults.</param>
+    /// <param name="itemConfig">Item configuration; currently unused for this enemy.</param>
     public VampireLord(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         LifestealPercent = 0.50f; // heals 50% of damage dealt

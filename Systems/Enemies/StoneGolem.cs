@@ -21,6 +21,9 @@ public class StoneGolem : Enemy
     [System.Text.Json.Serialization.JsonConstructor]
     private StoneGolem() { }
 
+    /// <summary>Initialises a Stone Golem with the given stats and item configuration, or falls back to hard-coded defaults. Enables status-effect immunity.</summary>
+    /// <param name="stats">External stats from config, or <see langword="null"/> to use defaults.</param>
+    /// <param name="itemConfig">Item configuration; currently unused for this enemy.</param>
     public StoneGolem(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         IsImmuneToEffects = true;

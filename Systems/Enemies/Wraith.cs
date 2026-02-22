@@ -21,6 +21,9 @@ public class Wraith : Enemy
     [System.Text.Json.Serialization.JsonConstructor]
     private Wraith() { }
 
+    /// <summary>Initialises a Wraith with the given stats and item configuration, or falls back to hard-coded defaults. Sets 30% flat dodge chance.</summary>
+    /// <param name="stats">External stats from config, or <see langword="null"/> to use defaults.</param>
+    /// <param name="itemConfig">Item configuration; currently unused for this enemy.</param>
     public Wraith(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
     {
         FlatDodgeChance = 0.30f; // 30% flat dodge, ignores DEF-based formula
