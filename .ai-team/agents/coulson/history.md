@@ -1016,3 +1016,13 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 - Phase 1 code prep correctly implemented before Phase 2 content injection
 - Validation + display safety layers working as intended (name truncation, tier enforcement)
 - Content expansion unblocked: Accessory support ready, 8 new enemies live
+### 2026-02-22: Phase 1 PR Review & Merge
+**Outcome:** Merged all Phase 1 PRs (#249, #250, #251) + Process Enforcement (#254).
+**Key Decisions Validated:**
+- **Code Hardening:** `ItemConfig.Load` now strictly validates Tier enum and Name length (max 30), preventing bad data from crashing the game or breaking UI. (PR #249)
+- **Display Safety:** `DisplayService` now truncates item names > 30 chars before applying ANSI codes, ensuring UI alignment never breaks even if bad data sneaks in. (PR #250)
+- **Mechanics:** Added `ItemType.Accessory` support to `InventoryManager.UseItem()`, delegating to `Player.EquipItem()`. (PR #251)
+- **Process:** Enforced "no direct commits to master" via `scripts/pre-push` hook. (PR #254)
+**Notes:**
+- Recovered documentation for "Map UI/UX Redesign" and "Issue Creation" which was temporarily lost/reverted during merge conflicts.
+- Verified all features on master.
