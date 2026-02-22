@@ -10947,3 +10947,26 @@ Content should fill the box; it should not define the box.
 ## Open Questions
 - How much systems design is "enough" before content can start?
 - Can content and systems run in parallel if seams are well-defined?
+
+# Decision: UI/UX improvement plan produced
+
+**Status:** Approved  
+**Owner:** Coulson  
+**Date:** 2026-02-22  
+**Context:** Boss requested UI/UX evolution; retrospective flagged display systems as an improvement area.
+
+## What
+Team-aligned plan for aesthetic and gameplay UI/UX improvements across three phases: Combat Feel (Phase 1), Navigation & Exploration Polish (Phase 2), and Information Architecture (Phase 3). 20 specific work items identified, each with owner, implementation notes, and interface-change flags.
+
+## Why
+The game's mechanical depth (status effects, abilities, multi-floor dungeons, achievements, crafting) has outpaced the rendering layer — players can't see the systems they're interacting with.
+
+## Plan Location
+`.ai-team/plans/uiux-improvement-plan.md`
+
+## Key Decisions in the Plan
+- `ShowCombatStatus` signature extended with active effect lists (IDisplayService change — requires Romanoff test coordination)
+- `ShowCommandPrompt` extended with Player parameter for persistent status mini-bar (IDisplayService change — wide test impact, use optional overload)
+- Victory/GameOver screens moved from GameLoop private methods to IDisplayService (structural improvement, not just cosmetic)
+- NarrationService stays in GameLoop — flavor strings passed as parameters to display methods, not injected into ConsoleDisplayService
+- ANSI-safe box padding standardized via `ColorCodes.StripAnsiCodes()` pattern (fixes existing `ShowLootDrop` bug)
