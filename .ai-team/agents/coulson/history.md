@@ -967,3 +967,14 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 - **Pre-push Hook:** Added scripts/pre-push to block direct pushes to master.
 - **Scribe Charter:** Updated to explicitly require branch+PR workflow.
 **Artifacts:** Created .ai-team/decisions/inbox/coulson-no-direct-master-enforcement.md.
+
+### 2026-02-22: Phase 1 PR Review & Merge
+**Outcome:** Merged all Phase 1 PRs (#249, #250, #251) + Process Enforcement (#254).
+**Key Decisions Validated:**
+- **Code Hardening:** `ItemConfig.Load` now strictly validates Tier enum and Name length (max 30), preventing bad data from crashing the game or breaking UI. (PR #249)
+- **Display Safety:** `DisplayService` now truncates item names > 30 chars before applying ANSI codes, ensuring UI alignment never breaks even if bad data sneaks in. (PR #250)
+- **Mechanics:** Added `ItemType.Accessory` support to `InventoryManager.UseItem()`, delegating to `Player.EquipItem()`. (PR #251)
+- **Process:** Enforced "no direct commits to master" via `scripts/pre-push` hook. (PR #254)
+**Notes:**
+- Recovered documentation for "Map UI/UX Redesign" and "Issue Creation" which was temporarily lost/reverted during merge conflicts.
+- Verified all features on master.
