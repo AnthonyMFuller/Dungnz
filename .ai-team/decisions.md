@@ -5244,3 +5244,1862 @@ public void ProcessTurnStart(object target)
 - SaveSystem.ListSaves() test: create files with out-of-order write times → verify sort by timestamp, not filename
 - StatusEffectManager test: apply poison to 1 HP enemy → verify no "effect wore off" message on corpse
 
+
+---
+
+### 2026-02-22: No commits directly to master
+**By:** Anthony (via Copilot coordinator)
+**What:** All work — whether triggered by a GitHub issue or an open-ended request — must be done on a feature branch. No commits may land directly on master. Branches should follow the naming convention squad/{slug} or squad/{issue-number}-{slug}. Work reaches master only via PR review and merge.
+**Why:** The squad committed UI/UX implementation work directly to master during a session where no GitHub issue was present, bypassing the branch/PR workflow.
+
+---
+
+### 2026-02-22: PR #218 code review verdict
+**By:** Coulson
+**What:** ✅ APPROVED — Color system is well-structured, architecturally sound, and ready to merge.
+**Why:** The PR respects all charter principles and team decisions. Notes below for follow-up.
+
+---
+
+## Review Summary
+
+**Branch:** `squad/ui-ux-color-system`
+**Files changed:** 8 code files + README + team docs
+**Tests:** All 267 pass ✅
+**Build:** Clean (0 errors, pre-existing warnings only)
+
+## Architecture Assessment
+
+| Principle | Status | Notes |
+|-----------|--------|-------|
+| Display layer separation | ✅ Pass | All Console calls confined to `ConsoleDisplayService`. CombatEngine and EquipmentManager use `IDisplayService` only. |
+| Idiomatic C# / clean interfaces | ✅ Pass | `IDisplayService` extended with 4 well-documented methods. `ColorCodes` is a clean static utility class with `const` fields. |
+| No Console leaks in game logic | ✅ Pass | Zero `Console.*` calls in `CombatEngine.cs` or `EquipmentManager.cs`. |
+| ANSI stripped in tests | ✅ Pass | Both `FakeDisplayService` and `TestDisplayService` use `ColorCodes.StripAnsiCodes()` on all text inputs. |
+| Console-first, no external deps | ✅ Pass | Pure ANSI escape codes, no third-party packages. |
+
+## What's Good
+
+1. **`ColorCodes.cs`** — Clean, well-documented static utility. Threshold-based helpers (`HealthColor`, `ManaColor`, `WeightColor`) are a smart pattern. `StripAnsiCodes` regex is correct and reusable.
+2. **Test doubles updated correctly** — Both fake services strip ANSI on all text-accepting methods, preventing false failures.
+3. **CombatEngine stays clean** — `ColorizeDamage` is a private helper that only manipulates strings; all output still goes through `_display`.
+4. **EquipmentManager** — Comparison panel shown via `IDisplayService.ShowEquipmentComparison`, not raw Console. Good.
+
+## Minor Issues (Non-blocking, follow-up recommended)
+
+### 1. README health thresholds don't match code
+README says: `≥ 60% Green, 30–59% Yellow, < 30% Red`
+Code (`HealthColor`): `> 70% Green, > 40% Yellow, > 20% Red, ≤ 20% BrightRed`
+**Action:** Update README table to match actual thresholds. Also, README omits the 4th tier (BrightRed < 20%).
+
+### 2. `ColorizeDamage` uses naive `string.Replace`
+If the damage number (e.g. `"5"`) appears elsewhere in the narration message (e.g. "5 goblins"), it will colorize the wrong occurrence. Low probability given current narration templates, but fragile.
+**Action:** Consider replacing only the last occurrence, or passing the damage value separately to the display layer.
+
+### 3. `ShowEquipmentComparison` box-drawing alignment
+The right `║` border uses `{"",20}` fixed padding, but ANSI color codes have zero visible width and non-zero string length. When deltas are present (colored `(+X)`), the right border shifts right by ~12 invisible characters, breaking the box alignment.
+**Action:** Calculate visible string width excluding ANSI codes, or pad after stripping.
+
+### 4. `ShowColoredStat` added but unused
+The method is on `IDisplayService` and implemented in all three services, but `ShowPlayerStats()` in `DisplayService` uses inline `ColorCodes` references instead of calling its own `ShowColoredStat`. Either use it or defer adding it until needed (YAGNI).
+**Action:** Refactor `ShowPlayerStats` to use `ShowColoredStat`, or remove the method from the interface until a consumer exists.
+
+## Verdict
+
+**✅ APPROVED** — Merge as-is. The four minor issues above are cosmetic/documentation and can be addressed in a follow-up PR. The architecture is correct, the layer boundaries are respected, and all tests pass.
+
+# UI/UX Improvement Plan — TextGame v3.5
+
+**Date:** 2026-02-20  
+**Lead:** Coulson  
+**Context:** Boss-requested initiative to enhance visual clarity and player experience through color, layout, and feedback improvements.
+
+---
+
+## Executive Summary
+
+TextGame currently uses plain text output with Unicode box-drawing characters and emoji for visual distinction. **No color system exists.** The codebase has clean architectural separation (IDisplayService abstraction) that enables UI improvements without touching game logic.
+
+**Proposal:** Implement ANSI color system, enhance visual hierarchy, improve player feedback, and add real-time status tracking—all via DisplayService extensions. No breaking changes to architecture.
+
+**Estimated Scope:** 15-20 hours across 3 phases (Foundation → Enhancement → Polish)
+
+---
+
+## Current State Analysis
+
+### Architecture Strengths
+✅ **IDisplayService abstraction** — All display calls routed through interface  
+✅ **Clean separation** — Game logic never calls Console directly  
+✅ **Single implementation** — ConsoleDisplayService is sole concrete class  
+✅ **Test infrastructure** — TestDisplayService exists for headless testing  
+✅ **Consistent patterns** — Emoji prefixes, indentation, box-drawing established  
+
+### Current Display Features
+- **Text formatting:** Unicode box-drawing (`╔ ║ ═ ╚`), emoji (⚔ 🏛 💧 ✗), indentation
+- **Layout patterns:** Blank lines for spacing, bracketed comparisons `[You: X/Y]`, comma-separated lists
+- **Visual hierarchy:** Headers with `═══`, indented messages (2 spaces), emoji prefixes for categories
+
+### Critical Gaps
+❌ **No color system** — All text plain white  
+❌ **No status HUD** — Active effects only shown when applied/expired  
+❌ **No equipment comparison** — Equipping gear doesn't show stat delta  
+❌ **No progress tracking** — Achievements/unlocks binary only  
+❌ **No inventory weight display** — Weight system exists but not visualized  
+❌ **Limited combat clarity** — Damage/heals blend into narrative walls  
+
+---
+
+## Design Philosophy
+
+### Core Principles
+1. **Console-native aesthetics** — Leverage ANSI colors, box-drawing, and emoji (no external frameworks)
+2. **Accessibility first** — Color must enhance, not replace, existing semantic indicators (emoji, labels)
+3. **Information density** — Reduce clutter; prioritize actionable info over flavor text
+4. **Consistency** — Establish color palette and apply uniformly across all systems
+5. **No breaking changes** — All improvements via DisplayService extensions; game logic untouched
+
+### Color Philosophy
+- **Color as semantic layer** — HP=red, Mana=blue, gold=yellow, XP=green, errors=red
+- **State-based coloring** — Low HP warnings, cooldown readiness, effect durations
+- **Context-aware intensity** — Combat uses bold/bright colors; exploration uses muted tones
+- **Graceful degradation** — If ANSI unsupported, fall back to current emoji-only design
+
+---
+
+## Proposed Color System
+
+### Color Palette (ANSI Codes)
+
+| Category | Color | ANSI Code | Use Cases |
+|----------|-------|-----------|-----------|
+| **Health** | Red | `\u001b[31m` | HP values, damage messages |
+| **Mana** | Blue | `\u001b[34m` | Mana values, ability costs |
+| **Gold** | Yellow | `\u001b[33m` | Gold amounts, loot rewards |
+| **XP** | Green | `\u001b[32m` | XP rewards, level-ups |
+| **Attack** | Bright Red | `\u001b[91m` | Attack stat, power buffs |
+| **Defense** | Cyan | `\u001b[36m` | Defense stat, shields |
+| **Success** | Green | `\u001b[32m` | Confirmations, heals |
+| **Errors** | Red | `\u001b[31m` | Warnings, failures |
+| **Neutral** | White | `\u001b[37m` | Default text |
+| **Dim** | Gray | `\u001b[90m` | Cooldowns, disabled options |
+| **Highlight** | Bright White | `\u001b[97m` | Important values, headers |
+| **Reset** | — | `\u001b[0m` | End colored segments |
+
+### State-Based Colors
+
+**HP Thresholds:**
+- `100%-70%` → Green
+- `69%-40%` → Yellow
+- `39%-20%` → Red
+- `19%-0%` → Bright Red (flashing if possible)
+
+**Mana Thresholds:**
+- `100%-50%` → Blue
+- `49%-20%` → Cyan
+- `19%-0%` → Gray (depleted)
+
+**Status Effects:**
+- Positive (Regen, Fortified) → Green text
+- Negative (Poison, Weakened) → Red text
+- Neutral (Stun, Bleed) → Yellow text
+
+**Equipment Quality:**
+- Common → White
+- Uncommon → Green
+- Rare → Blue
+- Epic → Purple (`\u001b[35m`)
+- Legendary → Gold (bright yellow `\u001b[93m`)
+
+---
+
+## Improvement Roadmap
+
+### Phase 1: Foundation (Color System Core)
+**Priority:** HIGH  
+**Estimated Time:** 5-7 hours  
+**Dependencies:** None
+
+#### Work Items
+
+**WI-1: Color Utility Class**
+- Create `Systems/ColorCodes.cs` with ANSI code constants
+- Add `Colorize(string text, ColorCode color)` helper
+- Add `HealthColor(int current, int max)` threshold logic
+- Add `ManaColor(int current, int max)` threshold logic
+
+**WI-2: DisplayService Color Methods**
+- Add `ShowColoredMessage(string message, ColorCode color)` to IDisplayService
+- Add `ShowColoredCombatMessage(string message, ColorCode color)`
+- Add `ShowColoredStat(string label, string value, ColorCode valueColor)`
+- Update ConsoleDisplayService implementation
+- Update TestDisplayService to strip ANSI codes for assertions
+
+**WI-3: Core Stat Colorization**
+- Update `ShowPlayerStats()` to colorize HP (red), Mana (blue), Gold (yellow), XP (green), Attack (bright red), Defense (cyan)
+- Update `ShowCombatStatus()` to apply HP threshold colors to both player and enemy
+- Update damage messages in CombatEngine to colorize damage values (red)
+
+#### Acceptance Criteria
+- [ ] ANSI color codes constants defined and documented
+- [ ] DisplayService has 3 new color-aware methods
+- [ ] Player stats display uses semantic colors
+- [ ] Combat HP bars change color based on threshold
+- [ ] All 125+ existing tests still pass (TestDisplayService strips colors)
+
+---
+
+### Phase 2: Enhancement (Visual Hierarchy & Feedback)
+**Priority:** HIGH  
+**Estimated Time:** 6-8 hours  
+**Dependencies:** Phase 1 complete
+
+#### Work Items
+
+**WI-4: Combat Visual Hierarchy**
+- Color damage numbers red with bright highlight
+- Color healing green with bright highlight
+- Color critical hits with `💥` emoji + bright yellow text
+- Color ability names blue in usage messages
+- Add colored status effect indicators: `[P]oison` (red), `[R]egen` (green), `[S]tun` (yellow)
+
+**WI-5: Enhanced Combat Status HUD**
+- Redesign `ShowCombatStatus()` to show active effects inline:
+  ```
+  [You: 45/60 HP | 15/30 MP | P(2) R(3)] vs [Goblin: 12/30 HP | W(2)]
+  ```
+- Color effect abbreviations based on type (positive/negative/neutral)
+- Add mana display to HUD (currently only shown in ability menu)
+
+**WI-6: Equipment Comparison Display**
+- Add `ShowEquipmentComparison(Item old, Item new)` method to IDisplayService
+- Display before/after stats when equipping:
+  ```
+  Equipping: Iron Sword
+  ────────────────────────
+  Before: Attack: 10, Defense: 5
+  After:  Attack: 15, Defense: 5  [+5 ATK]
+  ────────────────────────
+  ```
+- Color stat deltas: green for increases, red for decreases
+
+**WI-7: Inventory Weight Display**
+- Update `ShowInventory()` to include weight header:
+  ```
+  ═══ INVENTORY ═══
+  Slots: 5/8 | Weight: 42/50 | Value: 320g
+  ```
+- Add weight value to each item line: `• Potion (Consumable) [2 wt]`
+- Color weight ratio: green (under 80%), yellow (80-95%), red (96-100%)
+
+**WI-8: Status Effect Summary Panel**
+- Add `ShowActiveEffects(Player player)` to IDisplayService
+- Display in `ShowPlayerStats()` below main stats:
+  ```
+  Active Effects:
+    Poison (2 turns) - Taking 3 damage per turn
+    Regen (3 turns) - Healing 4 HP per turn
+  ```
+- Color effect names based on type
+
+#### Acceptance Criteria
+- [ ] Combat damage/healing uses color highlights
+- [ ] Combat HUD shows active effects inline with colored abbreviations
+- [ ] Equipment comparison shows stat deltas when equipping
+- [ ] Inventory displays weight/value summary with threshold colors
+- [ ] Player stats shows active effects panel
+- [ ] All tests pass
+
+---
+
+### Phase 3: Polish (Advanced UX Features)
+**Priority:** MEDIUM  
+**Estimated Time:** 4-5 hours  
+**Dependencies:** Phase 2 complete
+
+#### Work Items
+
+**WI-9: Achievement Progress Tracking**
+- Add `ShowAchievementProgress(List<Achievement> locked)` to IDisplayService
+- On game end, show locked achievements with progress:
+  ```
+  ❌ Speed Runner: 142 turns (need <100) — 71% progress
+  ❌ Hoarder: 320g / 500g — 64% progress
+  ✅ Glass Cannon: UNLOCKED
+  ```
+- Color progress bars: green (>75%), yellow (50-75%), red (<50%)
+
+**WI-10: Enhanced Room Descriptions**
+- Color room type prefixes based on danger level:
+  - Safe (standard/mossy/ancient) → green/cyan
+  - Hazardous (dark/flooded/scorched) → yellow/red
+- Color enemy warnings bright red with bold text
+- Color item drops gold
+
+**WI-11: Ability Cooldown Visual**
+- Update ability menu to show cooldown status with color:
+  ```
+  [1] Power Strike (10 MP, ready) ← green
+  [2] Defensive Stance (8 MP, 2 turns) ← gray
+  ```
+- Bold + bright color for ready abilities
+- Dim gray for cooling down abilities
+
+**WI-12: Combat Turn Log Enhancement**
+- Limit turn log to last 5 turns (currently unbounded)
+- Color player actions green, enemy actions red
+- Indent alternating turns for visual rhythm
+- Add turn numbers: `Turn 3: You strike Goblin for 15 damage`
+
+#### Acceptance Criteria
+- [ ] Achievement progress tracked and displayed on game end
+- [ ] Room descriptions use danger-based color coding
+- [ ] Ability menu shows cooldown readiness with color
+- [ ] Combat log uses alternating colors for player/enemy actions
+- [ ] All tests pass
+
+---
+
+## Technical Implementation Notes
+
+### ANSI Color Utility (WI-1)
+
+```csharp
+namespace Dungnz.Systems;
+
+/// <summary>
+/// ANSI escape code constants and color formatting utilities for console output.
+/// </summary>
+public static class ColorCodes
+{
+    // Basic colors
+    public const string Red = "\u001b[31m";
+    public const string Green = "\u001b[32m";
+    public const string Yellow = "\u001b[33m";
+    public const string Blue = "\u001b[34m";
+    public const string Magenta = "\u001b[35m";
+    public const string Cyan = "\u001b[36m";
+    public const string White = "\u001b[37m";
+    
+    // Bright colors
+    public const string BrightRed = "\u001b[91m";
+    public const string BrightGreen = "\u001b[92m";
+    public const string BrightYellow = "\u001b[93m";
+    public const string BrightWhite = "\u001b[97m";
+    public const string Gray = "\u001b[90m";
+    
+    // Formatting
+    public const string Bold = "\u001b[1m";
+    public const string Reset = "\u001b[0m";
+    
+    /// <summary>
+    /// Wraps text in ANSI color codes.
+    /// </summary>
+    public static string Colorize(string text, string color)
+        => $"{color}{text}{Reset}";
+    
+    /// <summary>
+    /// Returns threshold-based color for HP values.
+    /// </summary>
+    public static string HealthColor(int current, int max)
+    {
+        var ratio = (float)current / max;
+        return ratio switch
+        {
+            >= 0.70f => Green,
+            >= 0.40f => Yellow,
+            >= 0.20f => Red,
+            _ => BrightRed
+        };
+    }
+    
+    /// <summary>
+    /// Returns threshold-based color for Mana values.
+    /// </summary>
+    public static string ManaColor(int current, int max)
+    {
+        var ratio = (float)current / max;
+        return ratio switch
+        {
+            >= 0.50f => Blue,
+            >= 0.20f => Cyan,
+            _ => Gray
+        };
+    }
+}
+```
+
+### Extended IDisplayService Methods (WI-2)
+
+```csharp
+/// <summary>
+/// Displays a colored message to the player.
+/// </summary>
+void ShowColoredMessage(string message, string color);
+
+/// <summary>
+/// Displays a colored combat message with indentation.
+/// </summary>
+void ShowColoredCombatMessage(string message, string color);
+
+/// <summary>
+/// Displays a stat with colored value (e.g., "HP: 45/60" with 45 red).
+/// </summary>
+void ShowColoredStat(string label, string value, string valueColor);
+
+/// <summary>
+/// Displays equipment comparison when swapping gear.
+/// </summary>
+void ShowEquipmentComparison(Item? oldItem, Item newItem);
+
+/// <summary>
+/// Displays active status effects on player/enemy.
+/// </summary>
+void ShowActiveEffects(Player player);
+
+/// <summary>
+/// Displays achievement progress for locked achievements.
+/// </summary>
+void ShowAchievementProgress(List<Achievement> achievements);
+```
+
+### Combat Status HUD Example (WI-5)
+
+**Current:**
+```
+[You: 45/60 HP] vs [Goblin: 12/30 HP]
+```
+
+**Proposed:**
+```
+[You: 45/60 HP | 15/30 MP | P(2) R(3)] vs [Goblin: 12/30 HP | W(2)]
+```
+
+With colors:
+- HP values use threshold colors (green/yellow/red)
+- Mana values use blue
+- Effect abbreviations colored by type: P (poison, red), R (regen, green), W (weakened, yellow)
+- Numbers in parentheses show turns remaining
+
+### Equipment Comparison Example (WI-6)
+
+**Before equipping Iron Sword:**
+```
+═══════════════════════════════
+Equipping: Iron Sword
+───────────────────────────────
+Current Weapon: Rusty Dagger
+  Attack: 10 → 15  (+5)  ← green
+  Defense: 5 → 5   (—)   ← gray
+═══════════════════════════════
+Equip? [Y/N]
+```
+
+### Inventory Weight Display Example (WI-7)
+
+**Current:**
+```
+═══ INVENTORY ═══
+• Health Potion (Consumable)
+• Iron Sword (Weapon)
+```
+
+**Proposed:**
+```
+═══ INVENTORY ═══
+Slots: 5/8  |  Weight: 42/50  |  Value: 320g
+────────────────────────────────────────────
+• Health Potion (Consumable) [3 wt] [25g]
+• Iron Sword (Weapon) [8 wt] [50g]
+```
+
+With colors:
+- Weight ratio colored by threshold (green <80%, yellow 80-95%, red >95%)
+- Gold values in yellow
+- Item names colored by rarity
+
+---
+
+## Architecture Impact
+
+### No Breaking Changes
+- All improvements via DisplayService method additions
+- Existing methods retain current behavior
+- Game logic (CombatEngine, GameLoop, Systems) unchanged except display calls
+
+### Testing Strategy
+- Update TestDisplayService to strip ANSI codes before storing output
+- Add `StripAnsiCodes(string text)` helper method
+- All existing tests pass without modification (they check plain text content)
+- Add new tests for color utility functions (`HealthColor`, `ManaColor`)
+
+### Performance Considerations
+- ANSI codes add ~10-20 bytes per colored segment (negligible)
+- No performance impact on game logic (display is I/O-bound)
+- Color utility calls are simple string concatenation (fast)
+
+### Accessibility
+- Color enhances existing semantic indicators (emoji, labels), never replaces
+- `ShowError()` still prefixes with `✗` even when red
+- Combat HUD still shows effect abbreviations even without color
+- Equipment comparison shows deltas as text (`+5`) alongside color
+
+---
+
+## Priority Order & Dependencies
+
+### Critical Path
+1. **WI-1 (Color Utility)** → Foundation for all color work
+2. **WI-2 (DisplayService Methods)** → Interface contracts for color display
+3. **WI-3 (Core Stat Colorization)** → Immediate visual impact
+
+### Parallel Work (After WI-3)
+**Track A (Combat):**
+- WI-4 (Combat Visual Hierarchy)
+- WI-5 (Combat Status HUD)
+- WI-12 (Turn Log Enhancement)
+
+**Track B (Exploration):**
+- WI-6 (Equipment Comparison)
+- WI-7 (Inventory Weight Display)
+- WI-10 (Room Descriptions)
+
+**Track C (Meta):**
+- WI-8 (Status Effect Panel)
+- WI-9 (Achievement Progress)
+- WI-11 (Ability Cooldown Visual)
+
+### Dependency Graph
+```
+WI-1 (Color Utility)
+  ↓
+WI-2 (DisplayService Extensions)
+  ↓
+WI-3 (Core Stat Colors)
+  ├─→ WI-4 (Combat Hierarchy)
+  │    ↓
+  │   WI-5 (Combat HUD)
+  │    ↓
+  │   WI-12 (Turn Log)
+  │
+  ├─→ WI-6 (Equipment Compare)
+  │    ↓
+  │   WI-7 (Inventory Weight)
+  │    ↓
+  │   WI-10 (Room Colors)
+  │
+  └─→ WI-8 (Status Panel)
+       ↓
+      WI-9 (Achievement Progress)
+       ↓
+      WI-11 (Ability Cooldown)
+```
+
+---
+
+## Risk Assessment
+
+### High Risk
+❌ **ANSI code support variance** — Some terminals (older Windows CMD) may not support ANSI  
+**Mitigation:** Add ANSI detection and graceful fallback to current emoji-only design
+
+❌ **Test infrastructure breakage** — Color codes may break existing test assertions  
+**Mitigation:** Update TestDisplayService to strip ANSI codes in Phase 1
+
+### Medium Risk
+⚠️ **Display method signature changes** — New methods require IDisplayService updates  
+**Mitigation:** Add new methods (don't modify existing); backwards-compatible
+
+⚠️ **Color readability** — Some color combinations may be hard to read on certain terminals  
+**Mitigation:** Use high-contrast colors; test on multiple terminal emulators
+
+### Low Risk
+✅ **Performance impact** — ANSI codes are small strings; no measurable slowdown expected  
+✅ **Architecture coupling** — DisplayService abstraction prevents leakage into game logic
+
+---
+
+## Success Metrics
+
+### Phase 1 (Foundation)
+- [ ] All stats in `ShowPlayerStats()` use semantic colors
+- [ ] Combat HP bars change color based on health threshold
+- [ ] Damage numbers highlighted in combat messages
+- [ ] Zero test failures after color integration
+
+### Phase 2 (Enhancement)
+- [ ] Combat HUD shows active effects with colored abbreviations
+- [ ] Equipment comparison displays before/after stats
+- [ ] Inventory shows weight/value summary with threshold colors
+- [ ] Status effect panel visible in player stats
+
+### Phase 3 (Polish)
+- [ ] Achievement progress tracked and displayed
+- [ ] Room descriptions use danger-based coloring
+- [ ] Ability cooldowns show readiness with color
+- [ ] Combat turn log uses alternating player/enemy colors
+
+### Overall Success
+- **Visual clarity:** Player feedback improves (damage, healing, status changes immediately obvious)
+- **Information density:** More data displayed without increasing clutter
+- **Accessibility:** Color enhances existing indicators without replacing them
+- **Stability:** All 267 tests pass; no regressions in game logic
+
+---
+
+## Team Allocation
+
+**Hill (Lead Engineer):** 8-10 hours
+- WI-1: Color Utility Class
+- WI-2: DisplayService Extensions
+- WI-3: Core Stat Colorization
+- WI-6: Equipment Comparison
+- WI-7: Inventory Weight Display
+
+**Barton (Systems Engineer):** 7-9 hours
+- WI-4: Combat Visual Hierarchy
+- WI-5: Combat Status HUD
+- WI-8: Status Effect Panel
+- WI-11: Ability Cooldown Visual
+- WI-12: Combat Turn Log Enhancement
+
+**Romanoff (Tester):** 3-4 hours
+- Update TestDisplayService ANSI stripping
+- Verify all 267 tests pass across all phases
+- Add color utility unit tests
+- Manual testing on multiple terminal emulators
+
+**Coulson (Architect):** 2-3 hours
+- Design review before Phase 1 kickoff
+- Code review after each phase
+- Approval gate before Phase 3 (validate architecture decisions)
+
+---
+
+## Open Questions
+
+1. **ANSI Detection:** Should we auto-detect terminal color support or require opt-in flag?
+   - **Recommendation:** Auto-detect via `Environment.GetEnvironmentVariable("TERM")` and Windows version check
+   
+2. **Color Customization:** Should players be able to configure color theme?
+   - **Recommendation:** Defer to v4; use hard-coded theme for v3.5
+
+3. **Equipment Rarity Colors:** Should we add rarity system (common/rare/epic) now or later?
+   - **Recommendation:** Add rarity enum + colors in Phase 2; populate rarities in Phase 3
+
+4. **Combat Log Length:** Should turn log be limited to 5 turns or configurable?
+   - **Recommendation:** Hard-code 5 turns; add config option in v4 if requested
+
+5. **Status Effect Abbreviations:** What should abbreviation scheme be?
+   - **Recommendation:** Single-letter where unambiguous (P=Poison, R=Regen, S=Stun, B=Bleed, F=Fortified, W=Weakened)
+
+---
+
+## Post-Implementation Review Criteria
+
+After Phase 3 completion, evaluate:
+
+- [ ] **Visual clarity improved?** — Can players instantly identify HP state, active effects, cooldowns?
+- [ ] **Information density optimal?** — Is all actionable info visible without scrolling?
+- [ ] **Accessibility maintained?** — Do color-blind players still have full experience via emoji/labels?
+- [ ] **Zero regressions?** — All 267 tests pass; no gameplay bugs introduced?
+- [ ] **Performance acceptable?** — No noticeable slowdown in display rendering?
+
+If all criteria met: **Ship to master**  
+If any criteria unmet: **Iterate or roll back**
+
+---
+
+## Future Considerations (v4+)
+
+- **Animated effects** — ANSI cursor positioning for "live" HP bars
+- **Color themes** — Multiple palettes (classic, solarized, high-contrast)
+- **Advanced HUD** — Split-screen combat view with persistent stat panels
+- **Sound effects** — Terminal bell for critical hits, level-ups (via `\a` escape)
+- **Mouse support** — ANSI mouse tracking for menu selections
+
+---
+
+**Decision Authority:** Coulson (Lead)  
+**Approval Status:** DRAFT — Awaiting team review and Boss approval  
+**Next Steps:** Schedule design review ceremony with Hill, Barton, Romanoff
+
+# UI/UX Implementation Checklist
+
+**Quick reference for team during implementation**
+
+---
+
+## Phase 1: Foundation ✓ READY TO START
+
+### WI-1: Color Utility Class
+**Owner:** Hill  
+**File:** `Systems/ColorCodes.cs`
+
+- [ ] Create ColorCodes static class
+- [ ] Add ANSI color constants (Red, Green, Yellow, Blue, Cyan, BrightRed, Gray, Bold, Reset)
+- [ ] Add `Colorize(string text, string color)` helper
+- [ ] Add `HealthColor(int current, int max)` with thresholds (>70% green, 40-70% yellow, 20-40% red, <20% bright red)
+- [ ] Add `ManaColor(int current, int max)` with thresholds (>50% blue, 20-50% cyan, <20% gray)
+- [ ] Add XML docs on all public members
+
+**Test:** Create `ColorCodesTests.cs` with threshold boundary tests
+
+---
+
+### WI-2: DisplayService Color Methods
+**Owner:** Hill  
+**Files:** `Display/IDisplayService.cs`, `Display/ConsoleDisplayService.cs`, `Dungnz.Tests/Helpers/TestDisplayService.cs`
+
+- [ ] Add `void ShowColoredMessage(string message, string color)` to IDisplayService
+- [ ] Add `void ShowColoredCombatMessage(string message, string color)` to IDisplayService
+- [ ] Add `void ShowColoredStat(string label, string value, string valueColor)` to IDisplayService
+- [ ] Implement methods in ConsoleDisplayService
+- [ ] Update TestDisplayService to strip ANSI codes (regex: `\u001b\[[0-9;]*m`)
+- [ ] Add XML docs on new interface methods
+
+**Test:** Verify all 267 existing tests still pass
+
+---
+
+### WI-3: Core Stat Colorization
+**Owner:** Hill  
+**File:** `Display/ConsoleDisplayService.cs`
+
+- [ ] Update `ShowPlayerStats()` to colorize:
+  - HP value with `ColorCodes.HealthColor(player.HP, player.MaxHP)`
+  - Mana value with `ColorCodes.ManaColor(player.Mana, player.MaxMana)`
+  - Gold value with `ColorCodes.Yellow`
+  - XP value with `ColorCodes.Green`
+  - Attack value with `ColorCodes.BrightRed`
+  - Defense value with `ColorCodes.Cyan`
+- [ ] Update `ShowCombatStatus()` to colorize HP for both player and enemy
+- [ ] Update combat damage messages in `Engine/CombatEngine.cs` to highlight damage values in red
+
+**Test:** Manual verification + screenshot comparison
+
+---
+
+## Phase 2: Enhancement ⏸ BLOCKED BY PHASE 1
+
+### WI-4: Combat Visual Hierarchy
+**Owner:** Barton  
+**File:** `Engine/CombatEngine.cs`
+
+- [ ] Color damage numbers bright red in all attack messages
+- [ ] Color healing numbers bright green in all heal messages
+- [ ] Color critical hit messages bright yellow + bold
+- [ ] Color ability names blue in usage messages
+- [ ] Add colored status effect confirmation messages (poison=red, regen=green, stun=yellow)
+
+---
+
+### WI-5: Enhanced Combat Status HUD
+**Owner:** Barton  
+**File:** `Display/ConsoleDisplayService.cs`
+
+- [ ] Update `ShowCombatStatus()` format to: `[You: HP | MP | Effects] vs [Enemy: HP | Effects]`
+- [ ] Add effect abbreviation logic: P(poison), R(regen), S(stun), B(bleed), F(fortified), W(weakened)
+- [ ] Color abbreviations by type (positive=green, negative=red, neutral=yellow)
+- [ ] Display turns remaining in parentheses
+
+**Test:** Integration test with multiple active effects
+
+---
+
+### WI-6: Equipment Comparison Display
+**Owner:** Hill  
+**Files:** `Display/IDisplayService.cs`, `Display/ConsoleDisplayService.cs`, `Systems/EquipmentManager.cs`
+
+- [ ] Add `void ShowEquipmentComparison(Item? oldItem, Item newItem)` to IDisplayService
+- [ ] Implement method in ConsoleDisplayService with box border
+- [ ] Show before/after stats with colored deltas (+X green, -X red, no change gray)
+- [ ] Call from EquipmentManager.EquipItem() before applying changes
+- [ ] Prompt user to confirm (optional enhancement)
+
+---
+
+### WI-7: Inventory Weight Display
+**Owner:** Hill  
+**File:** `Display/ConsoleDisplayService.cs`
+
+- [ ] Update `ShowInventory()` to add header line: `Slots: X/Y | Weight: X/Y | Value: Xg`
+- [ ] Color weight ratio by threshold (<80% green, 80-95% yellow, >95% red)
+- [ ] Add `[X wt]` suffix to each item line
+- [ ] Add `[Xg]` value suffix to each item line
+
+---
+
+### WI-8: Status Effect Summary Panel
+**Owner:** Barton  
+**Files:** `Display/IDisplayService.cs`, `Display/ConsoleDisplayService.cs`
+
+- [ ] Add `void ShowActiveEffects(Player player)` to IDisplayService
+- [ ] Implement method showing effect name, turns remaining, and per-turn effect
+- [ ] Color effect names by type
+- [ ] Call from `ShowPlayerStats()` after main stats block
+
+---
+
+## Phase 3: Polish ⏸ BLOCKED BY PHASE 2
+
+### WI-9: Achievement Progress Tracking
+**Owner:** Barton  
+**Files:** `Display/IDisplayService.cs`, `Systems/AchievementSystem.cs`
+
+- [ ] Add `void ShowAchievementProgress(List<Achievement> achievements, RunStats stats)` to IDisplayService
+- [ ] Implement showing locked achievements with progress percentage
+- [ ] Color progress by threshold (>75% green, 50-75% yellow, <50% red)
+- [ ] Add progress calculation methods to AchievementSystem
+
+---
+
+### WI-10: Enhanced Room Descriptions
+**Owner:** Hill  
+**File:** `Display/ConsoleDisplayService.cs`
+
+- [ ] Update `ShowRoom()` to color room type prefix:
+  - Safe types (standard, mossy, ancient) → cyan/green
+  - Hazardous types (dark, flooded, scorched) → yellow/red
+- [ ] Color enemy warning bright red + bold
+- [ ] Color item names yellow
+
+---
+
+### WI-11: Ability Cooldown Visual
+**Owner:** Barton  
+**File:** `Engine/CombatEngine.cs` (ability menu display)
+
+- [ ] Color ready abilities (cooldown=0, mana sufficient) green + bold
+- [ ] Color cooling abilities (cooldown>0) gray
+- [ ] Color insufficient mana abilities red
+- [ ] Change text: "ready" instead of "CD: 0 turns"
+
+---
+
+### WI-12: Combat Turn Log Enhancement
+**Owner:** Barton  
+**File:** `Engine/CombatEngine.cs`
+
+- [ ] Limit turn log to last 5 turns (add ring buffer or list truncation)
+- [ ] Color player actions green
+- [ ] Color enemy actions red
+- [ ] Add turn numbers to each line
+- [ ] Consider indentation for visual rhythm
+
+---
+
+## Testing Checklist (Romanoff)
+
+### After Phase 1
+- [ ] All 267 tests pass
+- [ ] TestDisplayService strips ANSI codes correctly
+- [ ] Manual test: Player stats show colored values
+- [ ] Manual test: Combat HP bars change color at thresholds
+- [ ] Manual test: Color codes work on Windows Terminal, macOS Terminal, Linux terminal
+
+### After Phase 2
+- [ ] All tests still pass
+- [ ] Manual test: Combat HUD shows active effects
+- [ ] Manual test: Equipment comparison displays correctly
+- [ ] Manual test: Inventory shows weight/value summary
+- [ ] Manual test: Status effect panel visible in stats
+
+### After Phase 3
+- [ ] All tests still pass
+- [ ] Manual test: Achievement progress displays
+- [ ] Manual test: Room descriptions use danger colors
+- [ ] Manual test: Ability menu shows cooldown colors
+- [ ] Manual test: Turn log limited to 5 entries
+- [ ] Regression check: All gameplay systems work as before
+- [ ] Performance check: No noticeable slowdown
+
+---
+
+## Code Review Gates (Coulson)
+
+### After Phase 1
+- [ ] ColorCodes follows C# conventions (PascalCase constants)
+- [ ] IDisplayService methods have XML docs
+- [ ] TestDisplayService ANSI stripping is robust
+- [ ] No ANSI codes leak into game logic (CombatEngine, GameLoop, Systems)
+
+### After Phase 2
+- [ ] Equipment comparison doesn't block gameplay (optional prompt)
+- [ ] Combat HUD doesn't cause line wrapping on 80-column terminals
+- [ ] Status effect abbreviations are intuitive (consider legend display)
+- [ ] Inventory weight display aligns with existing patterns
+
+### After Phase 3
+- [ ] Achievement progress calculations are accurate
+- [ ] Room color coding enhances (doesn't replace) existing emoji
+- [ ] Turn log truncation preserves recent context
+- [ ] Overall UX feels polished and consistent
+
+---
+
+## Merge Criteria (Final Gate)
+
+- [ ] All 267 tests pass
+- [ ] Zero regressions in gameplay
+- [ ] Visual clarity improved (Boss/team approval via screenshots)
+- [ ] Accessibility maintained (color-blind testing)
+- [ ] Performance acceptable (no slowdown)
+- [ ] Code review approved (Coulson)
+- [ ] README.md updated (if commands/UI changed)
+
+**When all criteria met:** Merge to master branch
+# UI/UX Improvement Plan — Executive Summary
+
+**Date:** 2026-02-20  
+**Lead:** Coulson  
+**Status:** Ready for team review and Boss approval
+
+---
+
+## The Problem
+
+TextGame currently displays everything in **plain white text**. While the game uses emoji and Unicode box-drawing for visual distinction, there's no color system, no real-time status tracking, and limited visual feedback for player actions.
+
+---
+
+## The Solution
+
+Implement a comprehensive UI/UX enhancement through **3 phases** of improvements:
+
+### Phase 1: Foundation (5-7 hours)
+- ANSI color system core
+- DisplayService color methods
+- Core stat colorization (HP, Mana, Gold, XP, Attack, Defense)
+
+### Phase 2: Enhancement (6-8 hours)
+- Combat visual hierarchy (colored damage/healing/crits)
+- Enhanced combat HUD with active effects
+- Equipment comparison display
+- Inventory weight tracking
+- Status effect summary panel
+
+### Phase 3: Polish (4-5 hours)
+- Achievement progress tracking
+- Enhanced room descriptions
+- Ability cooldown visual indicators
+- Combat turn log improvements
+
+**Total Estimate:** 15-20 hours
+
+---
+
+## Key Improvements At-a-Glance
+
+| Feature | Before | After |
+|---------|--------|-------|
+| **HP Display** | `45/60` (white) | `45/60` (green/yellow/red based on %) |
+| **Combat Status** | `[You: 45/60 HP] vs [Goblin: 12/30 HP]` | `[You: 45/60 HP │ 15/30 MP │ P(2) R(3)] vs [Goblin: 12/30 HP │ W(2)]` |
+| **Damage Messages** | `You strike Goblin for 15 damage!` | `You strike Goblin for **15** damage!` (red highlight) |
+| **Equipment** | `You equipped Iron Sword.` | Shows before/after stats with colored deltas |
+| **Inventory** | Lists items only | Shows slots, weight, value with threshold colors |
+| **Abilities** | Lists all abilities | Colors ready abilities green, cooling abilities gray |
+| **Achievements** | Shows unlocked only | Shows progress toward locked achievements |
+
+---
+
+## Color Palette
+
+| Element | Color | Purpose |
+|---------|-------|---------|
+| HP | Red (threshold-based) | Health status at-a-glance |
+| Mana | Blue | Mana/resource tracking |
+| Gold | Yellow | Currency |
+| XP | Green | Experience gains |
+| Attack | Bright Red | Offensive stats |
+| Defense | Cyan | Defensive stats |
+| Success | Green | Confirmations, healing |
+| Errors | Red | Warnings, failures |
+| Cooldowns | Gray | Disabled abilities |
+
+---
+
+## Architecture Impact
+
+✅ **No breaking changes** — All improvements via DisplayService extensions  
+✅ **Clean separation** — Game logic untouched; only display layer modified  
+✅ **Test-friendly** — TestDisplayService strips ANSI codes automatically  
+✅ **Accessible** — Color enhances existing emoji/labels, never replaces  
+
+---
+
+## Team Workload
+
+- **Hill:** 8-10 hours (Color system, core colorization, inventory/equipment display)
+- **Barton:** 7-9 hours (Combat hierarchy, HUD, status effects, ability visuals)
+- **Romanoff:** 3-4 hours (Test infrastructure updates, verification)
+- **Coulson:** 2-3 hours (Design review, code review, approval gates)
+
+**Total:** 20-26 hours
+
+---
+
+## Risk Mitigation
+
+| Risk | Mitigation |
+|------|-----------|
+| ANSI support variance | Auto-detect + graceful fallback |
+| Test breakage | Strip ANSI codes in TestDisplayService |
+| Color readability | High-contrast palette, tested on multiple terminals |
+
+---
+
+## Success Metrics
+
+- [ ] All 267 tests pass (zero regressions)
+- [ ] Visual clarity: HP state, effects, cooldowns instantly recognizable
+- [ ] Information density: All actionable info visible without scrolling
+- [ ] Accessibility: Color-blind players retain full experience via emoji/labels
+
+---
+
+## Next Steps
+
+1. **Team Design Review** — Present full plan to Hill, Barton, Romanoff
+2. **Boss Approval** — Confirm scope and priorities
+3. **Phase 1 Kickoff** — Hill implements ColorCodes utility + DisplayService extensions
+4. **Parallel Phase 2 Work** — Hill (inventory/equipment), Barton (combat/status)
+5. **Phase 3 Polish** — Both engineers tackle remaining enhancements
+6. **Final Review** — Coulson validates architecture decisions before merge
+
+---
+
+**Full Plan:** `.ai-team/decisions/inbox/coulson-ui-ux-architecture.md` (20KB)
+# UI/UX Improvement Plan — Visual Examples
+
+**Before & After Comparisons**
+
+---
+
+## Example 1: Player Stats Display
+
+### BEFORE (Current)
+```
+═══ PLAYER STATS ═══
+Name: Thorin
+Level: 5
+HP: 45/60
+Mana: 15/30
+Attack: 18
+Defense: 12
+Gold: 320
+XP: 450/500
+```
+
+### AFTER (Phase 1)
+```
+═══ PLAYER STATS ═══
+Name: Thorin
+Level: 5
+HP: 45/60        ← yellow (75% health)
+Mana: 15/30      ← cyan (50% mana)
+Attack: 18       ← bright red
+Defense: 12      ← cyan
+Gold: 320        ← yellow
+XP: 450/500      ← green
+```
+
+### AFTER (Phase 2 - with status effects)
+```
+═══ PLAYER STATS ═══
+Name: Thorin
+Level: 5
+HP: 45/60        ← yellow
+Mana: 15/30      ← cyan
+Attack: 18       ← bright red
+Defense: 12      ← cyan
+Gold: 320        ← yellow
+XP: 450/500      ← green
+
+Active Effects:
+  Poison (2 turns) - Taking 3 damage per turn     ← red
+  Regen (3 turns) - Healing 4 HP per turn         ← green
+```
+
+---
+
+## Example 2: Combat Status Line
+
+### BEFORE (Current)
+```
+[You: 45/60 HP] vs [Goblin: 12/30 HP]
+
+  You strike Goblin for 15 damage!
+  Goblin attacks you for 8 damage!
+```
+
+### AFTER (Phase 1)
+```
+[You: 45/60 HP] vs [Goblin: 12/30 HP]    ← HP values colored by threshold
+   ↑ yellow       ↑ red
+
+  You strike Goblin for 15 damage!       ← 15 highlighted red
+  Goblin attacks you for 8 damage!       ← 8 highlighted red
+```
+
+### AFTER (Phase 2 - Enhanced HUD)
+```
+[You: 45/60 HP | 15/30 MP | P(2) R(3)] vs [Goblin: 12/30 HP | W(2)]
+      ↑ yellow    ↑ cyan   ↑red ↑green       ↑ red         ↑yellow
+
+  You strike Goblin for 15 damage!       ← 15 bright red
+  Goblin attacks you for 8 damage!       ← 8 bright red
+
+Legend: P=Poison, R=Regen, W=Weakened, (X)=turns remaining
+```
+
+---
+
+## Example 3: Equipment Comparison
+
+### BEFORE (Current)
+```
+You equipped Iron Sword. Attack +5.
+```
+
+### AFTER (Phase 2)
+```
+════════════════════════════════════
+Equipping: Iron Sword
+────────────────────────────────────
+Current Weapon: Rusty Dagger
+  Attack: 10 → 15  (+5)    ← green for increase
+  Defense: 5 → 5   (—)     ← gray for no change
+════════════════════════════════════
+Equipped Iron Sword
+```
+
+---
+
+## Example 4: Inventory Display
+
+### BEFORE (Current)
+```
+═══ INVENTORY ═══
+• Health Potion (Consumable)
+• Iron Sword (Weapon)
+• Leather Armor (Armor)
+• Mana Potion (Consumable)
+• Rusty Dagger (Weapon)
+```
+
+### AFTER (Phase 2)
+```
+═══ INVENTORY ═══
+Slots: 5/8  |  Weight: 42/50  |  Value: 320g
+              ↑ green (<80%)        ↑ yellow
+────────────────────────────────────────────
+• Health Potion (Consumable) [3 wt] [25g]
+• Iron Sword (Weapon) [8 wt] [50g]
+• Leather Armor (Armor) [12 wt] [75g]
+• Mana Potion (Consumable) [3 wt] [20g]
+• Rusty Dagger (Weapon) [5 wt] [15g]
+                         ↑ weights shown
+```
+
+---
+
+## Example 5: Ability Menu
+
+### BEFORE (Current)
+```
+Choose an ability:
+[1] Power Strike (10 MP, CD: 2 turns)
+[2] Defensive Stance (8 MP, CD: 3 turns)
+[3] Poison Dart (12 MP, CD: 4 turns)
+[4] Second Wind (15 MP, CD: 5 turns)
+
+Mana: 15/30
+```
+
+### AFTER (Phase 3)
+```
+Choose an ability:
+[1] Power Strike (10 MP, ready)        ← green bold (ready!)
+[2] Defensive Stance (8 MP, ready)     ← green bold
+[3] Poison Dart (12 MP, 2 turns)       ← gray (on cooldown)
+[4] Second Wind (15 MP, 3 turns)       ← gray (on cooldown)
+
+Mana: 15/30  ← cyan
+```
+
+---
+
+## Example 6: Combat Critical Hit
+
+### BEFORE (Current)
+```
+  💥 CRUSHING BLOW! You put your entire body into it — 30 devastating damage to Goblin!
+```
+
+### AFTER (Phase 2)
+```
+  💥 CRUSHING BLOW! You put your entire body into it — 30 devastating damage to Goblin!
+                                                        ↑ bright yellow with bold
+```
+
+---
+
+## Example 7: Achievement Progress
+
+### BEFORE (Current - on game end)
+```
+═══ ACHIEVEMENTS UNLOCKED ═══
+🏆 Glass Cannon — Win with HP below 10
+```
+
+### AFTER (Phase 3 - shows locked achievements with progress)
+```
+═══ ACHIEVEMENTS ═══
+
+UNLOCKED:
+🏆 Glass Cannon — Win with HP below 10
+
+PROGRESS:
+❌ Speed Runner: 142 turns (need <100) — 71% progress    ← red (far from goal)
+❌ Hoarder: 320g / 500g — 64% progress                   ← yellow (moderate)
+❌ Elite Hunter: 8/10 enemies defeated — 80% progress    ← green (close!)
+```
+
+---
+
+## Example 8: Room Description
+
+### BEFORE (Current)
+```
+🏛 Ancient runes line the walls. This chamber feels sacred.
+
+Exits: NORTH, EAST
+⚠ Dark Knight is here!
+Items: Health Potion
+```
+
+### AFTER (Phase 3)
+```
+🏛 Ancient runes line the walls. This chamber feels sacred.
+↑ cyan (safe room type)
+
+Exits: NORTH, EAST
+⚠ Dark Knight is here!    ← bright red bold (danger!)
+Items: Health Potion       ← yellow (loot)
+```
+
+---
+
+## Example 9: Combat Turn Log
+
+### BEFORE (Current - can scroll indefinitely)
+```
+Turn 1: You attack Goblin for 12 damage
+Turn 2: Goblin attacks you for 8 damage
+Turn 3: You use Power Strike for 24 damage!
+Turn 4: Goblin attacks you for 8 damage
+Turn 5: You attack Goblin for 12 damage
+Turn 6: Goblin misses!
+Turn 7: You attack Goblin for 12 damage
+```
+
+### AFTER (Phase 3 - last 5 turns, colored)
+```
+Recent Turns (last 5):
+  Turn 3: You use Power Strike for 24 damage!    ← green (player action)
+  Turn 4: Goblin attacks you for 8 damage        ← red (enemy action)
+  Turn 5: You attack Goblin for 12 damage        ← green
+  Turn 6: Goblin misses!                         ← red
+  Turn 7: You attack Goblin for 12 damage        ← green
+```
+
+---
+
+## Color Palette Reference
+
+| Element | ANSI Code | Example Use |
+|---------|-----------|-------------|
+| Red | `\u001b[31m` | HP (low), damage taken, errors |
+| Green | `\u001b[32m` | HP (high), healing, XP, success |
+| Yellow | `\u001b[33m` | HP (medium), gold, warnings |
+| Blue | `\u001b[34m` | Mana (high), abilities |
+| Cyan | `\u001b[36m` | Mana (medium), defense |
+| Bright Red | `\u001b[91m` | Attack stat, critical damage |
+| Bright Yellow | `\u001b[93m` | Critical hits, legendary items |
+| Gray | `\u001b[90m` | Cooldowns, disabled options |
+
+---
+
+## Key Benefits
+
+✅ **Instant health assessment** — Color-coded HP bars let players judge danger at a glance  
+✅ **Active effect visibility** — Combat HUD shows buffs/debuffs persistently  
+✅ **Informed decisions** — Equipment comparison shows stat changes before committing  
+✅ **Goal clarity** — Achievement progress shows how close players are to unlocks  
+✅ **Combat clarity** — Colored damage/healing stands out from narrative text  
+✅ **Resource management** — Mana threshold colors warn when running low  
+✅ **Ability readiness** — Cooldown colors instantly show what's available  
+
+All while maintaining **full accessibility** — every color enhancement preserves existing emoji/text indicators!
+# Systems UX Findings — Player Feedback Analysis
+**Author:** Barton (Systems Dev)  
+**Date:** 2026-02-20  
+**Context:** Boss requested UX analysis from systems perspective. Current display is single-color text; need to identify where color/formatting would improve player feedback in combat, status, and progression systems.
+
+---
+
+## Executive Summary
+
+The game has solid mechanical depth (status effects, abilities, equipment, crafting, boss phases) but **player visibility of this complexity is minimal**. All combat and status information is plain white text with no visual hierarchy. Players cannot quickly parse critical information during combat, track active effects, or understand what's happening mechanically.
+
+**Critical UX Gaps:**
+1. **Status effects are invisible** — player/enemy effects exist but are not displayed during combat
+2. **Combat damage lacks context** — no indication of crits, dodges, modifiers, or damage types
+3. **Health/mana status buried** — only shown when explicitly requesting stats or during specific prompts
+4. **No danger signals** — boss enrage, telegraphed attacks, hazards look identical to normal text
+5. **Equipment changes invisible** — stat changes happen but player can't see the impact
+6. **Ability feedback minimal** — cooldowns/costs shown in menu but not current battle state
+
+---
+
+## 1. Combat Display Analysis
+
+### Current State
+- **Turn structure:** Player sees `[A]ttack [B]ability [F]lee` menu with mana count if abilities unlocked
+- **Hit/miss feedback:** Single-line text messages (e.g., "You strike Goblin for 8 damage!")
+- **Combat status:** One-line format: `[You: 45/50 HP] vs [Goblin: 12/20 HP]`
+- **Turn log:** Last 3 actions displayed before menu (good idea, but format needs work)
+
+### What's Clear
+✅ Basic damage dealt and HP remaining  
+✅ When abilities are available (mana shown)  
+✅ Recent combat history (turn log)
+
+### What's Confusing
+❌ **No visual distinction between normal hits and crits** — both look identical despite 2x damage  
+❌ **Dodge mechanics unclear** — player sees "Goblin dodges!" but doesn't know *why* (defense-based formula)  
+❌ **Status effect modifiers hidden** — Fortified gives +50% DEF but player never sees "28 → 42 DEF"  
+❌ **Boss mechanics buried** — enrage, charge telegraph, phase transitions are plain text in message flood  
+❌ **Enemy special abilities invisible** — Vampire lifesteal, Wraith dodge chance, Shaman heals look like normal attacks  
+
+### Color/Format Opportunities (Combat)
+
+| Element | Current | Improvement | Impact |
+|---------|---------|-------------|--------|
+| **Critical hits** | "You strike for 16 damage!" | 💥 `[CRIT]` or red damage number | **HIGH** — crits feel impactful |
+| **Dodge/miss** | "Goblin dodges your attack!" | Gray text or ↗️ arrow symbol | **MEDIUM** — clarity on miss reason |
+| **Player damage taken** | "Goblin strikes you for 8 damage!" | Yellow/orange text for incoming | **HIGH** — danger visibility |
+| **Boss charge telegraph** | "Boss is charging an attack!" | ⚠️ `[WARNING]` red/bold | **CRITICAL** — life-saving signal |
+| **Status damage ticks** | "You take 3 poison damage!" | Green text with 🧪 symbol | **MEDIUM** — effect visibility |
+| **Healing** | "You heal 20 HP!" | Bright green text with + | **MEDIUM** — positive reinforcement |
+| **Enemy death** | "Goblin is defeated!" | Gray strikethrough or skull | **MEDIUM** — combat closure clarity |
+
+---
+
+## 2. Player Feedback on Status/Effects
+
+### Current State
+- **Status effects exist:** Poison, Bleed, Stun, Regen, Fortified, Weakened (6 total)
+- **Effect application:** Text messages like "Poison Dart! Goblin is poisoned!"
+- **Effect ticks:** Messages per turn: "You take 3 poison damage!" (DOT) or "You regenerate 4 HP!" (HOT)
+- **Effect expiry:** "Your Fortified effect has worn off."
+- **Stat modifiers:** `GetStatModifier()` exists but **NEVER DISPLAYED** (Bug #1 from pre-v3 hunt)
+
+### Critical Gap: **Active Effects Display**
+- **StatusEffectManager has `GetActiveEffects(target)` method** but it's **never called for display**
+- History notes: "DisplayActiveEffects feedback should be added to combat loop" (never implemented)
+- **Player cannot see:**
+  - What effects are currently on them or the enemy
+  - How many turns remain on each effect
+  - What stat modifiers are active (Fortified +50% DEF, Weakened -50% ATK)
+
+### Where Effects Should Be Shown
+1. **Combat status bar** — next to HP/mana display:
+   ```
+   [You: 45/50 HP] 🧪 Poisoned(2) 🛡️ Fortified(1)
+   vs
+   [Goblin: 12/20 HP] ⚔️ Weakened(3)
+   ```
+
+2. **Stats command** — active effects section showing modifiers:
+   ```
+   Active Effects:
+     • Fortified (1 turn) — Defense +50%
+     • Poison (2 turns) — 3 damage/turn
+   ```
+
+3. **Effect application/removal** — already has text messages (good)
+
+### Color/Format Opportunities (Status)
+
+| Effect Type | Symbol | Color | When to Show |
+|-------------|--------|-------|--------------|
+| Poison | 🧪 | Green | Every turn during combat status |
+| Bleed | 🩸 | Red | Combat status + damage ticks |
+| Stun | 💫 | Yellow | Combat status + "cannot act" message |
+| Regen | ❤️ | Bright green | Combat status + heal ticks |
+| Fortified | 🛡️ | Blue | Combat status + DEF value |
+| Weakened | ⚔️ (broken) | Gray | Combat status + ATK value |
+
+---
+
+## 3. Player Status Visibility
+
+### Current State
+- **Stats command** — shows full player stats (HP, Mana, Attack, Defense, Gold, XP, Level, Class Trait)
+- **Equipment command** — shows equipped weapon/armor/accessory with bonuses
+- **Inventory command** — lists items with type annotations
+- **Combat status** — HP and mana shown during fight menu
+
+### What's Missing
+❌ **No persistent status display** — player must type STATS every time to see health outside combat  
+❌ **No quick HP/mana check** — no shorthand command for "how much HP do I have?"  
+❌ **XP progress invisible** — player sees "XP: 85" but not "85/100 to Level 4"  
+❌ **Equipment stat totals unclear** — player sees "+5 ATK weapon" but final Attack value only in STATS  
+❌ **Gold value feedback weak** — picks up gold but can't easily see total without STATS  
+❌ **Ability cooldowns not visible** — must enter combat and press [B]ability to see cooldown state  
+
+### Color/Format Opportunities (Status)
+
+| Element | Current | Improvement | Impact |
+|---------|---------|-------------|--------|
+| **Low HP warning** | No indication | Red HP text when < 30% | **HIGH** — survival awareness |
+| **XP to next level** | "XP: 85" | "XP: 85/100 (15 to level 4)" | **MEDIUM** — progression clarity |
+| **Stat increases** | No feedback | "+2 ATK!" after equip/level | **HIGH** — reward visibility |
+| **Mana regeneration** | Silent | "+10 mana" at turn start | **LOW** — resource tracking |
+| **Gold pickup** | "You picked up 12 gold" | "Gold: 45 → 57 (+12)" | **MEDIUM** — wealth tracking |
+| **Full heal on levelup** | Silent | "✨ HP/Mana fully restored!" | **MEDIUM** — milestone moment |
+
+---
+
+## 4. Combat UX Opportunities by System
+
+### Damage Numbers
+**Current:** "You strike Goblin for 8 damage!"  
+**Opportunity:** Show damage *breakdown* on crits or complex hits:
+```
+💥 CRITICAL HIT! 16 damage (8 base × 2 crit)
+Your attack: 25 vs Defense: 10 = 15 base → 16 crit
+```
+**Impact:** **MEDIUM** — helps players understand stat math, but could be verbose
+
+### Boss Mechanics
+**Current:** All text, no visual priority  
+**Opportunity:**
+- Enrage: `⚠️ [ENRAGED] Attack 22 → 33 (+50%)`
+- Charge telegraph: `⚡ [CHARGING] Next attack deals 3× damage!`
+- Phase transition: Boss ASCII art or separator line
+
+**Impact:** **CRITICAL** — boss fights are climax moments, must feel dramatic
+
+### Enemy Special Abilities
+**Current:** "Vampire Lord attacks you for 12 damage and heals 6 HP!"  
+**Opportunity:** Color-code by mechanic type:
+- Lifesteal: Red text for damage, green for heal
+- Ambush: ⚡ symbol + yellow text
+- Self-heal: Green + ❤️
+- Status application: Effect symbol + color
+
+**Impact:** **HIGH** — makes enemy variety *visible*
+
+### Turn Log
+**Current:** Last 3 actions, plain text  
+**Opportunity:** Icon-prefix each log entry:
+```
+⚔️ You hit Goblin for 8 damage
+🛡️ Goblin attacks but you dodge
+🧪 Goblin takes 3 poison damage
+```
+**Impact:** **MEDIUM** — easier to scan history
+
+---
+
+## 5. Systems That Need Color Coding
+
+### By Priority
+
+#### CRITICAL (P0) — Core Combat Visibility
+1. **Status effects display** — show active effects on player/enemy during combat status
+2. **Boss mechanics** — enrage, charge, phase transitions need RED/BOLD
+3. **Player damage taken** — incoming hits need distinct color from outgoing
+4. **Low HP warning** — red text when HP < 30%
+
+#### HIGH (P1) — Combat Clarity
+5. **Critical hits** — 💥 symbol or red/bold damage numbers
+6. **Stat modifiers** — show ATK/DEF changes from Fortified/Weakened
+7. **Enemy special abilities** — lifesteal, dodge, heal need visual distinction
+8. **Ability cooldown/mana** — gray out unavailable abilities in menu
+
+#### MEDIUM (P2) — Feedback & Polish
+9. **XP progress** — show "X/Y to next level"
+10. **Gold changes** — show running total on pickup
+11. **Healing** — green text for all heal sources
+12. **Equipment stat changes** — "+5 ATK!" when equipping weapon
+13. **Dodge/miss** — gray text or symbol
+
+#### LOW (P3) — Nice-to-Have
+14. **Turn log icons** — prefix each action with symbol
+15. **Room type colors** — scorched = red, flooded = blue, etc.
+16. **Item rarity** — if legendary items exist, color-code them
+17. **Mana regen feedback** — "+10 mana" at turn start
+
+---
+
+## 6. Information That's Hard to Find Right Now
+
+### During Combat
+❌ "Am I poisoned right now?" — must read back through messages  
+❌ "How many turns until Second Wind is off cooldown?" — must press [B]ability to check  
+❌ "Is the boss enraged?" — must read back through messages  
+❌ "What's my current defense after Fortified?" — stat modifiers never shown  
+
+### During Exploration
+❌ "What's my current HP?" — must type STATS  
+❌ "How much XP until I level?" — must type STATS and do mental math  
+❌ "What equipment am I wearing?" — must type EQUIPMENT  
+❌ "What abilities do I have unlocked?" — must enter combat or type SKILLS  
+
+### After Actions
+❌ "Did my attack crit?" — damage number looks identical  
+❌ "Did equipping this armor help?" — no before/after stat display  
+❌ "Did I level up?" — text message exists but no fanfare  
+❌ "How much damage did I avoid by dodging?" — never shown  
+
+---
+
+## 7. What Would Make Combat More Satisfying to Watch
+
+### Moment-to-Moment Feedback
+1. **Hit impact** — crits should *feel* different (💥 symbol, color, maybe "!" or larger text)
+2. **Survivability** — show how close to death (HP bar color, percentage)
+3. **Momentum** — consecutive hits or "on fire" mechanics (not implemented, but would feel good)
+4. **Risk/reward** — telegraphed boss attacks create tension *if visually distinct*
+
+### Progression Milestones
+5. **Level-up celebration** — full heal is great, but needs visual fanfare (ASCII banner, bold text)
+6. **Ability unlock** — "You've learned [Poison Dart]!" at L5 should be a Big Deal
+7. **First crit** — tutorial moment: "💥 Critical hit! Your high attack gave a 15% chance to double damage!"
+8. **Boss phases** — Phase 2 enrage should feel like the fight changed (separator line, ASCII art)
+
+### Strategic Information
+9. **Status effect counterplay** — "Goblin is Poisoned — deals 3 dmg/turn for 3 turns"
+10. **Enemy danger level** — boss HP bar, elite enemy markers, threat indicators
+11. **Resource tracking** — mana/cooldown visibility so player can *plan* ability usage
+12. **Stat math transparency** — occasional damage breakdown to teach formulas
+
+---
+
+## 8. Recommendations for Coulson's Master Plan
+
+### Phase 1: Core Visibility (Must-Have)
+- **Display active effects** in combat status bar (player + enemy)
+- **Color-code damage types:** red for incoming, white for outgoing, green for healing
+- **Boss mechanic warnings:** red/bold for enrage and charge telegraph
+- **Low HP indicator:** red text when player HP < 30%
+
+### Phase 2: Combat Clarity (High-Value)
+- **Critical hit markers:** 💥 symbol or distinct color
+- **Stat modifier display:** show ATK/DEF changes from buffs/debuffs
+- **Ability cooldown visibility:** gray out unavailable abilities in [B]ability menu
+- **XP progress bar:** "85/100 XP to Level 4" in STATS command
+
+### Phase 3: Polish & Delight (Nice-to-Have)
+- **Turn log icons:** prefix actions with ⚔️ 🛡️ 🧪 symbols
+- **Level-up fanfare:** ASCII banner or separator line
+- **Equipment feedback:** "+5 ATK!" when equipping weapon
+- **Gold running total:** "Gold: 45 → 57 (+12)" on pickup
+
+### Non-Combat Improvements
+- **Persistent status bar?** — some roguelikes show HP/Mana at top of screen always
+- **Quick status command:** alias "S" for STATS (faster than typing full word)
+- **EXAMINE improvements:** show more detail on enemies (abilities, resistances, threat level)
+
+---
+
+## Architecture Notes for Implementation
+
+### Display Service Changes
+- Current `IDisplayService` has no color/formatting support — all plain text
+- Need to add:
+  - `ShowColoredMessage(string message, ConsoleColor color)`
+  - `ShowCombatMessageWithEmoji(string emoji, string message, ConsoleColor? color = null)`
+  - `ShowStatusBar(Player player, Enemy enemy)` — enhanced version with active effects
+
+### StatusEffectManager Integration
+- `GetActiveEffects(target)` already exists but never used for display
+- Add utility method: `FormatEffectsForDisplay(object target) → string`
+- Call during combat status display (CombatEngine line ~267)
+
+### CombatEngine Changes
+- Damage calculation points need color logic:
+  - Crit detection (line ~366) → red/bold
+  - Player damage (line ~248) → white
+  - Enemy damage (line ~294) → yellow/orange
+- Boss mechanics (enrage, charge) → red/bold
+- Status tick processing (line ~228) → color by effect type
+
+### Existing Display Patterns
+- `ShowCombatMessage(string)` is primary output
+- `ShowCombatStatus(Player, Enemy)` is one-line HP display
+- Combat messages use emoji already (⚔ ⚠ ✦ 💥) — good foundation
+- Turn log exists (last 3 actions) — just needs formatting
+
+---
+
+## Technical Considerations
+
+### Console Color Limitations
+- Standard Console.ForegroundColor has 16 colors (8 + bright variants)
+- Not all terminals support full RGB (Windows CMD, Linux terminal varies)
+- **Recommendation:** Stick to basic colors (Red, Green, Yellow, Blue, White, Gray) + Bold/Dim
+- **Fallback:** All features should degrade gracefully to plain text
+
+### Performance
+- Color changes via `Console.ForegroundColor` are fast (no concern)
+- Emoji may have issues on some terminals (Windows CMD especially)
+- **Recommendation:** Make emoji toggleable (config flag: `USE_EMOJI = true`)
+
+### Accessibility
+- Color-blind players may not see red/green distinction
+- **Recommendation:** Always pair color with symbols (🧪, ⚔️, 🛡️) or text tags `[CRIT]`
+- **Recommendation:** High-contrast mode option (yellow/blue instead of red/green)
+
+---
+
+## Closing Thoughts
+
+The game's *mechanical depth is invisible*. Players have status effects, abilities, equipment, boss phases, and enemy variety — but it all looks the same on screen. Small visual improvements (color, symbols, formatting) would massively increase:
+
+1. **Player skill ceiling** — seeing cooldowns/effects enables strategic planning
+2. **Combat satisfaction** — crits and big moments need to *feel* big
+3. **Accessibility** — new players currently must read walls of text to parse combat
+4. **Perceived polish** — color-coded UI feels more "finished" than plain text
+
+**Bottom line:** The Systems layer has done its job (rich combat mechanics exist). The Display layer needs to catch up so players can *see* what's happening.
+
+---
+
+**Next Steps:**
+1. Coulson incorporates this into master UX plan
+2. Display service gets color/formatting methods
+3. CombatEngine integrates active effect display
+4. Incremental rollout: P0 → P1 → P2 → P3
+# Display Architecture Deep-Dive — Findings Report
+**Date:** 2026-02-20  
+**Agent:** Hill  
+**Task:** Technical assessment of current display system and UX improvement opportunities
+
+---
+
+## 1. CURRENT DISPLAY ARCHITECTURE
+
+### Core Abstraction
+**IDisplayService** provides a complete separation layer between game logic and presentation:
+- **Location:** `Display/IDisplayService.cs`
+- **Implementation:** `ConsoleDisplayService` (Display/DisplayService.cs, 324 LOC)
+- **Pattern:** Interface-based inversion of control — all Engine/ and Systems/ code receives IDisplayService via constructor injection
+
+### Display Contract (14 public methods)
+```
+- ShowTitle()              → Title screen
+- ShowRoom(Room)           → Room description + exits + enemies + items
+- ShowCombat(string)       → Combat headline
+- ShowCombatStatus(P, E)   → HP status bars
+- ShowCombatMessage(str)   → Combat narrative
+- ShowPlayerStats(Player)  → Full stat sheet
+- ShowInventory(Player)    → Item list
+- ShowLootDrop(Item)       → Loot announcement
+- ShowMessage(string)      → General output
+- ShowError(string)        → Error messages
+- ShowHelp()               → Command list
+- ShowCommandPrompt()      → Input prompt
+- ShowMap(Room)            → ASCII mini-map with BFS traversal
+- ReadPlayerName()         → Initial name prompt (input method)
+```
+
+### Architecture Strengths (What's Working)
+1. **Zero Console.Write leakage** — Engine/ has ZERO direct Console calls (verified by grep)
+2. **Clean separation** — CombatEngine (746 LOC), GameLoop (977 LOC) entirely decoupled from display
+3. **Testability** — Interface allows stub implementation (Dungnz.Tests/DisplayServiceTests.cs exists)
+4. **Single responsibility** — DisplayService owns all rendering; game logic owns state/rules
+
+### Current Visual Elements
+**Unicode box drawing:** ═ ║ ╔ ╗ ╚ ╝  
+**Emoji indicators:** ⚔ ⚠ ✦ ✗ 🌑 🌿 💧 🔥 🏛  
+**ASCII map symbols:** [*] [B] [E] [!] [S] [+] [ ]  
+**All output:** Plain white text on default background (no color)
+
+---
+
+## 2. TECHNICAL ASSESSMENT
+
+### Code Quality
+✅ **Excellent foundation** — Interface contract is well-defined  
+✅ **DI-ready** — All dependencies injected; no static coupling  
+✅ **Documented** — XML comments on every public member  
+✅ **Consistent** — Single class handles all display; no scattered Console calls  
+
+### What's Limiting UX Improvements
+1. **Monochrome output** — All text is same color (white on black or system default)
+2. **No emphasis** — Important info (HP warnings, errors, loot) visually identical to regular text
+3. **Flat hierarchy** — Headers, body text, prompts all blend together
+4. **No state signaling** — Can't tell at a glance if room is safe/dangerous/cleared
+
+### Console API Coverage
+**Current:** Console.WriteLine, Console.Write, Console.Clear, Console.ReadLine  
+**Not used:** Console.ForegroundColor, Console.BackgroundColor, Console.ResetColor, Console.SetCursorPosition
+
+---
+
+## 3. IMPROVEMENT OPPORTUNITIES
+
+### High-Impact, Low-Complexity Changes
+
+#### A. Color Coding by Semantic Meaning
+Add color support via Console.ForegroundColor:
+- **RED** → Errors, HP warnings, enemy names, combat damage
+- **GREEN** → Positive events (loot drops, level-up, heals)
+- **YELLOW** → Warnings, hazards, important choices
+- **CYAN** → Headers, section titles, help text
+- **MAGENTA** → Rare/special items, boss encounters
+- **GRAY** → Flavor text, room descriptions, minor details
+
+**Implementation:** Add SetColor(ConsoleColor) helper; wrap text blocks with color + ResetColor()
+
+#### B. HP Status Bar Enhancement
+Current: `[You: 45/100 HP] vs [Goblin: 12/25 HP]`  
+Improved: Color-coded HP based on % remaining:
+- >70% → GREEN
+- 40-70% → YELLOW  
+- <40% → RED
+
+#### C. Structured Layout Improvements
+- **Combat messages** → Indent with color-coded prefixes
+- **Inventory** → Color items by type (weapons=yellow, armor=cyan, consumables=green)
+- **Room descriptions** → Gray text for atmosphere, WHITE for exits/items
+- **Map** → Color symbols ([!]=RED enemy, [S]=MAGENTA shrine, [E]=GREEN exit)
+
+#### D. Message Type Differentiation
+Current ShowMessage() and ShowError() look identical except for ✗ prefix.  
+Improved: ShowError → RED text; ShowMessage → WHITE text; ShowCombat → YELLOW/RED
+
+### Technical Approach
+**Option 1: Extend IDisplayService with color variants**
+```csharp
+void ShowMessage(string message, ConsoleColor color = ConsoleColor.White);
+void ShowColoredText(string text, ConsoleColor color);
+```
+❌ Problem: Changes interface → breaks existing callers
+
+**Option 2: Internal color logic in ConsoleDisplayService**
+```csharp
+// No interface changes; DisplayService decides colors internally
+public void ShowError(string message)
+{
+    Console.ForegroundColor = ConsoleColor.Red;
+    Console.WriteLine($"✗ {message}");
+    Console.ResetColor();
+}
+```
+✅ **RECOMMENDED:** Zero breaking changes; backward compatible
+
+**Option 3: Rich text markup system**
+```csharp
+ShowMessage("You found {green}50 gold{/green}!");
+```
+❌ Overkill for current needs; adds parsing complexity
+
+---
+
+## 4. ARCHITECTURAL RECOMMENDATIONS
+
+### Phase 1: Internal Color Enhancement (No API changes)
+**Scope:** Update ConsoleDisplayService implementation only  
+**Effort:** ~2-3 hours  
+**Impact:** Immediate visual improvement; zero regression risk
+
+Changes:
+1. ShowError → RED text
+2. ShowCombat → YELLOW text for headline
+3. ShowCombatStatus → Color-coded HP bars
+4. ShowLootDrop → GREEN text
+5. ShowPlayerStats → CYAN header
+6. ShowInventory → Color by ItemType
+7. ShowMap → Color-coded symbols
+
+### Phase 2: Optional Display Preferences (Future)
+If we want player control:
+- Add DisplayOptions class (Colors: bool, Emoji: bool, Layout: Compact|Verbose)
+- Pass to DisplayService constructor
+- Allows accessibility (colorblind mode, screen reader support)
+
+### Phase 3: Advanced Layouts (Low priority)
+- Status bar at top of screen (HP/Floor/Gold always visible)
+- Box borders for combat log
+- Clear screen less often; use SetCursorPosition for updates
+
+---
+
+## 5. RISK ASSESSMENT
+
+### What Could Go Wrong
+1. **Terminal compatibility** → Some terminals don't support ANSI colors
+   - Mitigation: Detect via Environment variables; fall back to monochrome
+2. **Color blindness** → RED/GREEN distinction fails for 8% of users
+   - Mitigation: Use brightness + symbols, not color alone
+3. **Readability on light backgrounds** → YELLOW text invisible on white terminal
+   - Mitigation: Test with both dark/light themes; adjust palette if needed
+
+### Breaking Changes (None expected)
+- IDisplayService interface unchanged
+- All callers (GameLoop, CombatEngine) unaffected
+- Tests unchanged (stub implementation ignores color)
+
+---
+
+## 6. IMPLEMENTATION NOTES
+
+### Key Design Patterns to Preserve
+1. **Separation of concerns** — Game logic never knows about colors
+2. **Dependency injection** — DisplayService injected, not newed
+3. **Interface stability** — Public API unchanged
+4. **Testability** — Color is display detail; tests verify text content only
+
+### Code Ownership (per charter)
+- **Hill owns:** DisplayService implementation, IDisplayService interface
+- **Barton owns:** Nothing in Display/ folder
+- **Changes:** All within Hill's boundaries
+
+### Files to Modify
+- `Display/DisplayService.cs` (324 LOC) — Primary target
+- `Display/IDisplayService.cs` — NO CHANGES (keep interface stable)
+
+### Files NOT to Touch
+- `Engine/GameLoop.cs` — Already correct; uses IDisplayService properly
+- `Engine/CombatEngine.cs` — Already correct; no Console calls
+- `Program.cs` — Only 4 Console calls for setup prompts (acceptable; one-time use)
+
+---
+
+## 7. CONCLUSION
+
+### Current State Summary
+**Architecture: A+** — Clean separation, DI-ready, zero leakage  
+**Visual design: C** — Functional but monochrome; no emphasis or hierarchy  
+**Extensibility: A** — Ready for color enhancement without refactoring
+
+### Recommended Next Steps
+1. Implement Phase 1 (internal color enhancement) — Hill can do this solo in <3 hours
+2. Test on multiple terminals (PowerShell, bash, Windows Terminal, gnome-terminal)
+3. Get user feedback on color choices
+4. Document color conventions in .ai-team/decisions/ for team reference
+
+### Key Insight
+We have an **excellent foundation** that makes UX improvements trivial to add. The abstraction layer is working perfectly — we can dramatically improve visual clarity without touching a single line of game logic. The interface pattern has paid off.
+
+---
+
+**Status:** Ready for Coulson to synthesize into master plan  
+**Blocker:** None  
+**Dependency:** None (standalone enhancement)
