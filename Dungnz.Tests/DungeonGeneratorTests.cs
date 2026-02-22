@@ -6,14 +6,9 @@ using Xunit;
 
 namespace Dungnz.Tests;
 
+[Collection("EnemyFactory")]
 public class DungeonGeneratorTests
 {
-    public DungeonGeneratorTests()
-    {
-        var enemyPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Data", "enemy-stats.json");
-        var itemPath = Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Data", "item-stats.json");
-        EnemyFactory.Initialize(enemyPath, itemPath);
-    }
 
     [Fact]
     public void Generate_ReturnsNonNullRooms()
