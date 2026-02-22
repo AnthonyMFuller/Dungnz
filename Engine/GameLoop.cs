@@ -29,6 +29,7 @@ public class GameLoop
     private readonly InventoryManager _inventoryManager;
     private readonly NarrationService _narration = new();
     private int _currentFloor = 1;
+    private bool _turnConsumed;
 
     /// <summary>Set to <see langword="true"/> when the run ends (win, death) to break the Run() loop.</summary>
     private bool _gameOver = false;
@@ -127,7 +128,7 @@ public class GameLoop
             _display.ShowCommandPrompt();
             var input = _input.ReadLine() ?? string.Empty;
             var cmd = CommandParser.Parse(input);
-            _stats.TurnsTaken++;
+            _turnConsumed = true;
 
             switch (cmd.Type)
             {
@@ -151,6 +152,7 @@ public class GameLoop
                     break;
                 case CommandType.Stats:
                     _display.ShowPlayerStats(_player);
+                    _display.ShowMessage($"Floor: {_currentFloor} / {FinalFloor}");
                     break;
                 case CommandType.Equip:
                     _equipment.HandleEquip(_player, cmd.Argument);
@@ -174,6 +176,9 @@ public class GameLoop
                     HandleListSaves();
                     break;
                 case CommandType.Quit:
+                    _stats.FinalLevel = _player.Level;
+                    _stats.TimeElapsed = DateTime.UtcNow - _runStart;
+                    RecordRunEnd(won: false);
                     _display.ShowMessage("Thanks for playing!");
                     return;
                 case CommandType.Descend:
@@ -204,6 +209,7 @@ public class GameLoop
                     _display.ShowError("Unknown command. Type HELP for commands.");
                     break;
             }
+            if (_turnConsumed) _stats.TurnsTaken++;
             if (_gameOver) break;
         }
     }
@@ -212,6 +218,7 @@ public class GameLoop
     {
         if (string.IsNullOrWhiteSpace(directionStr))
         {
+            _turnConsumed = false;
             _display.ShowError("Go where? Specify a direction (north, south, east, west).");
             return;
         }
@@ -236,12 +243,14 @@ public class GameLoop
                 direction = Direction.West;
                 break;
             default:
+                _turnConsumed = false;
                 _display.ShowError($"Invalid direction: {directionStr}");
                 return;
         }
 
         if (!_currentRoom.Exits.TryGetValue(direction, out var nextRoom))
         {
+            _turnConsumed = false;
             _display.ShowError("You can't go that way.");
             return;
         }
@@ -249,6 +258,7 @@ public class GameLoop
         // Check if trying to exit with boss still alive
         if (nextRoom.IsExit && nextRoom.Enemy != null && nextRoom.Enemy.HP > 0)
         {
+            _turnConsumed = false;
             _display.ShowError("The boss blocks your path! Defeat it first.");
             return;
         }
@@ -291,8 +301,7 @@ public class GameLoop
                 _stats.FinalLevel = _player.Level;
                 _stats.TimeElapsed = DateTime.UtcNow - _runStart;
                 _stats.Display(_display.ShowMessage);
-                RunStats.AppendToHistory(_stats, won: false);
-                PrestigeSystem.RecordRun(won: false);
+                RecordRunEnd(won: false);
                 _gameOver = true;
                 return;
             }
@@ -318,8 +327,7 @@ public class GameLoop
                 _stats.FinalLevel = _player.Level;
                 _stats.TimeElapsed = DateTime.UtcNow - _runStart;
                 _stats.Display(_display.ShowMessage);
-                RunStats.AppendToHistory(_stats, won: false);
-                PrestigeSystem.RecordRun(won: false);
+                RecordRunEnd(won: false);
                 _gameOver = true;
                 return;
             }
@@ -330,6 +338,13 @@ public class GameLoop
                 _currentRoom.Enemy = null;
                 _stats.EnemiesDefeated++;
                 _display.ShowMessage(_narration.Pick(_postCombatLines, enemyName));
+            }
+
+            if (result == CombatResult.Fled)
+            {
+                _display.ShowMessage("You flee back to the previous room!");
+                _currentRoom = previousRoom;
+                return;
             }
         }
 
@@ -344,15 +359,7 @@ public class GameLoop
                 _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
                 if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
                 _stats.Display(_display.ShowMessage);
-                RunStats.AppendToHistory(_stats, won: true);
-                PrestigeSystem.RecordRun(won: true);
-                var unlocked = _achievements.Evaluate(_stats, _player, won: true);
-                if (unlocked.Count > 0)
-                {
-                    _display.ShowMessage("=== ACHIEVEMENTS UNLOCKED ===");
-                    foreach (var a in unlocked)
-                        _display.ShowMessage($"🏆 {a.Name} — {a.Description}");
-                }
+                RecordRunEnd(won: true);
                 _gameOver = true;
                 return;
             }
@@ -381,6 +388,7 @@ public class GameLoop
     {
         if (string.IsNullOrWhiteSpace(target))
         {
+            _turnConsumed = false;
             _display.ShowError("Examine what?");
             return;
         }
@@ -411,6 +419,7 @@ public class GameLoop
             return;
         }
 
+        _turnConsumed = false;
         _display.ShowError($"You don't see any '{target}' here.");
     }
 
@@ -418,6 +427,7 @@ public class GameLoop
     {
         if (string.IsNullOrWhiteSpace(itemName))
         {
+            _turnConsumed = false;
             _display.ShowError("Take what?");
             return;
         }
@@ -427,6 +437,7 @@ public class GameLoop
 
         if (item == null)
         {
+            _turnConsumed = false;
             _display.ShowError($"There is no '{itemName}' here.");
             return;
         }
@@ -435,6 +446,7 @@ public class GameLoop
         if (!_inventoryManager.TryAddItem(_player, item))
         {
             _currentRoom.Items.Add(item);
+            _turnConsumed = false;
             _display.ShowMessage("Your inventory is full!");
             return;
         }
@@ -449,6 +461,7 @@ public class GameLoop
     {
         if (string.IsNullOrWhiteSpace(itemName))
         {
+            _turnConsumed = false;
             _display.ShowError("Use what?");
             return;
         }
@@ -465,6 +478,7 @@ public class GameLoop
 
         if (item == null)
         {
+            _turnConsumed = false;
             _display.ShowError($"You don't have '{itemName}'.");
             return;
         }
@@ -518,6 +532,7 @@ public class GameLoop
     {
         if (string.IsNullOrWhiteSpace(saveName))
         {
+            _turnConsumed = false;
             _display.ShowError("Save as what? Usage: SAVE <name>");
             return;
         }
@@ -529,17 +544,30 @@ public class GameLoop
     {
         if (string.IsNullOrWhiteSpace(saveName))
         {
+            _turnConsumed = false;
             _display.ShowError("Load which save? Usage: LOAD <name>");
             return;
         }
-        var state = SaveSystem.LoadGame(saveName);
-        _player = state.Player;
-        _currentRoom = state.CurrentRoom;
-        _currentFloor = state.CurrentFloor;
-        _runStart = DateTime.UtcNow;
-        _stats = new RunStats();
-        _display.ShowMessage($"Loaded save '{saveName}'.");
-        _display.ShowRoom(_currentRoom);
+        try
+        {
+            var state = SaveSystem.LoadGame(saveName);
+            _player = state.Player;
+            _currentRoom = state.CurrentRoom;
+            _currentFloor = state.CurrentFloor;
+            _runStart = DateTime.UtcNow;
+            _display.ShowMessage($"Loaded save '{saveName}'.");
+            _display.ShowRoom(_currentRoom);
+        }
+        catch (FileNotFoundException)
+        {
+            _turnConsumed = false;
+            _display.ShowError($"Save '{saveName}' not found.");
+        }
+        catch (Exception ex)
+        {
+            _turnConsumed = false;
+            _display.ShowError($"Failed to load save: {ex.Message}");
+        }
     }
 
     private void HandleListSaves()
@@ -559,6 +587,7 @@ public class GameLoop
     {
         if (!_currentRoom.IsExit || _currentRoom.Enemy != null)
         {
+            _turnConsumed = false;
             _display.ShowError("You can only descend at a cleared exit room.");
             return;
         }
@@ -571,15 +600,7 @@ public class GameLoop
             _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
             if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
             _stats.Display(_display.ShowMessage);
-            RunStats.AppendToHistory(_stats, won: true);
-            PrestigeSystem.RecordRun(won: true);
-            var unlocked = _achievements.Evaluate(_stats, _player, won: true);
-            if (unlocked.Count > 0)
-            {
-                _display.ShowMessage("=== ACHIEVEMENTS UNLOCKED ===");
-                foreach (var a in unlocked)
-                    _display.ShowMessage($"\U0001f3c6 {a.Name} \u2014 {a.Description}");
-            }
+            RecordRunEnd(won: true);
             _gameOver = true;
             return;
         }
@@ -686,7 +707,8 @@ public class GameLoop
     {
         if (_currentRoom.Merchant == null)
         {
-            _display.ShowMessage("There is no merchant here.");
+            _turnConsumed = false;
+            _display.ShowError("There is no merchant here.");
             return;
         }
 
@@ -750,20 +772,28 @@ public class GameLoop
     {
         if (!Enum.TryParse<Skill>(skillName, ignoreCase: true, out var skill))
         {
+            _turnConsumed = false;
             _display.ShowError($"Unknown skill: {skillName}");
             return;
         }
         if (_player.Skills.TryUnlock(_player, skill))
             _display.ShowMessage($"You learned {skill}! {SkillTree.GetDescription(skill)}");
         else if (_player.Skills.IsUnlocked(skill))
+        {
+            _turnConsumed = false;
             _display.ShowError($"You already know {skill}.");
+        }
         else
+        {
+            _turnConsumed = false;
             _display.ShowError($"You need to be higher level to learn {skill}.");
+        }
     }
     private void HandleCraft(string recipeName)
     {
         if (string.IsNullOrWhiteSpace(recipeName))
         {
+            _turnConsumed = false;
             _display.ShowMessage("=== CRAFTING RECIPES ===");
             foreach (var r in CraftingSystem.Recipes)
             {
@@ -779,6 +809,7 @@ public class GameLoop
             r.Name.Contains(recipeName, StringComparison.OrdinalIgnoreCase));
         if (recipe == null)
         {
+            _turnConsumed = false;
             _display.ShowError($"Unknown recipe: {recipeName}");
             return;
         }
@@ -786,6 +817,27 @@ public class GameLoop
         var (success, msg) = CraftingSystem.TryCraft(_player, recipe);
         if (success) _display.ShowMessage(msg);
         else _display.ShowError(msg);
+    }
+
+    /// <summary>
+    /// Records the end of a run: persists to history, updates prestige, and (on win)
+    /// evaluates and displays any newly unlocked achievements. Must be called after
+    /// <see cref="RunStats.FinalLevel"/> and <see cref="RunStats.TimeElapsed"/> are set.
+    /// </summary>
+    private void RecordRunEnd(bool won)
+    {
+        RunStats.AppendToHistory(_stats, won);
+        PrestigeSystem.RecordRun(won);
+        if (won)
+        {
+            var unlocked = _achievements.Evaluate(_stats, _player, won: true);
+            if (unlocked.Count > 0)
+            {
+                _display.ShowMessage("=== ACHIEVEMENTS UNLOCKED ===");
+                foreach (var a in unlocked)
+                    _display.ShowMessage($"🏆 {a.Name} — {a.Description}");
+            }
+        }
     }
 
     /// <summary>
