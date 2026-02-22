@@ -231,7 +231,7 @@ public class GameLoopTests
         var loop = MakeLoop(display, combat.Object, "north");
         loop.Run(player, room);
 
-        display.Messages.Should().Contain(m => m.Contains("Game over") || m.Contains("defeated"));
+        display.Messages.Should().Contain(m => m.Contains("YOU HAVE FALLEN") || m.Contains("defeated"));
     }
 
     [Fact]
