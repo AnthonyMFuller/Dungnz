@@ -116,4 +116,6 @@ public class FakeDisplayService : IDisplayService
     public void ShowPrestigeInfo(PrestigeData prestige) { LastPrestigeInfo = prestige; }
     public Difficulty SelectDifficulty() => SelectDifficultyResult;
     public PlayerClassDefinition SelectClass(PrestigeData? prestige) => SelectClassResult;
+    public void ShowShop(IEnumerable<(Item item, int price)> stock, int playerGold) { AllOutput.Add($"shop:{playerGold}g"); }
+    public void ShowCraftRecipe(string recipeName, Item result, List<(string ingredient, bool playerHasIt)> ingredients) { AllOutput.Add($"recipe:{recipeName}"); }
 }

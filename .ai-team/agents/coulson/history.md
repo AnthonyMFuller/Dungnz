@@ -894,3 +894,13 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 
 **Key Learning:** Process enforcement is failing. Team lead must enforce "no merge without explicit approval comment" rule to prevent future violations.
 
+
+### 2026-02-22: PR #230 Merge (Loot Display)
+**Outcome:** Merged PR #230 (Phase 1 display + Phase 2.0 ItemTier)
+**Key Decisions Validated:**
+- **Combined Phases:** Merging Phase 1 (display) and Phase 2.0 (data model) was necessary as they were interlinked. Accepted despite process preference for smaller PRs.
+- **Display Separation:** IDisplayService continues to prove its value. New methods (ShowLootDrop, ShowItemDetail) keep the engine clean of console logic.
+- **Backward Compatibility:** Defaulting `Item.Tier` to `Common` ensured existing saves/tests didn't break.
+**Learnings:**
+- **Process:** When parallel work streams converge (Hill on display, Barton on logic), a combined PR is sometimes cleaner than artificial separation.
+- **Testing:** 321 passing tests gave high confidence to merge a large diff.

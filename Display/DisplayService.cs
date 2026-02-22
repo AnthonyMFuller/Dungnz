@@ -66,7 +66,7 @@ public class ConsoleDisplayService : IDisplayService
             {
                 var icon = ItemTypeIcon(i.Type);
                 var stat = PrimaryStatLabel(i);
-                Console.WriteLine($"  {icon} {i.Name} {Systems.ColorCodes.Gray}({stat}){Systems.ColorCodes.Reset}");
+                Console.WriteLine($"  {icon} {ColorizeItemName(i)} {Systems.ColorCodes.Gray}({stat}){Systems.ColorCodes.Reset}");
             }
         }
 
@@ -184,7 +184,7 @@ public class ConsoleDisplayService : IDisplayService
                     : string.Empty;
                 var statLabel = PrimaryStatLabel(item);
                 // Pad item name + equipped tag to column 28, stat to column 48
-                var nameField = $"{icon} {item.Name}{equippedTag}";
+                var nameField = $"{icon} {ColorizeItemName(item)}{equippedTag}";
                 // Strip color codes for length calculation
                 var namePlain = $"  {icon} {item.Name}{(isEquipped ? " [E]" : "")}";
                 int namePad = Math.Max(0, 30 - namePlain.Length);
@@ -205,9 +205,10 @@ public class ConsoleDisplayService : IDisplayService
     {
         var icon = ItemTypeIcon(item.Type);
         var stat = PrimaryStatLabel(item);
+        var namePad = new string(' ', Math.Max(0, 34 - (item.Name?.Length ?? 0)));
         Console.WriteLine("╔══════════════════════════════════════╗");
         Console.WriteLine("║  ✦ LOOT DROP                         ║");
-        Console.WriteLine($"║  {icon} {Systems.ColorCodes.Yellow}{item.Name,-34}{Systems.ColorCodes.Reset}║");
+        Console.WriteLine($"║  {icon} {ColorizeItemName(item)}{namePad}║");
         Console.WriteLine($"║  {Systems.ColorCodes.Cyan}{stat,-36}{Systems.ColorCodes.Reset}• {item.Weight} wt  ║");
         Console.WriteLine("╚══════════════════════════════════════╝");
     }
@@ -227,7 +228,7 @@ public class ConsoleDisplayService : IDisplayService
     {
         var icon = ItemTypeIcon(item.Type);
         var stat = PrimaryStatLabel(item);
-        Console.WriteLine($"  {icon} Picked up: {item.Name}  {Systems.ColorCodes.Cyan}({stat}){Systems.ColorCodes.Reset}");
+        Console.WriteLine($"  {icon} Picked up: {ColorizeItemName(item)}  {Systems.ColorCodes.Cyan}({stat}){Systems.ColorCodes.Reset}");
         var slotsRatio = (double)slotsCurrent / slotsMax;
         var wtRatio    = (double)weightCurrent / weightMax;
         var slotsColor = slotsRatio > 0.95 ? Systems.ColorCodes.Red
@@ -245,11 +246,19 @@ public class ConsoleDisplayService : IDisplayService
     public void ShowItemDetail(Item item)
     {
         const int W = 36;
-        var border  = new string('═', W);
-        var icon    = ItemTypeIcon(item.Type);
-        var title   = $"  {icon} {item.Name.ToUpperInvariant()}";
+        var border     = new string('═', W);
+        var icon       = ItemTypeIcon(item.Type);
+        var titleName  = item.Name.ToUpperInvariant();
+        var titleColor = item.Tier switch
+        {
+            ItemTier.Uncommon => Systems.ColorCodes.Green,
+            ItemTier.Rare     => Systems.ColorCodes.BrightCyan,
+            _                 => Systems.ColorCodes.BrightWhite
+        };
+        var titlePlain = $"  {icon} {titleName}";
+        var titlePad   = new string(' ', Math.Max(0, W - titlePlain.Length));
         Console.WriteLine($"╔{border}╗");
-        Console.WriteLine($"║{title.PadRight(W)}║");
+        Console.WriteLine($"║  {icon} {titleColor}{titleName}{Systems.ColorCodes.Reset}{titlePad}║");
         Console.WriteLine($"╠{border}╣");
         Console.WriteLine($"║  {"Type:",-10}{item.Type.ToString().PadRight(W - 12)}║");
         if (item.AttackBonus != 0)
@@ -293,6 +302,84 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine($"╚{border}╝");
     }
 
+    /// <summary>
+    /// Renders a box-drawn card for each shop item showing type icon, tier-colored name,
+    /// tier badge, primary stat, weight, and price (green if affordable, red if not).
+    /// </summary>
+    public void ShowShop(IEnumerable<(Item item, int price)> stock, int playerGold)
+    {
+        const int Inner = 40;
+        var border = new string('═', Inner);
+        Console.WriteLine();
+        Console.WriteLine($"Your gold: {Systems.ColorCodes.Yellow}{playerGold}g{Systems.ColorCodes.Reset}");
+        Console.WriteLine();
+
+        int idx = 1;
+        foreach (var (item, price) in stock)
+        {
+            var icon       = ItemTypeIcon(item.Type);
+            var tierBadge  = $"[{item.Tier}]";
+            var tierColor  = item.Tier switch
+            {
+                ItemTier.Uncommon => Systems.ColorCodes.Green,
+                ItemTier.Rare     => Systems.ColorCodes.BrightCyan,
+                _                 => Systems.ColorCodes.BrightWhite
+            };
+            var priceColor = playerGold >= price ? Systems.ColorCodes.Green : Systems.ColorCodes.Red;
+            var stat       = PrimaryStatLabel(item);
+
+            // ANSI-safe padding: compute lengths from plain (uncolored) strings
+            var l1Lead  = $"  [{idx}] {icon} ";
+            var pad1    = new string(' ', Math.Max(0, Inner - l1Lead.Length - item.Name.Length - tierBadge.Length - 2));
+            var l2Lead  = $"  {stat}  •  {item.Weight} wt";
+            var priceStr = $"{price} gold";
+            // "💰 " → U+1F4B0 is a surrogate pair (2 C# chars) + space = 3 chars
+            var pad2    = new string(' ', Math.Max(1, Inner - l2Lead.Length - 3 - priceStr.Length - 2));
+
+            Console.WriteLine($"╔{border}╗");
+            Console.WriteLine($"║{l1Lead}{ColorizeItemName(item)}{pad1}{tierColor}{tierBadge}{Systems.ColorCodes.Reset}  ║");
+            Console.WriteLine($"║{l2Lead}{pad2}💰 {priceColor}{priceStr}{Systems.ColorCodes.Reset}  ║");
+            Console.WriteLine($"╚{border}╝");
+            idx++;
+        }
+        Console.WriteLine("[#] Buy  [X] Leave");
+    }
+
+    /// <summary>
+    /// Renders a box-drawn recipe card showing the result item's stats and each ingredient
+    /// with a ✅ (player has it) or ❌ (missing) availability indicator.
+    /// </summary>
+    public void ShowCraftRecipe(string recipeName, Item result, List<(string ingredient, bool playerHasIt)> ingredients)
+    {
+        const int W = 40;
+        var icon      = ItemTypeIcon(result.Type);
+        var stat      = PrimaryStatLabel(result);
+
+        // Plain-text lengths for ANSI-safe padding
+        var hdrPlain    = $"  \U0001F528 RECIPE: {recipeName}";  // 🔨 = U+1F528, surrogate pair
+        var resultPlain = $"  Result: {icon} {result.Name}";
+        var statPlain   = $"  Stats:  {stat}";
+        var ingHeader   = "  Ingredients:";
+
+        Console.WriteLine($"╔{new string('═', W)}╗");
+        Console.WriteLine($"║{hdrPlain}{new string(' ', Math.Max(0, W - hdrPlain.Length))}║");
+        Console.WriteLine($"╠{new string('═', W)}╣");
+        Console.WriteLine($"║  Result: {icon} {ColorizeItemName(result)}{new string(' ', Math.Max(0, W - resultPlain.Length))}║");
+        Console.WriteLine($"║  Stats:  {Systems.ColorCodes.Cyan}{stat}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - statPlain.Length))}║");
+        Console.WriteLine($"╠{new string('═', W)}╣");
+        Console.WriteLine($"║{ingHeader}{new string(' ', Math.Max(0, W - ingHeader.Length))}║");
+        foreach (var (ingredient, hasIt) in ingredients)
+        {
+            // ✅ = U+2705, ❌ = U+274C — both BMP (1 C# char each), visually ~2 cols wide
+            var checkIcon  = hasIt ? "✅" : "❌";
+            var checkColor = hasIt ? Systems.ColorCodes.Green : Systems.ColorCodes.Red;
+            // "    {emoji} {ingredient}" — 4 spaces + emoji(2 visual) + space(1) + ingredient = keep ingredient at 33
+            Console.WriteLine($"║    {checkColor}{checkIcon}{Systems.ColorCodes.Reset} {ingredient,-33}║");
+        }
+        Console.WriteLine($"╚{new string('═', W)}╝");
+    }
+
+
     // ── helpers ────────────────────────────────────────────────────────────
 
     private static string ItemTypeIcon(ItemType type) => type switch
@@ -314,6 +401,21 @@ public class ConsoleDisplayService : IDisplayService
         if (item.DodgeBonus   >  0) return $"Dodge +{item.DodgeBonus:P0}";
         if (item.StatModifier != 0) return $"HP +{item.StatModifier}";
         return item.Type.ToString();
+    }
+
+    /// <summary>
+    /// Returns the item's name wrapped in the ANSI color appropriate for its tier:
+    /// BrightWhite (Common), Green (Uncommon), BrightCyan (Rare).
+    /// </summary>
+    private static string ColorizeItemName(Item item)
+    {
+        var color = item.Tier switch
+        {
+            ItemTier.Uncommon => Systems.ColorCodes.Green,
+            ItemTier.Rare     => Systems.ColorCodes.BrightCyan,
+            _                 => Systems.ColorCodes.BrightWhite
+        };
+        return $"{color}{item.Name}{Systems.ColorCodes.Reset}";
     }
 
     /// <summary>

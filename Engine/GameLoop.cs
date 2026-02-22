@@ -707,13 +707,7 @@ public class GameLoop
 
         var merchant = _currentRoom.Merchant;
         _display.ShowMessage($"=== MERCHANT SHOP ({merchant.Name}) ===");
-        for (int i = 0; i < merchant.Stock.Count; i++)
-        {
-            var mi = merchant.Stock[i];
-            _display.ShowMessage($"[{i + 1}] {mi.Item.Name} — {mi.Item.Description} — {mi.Price}g");
-        }
-        _display.ShowMessage($"Your gold: {_player.Gold}g");
-        _display.ShowMessage("[#] Buy  [X] Leave");
+        _display.ShowShop(merchant.Stock.Select(mi => (mi.Item, mi.Price)), _player.Gold);
         _display.ShowCommandPrompt();
 
         var input = _input.ReadLine()?.Trim() ?? "";
@@ -797,9 +791,13 @@ public class GameLoop
             _display.ShowMessage("=== CRAFTING RECIPES ===");
             foreach (var r in CraftingSystem.Recipes)
             {
-                var ingredients = string.Join(", ", r.Ingredients.Select(i => $"{i.Count}x {i.ItemName}"));
-                var goldStr = r.GoldCost > 0 ? $" + {r.GoldCost}g" : "";
-                _display.ShowMessage($"  {r.Name}: {ingredients}{goldStr} → {r.Result.Name}");
+                var ingredientsWithAvailability = r.Ingredients
+                    .Select(ing => (
+                        $"{ing.Count}x {ing.ItemName}",
+                        _player.Inventory.Count(i => i.Name.Equals(ing.ItemName, StringComparison.OrdinalIgnoreCase)) >= ing.Count
+                    ))
+                    .ToList();
+                _display.ShowCraftRecipe(r.Name, r.Result, ingredientsWithAvailability);
             }
             _display.ShowMessage("Type CRAFT <recipe name> to craft.");
             return;

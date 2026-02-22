@@ -179,4 +179,21 @@ public interface IDisplayService
 
     /// <summary>Shows class cards with ASCII stat bars and inline prestige bonuses, returns the player's validated choice.</summary>
     Dungnz.Models.PlayerClassDefinition SelectClass(Dungnz.Systems.PrestigeData? prestige);
+
+    /// <summary>
+    /// Renders a box-drawn card for each shop item with type icon, tier-colored name,
+    /// tier badge, primary stat, weight, and price (green = affordable, red = too expensive).
+    /// </summary>
+    /// <param name="stock">The merchant's available stock as (item, price) pairs.</param>
+    /// <param name="playerGold">The player's current gold, used to colour-code prices.</param>
+    void ShowShop(IEnumerable<(Dungnz.Models.Item item, int price)> stock, int playerGold);
+
+    /// <summary>
+    /// Renders a box-drawn recipe card showing the craftable result's stats and each ingredient
+    /// with ✅ (player has it) or ❌ (missing) availability indicators.
+    /// </summary>
+    /// <param name="recipeName">Display name of the recipe.</param>
+    /// <param name="result">The item that will be produced when the recipe is crafted.</param>
+    /// <param name="ingredients">Each ingredient name paired with whether the player currently holds it.</param>
+    void ShowCraftRecipe(string recipeName, Dungnz.Models.Item result, List<(string ingredient, bool playerHasIt)> ingredients);
 }
