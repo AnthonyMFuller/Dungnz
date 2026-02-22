@@ -24,7 +24,7 @@ namespace Dungnz.Tests;
 ///   Night Stalker (T5)  → Level  6   | HP=55,  ATK=20, DEF=8
 ///   Frost Wyvern  (T6)  → Level  8   | HP=75,  ATK=22, DEF=12
 ///   Chaos Knight  (T7)  → Level  10  | HP=85,  ATK=24, DEF=16
-///   Lich King     (T9)  → Level  12  | HP=120, ATK=28, DEF=20
+///   Lich King     (T9)  → Level  12  | HP=170, ATK=38, DEF=20
 /// </summary>
 public class CombatBalanceSimulationTests
 {
@@ -46,7 +46,7 @@ public class CombatBalanceSimulationTests
         ("Night Stalker",  55, 20,   8,  58,  6),
         ("Frost Wyvern",   75, 22,  12,  70,  8),
         ("Chaos Knight",   85, 24,  16,  80, 10),
-        ("Lich King",     120, 28,  20, 130, 12),
+        ("Lich King",     170, 38,  20, 130, 12),
     };
 
     private const int SimulationsPerEnemy = 100;
@@ -77,7 +77,7 @@ public class CombatBalanceSimulationTests
     [InlineData("Night Stalker",  55, 20,   8,  58,  6)]
     [InlineData("Frost Wyvern",   75, 22,  12,  70,  8)]
     [InlineData("Chaos Knight",   85, 24,  16,  80, 10)]
-    [InlineData("Lich King",     120, 28,  20, 130, 12)]
+    [InlineData("Lich King",     170, 38,  20, 130, 12)]
     public async Task Phase2Enemy_IsBeatable_AtMatchedPlayerLevel(
         string name, int hp, int atk, int def, int xp, int playerLevel)
     {
@@ -130,7 +130,7 @@ public class CombatBalanceSimulationTests
     {
         // T9-10 top: level 12 player must be able to beat the Lich King.
         const int level = 12;
-        const int lichHP = 120, lichATK = 28, lichDEF = 20, lichXP = 130;
+        const int lichHP = 170, lichATK = 38, lichDEF = 20, lichXP = 130;
 
         var wins = Enumerable.Range(0, SimulationsPerEnemy)
             .Count(seed =>
@@ -152,11 +152,11 @@ public class CombatBalanceSimulationTests
     {
         // T9-10 bottom: at level 9 the Lich King should be a real threat.
         // Player (Lvl 9): ATK=26, DEF=13, MaxHP=180
-        // Lich King:      ATK=28, DEF=20, HP=120
-        // Raw DPS: player deals Max(1,26-20)=6/turn; Lich deals Max(1,28-13)=15/turn
-        // → player needs 20 turns to kill; dies in 12 — combat is genuinely dangerous.
+        // Lich King:      ATK=38, DEF=20, HP=170
+        // Raw DPS: player deals Max(1,26-20)=6/turn; Lich deals Max(1,38-13)=25/turn
+        // → player needs 29 turns to kill; dies in ~7 — combat is extremely dangerous.
         const int level = 9;
-        const int lichHP = 120, lichATK = 28, lichDEF = 20, lichXP = 130;
+        const int lichHP = 170, lichATK = 38, lichDEF = 20, lichXP = 130;
 
         var wins = 0;
         var losses = 0;

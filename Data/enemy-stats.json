@@ -154,8 +154,8 @@
   },
   "LichKing": {
     "Name": "Lich King",
-    "MaxHP": 120,
-    "Attack": 28,
+    "MaxHP": 170,
+    "Attack": 38,
     "Defense": 20,
     "XPValue": 130,
     "MinGold": 70,
