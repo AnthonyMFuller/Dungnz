@@ -1,6 +1,7 @@
 namespace Dungnz.Engine;
 
 using Dungnz.Models;
+using Dungnz.Systems;
 
 /// <summary>
 /// Procedurally generates a fully connected grid-based dungeon floor by creating a
@@ -12,19 +13,6 @@ using Dungnz.Models;
 public class DungeonGenerator
 {
     private readonly Random _rng;
-    private static readonly string[] RoomDescriptions =
-    {
-        "A damp corridor with moss-covered stone walls. Water drips from the ceiling.",
-        "A dusty chamber filled with broken furniture and cobwebs.",
-        "A narrow passage with ancient runes carved into the walls.",
-        "A large hall with crumbling pillars and a high vaulted ceiling.",
-        "A torch-lit room with shadows dancing on the walls. The air smells of decay.",
-        "A cold stone chamber with rusted chains hanging from the ceiling.",
-        "A cramped space littered with bones and debris.",
-        "An eerie room with strange symbols painted in faded colors on the floor.",
-        "A dank cell with iron bars on one wall and scratches on the stone.",
-        "A spacious vault with collapsed sections of ceiling allowing dim light through."
-    };
 
     /// <summary>
     /// Initialises a new <see cref="DungeonGenerator"/> with an optional fixed seed.
@@ -62,14 +50,18 @@ public class DungeonGenerator
     /// is combined with <paramref name="floorMultiplier"/> to scale all enemy stats.
     /// Defaults to <see langword="null"/> (treated as Normal, multiplier = 1.0).
     /// </param>
+    /// <param name="floor">
+    /// The dungeon floor number (1–5), used to select the appropriate themed description pool
+    /// via <see cref="RoomDescriptions.ForFloor"/>. Defaults to 1.
+    /// </param>
     /// <returns>
     /// A tuple of (<c>startRoom</c>, <c>exitRoom</c>) where <c>startRoom</c> is the
     /// player's entry point and <c>exitRoom</c> is the boss-guarded exit.
     /// </returns>
-    public (Room startRoom, Room exitRoom) Generate(int width = 5, int height = 4, int playerLevel = 1, float floorMultiplier = 1.0f, DifficultySettings? difficulty = null)
+    public (Room startRoom, Room exitRoom) Generate(int width = 5, int height = 4, int playerLevel = 1, float floorMultiplier = 1.0f, DifficultySettings? difficulty = null, int floor = 1)
     {
         float effectiveMult = floorMultiplier * (difficulty?.EnemyStatMultiplier ?? 1.0f);
-        // Create grid of rooms
+        var roomPool = RoomDescriptions.ForFloor(floor);
         var grid = new Room[height, width];
         for (int y = 0; y < height; y++)
         {
@@ -77,7 +69,7 @@ public class DungeonGenerator
             {
                 grid[y, x] = new Room
                 {
-                    Description = RoomDescriptions[_rng.Next(RoomDescriptions.Length)]
+                    Description = roomPool[_rng.Next(roomPool.Length)]
                 };
             }
         }
