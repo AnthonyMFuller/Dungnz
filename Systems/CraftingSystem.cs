@@ -17,19 +17,19 @@ public class CraftingSystem
             Name = "Health Elixir",
             Ingredients = new() { ("Health Potion", 2) },
             GoldCost = 0,
-            Result = new Item { Name = "Health Elixir", Type = ItemType.Consumable, HealAmount = 75, Description = "Restores 75 HP." }
+            Result = new Item { Name = "Health Elixir", Type = ItemType.Consumable, HealAmount = 75, Description = "Two potions rendered down into something stronger. The colour is wrong, but the effect is not." }
         },
         new CraftingRecipe {
             Name = "Reinforced Sword",
             Ingredients = new() { ("Iron Sword", 1) },
             GoldCost = 30,
-            Result = new Item { Name = "Reinforced Sword", Type = ItemType.Weapon, AttackBonus = 8, IsEquippable = true, Description = "A stronger blade." }
+            Result = new Item { Name = "Reinforced Sword", Type = ItemType.Weapon, AttackBonus = 8, IsEquippable = true, Description = "The iron has been retempered and the edge reground. It bites deeper now." }
         },
         new CraftingRecipe {
             Name = "Reinforced Armor",
             Ingredients = new() { ("Leather Armor", 1) },
             GoldCost = 25,
-            Result = new Item { Name = "Reinforced Armor", Type = ItemType.Armor, DefenseBonus = 8, IsEquippable = true, Description = "Upgraded protection." }
+            Result = new Item { Name = "Reinforced Armor", Type = ItemType.Armor, DefenseBonus = 8, IsEquippable = true, Description = "Extra plates riveted over the weak points. Heavier, but considerably harder to kill through." }
         },
     };
 

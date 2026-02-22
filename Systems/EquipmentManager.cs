@@ -45,6 +45,8 @@ public class EquipmentManager
         {
             player.EquipItem(item);
             _display.ShowMessage($"You equip {item.Name}. Attack: {player.Attack}, Defense: {player.Defense}");
+            if (!string.IsNullOrEmpty(item.Description))
+                _display.ShowMessage(item.Description);
         }
         catch (ArgumentException ex)
         {
