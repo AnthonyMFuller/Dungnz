@@ -88,5 +88,77 @@
     "XPValue": 40,
     "MinGold": 10,
     "MaxGold": 25
+  },
+  "GiantRat": {
+    "Name": "Giant Rat",
+    "MaxHP": 15,
+    "Attack": 7,
+    "Defense": 1,
+    "XPValue": 12,
+    "MinGold": 1,
+    "MaxGold": 5
+  },
+  "CursedZombie": {
+    "Name": "Cursed Zombie",
+    "MaxHP": 32,
+    "Attack": 9,
+    "Defense": 6,
+    "XPValue": 28,
+    "MinGold": 4,
+    "MaxGold": 12
+  },
+  "BloodHound": {
+    "Name": "Blood Hound",
+    "MaxHP": 42,
+    "Attack": 16,
+    "Defense": 5,
+    "XPValue": 38,
+    "MinGold": 10,
+    "MaxGold": 22
+  },
+  "IronGuard": {
+    "Name": "Iron Guard",
+    "MaxHP": 50,
+    "Attack": 14,
+    "Defense": 14,
+    "XPValue": 48,
+    "MinGold": 15,
+    "MaxGold": 32
+  },
+  "NightStalker": {
+    "Name": "Night Stalker",
+    "MaxHP": 55,
+    "Attack": 20,
+    "Defense": 8,
+    "XPValue": 58,
+    "MinGold": 18,
+    "MaxGold": 38
+  },
+  "FrostWyvern": {
+    "Name": "Frost Wyvern",
+    "MaxHP": 75,
+    "Attack": 22,
+    "Defense": 12,
+    "XPValue": 70,
+    "MinGold": 25,
+    "MaxGold": 50
+  },
+  "ChaosKnight": {
+    "Name": "Chaos Knight",
+    "MaxHP": 85,
+    "Attack": 24,
+    "Defense": 16,
+    "XPValue": 80,
+    "MinGold": 35,
+    "MaxGold": 60
+  },
+  "LichKing": {
+    "Name": "Lich King",
+    "MaxHP": 120,
+    "Attack": 28,
+    "Defense": 20,
+    "XPValue": 130,
+    "MinGold": 70,
+    "MaxGold": 120
   }
 }
