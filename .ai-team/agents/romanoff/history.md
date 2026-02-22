@@ -356,3 +356,76 @@
    - My tests correctly detect the item-name row misalignment and will pass once that's fixed
 
 **Key Pattern:** `FakeDisplayService.RawCombatMessages` is now available for any future tests that need to inspect ANSI formatting rather than plain text.
+
+### 2026-02-22: Intro QA Assessment & Testability Planning
+
+**Task:** Assess intro improvements from quality and testability standpoint. Review Program.cs intro logic, evaluate testing implications, identify edge cases, recommend architecture.
+
+**Findings:**
+
+**Critical Issues (Current Architecture):**
+1. **Program.cs intro logic is untestable** — All game startup (lines 7-82) is top-level script with hardcoded `Console.ReadLine()` calls. Cannot provide test input or validate behavior without console I/O.
+2. **No input validation** — Empty names, invalid difficulty/class selections silently fall back to defaults without error messages. Edge cases unknown (special chars, whitespace, overflow).
+3. **Prestige loading has no error handling** — Side effect loaded globally; if prestige save corrupted, crash with no recovery.
+4. **Seed generation unrecorded** — Random seed generated but not captured for verification; hard to test determinism contracts.
+5. **Player creation is inline** — Stat modifications (class bonuses, prestige bonuses) done at script level; cannot test player creation in isolation.
+
+**Edge Cases Identified (23 edge cases across 4 input types):**
+- **Player name:** Empty, whitespace-only, 100+ chars, newlines/null chars
+- **Difficulty:** Empty input, invalid selections (4+), negative values
+- **Class:** Empty input, invalid selections (4+), floating-point input
+- **Seed:** Overflow (int.MaxValue), negative seeds, very large numbers, non-numeric input
+- **Player creation:** Class bonus making stat negative, prestige loading failures, MaxHP clamping edge cases
+
+**Testing Infrastructure Assessment:**
+- ✅ **FakeDisplayService** exists (Helpers/) — tracks all output in lists; can be reused for intro testing
+- ✅ **Console capture pattern** documented (DisplayServiceTests.cs) — IDisposable + StringWriter for console output validation
+- ✅ **Test pattern established** — Arrange-Act-Assert, FluentAssertions, Theory+InlineData for parameterized tests
+- ⚠️ **FakeInputReader** — Must enhance or create to queue test input for intro sequence
+
+**Architectural Recommendation:**
+
+**Extract `IntroSequence` class** (testable orchestrator):
+- Constructor: Inject `IDisplayService`, `IInputReader`, `IPrestigeProvider`
+- Public method `Run(out int seed) → Player` — Orchestrates all intro steps, returns initialized player
+- Private methods: `ValidateName()`, `SelectSeed()`, `SelectDifficulty()`, `SelectClass()`, `CreatePlayer()`
+- Enables: Unit testing of each step independently, FakeDisplayService mocking, test input injection, validation testing
+
+**New IDisplayService Methods (testability):**
+- Add return-value methods: `string SelectSeed()`, `Difficulty SelectDifficulty()`, `PlayerClass SelectClass()`
+- Separates "show menu" (void) from "get valid choice" (return)
+- Decouples display testing from logic testing
+
+**Recommended Test Coverage (Tier 1 = must-write):**
+- 24+ test cases: name validation (4), seed selection (4), difficulty selection (4), class selection (4), player creation (5), integration (3)
+- Theory+InlineData for parameterized edge cases
+- Integration test: full intro flow with fake input → verify player returned with correct stats
+
+**Quality Gate Recommendations:**
+- BLOCKING: All Tier 1 tests pass (24 cases), no Console.ReadLine in intro logic, FakeDisplayService captures all output
+- MERGE GATE: Tier 2 edge cases covered, silent fallbacks documented, player bounds-checking verified
+- REJECT: Test failures, prestige load crash, stat validation skipped, seed overflow unhandled
+
+**Timeline Impact:**
+- Refactoring IntroSequence: 2-3 hours (Hill/Barton)
+- Writing Tier 1 tests: 4-6 hours (Romanoff)
+- Code review + final tests: 1 hour
+- **Total: 7-10 hours** before new intro features can be safely added
+
+**Files for Creation:**
+- `Engine/IntroSequence.cs` — Orchestrator class (new)
+- `Dungnz.Tests/IntroSequenceTests.cs` — Test harness (24+ tests)
+- Update `Display/IDisplayService.cs` — Add 3 return-value methods
+- Update `Display/ConsoleDisplayService.cs` — Implement new methods
+- Refactor `Program.cs` (lines 7-82) — Replace with `new IntroSequence().Run()`
+
+**Key Learning:**
+**Top-level script is the enemy of testability.** Any complex logic (selection menus, validation, player creation) must be extracted to a class with injected dependencies. This is not over-engineering; it's the minimum required for regression safety as the intro grows.
+
+**Documentation:** `.ai-team/decisions/inbox/romanoff-intro-qa-notes.md` (21KB comprehensive assessment with edge case inventory, test matrix, and architecture diagrams)
+
+---
+
+## 2026-02-22: Team Decision Merge
+
+📌 **Team update:** Intro QA strategy, edge case testing framework, and quality assurance patterns — decided by Romanoff (via comprehensive intro QA assessment). Decisions merged into `.ai-team/decisions.md` by Scribe.

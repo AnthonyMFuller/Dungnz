@@ -495,3 +495,122 @@
 - `Display/DisplayService.cs` — `ShowPlayerStats()` and `ShowEquipmentComparison()` refactored
 
 **Build/Test:** 0 errors, 267/267 tests pass.
+
+### 2026-02-22: Intro display design planning session
+
+**Requested by:** Copilot (on behalf of Anthony)  
+**Task:** Assess current intro UI and plan visual improvements from display engineering perspective
+
+**Findings document:** `.ai-team/decisions/inbox/hill-intro-display-design.md` (15.5 KB)
+
+**Assessment of current weaknesses:**
+
+1. **Minimal title screen** — ShowTitle() renders a plain bordered box with generic text. No personality, visual impact, or atmosphere setting. Feels flat.
+
+2. **Text-dump UI for selections** — Class and difficulty selections presented as wall-of-text lists (3 lines for class, single inline for difficulty). No visual hierarchy or comparison context.
+
+3. **No stat context for choice** — Players cannot see how class choices affect starting stats. Descriptions exist but lack actual numbers and visual comparison.
+
+4. **Monochrome intro flow** — ColorCodes system available throughout game but unused in startup. Difficulty and class selections lack color-coding.
+
+5. **No visual separation** — Name input, seed input, difficulty/class selection flow together in undifferentiated stream of prompts.
+
+**Design solutions proposed:**
+
+1. **Enhanced Title Screen** — ASCII art "DUNGEON" banner with tagline ("Crawl through darkness. Survive the depths.") for visual impact and mood setting.
+
+2. **Class Selection Panels** — Three side-by-side cards showing Warrior/Mage/Rogue with:
+   - Stat bars (░/█) visualizing impact
+   - Color-coded values (Red for attack, Cyan for defense, Blue for mana, Green for HP)
+   - Trait descriptions
+   - Horizontal layout enables visual comparison
+
+3. **Difficulty Panels** — Three color-coded panels (Green/Yellow/Red matching ColorCodes convention):
+   - Casual (Green): Forgiving, abundant resources
+   - Normal (Yellow): Balanced, standard loot
+   - Hard (Red): Punishing, rare drops, stronger enemies
+
+4. **Prestige Display** — Star-decorated panel celebrating progression bonuses if prestige.PrestigeLevel > 0.
+
+5. **Seed Prompt** — Formatted input prompt explaining reproducibility benefit.
+
+**IDisplayService additions required:**
+
+- `ShowIntroTitle()` — Enhanced title with ASCII art
+- `ShowClassSelection() → int` — Display class cards, return 1–3 choice
+- `ShowDifficultySelection() → int` — Display difficulty panels, return 1–3 choice  
+- `ShowPrestigeDisplay(PrestigeSystem)` — Prestige celebration panel
+- `ShowSeedPrompt() → string` — Formatted seed input prompt
+
+**Key technical pattern:**
+
+All intro UI must use ColorCodes.StripAnsiCodes() for ANSI-aware padding/alignment. This is already proven in ShowEquipmentComparison (PR #224). Pattern:
+1. Build colored content string
+2. `visibleLen = StripAnsiCodes(content).Length` 
+3. Calculate padding using visible length
+4. Render colored string + padding
+
+**Implementation priority:**
+
+- Phase 1 (MVP): ShowIntroTitle, ShowDifficultySelection, ShowClassSelection (6.5 hours)
+- Phase 2 (Polish): ShowPrestigeDisplay, ShowSeedPrompt, integration (2 hours)
+
+**Terminal safety assumptions:**
+
+- 80-char width minimum
+- UTF-8 box-drawing characters (╔═╗║╚╝)
+- ASCII fallback available if needed
+
+**Next steps:**
+
+Awaiting decision to proceed. If approved, estimate 6.5–8.5 hours to implement both phases. Recommend:
+1. Implement ShowIntroTitle and new IDisplayService methods in ConsoleDisplayService
+2. Refactor Program.cs intro flow to call new display methods
+3. Update README.md if Systems/ changes documented
+4. Test in 80/120/160 char terminal widths
+5. Validate ANSI-aware padding handles all color combinations
+
+— planned by Hill (display engineering assessment)
+
+### 2026-02-21 — Intro Sequence Architectural Guidance
+
+**Context:** Copilot asked whether intro sequence (lines 7-75 of Program.cs) should be extracted, and if so, how.
+
+**Architectural Decision Made:**
+- Recommend extraction to `Systems/GameSetupService.cs`
+- Return immutable `GameSetup` record (Player, Seed, DifficultySettings)
+- Apply prestige bonuses AFTER class bonuses in CreatePlayer() method
+- GameSetupService receives IDisplayService via constructor (consistent with CombatEngine, GameLoop)
+
+**Key Patterns Established:**
+1. **Setup Service Contract:** Services that orchestrate complex initialization return immutable result objects (records)
+2. **Prestige Application Order:** Base stats → Class bonuses → Prestige bonuses → Set current = max
+3. **Service Placement:** Complex I/O orchestration belongs in Systems/ even if mostly console interaction
+4. **Program.cs Philosophy:** Should be thin wiring layer (15-20 lines), not business logic
+
+**Rejected Alternatives:**
+- Builder pattern: Over-engineered for linear flow
+- Keep in Program.cs: Mixes wiring with business logic, harder to maintain
+- IntroSequenceBuilder: Same as builder, unnecessary abstraction
+
+**Files Referenced:**
+- Program.cs (current: 83 lines, 70% intro sequence)
+- Systems/PrestigeSystem.cs (existing pattern: static methods for prestige data)
+- Display/IDisplayService.cs (existing: ReadPlayerName, ShowMessage, ShowTitle)
+- Models/Player.cs, PlayerClass.cs, Difficulty.cs
+
+**Decision Document:** `.ai-team/decisions/inbox/hill-intro-sequence-extraction.md`
+
+**Implementation Status:** NOT IMPLEMENTED — architectural guidance only, awaiting team consensus
+
+**Notes:**
+- Current Program.cs works correctly, extraction is refactoring not bugfix
+- Best time to extract: when implementing load game (avoid duplication)
+- Testability benefit is modest (mostly I/O, few branches to test)
+- Main benefit is separation of concerns and readability
+
+---
+
+## 2026-02-22: Team Decision Merge
+
+📌 **Team update:** Display design patterns, sequence extraction architecture, and intro rendering strategy — decided by Hill (via design documentation). Decisions merged into `.ai-team/decisions.md` by Scribe.

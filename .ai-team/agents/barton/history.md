@@ -408,3 +408,96 @@
 **Build/Test Status:** Build succeeded (0 errors), all 267 existing tests pass.
 
 **PR:** #223 — `squad/220-colorize-damage-fix`
+
+### 2026-02-22: Intro Systems Design Analysis
+
+**Context:** Requested by Copilot to assess and plan improvements to the character creation and intro flow from a game systems perspective.
+
+**Assessment Scope:** Program.cs flow, class selection clarity, difficulty scaling communication, seed handling, prestige integration, lore/tone setup.
+
+**Key Findings:**
+
+1. **Class Selection Information Gap** — Players see 2-line descriptions but don't see actual stat bonuses (HP, ATK, DEF, Mana) until applying them. Descriptions vague ("High HP" vs. +20 actual bonus). Rogue described as "balanced" but unclear how it differs mechanically. Players can't make informed choices about playstyle tradeoffs.
+
+2. **Difficulty Multipliers Invisible** — Three difficulty options (Casual/Normal/Hard) presented with zero explanation. Players don't know enemy scaling multipliers (0.7x/1.0x/1.3x) or loot impact (1.5x/1.0x/0.7x). New players can't answer "which difficulty for first playthrough?"
+
+3. **Seed Over-Emphasized** — Reproducibility feature (useful for 5% of players: speedrunners, content creators) blocks intro flow for everyone. Mandatory prompt before game start creates friction.
+
+4. **Missing Playstyle Communication** — Each class has a passive trait (Warrior +5% @ <50% HP, Mage +20% spell damage, Rogue +10% dodge). These define how combat feels but aren't mentioned during class selection—only discovered in-game.
+
+**Recommendations:**
+
+1. **Redesigned Class Selection Cards** — Show starting stats (HP, ATK, DEF, Mana) explicitly. Add playstyle descriptions tied to mechanics (Warrior = "sustain focused," Mage = "burst focused," Rogue = "evasion focused"). Mention passive trait upfront.
+
+2. **Difficulty Selection with Mechanical Clarity** — Show multipliers (0.7x enemy power, +50% loot) instead of vague names. Recommend "Normal" as default. Frame difficulties as intent (Casual = "Learning the Ropes," Normal = "Balanced Challenge," Hard = "Hardcore Mode").
+
+3. **Move Seed to Advanced Option** — Auto-generate random seed in background, display before dungeon entry. Optional prompt for custom seed (post-difficulty selection). Reduces intro friction significantly.
+
+4. **Enhance Prestige Display** — If returning player, show prestige bonuses with progression hint ("Unlock Level 3 at 250 kills"). Reinforces that prestige matters.
+
+5. **Optional Lore Intro** — 3-4 sentence paragraph establishing stakes/danger before name selection. Sets tone for dungeon crawler experience. Gamespot feel without mechanical impact.
+
+**System Design Principles Applied:**
+- Classes define playstyle (sustain vs. burst vs. evasion). Make this explicit at selection time.
+- Difficulty is a mechanical lever (scaling multipliers). Show the numbers.
+- Intro is the first tutorial. Every choice should teach the game.
+- Friction kills retention. Seed should not block casual players.
+- Prestige/progression feels rewarding when visible. Show advancement paths.
+
+**File Created:** `.ai-team/decisions/inbox/barton-intro-systems-design.md` — comprehensive design analysis with card formats, recommended changes, implementation priority, and open questions for design review.
+
+**Design Philosophy:** Systems perspective prioritizes informed player choice, mechanical clarity, and tone-setting. The intro is not just flavor—it's where players learn the game's resource model (HP/ATK/DEF/Mana), difficulty scaling (what makes Hard hard?), and whether they're in for a sustain slog or a burst puzzle. Every bit of information withheld is a missed opportunity to help players choose well.
+
+### 2026-02-22: Intro Flow & Character Creation UX Analysis
+
+**Context:** Comprehensive game design analysis of player psychology, intro sequence optimization, and mechanical transparency in character creation.
+
+**Key Recommendations:**
+
+1. **Optimal Intro Order:** Lore intro (optional) → Name → Prestige display → Class selection → Difficulty → Seed (auto-generated, displayed at dungeon entry). Name-first creates emotional investment before mechanical friction. Class-before-difficulty establishes playstyle identity before challenge tuning.
+
+2. **Class Selection Redesign:** Replace dry bullet list with stat-rich "cards" showing:
+   - Explicit stat bonuses (HP: 100 → 120, not "High HP")
+   - Passive trait descriptions (Warrior: "Battle Fury — +5% damage @ <50% HP")
+   - Playstyle guidance ("Tank through attrition" vs. "Glass cannon burst")
+   - Visual hierarchy (bordered cards with emoji icons) creates excitement
+
+3. **Difficulty Transparency:** Show scaling multipliers explicitly (0.7x/1.0x/1.3x enemy stats, 1.5x/1.0x/0.7x loot rates, 3%/5%/8% elite spawn). Add recommendations ("Recommended for first playthrough"). Players need to know what changes, not guess from vague labels.
+
+4. **Seed System Friction Removal:** Auto-generate random seed in background, display before dungeon entry. Add optional `--seed` CLI flag for custom seeds (speedrunners/content creators). Mandatory seed prompt blocks 95% of players to serve 5%—eliminate friction.
+
+5. **Prestige Integration Timing:** Move prestige display AFTER name entry, BEFORE class selection. Show progression hint ("Next prestige level at 9 wins"). Class cards should display TOTAL stats (base + class + prestige) so players see full starting power when choosing playstyle.
+
+6. **Optional Lore Intro:** 3-4 sentence atmospheric paragraph (skippable, single Enter press) establishes tone (grim dungeon crawler) and stakes before mechanical choices. Sets genre expectations.
+
+**Psychology Principles Applied:**
+- **Informed choice beats surprises:** Players should see exact numbers (stat bonuses, scaling multipliers), not vague descriptions ("High HP"). Every hidden detail is a missed teaching opportunity.
+- **Reduce friction for majority:** Seed reproducibility matters to 5% of players (speedrunners/content creators). Don't block 95% with mandatory prompts—use CLI flags instead.
+- **Playstyle identity before challenge tuning:** "I'm a Warrior" → "now how hard?" feels more natural than reverse. Players care about WHAT they are before HOW challenged they are.
+- **Progression visibility creates aspiration:** Prestige bonuses mean nothing if hidden until after choices. Show them at decision time. Add "next level at X wins" hint for goal-setting.
+- **Tone-setting matters:** First impression (lore intro) establishes whether this is a comedic roguelike or grim dungeon crawler. 3 sentences set expectations.
+
+**Implementation Priority:**
+1. High: Class selection card redesign, difficulty multiplier transparency, seed auto-generation
+2. Medium: Prestige display repositioning, progression hints
+3. Low: Optional lore intro paragraph
+
+**Open Design Questions:**
+- Should class cards show prestige bonuses inline (HP 100 → 130) or separately (HP 100 → 120 + 10 prestige)?
+- Should Hard mode grant prestige faster (every 2 wins vs. 3)?
+- Do we want "recommended class" hints for first-time players?
+- Should seed display in HUD during gameplay (helps content creators, adds clutter)?
+
+**Architecture Notes:**
+- Class cards need new DisplayService methods (ShowClassCard, ShowClassSelectionMenu)
+- CLI argument parsing for --seed flag (no external lib needed, args[0] check sufficient)
+- Prestige display logic moves from lines 10-13 to post-name-entry position
+- Difficulty display needs DifficultySettings.GetDescription() method returning multipliers/rates
+
+**File Created:** `.ai-team/decisions/inbox/barton-intro-flow-ux-recommendations.md` — comprehensive design analysis with card formats, flow recommendations, psychology rationale, and implementation priorities.
+
+---
+
+## 2026-02-22: Team Decision Merge
+
+📌 **Team update:** Intro flow UX design, systems design patterns, and player creation flow strategy — decided by Barton (via intro systems and UX documentation). Decisions merged into `.ai-team/decisions.md` by Scribe.
