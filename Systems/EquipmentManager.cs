@@ -171,12 +171,6 @@ public class EquipmentManager
 
     private static string ColorizeItemName(Item item)
     {
-        var color = item.Tier switch
-        {
-            ItemTier.Uncommon => Systems.ColorCodes.Green,
-            ItemTier.Rare     => Systems.ColorCodes.BrightCyan,
-            _                 => Systems.ColorCodes.BrightWhite
-        };
-        return $"{color}{item.Name}{Systems.ColorCodes.Reset}";
+        return Systems.ColorCodes.ColorizeItemName(item.Name, item.Tier);
     }
 }
