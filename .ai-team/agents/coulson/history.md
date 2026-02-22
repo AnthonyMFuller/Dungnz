@@ -934,3 +934,13 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 **Learnings:**
 - **Boundary Testing:** Verified exact boundary conditions (e.g., >80% vs >=80%) crucial for UX consistency.
 - **Display Logic:** Grouping logic in `ShowInventory` is acceptable in the display layer as it doesn't mutate game state.
+
+### 2026-02-22: Content Expansion Planning
+**Outcome:** Created detailed plan for content expansion (items 10 -> 60, enemies 10 -> 18).
+**Key Decisions:**
+- **Phase 1 (Code Prep):** Blocked content injection on critical code fixes (Accessory logic, data validation).
+- **Phase 2 (Content Injection):** Design approved for ~50 new items and 8 new enemies.
+- **Phase 3 (Verification):** Loot distribution and balance testing required before merge.
+- **Technical constraints:** No new mechanics (stacking/durability) in this phase to reduce risk.
+**Artifacts:** Created `.ai-team/decisions/inbox/coulson-content-expansion-plan.md`
+

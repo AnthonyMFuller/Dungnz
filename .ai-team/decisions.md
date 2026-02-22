@@ -10688,3 +10688,70 @@ Pre-existing `CS1744` error in `TierDisplayTests.cs` line 390 (FluentAssertions 
 ### Verdict
 Phase 3 test coverage complete. All 17 tests pass. Hill's implementation confirmed correct against all specified Phase 3 behaviors.
 
+### 2026-02-22: Content Expansion Plan — Phase 1
+**By:** Coulson (with Hill, Barton, Romanoff)
+**What:** Full plan for greatly expanding game content (10 → 60+ items, 10 → 18 enemies)
+**Why:** Anthony approved — awaiting final implementation approval
+
+## Executive Summary
+We will expand the game from a "tech demo" scope (10 items) to a "playable game" scope (60+ items).
+**Strategy:** Fix code limitations first, then flood the game with data.
+**Risk:** High risk of "silent failures" (invalid tiers, broken equips) without Phase 1 code fixes.
+
+## Phase 1: Code & Systems Prep (Hill + Romanoff)
+*Before adding a single item, we must ensure the engine can handle them.*
+
+1.  **Fix Accessory Logic (Critical):**
+    *   Update `InventoryManager.UseItem()` to handle `ItemType.Accessory`.
+    *   Ensure `Player.Equip()` correctly calculates stats from accessories.
+2.  **Harden Data Validation:**
+    *   Update `ItemConfig.Load()` to throw exceptions on invalid Tiers (currently defaults to Common).
+    *   Validate `Weight` > 0.
+    *   Validate `Name` length < 30 chars (to prevent UI breaking).
+3.  **Display Safety:**
+    *   Update `DisplayService` to truncate names > 30 chars with "..." instead of breaking layout.
+
+## Phase 2: Content Injection (Barton)
+*Once the pipes are fixed, turn on the water.*
+
+### New Item Types (Enabled by Phase 1)
+*   **Accessories:** Ring of Vitality, Amulet of the Sage, Boots of Swiftness, Pendant of Resistance.
+
+### Weapons (12 New)
+*   **Tier 1:** Iron Dagger, Wooden Staff, Rusty Spear, Bone Club
+*   **Tier 2:** Executioner's Axe, Poisoned Blade, Lightning Staff, Warlord's Maul
+*   **Tier 3:** Starfall Blade, Inferno Tome, Dragonsoul Axe, Soulreaver Dagger
+
+### Armor (12 New)
+*   **Tier 1:** Padded Tunic, Wooden Shield, Fur Cloak, Iron Helm
+*   **Tier 2:** Scale Mail, Knight's Breastplate, Elven Leathers, Mithril Chainmail
+*   **Tier 3:** Obsidian Plate, Dragon Scale Armor, Veil of Stars
+
+### Consumables (12 New)
+*   **Potions:** Minor/Greater Health, Mana Draught, Regeneration Elixir
+*   **Tactical:** Antidote (Cures Poison), Escape Scroll, Bomb
+*   **Buffs:** Fortitude Elixir (+DEF), Power Draught (+ATK)
+
+### Enemies (8 New)
+*   **Tier 1:** Goblin Scout (Fast), Zombie (Tank)
+*   **Tier 2:** Orc Berserker (Burst), Frost Wraith (Debuff), Giant Spider (Poison)
+*   **Tier 3:** Void Sentinel (High Dodge), Demon Lord (Boss-tier stats)
+
+## Phase 3: Verification (Romanoff)
+1.  **Loot Distribution Test:** Simulate 10,000 drops to ensure Tiers 1/2/3 drop at expected 60/30/10% rates (approx).
+2.  **UI Regression:** Verify inventory screen doesn't break with 20+ items.
+3.  **Combat Balance:** Auto-resolve 100 battles to ensure no "immortal" enemies or "one-shot" players.
+
+## Work Items
+
+| ID | Title | Assignee | Dep |
+|----|-------|----------|-----|
+| `code-fix-accessory` | Implement Accessory equip logic in InventoryManager | Hill | - |
+| `code-harden-json` | Add validation for Tiers/Weight/Length in ItemConfig | Hill | - |
+| `data-add-items` | Add all new items to item-stats.json | Barton | `code-harden-json` |
+| `data-add-enemies` | Add all new enemies to enemy-stats.json | Barton | - |
+| `test-loot-dist` | Verify loot drop rates with new larger pool | Romanoff | `data-add-items` |
+
+## Technical Decisions
+*   **No new mechanics yet:** Stackable items and Two-handed weapons are deferred to Phase 2 to keep this expansion purely data-driven (mostly).
+*   **Strict Name Limits:** All item names must be <= 30 chars to avoid complete UI rewrite.
