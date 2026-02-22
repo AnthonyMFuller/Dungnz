@@ -27,7 +27,42 @@ public class GameLoop
     private readonly AchievementSystem _achievements = new();
     private readonly EquipmentManager _equipment;
     private readonly InventoryManager _inventoryManager;
+    private readonly NarrationService _narration = new();
     private int _currentFloor = 1;
+
+    private static readonly string[] _postCombatLines =
+    {
+        "The room falls silent. Nothing moves but the dust settling around the fallen {0}.",
+        "You stand over {0}'s body, catching your breath. The dungeon feels momentarily less hostile.",
+        "The echo of combat fades. {0} is dead. You survived.",
+        "Silence returns. {0} won't be troubling anyone else."
+    };
+
+    private static readonly string[] _spikeHazardLines =
+    {
+        "Pressure plates click underfoot. Razor spikes lance from the walls! ({0} damage)",
+        "The floor drops a half-inch — then a volley of iron spikes erupts from the stone! ({0} damage)"
+    };
+
+    private static readonly string[] _poisonHazardLines =
+    {
+        "A hissing sound, then green mist floods the chamber. Your lungs burn! ({0} damage)",
+        "Pressure triggers a vial of alchemical poison — the fumes are immediate and agonising. ({0} damage)"
+    };
+
+    private static readonly string[] _fireHazardLines =
+    {
+        "A gout of magical fire roars from runes on the floor — you're caught in the blast! ({0} damage)",
+        "The floor glows red. Then the fire trap activates with a WHOMP that singes your eyebrows. ({0} damage)"
+    };
+
+    private static readonly string[] _lootLines =
+    {
+        "Every bit helps down here.",
+        "You tuck it away carefully.",
+        "Useful. Or sellable. Either way, it's yours now.",
+        "Into the pack it goes."
+    };
 
     /// <summary>
     /// Creates a new <see cref="GameLoop"/> wired to the specified display, combat,
@@ -234,8 +269,15 @@ public class GameLoop
                 HazardType.Fire => "a fire trap",
                 _ => "a hazard"
             };
+            string hazardMsg = _currentRoom.Hazard switch
+            {
+                HazardType.Spike  => _narration.Pick(_spikeHazardLines, dmg),
+                HazardType.Poison => _narration.Pick(_poisonHazardLines, dmg),
+                HazardType.Fire   => _narration.Pick(_fireHazardLines, dmg),
+                _                 => $"You trigger {hazardName} and take {dmg} damage!"
+            };
             _player.TakeDamage(dmg);
-            _display.ShowMessage($"⚠ You trigger {hazardName} and take {dmg} damage! HP: {_player.HP}/{_player.MaxHP}");
+            _display.ShowMessage($"⚠ {hazardMsg} HP: {_player.HP}/{_player.MaxHP}");
             if (_player.HP <= 0)
             {
                 _display.ShowMessage("You died from a trap! Game over.");
@@ -276,8 +318,10 @@ public class GameLoop
             
             if (result == CombatResult.Won)
             {
+                var enemyName = _currentRoom.Enemy!.Name;
                 _currentRoom.Enemy = null;
                 _stats.EnemiesDefeated++;
+                _display.ShowMessage(_narration.Pick(_postCombatLines, enemyName));
             }
         }
 
@@ -387,6 +431,7 @@ public class GameLoop
             return;
         }
         _display.ShowMessage($"You take the {item.Name}.");
+        _display.ShowMessage(_narration.Pick(_lootLines));
         _events?.RaiseItemPicked(_player, item, _currentRoom);
         _stats.ItemsFound++;
         if (item.Type == ItemType.Gold) _stats.GoldCollected += item.StatModifier;

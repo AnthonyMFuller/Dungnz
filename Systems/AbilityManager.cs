@@ -10,6 +10,15 @@ public class AbilityManager
 {
     private readonly Dictionary<AbilityType, int> _cooldowns = new();
     private readonly List<Ability> _abilities;
+
+    /// <summary>Flavor text displayed immediately before each ability activates.</summary>
+    private static readonly Dictionary<string, string> _abilityFlavor = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["PowerStrike"]     = "You focus every ounce of strength into a single devastating blow!",
+        ["DefensiveStance"] = "You lower your center of gravity and raise your guard, ready for anything.",
+        ["PoisonDart"]      = "You notch a venomed bolt and loose it with deadly precision.",
+        ["SecondWind"]      = "Warm golden light flows through you, knitting wounds closed.",
+    };
     
     /// <summary>
     /// Initialises the manager and registers all available abilities with their names,
@@ -135,7 +144,10 @@ public class AbilityManager
         
         player.SpendMana(ability.ManaCost);
         PutOnCooldown(type, ability.CooldownTurns);
-        
+
+        if (_abilityFlavor.TryGetValue(type.ToString(), out var flavorText))
+            display.ShowCombatMessage(flavorText);
+
         switch (type)
         {
             case AbilityType.PowerStrike:

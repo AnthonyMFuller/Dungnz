@@ -470,6 +470,7 @@ public class CombatEngine : ICombatEngine
         // Goblin Shaman: try to heal when below 50% HP
         if (enemy is GoblinShaman shaman && shaman.HP < shaman.MaxHP / 2)
         {
+            _display.ShowCombatMessage("The shaman mutters a guttural incantation. Dark energy knits its wounds closed!");
             int heal = (int)(shaman.MaxHP * 0.20);
             shaman.HP = Math.Min(shaman.MaxHP, shaman.HP + heal);
             _display.ShowCombatMessage($"The {shaman.Name} channels dark magic and heals for {heal}!");
@@ -479,6 +480,7 @@ public class CombatEngine : ICombatEngine
         // Troll: regenerates 5% max HP each turn
         if (enemy is Troll troll)
         {
+            _display.ShowCombatMessage("The troll's wounds close before your eyes with a wet, nauseating sound.");
             int regen = Math.Max(1, (int)(troll.MaxHP * 0.05));
             troll.HP = Math.Min(troll.MaxHP, troll.HP + regen);
             _display.ShowCombatMessage($"The Troll regenerates {regen} HP!");
@@ -576,6 +578,7 @@ public class CombatEngine : ICombatEngine
                 var heal = (int)(enemyDmg * enemy.LifestealPercent);
                 if (heal > 0)
                 {
+                    _display.ShowCombatMessage("The Vampire Lord channels stolen life force, growing stronger!");
                     enemy.HP = Math.Min(enemy.MaxHP, enemy.HP + heal);
                     _display.ShowCombatMessage($"{enemy.Name} drains {heal} HP!");
                 }
