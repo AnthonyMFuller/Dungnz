@@ -465,11 +465,9 @@ public class ConsoleDisplayService : IDisplayService
         var reset = Systems.ColorCodes.Reset;
 
         Console.WriteLine($"{cyan}╔══════════════════════════════════════╗{reset}");
-        Console.WriteLine($"{cyan}║{reset}  {yellow}██████╗ ██╗   ██╗███╗  ██╗ ██████╗{reset} {cyan}║{reset}");
-        Console.WriteLine($"{cyan}║{reset}  {yellow}██╔══██╗██║   ██║████╗ ██║██╔════╝{reset} {cyan}║{reset}");
-        Console.WriteLine($"{cyan}║{reset}  {yellow}██║  ██║██║   ██║██╔██╗██║██║  ███╗{reset}{cyan}║{reset}");
-        Console.WriteLine($"{cyan}║{reset}  {yellow}██╚══██╝╚██╗ ██╔╝██║╚████║╚██████╔╝{reset}{cyan}║{reset}");
-        Console.WriteLine($"{cyan}║{reset}  {yellow}╚═════╝  ╚═══╝  ╚═╝ ╚═══╝  ╚═════╝{reset} {cyan}║{reset}");
+        Console.WriteLine($"{cyan}║{reset}    {cyan}▓▓{reset}  {yellow}╔═╗ ╦ ╦ ╔╗╔ ╔═╗ ╔╗╔ ╔═╗{reset}  {cyan}▓▓{reset}    {cyan}║{reset}");
+        Console.WriteLine($"{cyan}║{reset}    {cyan}▓▓{reset}  {yellow}║ ║ ║ ║ ║║║ ║ ╦ ║║║ ╔═╝{reset}  {cyan}▓▓{reset}    {cyan}║{reset}");
+        Console.WriteLine($"{cyan}║{reset}    {cyan}▓▓{reset}  {yellow}╚═╝ ╚═╝ ╝╚╝ ╚═╝ ╝╚╝ ╚═╝{reset}  {cyan}▓▓{reset}    {cyan}║{reset}");
         Console.WriteLine($"{cyan}║{reset}                                      {cyan}║{reset}");
         Console.WriteLine($"{cyan}║{reset}         {cyan}D  U  N  G  N  Z{reset}             {cyan}║{reset}");
         Console.WriteLine($"{cyan}║{reset}    {cyan}─────────────────────────────{reset}     {cyan}║{reset}");
