@@ -1,0 +1,20 @@
+#!/bin/bash
+# Blocks direct pushes to master/main.
+# All changes must go through a feature branch and PR.
+# This hook is committed to the repo — configure with:
+#   git config core.hooksPath scripts
+
+protected_branch="master"
+
+while read local_ref local_sha remote_ref remote_sha; do
+    if [[ "$remote_ref" == "refs/heads/$protected_branch" ]]; then
+        echo ""
+        echo "  ✗ Direct push to '$protected_branch' is not allowed."
+        echo "    Create a feature branch, open a PR, and have Coulson review it."
+        echo "    Branch naming: squad/{issue-number}-{slug}"
+        echo ""
+        exit 1
+    fi
+done
+
+exit 0
