@@ -45,7 +45,7 @@ public abstract class Enemy
 
     /// <summary>Gets or sets the loot table that determines what items and gold are dropped when this enemy dies.</summary>
     [System.Text.Json.Serialization.JsonIgnore]
-    public LootTable LootTable { get; set; } = null!;
+    public LootTable LootTable { get; set; } = new LootTable();
 
     // Special mechanic flags
     /// <summary>

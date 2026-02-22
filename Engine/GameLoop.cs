@@ -482,10 +482,10 @@ public class GameLoop
                     _player.Inventory.Remove(item);
                     _display.ShowMessage($"You use {item.Name} and restore {healedAmount} HP. Current HP: {_player.HP}/{_player.MaxHP}");
                 }
-                else if (item.MaxManaBonus > 0)
+                else if (item.ManaRestore > 0)
                 {
                     var oldMana = _player.Mana;
-                    _player.RestoreMana(item.MaxManaBonus);
+                    _player.RestoreMana(item.ManaRestore);
                     var restoredMana = _player.Mana - oldMana;
                     _player.Inventory.Remove(item);
                     _display.ShowMessage($"You use {item.Name} and restore {restoredMana} mana. Mana: {_player.Mana}/{_player.MaxMana}");

@@ -29,6 +29,9 @@ public record ItemStats
 
     /// <summary>A short flavour or mechanical description of the item displayed in the player's inventory.</summary>
     public string Description { get; init; } = string.Empty;
+
+    /// <summary>Whether this item can be placed in an equipment slot (weapons, armour, accessories).</summary>
+    public bool IsEquippable { get; init; }
 }
 
 /// <summary>
@@ -129,7 +132,8 @@ public static class ItemConfig
             AttackBonus = stats.AttackBonus,
             DefenseBonus = stats.DefenseBonus,
             StatModifier = stats.StatModifier,
-            Description = stats.Description
+            Description = stats.Description,
+            IsEquippable = stats.IsEquippable
         };
     }
 }
