@@ -87,7 +87,9 @@ public class ConsoleDisplayService : IDisplayService
     /// </summary>
     /// <param name="player">The player whose HP is shown on the left side.</param>
     /// <param name="enemy">The enemy whose HP is shown on the right side.</param>
-    public void ShowCombatStatus(Player player, Enemy enemy)
+    public void ShowCombatStatus(Player player, Enemy enemy, 
+        IReadOnlyList<ActiveEffect> playerEffects, 
+        IReadOnlyList<ActiveEffect> enemyEffects)
     {
         Console.WriteLine();
         
@@ -186,13 +188,10 @@ public class ConsoleDisplayService : IDisplayService
                     : string.Empty;
                 var countTag    = count > 1 ? $" ×{count}" : string.Empty;
                 var statLabel   = PrimaryStatLabel(item);
-                var nameField   = $"{icon} {ColorizeItemName(item)}{equippedTag}{countTag}";
-                var namePlain   = $"  {icon} {TruncateName(item.Name)}{(isEquipped ? " [E]" : "")}{countTag}";
-                int namePad     = Math.Max(0, 30 - namePlain.Length);
+                var nameField   = $"  {icon} {ColorizeItemName(item)}{equippedTag}{countTag}";
                 var statColored = $"{Systems.ColorCodes.Cyan}{statLabel}{Systems.ColorCodes.Reset}";
-                int statPad     = Math.Max(0, 20 - statLabel.Length);
                 var wtEach      = count > 1 ? $"[{item.Weight} wt each]" : $"[{item.Weight} wt]";
-                Console.WriteLine($"  {nameField}{new string(' ', namePad)}{statColored}{new string(' ', statPad)}{Systems.ColorCodes.Gray}{wtEach}{Systems.ColorCodes.Reset}");
+                Console.WriteLine($"{PadRightVisible(nameField, 32)}{PadRightVisible(statColored, 22)}{Systems.ColorCodes.Gray}{wtEach}{Systems.ColorCodes.Reset}");
             }
         }
         
@@ -215,8 +214,8 @@ public class ConsoleDisplayService : IDisplayService
             _                 => "[Common]"
         };
         Console.WriteLine("╔══════════════════════════════════════╗");
-        Console.WriteLine($"║  {header,-36}║");
-        Console.WriteLine($"║  {tierLabel,-36}║");
+        Console.WriteLine($"║  {PadRightVisible(header, 36)}║");
+        Console.WriteLine($"║  {PadRightVisible(tierLabel, 36)}║");
         Console.WriteLine($"║  {icon} {ColorizeItemName(item)}{namePad}║");
 
         // Build stat line with optional "new best" indicator
@@ -508,7 +507,7 @@ public class ConsoleDisplayService : IDisplayService
     /// Writes the standard "&gt; " input prompt without a trailing newline, signalling
     /// to the player that they should type an exploration command.
     /// </summary>
-    public void ShowCommandPrompt()
+    public void ShowCommandPrompt(Player? player = null)
     {
         Console.Write("> ");
     }
@@ -976,4 +975,44 @@ public class ConsoleDisplayService : IDisplayService
         var filled = Math.Clamp((int)Math.Round((double)value / max * width), 0, width);
         return new string('█', filled) + new string('░', width - filled);
     }
+
+    /// <summary>Stub implementation — displays combat start banner.</summary>
+    public void ShowCombatStart(Enemy enemy) { }
+    
+    /// <summary>Stub implementation — displays combat entry flags.</summary>
+    public void ShowCombatEntryFlags(Enemy enemy) { }
+    
+    /// <summary>Stub implementation — displays level-up choice menu.</summary>
+    public void ShowLevelUpChoice(Player player) { }
+    
+    /// <summary>Stub implementation — displays floor banner.</summary>
+    public void ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant) { }
+    
+    /// <summary>Stub implementation — displays enemy detail card.</summary>
+    public void ShowEnemyDetail(Enemy enemy) { }
+    
+    /// <summary>Stub implementation — displays victory screen.</summary>
+    public void ShowVictory(Player player, int floorsCleared, Systems.RunStats stats) { }
+    
+    /// <summary>Stub implementation — displays game over screen.</summary>
+    public void ShowGameOver(Player player, string? killedBy, Systems.RunStats stats) { }
+
+    private static string RenderBar(int current, int max, int width, string fillColor, string emptyColor = Systems.ColorCodes.Gray)
+    {
+        current = Math.Clamp(current, 0, max);
+        if (max <= 0) return emptyColor + new string('░', width) + Systems.ColorCodes.Reset;
+        int fillCount = (int)Math.Round((double)current / max * width);
+        fillCount = Math.Clamp(fillCount, 0, width);
+        return fillColor   + new string('█', fillCount)          + Systems.ColorCodes.Reset
+             + emptyColor  + new string('░', width - fillCount)  + Systems.ColorCodes.Reset;
+    }
+
+    private static int VisibleLength(string s)
+        => Systems.ColorCodes.StripAnsiCodes(s).Length;
+
+    private static string PadRightVisible(string s, int totalWidth)
+        => s + new string(' ', Math.Max(0, totalWidth - VisibleLength(s)));
+
+    private static string PadLeftVisible(string s, int totalWidth)
+        => new string(' ', Math.Max(0, totalWidth - VisibleLength(s))) + s;
 }
