@@ -12,7 +12,6 @@ public class FakeDisplayService : IDisplayService
 
     public void ShowTitle() { }
     public void ShowCommandPrompt() { }
-    public void ShowCombatPrompt() { }
     public void ShowHelp() { AllOutput.Add("help"); }
     public void ShowRoom(Room room) { AllOutput.Add($"room:{room.Description}"); }
     public void ShowMap(Room room) { AllOutput.Add($"map:{room.Description}"); }

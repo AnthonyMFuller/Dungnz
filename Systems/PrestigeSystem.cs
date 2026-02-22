@@ -17,12 +17,17 @@ public static class PrestigeSystem
         Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
         "Dungnz", "prestige.json");
 
+    private static string? _testSavePath;
+    private static string ActualSavePath => _testSavePath ?? SavePath;
+
+    internal static void SetSavePathForTesting(string? path) => _testSavePath = path;
+
     public static PrestigeData Load()
     {
         try
         {
-            if (!File.Exists(SavePath)) return new PrestigeData();
-            var json = File.ReadAllText(SavePath);
+            if (!File.Exists(ActualSavePath)) return new PrestigeData();
+            var json = File.ReadAllText(ActualSavePath);
             return JsonSerializer.Deserialize<PrestigeData>(json) ?? new PrestigeData();
         }
         catch { return new PrestigeData(); }
@@ -32,8 +37,8 @@ public static class PrestigeSystem
     {
         try
         {
-            Directory.CreateDirectory(Path.GetDirectoryName(SavePath)!);
-            File.WriteAllText(SavePath, JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
+            Directory.CreateDirectory(Path.GetDirectoryName(ActualSavePath)!);
+            File.WriteAllText(ActualSavePath, JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
         }
         catch { /* silently fail */ }
     }

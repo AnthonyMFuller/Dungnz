@@ -79,14 +79,6 @@ public class DisplayServiceTests : IDisposable
     }
 
     [Fact]
-    public void ShowCombatPrompt_WritesOptions()
-    {
-        var svc = new ConsoleDisplayService();
-        svc.ShowCombatPrompt();
-        Output.Should().Contain("ttack");
-    }
-
-    [Fact]
     public void ShowCombatStatus_WritesHp()
     {
         var svc = new ConsoleDisplayService();

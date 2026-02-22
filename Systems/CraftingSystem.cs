@@ -35,6 +35,10 @@ public class CraftingSystem
 
     public static (bool success, string message) TryCraft(Player player, CraftingRecipe recipe)
     {
+        // Check inventory capacity
+        if (player.Inventory.Count >= Player.MaxInventorySize)
+            return (false, "Your inventory is full.");
+
         // Check ingredients
         foreach (var (itemName, count) in recipe.Ingredients)
         {
