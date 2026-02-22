@@ -61,12 +61,14 @@ public static class ItemConfig
 
     /// <summary>
     /// Reads the specified JSON file, deserialises the item list, and validates that each entry
-    /// has a non-empty name, a recognised <see cref="ItemType"/>, and non-negative stat values.
+    /// has a non-empty name within the 30-character limit, a recognised <see cref="ItemType"/>,
+    /// a recognised <see cref="ItemTier"/>, and non-negative stat values.
     /// </summary>
     /// <param name="path">Absolute or relative path to the items JSON configuration file.</param>
     /// <returns>A validated list of <see cref="ItemStats"/> records.</returns>
     /// <exception cref="FileNotFoundException">Thrown when the file does not exist at <paramref name="path"/>.</exception>
     /// <exception cref="InvalidDataException">Thrown when the file is empty, invalid, or contains malformed item data.</exception>
+    /// <exception cref="InvalidOperationException">Thrown when an item has an unrecognised Tier string.</exception>
     public static List<ItemStats> Load(string path)
     {
         if (!File.Exists(path))
@@ -98,6 +100,14 @@ public static class ItemConfig
                 if (!Enum.TryParse<ItemType>(item.Type, ignoreCase: true, out _))
                 {
                     throw new InvalidDataException($"Item '{item.Name}' has invalid Type: {item.Type}");
+                }
+                if (item.Name.Length > 30)
+                {
+                    throw new InvalidDataException($"Item name '{item.Name}' exceeds 30 character limit");
+                }
+                if (!Enum.TryParse<ItemTier>(item.Tier, ignoreCase: true, out _))
+                {
+                    throw new InvalidOperationException($"Unknown ItemTier '{item.Tier}' in item '{item.Name}'");
                 }
                 if (item.HealAmount < 0 || item.AttackBonus < 0 || item.DefenseBonus < 0)
                 {
