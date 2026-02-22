@@ -174,6 +174,26 @@ public class CombatEngine : ICombatEngine
     }
 
     /// <summary>
+    /// Colorizes damage numbers in combat messages. Damage in red, healing in green,
+    /// crits in yellow + bold.
+    /// </summary>
+    private string ColorizeDamage(string message, int damage, bool isCrit = false, bool isHealing = false)
+    {
+        var damageStr = damage.ToString();
+        var coloredDamage = isHealing 
+            ? ColorCodes.Colorize(damageStr, ColorCodes.Green)
+            : ColorCodes.Colorize(damageStr, ColorCodes.BrightRed);
+        
+        if (isCrit)
+        {
+            // Crits get bold yellow wrapper
+            return ColorCodes.Colorize(message.Replace(damageStr, coloredDamage), ColorCodes.Yellow + ColorCodes.Bold);
+        }
+        
+        return message.Replace(damageStr, coloredDamage);
+    }
+
+    /// <summary>
     /// Runs a complete combat encounter between <paramref name="player"/> and
     /// <paramref name="enemy"/>, looping through player/enemy turns until one side
     /// is defeated or the player successfully flees. Handles ambush enemies, boss
@@ -388,16 +408,17 @@ public class CombatEngine : ICombatEngine
         {
             if (_abilities.IsOnCooldown(ability.Type))
             {
-                _display.ShowMessage($" (Cooldown: {_abilities.GetCooldown(ability.Type)} turns) {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)");
+                var cooldown = _abilities.GetCooldown(ability.Type);
+                _display.ShowColoredMessage($" (Cooldown: {cooldown} turns) {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)", ColorCodes.Gray);
             }
             else if (player.Mana < ability.ManaCost)
             {
-                _display.ShowMessage($" (Need {ability.ManaCost} mana) {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)");
+                _display.ShowColoredMessage($" (Need {ability.ManaCost} mana) {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)", ColorCodes.Red);
             }
             else
             {
                 displayToAbility[displayIndex] = ability;
-                _display.ShowMessage($" [{displayIndex}] {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)");
+                _display.ShowColoredMessage($" [{displayIndex}] {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP) — ready", ColorCodes.Green + ColorCodes.Bold);
                 displayIndex++;
             }
         }
@@ -475,9 +496,9 @@ public class CombatEngine : ICombatEngine
                 _                   => _critMessages
             };
             if (isCrit)
-                _display.ShowCombatMessage(_narration.Pick(critPool, enemy.Name, playerDmg));
+                _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(critPool, enemy.Name, playerDmg), playerDmg, true));
             else
-                _display.ShowCombatMessage(_narration.Pick(hitPool, enemy.Name, playerDmg));
+                _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(hitPool, enemy.Name, playerDmg), playerDmg));
 
             string? statusApplied = null;
             // Bug #110: bleed-on-hit from equipped weapon (10% chance, 3 turns)
@@ -485,7 +506,7 @@ public class CombatEngine : ICombatEngine
             {
                 _statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
                 statusApplied = "Bleed";
-                _display.ShowCombatMessage($"{enemy.Name} is bleeding!");
+                _display.ShowColoredCombatMessage($"{enemy.Name} is bleeding!", ColorCodes.Red);
             }
             _turnLog.Add(new CombatTurn("You", "Attack", playerDmg, isCrit, false, statusApplied));
         }
@@ -508,7 +529,7 @@ public class CombatEngine : ICombatEngine
             _display.ShowCombatMessage("The shaman mutters a guttural incantation. Dark energy knits its wounds closed!");
             int heal = (int)(shaman.MaxHP * 0.20);
             shaman.HP = Math.Min(shaman.MaxHP, shaman.HP + heal);
-            _display.ShowCombatMessage($"The {shaman.Name} channels dark magic and heals for {heal}!");
+            _display.ShowCombatMessage(ColorizeDamage($"The {shaman.Name} channels dark magic and heals for {heal}!", heal, false, true));
             _display.ShowCombatMessage($"({shaman.Name} HP: {shaman.HP}/{shaman.MaxHP})");
             return; // skip normal attack this turn
         }
@@ -518,7 +539,7 @@ public class CombatEngine : ICombatEngine
             _display.ShowCombatMessage("The troll's wounds close before your eyes with a wet, nauseating sound.");
             int regen = Math.Max(1, (int)(troll.MaxHP * 0.05));
             troll.HP = Math.Min(troll.MaxHP, troll.HP + regen);
-            _display.ShowCombatMessage($"The Troll regenerates {regen} HP!");
+            _display.ShowCombatMessage(ColorizeDamage($"The Troll regenerates {regen} HP!", regen, false, true));
         }
 
         // Boss telegraphed charge: resolve previous charge or set new one
@@ -587,14 +608,14 @@ public class CombatEngine : ICombatEngine
             if (isCrit)
             {
                 enemyDmg *= 2;
-                _display.ShowCombatMessage("Critical hit!");
+                _display.ShowCombatMessage(ColorCodes.Colorize("💥 Critical hit!", ColorCodes.BrightRed + ColorCodes.Bold));
             }
             // BattleHardened skill passive — 5% damage reduction (matches skill description)
             if (player.Skills.IsUnlocked(Skill.BattleHardened))
                 enemyDmg = Math.Max(1, (int)(enemyDmg * 0.95f));
             player.TakeDamage(enemyDmg);
             _stats.DamageTaken += enemyDmg;
-            _display.ShowCombatMessage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmg));
+            _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmg), enemyDmg));
 
             string? statusApplied = null;
 

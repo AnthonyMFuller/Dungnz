@@ -1,5 +1,6 @@
 using Dungnz.Display;
 using Dungnz.Models;
+using Dungnz.Systems;
 
 namespace Dungnz.Tests.Helpers;
 
@@ -10,6 +11,11 @@ public class FakeDisplayService : IDisplayService
     public List<string> CombatMessages { get; } = new();
     public List<string> AllOutput { get; } = new();
 
+    /// <summary>
+    /// Strips ANSI color codes from text to ensure tests check plain text content.
+    /// </summary>
+    private static string StripAnsi(string text) => ColorCodes.StripAnsiCodes(text);
+
     public void ShowTitle() { }
     public void ShowCommandPrompt() { }
     public void ShowHelp() { AllOutput.Add("help"); }
@@ -19,26 +25,30 @@ public class FakeDisplayService : IDisplayService
 
     public void ShowMessage(string message)
     {
-        Messages.Add(message);
-        AllOutput.Add(message);
+        var plain = StripAnsi(message);
+        Messages.Add(plain);
+        AllOutput.Add(plain);
     }
 
     public void ShowError(string message)
     {
-        Errors.Add(message);
-        AllOutput.Add($"ERROR:{message}");
+        var plain = StripAnsi(message);
+        Errors.Add(plain);
+        AllOutput.Add($"ERROR:{plain}");
     }
 
     public void ShowCombat(string message)
     {
-        CombatMessages.Add(message);
-        AllOutput.Add($"combat:{message}");
+        var plain = StripAnsi(message);
+        CombatMessages.Add(plain);
+        AllOutput.Add($"combat:{plain}");
     }
 
     public void ShowCombatMessage(string message)
     {
-        CombatMessages.Add(message);
-        AllOutput.Add($"combatmsg:{message}");
+        var plain = StripAnsi(message);
+        CombatMessages.Add(plain);
+        AllOutput.Add($"combatmsg:{plain}");
     }
 
     public void ShowCombatStatus(Player player, Enemy enemy)
@@ -59,5 +69,30 @@ public class FakeDisplayService : IDisplayService
     public void ShowLootDrop(Item item)
     {
         AllOutput.Add($"loot:{item.Name}");
+    }
+
+    public void ShowColoredMessage(string message, string color)
+    {
+        var plain = StripAnsi(message);
+        Messages.Add(plain);
+        AllOutput.Add(plain);
+    }
+
+    public void ShowColoredCombatMessage(string message, string color)
+    {
+        var plain = StripAnsi(message);
+        CombatMessages.Add(plain);
+        AllOutput.Add($"combatmsg:{plain}");
+    }
+
+    public void ShowColoredStat(string label, string value, string valueColor)
+    {
+        var plain = StripAnsi(value);
+        AllOutput.Add($"{label}{plain}");
+    }
+
+    public void ShowEquipmentComparison(Player player, Item? oldItem, Item newItem)
+    {
+        AllOutput.Add($"equipment_compare:{oldItem?.Name ?? "none"}->{newItem.Name}");
     }
 }

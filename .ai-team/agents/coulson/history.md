@@ -451,3 +451,178 @@
 **Critical blockers (must fix before v3 Wave 1):** EnemyFactory initialization, boss enrage compounding, boss state persistence, status modifier integration, damage tracking, SaveSystem validation.
 
 — decided by Coulson, Hill, Barton, Romanoff
+
+---
+
+## 2026-02-20: UI/UX Improvement Initiative (Boss Request)
+
+**Facilitator:** Coulson  
+**Participants:** Coulson, Hill (explore agent), Barton (explore agent)  
+**Context:** Boss requested comprehensive UI/UX improvement plan to enhance visual clarity and player experience.
+
+### Current State Analysis
+
+**Architecture Assessment:**
+- ✅ IDisplayService abstraction clean and well-separated
+- ✅ ConsoleDisplayService sole concrete implementation
+- ✅ TestDisplayService infrastructure for headless testing
+- ✅ Consistent formatting patterns (emoji prefixes, box-drawing, indentation)
+
+**Display Capabilities Inventory:**
+- 11 interface methods covering title, room, combat, stats, inventory, messages
+- Unicode box-drawing (`╔ ║ ═ ╚`) and emoji (⚔ 🏛 💧 ✗) for visual distinction
+- Layout patterns: blank lines, indentation (2 spaces), bracketed comparisons
+- **Critical gap:** NO color system — all output plain white text
+
+**Combat System Display Patterns:**
+- Status line: `[You: X/Y HP] vs [Enemy: X/Y HP]`
+- Class-specific damage narration (Warrior/Mage/Rogue variants)
+- Ability usage: 3-message pattern (flavor → effect → status)
+- Boss mechanics: enrage warnings, charge telegraphs
+- Emoji signaling: `⚔` combat, `💥` crit, `⚠` warning, `⚡` ability
+
+**Systems Display Usage:**
+- StatusEffectManager: per-turn damage, effect expiration messages
+- InventoryManager: pickup confirmations, usage feedback
+- EquipmentManager: stat lists with `string.Join`, slot states
+- AchievementSystem: binary unlock display (no progress tracking)
+
+### Critical UI/UX Gaps Identified
+
+1. **No color system** — All text plain white; no semantic color coding
+2. **No status HUD** — Active effects only shown when applied/expired (not persistent)
+3. **No equipment comparison** — Equipping gear doesn't show before/after stats
+4. **No progress tracking** — Achievements binary only; no hints toward unlock
+5. **No inventory weight display** — Weight system exists but not visualized
+6. **Limited combat clarity** — Damage/healing blend into narrative text walls
+7. **No cooldown visual feedback** — Abilities show cost but not readiness state
+8. **No turn log limit** — Combat log unbounded; scrolls off screen
+
+### UI/UX Improvement Plan (3 Phases)
+
+**Phase 1: Foundation (5-7 hours)**
+- **WI-1:** Create `ColorCodes.cs` with ANSI constants and threshold helpers
+- **WI-2:** Add color-aware methods to IDisplayService (`ShowColoredMessage`, `ShowColoredStat`)
+- **WI-3:** Colorize core stats (HP=red, Mana=blue, Gold=yellow, XP=green, Attack=bright red, Defense=cyan)
+- **Gate:** All 267 tests pass with TestDisplayService ANSI stripping
+
+**Phase 2: Enhancement (6-8 hours)**
+- **WI-4:** Combat visual hierarchy (colored damage/healing/crits)
+- **WI-5:** Enhanced combat HUD with active effects: `[You: 45/60 HP | 15/30 MP | P(2) R(3)] vs [Goblin: 12/30 HP | W(2)]`
+- **WI-6:** Equipment comparison display (before/after stats with colored deltas)
+- **WI-7:** Inventory weight display with threshold colors
+- **WI-8:** Status effect summary panel in player stats
+- **Gate:** Zero regressions; all UI enhancements functional
+
+**Phase 3: Polish (4-5 hours)**
+- **WI-9:** Achievement progress tracking for locked achievements
+- **WI-10:** Enhanced room descriptions with danger-based coloring
+- **WI-11:** Ability cooldown visual (green=ready, gray=cooling)
+- **WI-12:** Combat turn log enhancement (last 5 turns, alternating colors)
+- **Gate:** Boss approval; merge to master
+
+### Color Palette Design
+
+**Semantic Colors:**
+- Health: Red (threshold-based: green 70%+, yellow 40-69%, red 20-39%, bright red <20%)
+- Mana: Blue (threshold-based: blue 50%+, cyan 20-49%, gray <20%)
+- Gold: Yellow
+- XP: Green
+- Attack: Bright Red
+- Defense: Cyan
+- Success/Healing: Green
+- Errors/Warnings: Red
+
+**Equipment Rarity (future):**
+- Common: White
+- Uncommon: Green
+- Rare: Blue
+- Epic: Purple
+- Legendary: Gold
+
+**Status Effects:**
+- Positive (Regen, Fortified): Green
+- Negative (Poison, Weakened): Red
+- Neutral (Stun, Bleed): Yellow
+
+### Architecture Decisions
+
+**Decision 1: ANSI Colors via DisplayService Extensions**
+- **Rule:** All color logic contained in DisplayService layer; game logic never references ANSI codes
+- **Rationale:** Preserves testability; maintains clean separation; enables graceful fallback
+- **Pattern:** Add new methods (ShowColoredMessage, ShowColoredStat) rather than modifying existing
+
+**Decision 2: Threshold-Based Coloring**
+- **Rule:** HP/Mana use dynamic colors based on current/max ratio
+- **Rationale:** Instant visual feedback on danger state; aligns with player mental model
+- **Implementation:** `ColorCodes.HealthColor(current, max)` helper for reusability
+
+**Decision 3: Accessibility-First Design**
+- **Rule:** Color enhances existing semantic indicators (emoji, labels), never replaces
+- **Rationale:** Color-blind players must retain full experience
+- **Examples:** `ShowError()` keeps `✗` prefix even when red; combat HUD shows effect abbreviations even without color
+
+**Decision 4: Test Infrastructure ANSI Stripping**
+- **Rule:** TestDisplayService strips all ANSI codes before storing output
+- **Rationale:** Existing tests check plain text content; no test rewrites needed
+- **Implementation:** `StripAnsiCodes(string text)` regex helper
+
+**Decision 5: Combat HUD Active Effects**
+- **Rule:** Show active effects inline with single-letter abbreviations: P(poison), R(regen), S(stun), B(bleed), F(fortified), W(weakened)
+- **Rationale:** Persistent visibility without cluttering screen; turns remaining in parentheses
+- **Format:** `[You: 45/60 HP | 15/30 MP | P(2) R(3)]`
+
+### Team Allocation
+
+- **Hill:** ColorCodes utility, DisplayService extensions, core stat colorization, inventory/equipment display (8-10 hours)
+- **Barton:** Combat hierarchy, combat HUD, status effects, ability visuals, turn log (7-9 hours)
+- **Romanoff:** Test infrastructure updates, ANSI stripping verification, color utility tests (3-4 hours)
+- **Coulson:** Design review (Phase 1), code review (each phase), final approval gate (2-3 hours)
+
+**Total Estimate:** 20-26 hours
+
+### Critical Path
+
+```
+WI-1 (ColorCodes) → WI-2 (DisplayService) → WI-3 (Core Stats)
+  ├→ WI-4 (Combat) → WI-5 (HUD) → WI-12 (Turn Log)
+  ├→ WI-6 (Equipment) → WI-7 (Inventory) → WI-10 (Rooms)
+  └→ WI-8 (Status Panel) → WI-9 (Achievements) → WI-11 (Abilities)
+```
+
+### Risk Mitigation
+
+| Risk | Mitigation |
+|------|-----------|
+| ANSI support variance (older Windows CMD) | Auto-detect terminal capabilities; graceful fallback to emoji-only |
+| Test infrastructure breakage | Strip ANSI codes in TestDisplayService before assertions |
+| Color readability | Use high-contrast colors; test on multiple terminals |
+| Performance impact | ANSI codes are 10-20 bytes per segment (negligible) |
+
+### Success Criteria
+
+- [ ] All 267 tests pass (zero regressions in game logic)
+- [ ] Visual clarity: HP state, active effects, cooldowns instantly recognizable
+- [ ] Information density: All actionable info visible without scrolling
+- [ ] Accessibility: Color-blind players retain full experience via emoji/labels
+- [ ] Performance: No noticeable slowdown in display rendering
+
+### Deliverables
+
+- **Architecture Plan:** `.ai-team/decisions/inbox/coulson-ui-ux-architecture.md` (20KB, full technical spec)
+- **Executive Summary:** `.ai-team/decisions/inbox/coulson-ui-ux-summary.md` (4KB, at-a-glance reference)
+
+### Next Steps
+
+1. Team design review (present to Hill, Barton, Romanoff)
+2. Boss approval (confirm scope and priorities)
+3. Phase 1 kickoff (Hill implements color foundation)
+4. Parallel Phase 2 work (Hill=inventory/equipment, Barton=combat/status)
+5. Phase 3 polish (both engineers)
+6. Final review (Coulson validates architecture before merge)
+
+**Outcome:** Comprehensive UI/UX improvement plan addressing all display gaps identified in analysis. Clean architectural approach with zero breaking changes. Ready for team review and implementation.
+
+— planned by Coulson with analysis from Hill, Barton
+
+📌 Team directive (2026-02-22): No commits directly to master. All work goes on a feature branch (squad/{slug}), even without a linked issue. Reaches master only via PR. — captured by Scribe after UI/UX commit landed on master directly.

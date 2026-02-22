@@ -23,23 +23,29 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <summary>
-    /// Writes the room description, available exits, any live enemy warning, and a
-    /// list of items on the floor to the console.
+    /// Writes the room description with color-coded room type prefixes, available exits,
+    /// any live enemy warning, and a list of items on the floor to the console.
     /// </summary>
     /// <param name="room">The room to describe.</param>
     public void ShowRoom(Room room)
     {
         Console.WriteLine();
-        var prefix = room.Type switch
+        
+        // Color-code room type prefix based on danger level
+        var (prefix, color) = room.Type switch
         {
-            RoomType.Dark => "🌑 The room is pitch dark. ",
-            RoomType.Mossy => "🌿 Damp moss covers the walls. ",
-            RoomType.Flooded => "💧 Ankle-deep water pools here. ",
-            RoomType.Scorched => "🔥 Scorch marks scar the stone. ",
-            RoomType.Ancient => "🏛 Ancient runes line the walls. ",
-            _ => string.Empty
+            RoomType.Dark => ("🌑 The room is pitch dark. ", Systems.ColorCodes.Red),
+            RoomType.Scorched => ("🔥 Scorch marks scar the stone. ", Systems.ColorCodes.Yellow),
+            RoomType.Flooded => ("💧 Ankle-deep water pools here. ", Systems.ColorCodes.Yellow),
+            RoomType.Mossy => ("🌿 Damp moss covers the walls. ", Systems.ColorCodes.Green),
+            RoomType.Ancient => ("🏛 Ancient runes line the walls. ", Systems.ColorCodes.Cyan),
+            _ => (string.Empty, Systems.ColorCodes.Reset)
         };
-        Console.WriteLine(prefix + room.Description);
+        
+        if (!string.IsNullOrEmpty(prefix))
+            Console.Write($"{color}{prefix}{Systems.ColorCodes.Reset}");
+        
+        Console.WriteLine(room.Description);
         Console.WriteLine();
 
         if (room.Exits.Count > 0)
@@ -50,12 +56,14 @@ public class ConsoleDisplayService : IDisplayService
 
         if (room.Enemy != null)
         {
-            Console.WriteLine($"⚠ {room.Enemy.Name} is here!");
+            Console.WriteLine($"{Systems.ColorCodes.BrightRed}{Systems.ColorCodes.Bold}⚠ {room.Enemy.Name} is here!{Systems.ColorCodes.Reset}");
         }
 
         if (room.Items.Count > 0)
         {
-            Console.WriteLine($"Items: {string.Join(", ", room.Items.Select(i => i.Name))}");
+            Console.Write("Items: ");
+            var itemNames = room.Items.Select(i => $"{Systems.ColorCodes.Yellow}{i.Name}{Systems.ColorCodes.Reset}");
+            Console.WriteLine(string.Join(", ", itemNames));
         }
 
         Console.WriteLine();
@@ -71,15 +79,27 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <summary>
-    /// Prints a one-line HP status comparison in the format
-    /// "[You: X/Y HP] vs [EnemyName: X/Y HP]".
+    /// Prints a one-line HP status comparison with color-coded HP values and mana display.
     /// </summary>
     /// <param name="player">The player whose HP is shown on the left side.</param>
     /// <param name="enemy">The enemy whose HP is shown on the right side.</param>
     public void ShowCombatStatus(Player player, Enemy enemy)
     {
         Console.WriteLine();
-        Console.WriteLine($"[You: {player.HP}/{player.MaxHP} HP] vs [{enemy.Name}: {enemy.HP}/{enemy.MaxHP} HP]");
+        
+        var playerHpColor = Systems.ColorCodes.HealthColor(player.HP, player.MaxHP);
+        var enemyHpColor = Systems.ColorCodes.HealthColor(enemy.HP, enemy.MaxHP);
+        
+        Console.Write($"[You: {playerHpColor}{player.HP}/{player.MaxHP}{Systems.ColorCodes.Reset} HP");
+        
+        // Add mana display if player has mana
+        if (player.MaxMana > 0)
+        {
+            var manaColor = Systems.ColorCodes.ManaColor(player.Mana, player.MaxMana);
+            Console.Write($" │ {manaColor}{player.Mana}/{player.MaxMana}{Systems.ColorCodes.Reset} MP");
+        }
+        
+        Console.WriteLine($"] vs [{enemy.Name}: {enemyHpColor}{enemy.HP}/{enemy.MaxHP}{Systems.ColorCodes.Reset} HP]");
         Console.WriteLine();
     }
 
@@ -94,7 +114,7 @@ public class ConsoleDisplayService : IDisplayService
 
     /// <summary>
     /// Renders a formatted "PLAYER STATS" block showing name, HP, attack, defense,
-    /// gold, XP, and level.
+    /// gold, XP, and level with color-coded values.
     /// </summary>
     /// <param name="player">The player whose stats are displayed.</param>
     public void ShowPlayerStats(Player player)
@@ -102,12 +122,27 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine();
         Console.WriteLine("═══ PLAYER STATS ═══");
         Console.WriteLine($"Name:    {player.Name}");
-        Console.WriteLine($"HP:      {player.HP}/{player.MaxHP}");
-        Console.WriteLine($"💧 Mana: {player.Mana}/{player.MaxMana}");
-        Console.WriteLine($"Attack:  {player.Attack}");
-        Console.WriteLine($"Defense: {player.Defense}");
-        Console.WriteLine($"Gold:    {player.Gold}");
-        Console.WriteLine($"XP:      {player.XP}");
+        
+        // HP with threshold-based coloring
+        var hpColor = Systems.ColorCodes.HealthColor(player.HP, player.MaxHP);
+        Console.WriteLine($"HP:      {hpColor}{player.HP}/{player.MaxHP}{Systems.ColorCodes.Reset}");
+        
+        // Mana with threshold-based coloring
+        var manaColor = Systems.ColorCodes.ManaColor(player.Mana, player.MaxMana);
+        Console.WriteLine($"💧 Mana: {manaColor}{player.Mana}/{player.MaxMana}{Systems.ColorCodes.Reset}");
+        
+        // Attack in bright red
+        Console.WriteLine($"Attack:  {Systems.ColorCodes.BrightRed}{player.Attack}{Systems.ColorCodes.Reset}");
+        
+        // Defense in cyan
+        Console.WriteLine($"Defense: {Systems.ColorCodes.Cyan}{player.Defense}{Systems.ColorCodes.Reset}");
+        
+        // Gold in yellow
+        Console.WriteLine($"Gold:    {Systems.ColorCodes.Yellow}{player.Gold}{Systems.ColorCodes.Reset}");
+        
+        // XP in green
+        Console.WriteLine($"XP:      {Systems.ColorCodes.Green}{player.XP}{Systems.ColorCodes.Reset}");
+        
         Console.WriteLine($"Level:   {player.Level}");
         var classDef = PlayerClassDefinition.All.FirstOrDefault(c => c.Class == player.Class);
         if (classDef != null && !string.IsNullOrEmpty(classDef.TraitDescription))
@@ -117,7 +152,7 @@ public class ConsoleDisplayService : IDisplayService
 
     /// <summary>
     /// Renders the player's inventory as a bulleted list with item-type annotations,
-    /// or "(empty)" when the inventory contains no items.
+    /// weight tracking, and capacity display.
     /// </summary>
     /// <param name="player">The player whose inventory is displayed.</param>
     public void ShowInventory(Player player)
@@ -131,9 +166,26 @@ public class ConsoleDisplayService : IDisplayService
         }
         else
         {
+            // Calculate inventory metrics
+            int currentWeight = player.Inventory.Sum(i => i.Weight);
+            int maxWeight = Systems.InventoryManager.MaxWeight;
+            int maxSlots = Player.MaxInventorySize;
+            int usedSlots = player.Inventory.Count;
+            
+            // Show capacity header with color coding
+            var weightColor = Systems.ColorCodes.WeightColor(currentWeight, maxWeight);
+            var slotsColor = usedSlots >= maxSlots ? Systems.ColorCodes.Red : Systems.ColorCodes.Green;
+            
+            Console.Write("Slots: ");
+            Console.Write($"{slotsColor}{usedSlots}/{maxSlots}{Systems.ColorCodes.Reset}");
+            Console.Write(" │ Weight: ");
+            Console.WriteLine($"{weightColor}{currentWeight}/{maxWeight}{Systems.ColorCodes.Reset}");
+            Console.WriteLine();
+            
             foreach (var item in player.Inventory)
             {
-                Console.WriteLine($"  • {item.Name} ({item.Type})");
+                Console.Write($"  • {item.Name} ({item.Type})");
+                Console.WriteLine($" {Systems.ColorCodes.Gray}[{item.Weight} wt]{Systems.ColorCodes.Reset}");
             }
         }
         
@@ -320,5 +372,94 @@ public class ConsoleDisplayService : IDisplayService
     {
         Console.Write("Enter your name, adventurer: ");
         return Console.ReadLine() ?? "Hero";
+    }
+
+    /// <summary>
+    /// Displays a message with the specified ANSI color applied.
+    /// </summary>
+    /// <param name="message">The message text to display.</param>
+    /// <param name="color">The ANSI color code to apply.</param>
+    public void ShowColoredMessage(string message, string color)
+    {
+        Console.WriteLine($"{color}{message}{Systems.ColorCodes.Reset}");
+    }
+
+    /// <summary>
+    /// Displays a combat message with the specified ANSI color applied, using
+    /// the standard combat message indentation (2 spaces).
+    /// </summary>
+    /// <param name="message">The combat message text to display.</param>
+    /// <param name="color">The ANSI color code to apply.</param>
+    public void ShowColoredCombatMessage(string message, string color)
+    {
+        Console.WriteLine($"  {color}{message}{Systems.ColorCodes.Reset}");
+    }
+
+    /// <summary>
+    /// Displays a stat label and value pair where the value is colorized.
+    /// </summary>
+    /// <param name="label">The stat label (e.g. "HP:", "Mana:").</param>
+    /// <param name="value">The stat value to display.</param>
+    /// <param name="valueColor">The ANSI color code to apply to the value.</param>
+    public void ShowColoredStat(string label, string value, string valueColor)
+    {
+        Console.WriteLine($"{label,-8} {valueColor}{value}{Systems.ColorCodes.Reset}");
+    }
+
+    /// <summary>
+    /// Displays a side-by-side comparison of equipment showing before/after stats
+    /// with color-coded deltas.
+    /// </summary>
+    public void ShowEquipmentComparison(Player player, Item? oldItem, Item newItem)
+    {
+        Console.WriteLine();
+        Console.WriteLine("╔═══════════════════════════════════════╗");
+        Console.WriteLine("║       EQUIPMENT COMPARISON            ║");
+        Console.WriteLine("╠═══════════════════════════════════════╣");
+        
+        // Current item
+        Console.Write("║ Current:  ");
+        if (oldItem != null)
+            Console.Write($"{oldItem.Name,-27}");
+        else
+            Console.Write($"{"(none)",-27}");
+        Console.WriteLine("║");
+        
+        // New item
+        Console.WriteLine($"║ New:      {newItem.Name,-27}║");
+        Console.WriteLine("╠═══════════════════════════════════════╣");
+        
+        // Calculate deltas
+        int oldAttack = oldItem?.AttackBonus ?? 0;
+        int oldDefense = oldItem?.DefenseBonus ?? 0;
+        int newAttack = newItem.AttackBonus;
+        int newDefense = newItem.DefenseBonus;
+        int attackDelta = newAttack - oldAttack;
+        int defenseDelta = newDefense - oldDefense;
+        
+        // Show attack
+        Console.Write("║ Attack:   ");
+        Console.Write($"{player.Attack - oldAttack} → {player.Attack - oldAttack + attackDelta}");
+        if (attackDelta != 0)
+        {
+            var deltaColor = attackDelta > 0 ? Systems.ColorCodes.Green : Systems.ColorCodes.Red;
+            var deltaSign = attackDelta > 0 ? "+" : "";
+            Console.Write($" {deltaColor}({deltaSign}{attackDelta}){Systems.ColorCodes.Reset}");
+        }
+        Console.WriteLine($"{"",20}║");
+        
+        // Show defense
+        Console.Write("║ Defense:  ");
+        Console.Write($"{player.Defense - oldDefense} → {player.Defense - oldDefense + defenseDelta}");
+        if (defenseDelta != 0)
+        {
+            var deltaColor = defenseDelta > 0 ? Systems.ColorCodes.Green : Systems.ColorCodes.Red;
+            var deltaSign = defenseDelta > 0 ? "+" : "";
+            Console.Write($" {deltaColor}({deltaSign}{defenseDelta}){Systems.ColorCodes.Reset}");
+        }
+        Console.WriteLine($"{"",20}║");
+        
+        Console.WriteLine("╚═══════════════════════════════════════╝");
+        Console.WriteLine();
     }
 }

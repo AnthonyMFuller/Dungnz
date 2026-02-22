@@ -64,10 +64,13 @@ public class EquipmentManager
 
         try
         {
+            // Show equipment comparison before equipping
+            _display.ShowEquipmentComparison(player, currentlyEquipped, item);
+            
             player.EquipItem(item);
-            _display.ShowMessage($"You equip {item.Name}. Attack: {player.Attack}, Defense: {player.Defense}");
+            _display.ShowMessage($"✓ Equipped {item.Name}");
             if (!string.IsNullOrEmpty(item.Description))
-                _display.ShowMessage(item.Description);
+                _display.ShowMessage($"  {item.Description}");
         }
         catch (ArgumentException ex)
         {

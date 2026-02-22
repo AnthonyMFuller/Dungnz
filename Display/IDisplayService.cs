@@ -107,4 +107,36 @@ public interface IDisplayService
     /// The name entered by the player, or a default fallback name if none was provided.
     /// </returns>
     string ReadPlayerName();
+
+    /// <summary>
+    /// Displays a message with the specified ANSI color applied.
+    /// </summary>
+    /// <param name="message">The message text to display.</param>
+    /// <param name="color">The ANSI color code to apply (from <see cref="Systems.ColorCodes"/>).</param>
+    void ShowColoredMessage(string message, string color);
+
+    /// <summary>
+    /// Displays a combat message with the specified ANSI color applied, using
+    /// the standard combat message indentation.
+    /// </summary>
+    /// <param name="message">The combat message text to display.</param>
+    /// <param name="color">The ANSI color code to apply (from <see cref="Systems.ColorCodes"/>).</param>
+    void ShowColoredCombatMessage(string message, string color);
+
+    /// <summary>
+    /// Displays a stat label and value pair where the value is colorized.
+    /// </summary>
+    /// <param name="label">The stat label (e.g. "HP:", "Mana:").</param>
+    /// <param name="value">The stat value to display.</param>
+    /// <param name="valueColor">The ANSI color code to apply to the value.</param>
+    void ShowColoredStat(string label, string value, string valueColor);
+
+    /// <summary>
+    /// Displays a side-by-side comparison of equipment showing before/after stats
+    /// with color-coded deltas (+X green, -X red, no change gray).
+    /// </summary>
+    /// <param name="player">The player for stat context.</param>
+    /// <param name="oldItem">The currently equipped item (null if none).</param>
+    /// <param name="newItem">The item being equipped.</param>
+    void ShowEquipmentComparison(Player player, Item? oldItem, Item newItem);
 }
