@@ -28,6 +28,12 @@ public static class ColorCodes
     /// <summary>ANSI code for bright/bold red text (critical health, attack stat, high damage).</summary>
     public const string BrightRed = "\u001b[91m";
     
+    /// <summary>ANSI code for magenta text (ancient rooms, special areas).</summary>
+    public const string Magenta = "\u001b[35m";
+
+    /// <summary>ANSI code for white text (standard rooms, default text).</summary>
+    public const string White = "\u001b[37m";
+
     /// <summary>ANSI code for gray text (disabled options, cooldowns, dimmed info).</summary>
     public const string Gray = "\u001b[90m";
     
@@ -156,6 +162,35 @@ public static class ColorCodes
             _                 => BrightWhite
         };
         return $"{color}{name}{Reset}";
+    }
+
+    /// <summary>
+    /// Returns the ANSI color code associated with the given room type, used to
+    /// render map symbols in context-appropriate colors.
+    /// </summary>
+    /// <param name="type">The <see cref="RoomType"/> to look up.</param>
+    /// <returns>
+    /// An ANSI color code for the room type:
+    /// <list type="bullet">
+    /// <item>Standard → White</item>
+    /// <item>Dark → Gray</item>
+    /// <item>Mossy → Green</item>
+    /// <item>Flooded → Blue</item>
+    /// <item>Scorched → Yellow</item>
+    /// <item>Ancient → Magenta</item>
+    /// </list>
+    /// </returns>
+    public static string GetRoomTypeColor(RoomType type)
+    {
+        return type switch
+        {
+            RoomType.Dark     => Gray,
+            RoomType.Mossy    => Green,
+            RoomType.Flooded  => Blue,
+            RoomType.Scorched => Yellow,
+            RoomType.Ancient  => Magenta,
+            _                 => White
+        };
     }
 
     /// <summary>
