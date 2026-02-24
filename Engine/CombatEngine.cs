@@ -270,8 +270,19 @@ public class CombatEngine : ICombatEngine
             if (enemy.HP <= 0) break;
 
             int manaRegen = player.Skills.IsUnlocked(Skill.ManaFlow) ? 15 : 10;
+            // Ley Conduit passive — +5 mana regeneration/turn
+            if (player.Skills.IsUnlocked(Skill.LeyConduit))
+                manaRegen += 5;
             player.RestoreMana(manaRegen);
             _abilities.TickCooldowns();
+            
+            // Decrement Last Stand turns
+            if (player.LastStandTurns > 0)
+            {
+                player.LastStandTurns--;
+                if (player.LastStandTurns == 0)
+                    _display.ShowCombatMessage("Your Last Stand effect has ended.");
+            }
 
             // Boss Phase 2: check enrage
             if (enemy is DungeonBoss boss)
@@ -321,6 +332,9 @@ public class CombatEngine : ICombatEngine
                     _statusEffects.Clear(player);
                     _statusEffects.Clear(enemy);
                     player.ActiveEffects.Clear();
+                    player.ResetComboPoints();
+                    player.LastStandTurns = 0;
+                    player.EvadeNextAttack = false;
                     return CombatResult.Fled;
                 }
                 else
@@ -384,7 +398,22 @@ public class CombatEngine : ICombatEngine
         var unlockedAbilities = _abilities.GetUnlockedAbilities(player);
         if (unlockedAbilities.Any())
         {
-            _display.ShowMessage($"Mana: {player.Mana}/{player.MaxMana}");
+            var manaLine = $"Mana: {player.Mana}/{player.MaxMana}";
+            
+            // Rogue: Show Combo Points
+            if (player.Class == PlayerClass.Rogue)
+            {
+                var comboDots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
+                manaLine += $"  ⚡ Combo: {comboDots}";
+            }
+            
+            // Mage: Show ManaShield status
+            if (player.Class == PlayerClass.Mage && player.IsManaShieldActive)
+            {
+                manaLine += " [SHIELD ACTIVE]";
+            }
+            
+            _display.ShowMessage(manaLine);
         }
     }
 
@@ -506,6 +535,21 @@ public class CombatEngine : ICombatEngine
             // Bug #86: PowerStrike skill passive â +15% damage
             if (player.Skills.IsUnlocked(Skill.PowerStrike))
                 playerDmg = Math.Max(1, (int)(playerDmg * 1.15));
+            // Berserker's Edge passive: +10% damage per 25% HP missing
+            if (player.Skills.IsUnlocked(Skill.BerserkersEdge))
+            {
+                var hpPercent = (float)player.HP / player.MaxHP;
+                var multiplier = 1.0f;
+                if (hpPercent <= 0.25f) multiplier = 1.40f;      // 75% missing = +40%
+                else if (hpPercent <= 0.50f) multiplier = 1.30f; // 50% missing = +30%
+                else if (hpPercent <= 0.75f) multiplier = 1.20f; // 25% missing = +20%
+                else multiplier = 1.10f;                         // <25% missing = +10%
+                playerDmg = Math.Max(1, (int)(playerDmg * multiplier));
+            }
+            // Last Stand damage boost — +50% damage
+            if (player.LastStandTurns > 0)
+                playerDmg = Math.Max(1, (int)(playerDmg * 1.5f));
+            
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
             var hitPool = player.Class switch {
@@ -612,7 +656,13 @@ public class CombatEngine : ICombatEngine
         }
 
         // Bug #85: include equipment and class dodge bonuses for the player
-        if (RollPlayerDodge(player))
+        if (player.EvadeNextAttack)
+        {
+            player.EvadeNextAttack = false;
+            _display.ShowCombatMessage("The enemy's attack finds only shadows.");
+            _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
+        }
+        else if (RollPlayerDodge(player))
         {
             _display.ShowCombatMessage(_narration.Pick(_playerDodgeMessages, enemy.Name));
             _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
@@ -638,9 +688,41 @@ public class CombatEngine : ICombatEngine
             // BattleHardened skill passive — 5% damage reduction (matches skill description)
             if (player.Skills.IsUnlocked(Skill.BattleHardened))
                 enemyDmg = Math.Max(1, (int)(enemyDmg * 0.95f));
+            // Iron Constitution passive — 5% damage reduction
+            if (player.Skills.IsUnlocked(Skill.IronConstitution))
+                enemyDmg = Math.Max(1, (int)(enemyDmg * 0.95f));
+            // Last Stand damage reduction — 75% damage reduction
+            if (player.LastStandTurns > 0)
+                enemyDmg = Math.Max(1, (int)(enemyDmg * 0.25f));
+            
+            // Mana Shield absorption
+            if (player.IsManaShieldActive)
+            {
+                var manaLost = (int)(enemyDmg * 1.5);
+                if (player.Mana >= manaLost)
+                {
+                    player.Mana -= manaLost;
+                    _display.ShowCombatMessage($"The mana shield absorbs the blow! ({manaLost} mana lost)");
+                    _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, isCrit, false, null));
+                    return; // No HP damage taken
+                }
+                else
+                {
+                    // Shield breaks, take remaining as HP damage
+                    var remainingDamage = enemyDmg - (player.Mana * 2 / 3); // reverse calculation
+                    player.Mana = 0;
+                    player.IsManaShieldActive = false;
+                    enemyDmg = Math.Max(1, remainingDamage);
+                    _display.ShowCombatMessage("Your mana shield shatters!");
+                }
+            }
+            
             player.TakeDamage(enemyDmg);
             _stats.DamageTaken += enemyDmg;
             _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmg), enemyDmg));
+
+            // TODO: Phase 4 — Check player.ShouldTriggerUndyingWill() and apply Regen status if needed
+            // Requires tracking "once per combat" flag for UndyingWill passive
 
             string? statusApplied = null;
 
@@ -709,6 +791,9 @@ public class CombatEngine : ICombatEngine
         _statusEffects.Clear(player);
         _statusEffects.Clear(enemy);
         player.ActiveEffects.Clear();
+        player.ResetComboPoints();
+        player.LastStandTurns = 0;
+        player.EvadeNextAttack = false;
     }
     
     private void CheckLevelUp(Player player)
@@ -772,6 +857,9 @@ public class CombatEngine : ICombatEngine
                           + player.ClassDodgeBonus;
         // Bug #86: Swiftness skill passive — +5% dodge chance
         if (player.Skills.IsUnlocked(Skill.Swiftness))
+            dodgeChance += 0.05f;
+        // Quick Reflexes passive — +5% dodge chance
+        if (player.Skills.IsUnlocked(Skill.QuickReflexes))
             dodgeChance += 0.05f;
         dodgeChance = Math.Min(dodgeChance, 0.95f);
         return _rng.NextDouble() < dodgeChance;

@@ -324,8 +324,8 @@ public class CombatEngineTests
     [Fact]
     public void Bug111_AbilityDamage_TrackedInRunStats()
     {
-        // PowerStrike: Max(1, 10*2 - 0) = 20
-        var player = new Player { HP = 100, MaxHP = 100, Attack = 10, Defense = 5, Level = 1, Mana = 30, MaxMana = 30 };
+        // ShieldBash: Max(1, 10*1.2 - 0) = 12
+        var player = new Player { HP = 100, MaxHP = 100, Attack = 10, Defense = 5, Level = 1, Mana = 30, MaxMana = 30, Class = PlayerClass.Warrior };
         var enemy = new Enemy_Stub(hp: 999, atk: 0, def: 0, xp: 1);
         var display = new FakeDisplayService();
         var stats = new RunStats();
@@ -333,7 +333,7 @@ public class CombatEngineTests
         var rng = new ControlledRandom(defaultDouble: 0.1);
         var engine = new CombatEngine(display, input, rng);
         engine.RunCombat(player, enemy, stats);
-        stats.DamageDealt.Should().Be(20);
+        stats.DamageDealt.Should().Be(12);
     }
 
 }

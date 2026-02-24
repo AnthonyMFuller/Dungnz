@@ -190,6 +190,14 @@ public class ConsoleDisplayService : IDisplayService
         var classDef = PlayerClassDefinition.All.FirstOrDefault(c => c.Class == player.Class);
         if (classDef != null && !string.IsNullOrEmpty(classDef.TraitDescription))
             Console.WriteLine($"Trait:   {classDef.TraitDescription}");
+        
+        // Rogue: Show Combo Points
+        if (player.Class == PlayerClass.Rogue)
+        {
+            var comboDots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
+            ShowColoredStat("⚡ Combo:", comboDots, Systems.ColorCodes.Yellow);
+        }
+        
         Console.WriteLine();
     }
 
