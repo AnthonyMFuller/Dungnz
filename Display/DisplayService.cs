@@ -288,7 +288,8 @@ public class ConsoleDisplayService : IDisplayService
             if (deltas.Count > 0)
                 statLine += $"  {Systems.ColorCodes.Green}({string.Join(", ", deltas)} vs equipped!){Systems.ColorCodes.Reset}";
         }
-        Console.WriteLine($"║  {Systems.ColorCodes.Cyan}{statLine,-36}{Systems.ColorCodes.Reset}• {item.Weight} wt  ║");
+        var statWithWeight = $"{Systems.ColorCodes.Cyan}{statLine}{Systems.ColorCodes.Reset} • {item.Weight} wt";
+        Console.WriteLine($"║  {PadRightVisible(statWithWeight, 36)}║");
         Console.WriteLine("╚══════════════════════════════════════╝");
     }
 
