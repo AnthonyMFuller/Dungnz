@@ -29,6 +29,9 @@ public record EnemyStats
 
     /// <summary>The maximum amount of gold that drops from this enemy's loot table.</summary>
     public int MaxGold { get; init; }
+
+    /// <summary>Optional ASCII art lines displayed before combat. Empty array means no art.</summary>
+    public string[] AsciiArt { get; init; } = Array.Empty<string>();
 }
 
 /// <summary>

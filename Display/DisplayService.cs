@@ -1184,6 +1184,30 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine();
     }
 
+    /// <summary>Renders the enemy's ASCII art in a styled box, if art is present.</summary>
+    public void ShowEnemyArt(Enemy enemy)
+    {
+        if (enemy.AsciiArt == null || enemy.AsciiArt.Length == 0)
+            return;
+
+        const int innerWidth = 36;
+        var boxBorder = new string('─', innerWidth + 2);
+        var artColor = enemy.IsElite ? Systems.ColorCodes.Yellow
+            : enemy.MaxHP >= 100 ? Systems.ColorCodes.BrightRed
+            : enemy.MaxHP >= 60  ? Systems.ColorCodes.BrightRed
+            : enemy is Systems.Enemies.Wraith or Systems.Enemies.GoblinShaman ? Systems.ColorCodes.Cyan
+            : enemy is Systems.Enemies.Skeleton ? Systems.ColorCodes.Gray
+            : Systems.ColorCodes.BrightRed;
+
+        Console.WriteLine($"┌{boxBorder}┐");
+        foreach (var line in enemy.AsciiArt)
+        {
+            var colored = $"{artColor}{line}{Systems.ColorCodes.Reset}";
+            Console.WriteLine($"│ {PadRightVisible(colored, innerWidth)} │");
+        }
+        Console.WriteLine($"└{boxBorder}┘");
+    }
+
     private static string RenderBar(int current, int max, int width, string fillColor, string emptyColor = Systems.ColorCodes.Gray)
     {
         current = Math.Clamp(current, 0, max);

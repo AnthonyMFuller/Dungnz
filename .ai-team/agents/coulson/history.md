@@ -1377,3 +1377,11 @@ Detailed assessment written to `.ai-team/decisions/inbox/coulson-ascii-art-feasi
 - Adding graphical flavor to a console app doesn't require architectural change if the display layer is abstracted
 - Multi-line output, box-drawing, and color codes are sufficient for high-quality ASCII art
 - Console width constraints are real but manageable with simple fallback patterns
+
+**ASCII Art Feature Decomposition (2026-02-24):**
+- Decomposed ASCII art feature into 5 GitHub issues across 3 team members
+- Issue #314 (Hill): Add AsciiArt property to Enemy model and EnemyStats
+- Issue #317 (Hill): Add ShowEnemyArt method to IDisplayService and DisplayService
+- Issue #315 (Barton): Wire ShowEnemyArt into CombatEngine encounter start
+- Issue #318 (Barton): Add ASCII art content to all enemies in enemy-stats.json
+- Issue #316 (Romanoff): Write tests for ShowEnemyArt display and combat integration

@@ -36,6 +36,7 @@ public class Skeleton : Enemy
             Defense = stats.Defense;
             XPValue = stats.XPValue;
             LootTable = new LootTable(minGold: stats.MinGold, maxGold: stats.MaxGold);
+            AsciiArt = stats.AsciiArt;
         }
         else
         {
