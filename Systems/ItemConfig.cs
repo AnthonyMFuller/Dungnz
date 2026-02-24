@@ -124,6 +124,23 @@ public static class ItemConfig
     }
 
     /// <summary>
+    /// Returns all items from <paramref name="items"/> whose <see cref="ItemStats.Tier"/> matches
+    /// <paramref name="tier"/>, converted to runtime <see cref="Item"/> instances.
+    /// The Boss Key is always excluded so it cannot appear in random loot pools.
+    /// </summary>
+    /// <param name="items">The full item list returned by <see cref="Load"/>.</param>
+    /// <param name="tier">The tier to filter by.</param>
+    /// <returns>A read-only list of <see cref="Item"/> objects for the requested tier.</returns>
+    public static IReadOnlyList<Item> GetByTier(List<ItemStats> items, ItemTier tier)
+    {
+        return items
+            .Where(s => s.Tier.Equals(tier.ToString(), StringComparison.OrdinalIgnoreCase)
+                        && s.Name != "Boss Key")
+            .Select(CreateItem)
+            .ToList();
+    }
+
+    /// <summary>
     /// Constructs a runtime <see cref="Item"/> from a validated <see cref="ItemStats"/> record,
     /// parsing the type string into the corresponding <see cref="ItemType"/> enum value.
     /// </summary>
