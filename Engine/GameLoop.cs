@@ -262,6 +262,13 @@ public class GameLoop
         if (_narration.Chance(0.15))
             _display.ShowMessage(_narration.Pick(AmbientEvents.ForFloor(_currentFloor)));
 
+        // Show revisit flavor when returning to an already-explored room
+        if (_currentRoom.Visited)
+        {
+            _display.ShowMessage(_narration.Pick(RoomStateNarration.RevisitedRoom));
+            _currentRoom.State = RoomState.Revisited;
+        }
+
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
         _events?.RaiseRoomEntered(_player, _currentRoom, previousRoom);
@@ -328,6 +335,8 @@ public class GameLoop
                 var enemyName = _currentRoom.Enemy!.Name;
                 _currentRoom.Enemy = null;
                 _display.ShowMessage(_narration.Pick(_postCombatLines, enemyName));
+                _currentRoom.State = RoomState.Cleared;
+                _display.ShowMessage(_narration.Pick(RoomStateNarration.ClearedRoom));
             }
 
             if (result == CombatResult.Fled)
@@ -598,6 +607,8 @@ public class GameLoop
         }
 
         _currentFloor++;
+        foreach (var line in FloorTransitionNarration.GetSequence(_currentFloor))
+            _display.ShowMessage(line);
         _display.ShowMessage($"You descend deeper into the dungeon... Floor {_currentFloor}");
 
         float floorMult = 1.0f + (_currentFloor - 1) * 0.5f;
