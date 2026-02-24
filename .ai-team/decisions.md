@@ -11254,3 +11254,29 @@ Boss Key is excluded by name check in `ItemConfig.GetByTier()` rather than by a 
 - #315 — feat: Wire ShowEnemyArt into CombatEngine encounter start (Barton)
 - #318 — feat: Add ASCII art content to all enemies in enemy-stats.json (Barton)
 - #316 — test: Write tests for ShowEnemyArt display and combat integration (Romanoff)
+### 2026-02-24: Retrospective action items
+**By:** Coulson  
+**What:** Action items from retrospective ceremony  
+**Why:** Team alignment on process improvements going forward
+
+#### P0 (Critical process gaps)
+- **Fitz:** Add PR description linter workflow — validate PRs include `Closes #NNN` or `Fixes #NNN`. Fail with clear message if missing.
+- **Romanoff:** Establish issue-claiming protocol: agents must comment on GitHub issue before starting work and include `Closes #N` in PR. Gate PRs missing the reference.
+- **Fury:** Add `content: fury` labels to GitHub issues touching flavor text. Signals to humans and agents that work is claimed.
+
+#### P1 (High-value technical debt)
+- **Hill:** Spike — migrate `ItemConfig.cs` item definitions to JSON data file, loaded at startup. Template: `MerchantInventoryConfig.cs`.
+- **Hill / Barton:** Extract command handlers from `GameLoop.cs`. Commands (SELL, CRAFT, SHOP, USE SHRINE) deserve their own handler method or object, routed from the loop.
+- **Romanoff:** Extract command dispatch from `Program.cs` into a `CommandRouter` class with injected `IDisplayService`. Write router tests once class exists.
+- **Barton:** Spike a `MerchantSystem` class that encapsulates buy/sell/banter/inventory. Propose to Coulson before next merchant feature.
+- **Coulson / Barton / Fury:** Schedule sell-price economy review pass. Ensure sell values reinforce item tier perception.
+- **Fitz:** Unify `ci.yml` and `squad-ci.yml` — one canonical CI workflow for PRs. Keep coverage threshold and XML doc enforcement.
+- **Fitz:** Fix release versioning strategy — replace date-only tag with `v{date}-{short-sha}` to guarantee uniqueness per commit.
+- **Barton:** Green-light ASCII art implementation. Feasibility research complete, data layer path clear.
+
+#### P2 (Nice-to-have improvements)
+- **Fury:** Expand `AfterSale` and `NoSell` pools to 8–10 lines each. Mix in merchant-specific personality variants.
+- **Fury:** Draft a Narration Brief template for content-touching features (call sites, player states, tone notes).
+- **Fitz:** Add NuGet cache to all workflows — `actions/cache` step for `~/.nuget/packages`.
+- **Barton:** Add equip-protection warning to sell flow — warn player before confirming sell if item is equipped.
+- **Romanoff:** Add minimum pool-size assertions to narration tests: `pool.Count >= 3` for every banter/narration pool.
