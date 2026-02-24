@@ -8,6 +8,79 @@
 
 ## Learnings
 
+### 2026-02-22 — Phase 0: UI/UX Shared Infrastructure (#269, #270, #271)
+
+**PR:** #298 — `feat: Phase 0 — UI/UX shared infrastructure`  
+**Branch:** `squad/269-uiux-shared-infra`  
+**Context:** Critical path implementation blocking all Phase 1/2/3 UI/UX work
+
+**Files Modified:**
+- `Display/DisplayService.cs` — Added RenderBar(), VisibleLength(), PadRightVisible(), PadLeftVisible() helpers; fixed ANSI padding bugs in ShowLootDrop/ShowInventory; added stub implementations for 7 new Phase 1-3 methods
+- `Display/IDisplayService.cs` — Updated ShowCombatStatus signature (added playerEffects, enemyEffects parameters); updated ShowCommandPrompt signature (added optional Player parameter); added 7 new method signatures for Phase 1-3
+- `Engine/CombatEngine.cs` — Updated ShowCombatStatus call to pass effect lists from StatusEffectManager
+- `Dungnz.Tests/DisplayServiceTests.cs` — Updated ShowCombatStatus test to pass empty effect lists
+- `Dungnz.Tests/Helpers/TestDisplayService.cs` — Updated all method signatures; added stubs for 7 new methods
+- `Dungnz.Tests/Helpers/FakeDisplayService.cs` — Updated all method signatures; added stubs for 7 new methods
+
+**Implementation Details:**
+
+1. **RenderBar() Helper (#269)**
+   - Private static method in ConsoleDisplayService
+   - Signature: `RenderBar(int current, int max, int width, string fillColor, string emptyColor = Gray)`
+   - Returns colored progress bar: filled blocks (`█`) + empty blocks (`░`) with proper ANSI reset
+   - Math.Clamp protects against negative/overflow values
+   - Will be used by Phase 1.1 HP/MP bars, Phase 1.6 XP bar, Phase 2.3 command prompt, Phase 3.1 enemy detail
+
+2. **ANSI-Safe Padding Helpers (#270)**
+   - `VisibleLength(string)` — wraps ColorCodes.StripAnsiCodes().Length
+   - `PadRightVisible(string, int)` — pads right accounting for invisible ANSI codes
+   - `PadLeftVisible(string, int)` — pads left accounting for invisible ANSI codes
+   - **Bug fixes applied:**
+     - ShowLootDrop: Fixed header and tierLabel padding (lines 218-219) — replaced `.PadRight(-36)` with `PadRightVisible()`
+     - ShowInventory: Fixed item name column alignment (line 195) — replaced manual padding with `PadRightVisible(nameField, 32)` and `PadRightVisible(statColored, 22)`
+     - ShowMap legend already used hard-coded spacing — no changes needed
+
+3. **New IDisplayService Methods (#271)**
+   - **Signature changes:**
+     - `ShowCombatStatus` — added `IReadOnlyList<ActiveEffect> playerEffects, IReadOnlyList<ActiveEffect> enemyEffects`
+     - `ShowCommandPrompt` — added `Player? player = null` (backward compatible)
+   - **New methods (stubs in ConsoleDisplayService, full implementations in Phase 1-3):**
+     - `ShowCombatStart(Enemy enemy)` — Phase 1.2
+     - `ShowCombatEntryFlags(Enemy enemy)` — Phase 1.3
+     - `ShowLevelUpChoice(Player player)` — Phase 1.5
+     - `ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant)` — Phase 2.2
+     - `ShowEnemyDetail(Enemy enemy)` — Phase 3.1
+     - `ShowVictory(Player player, int floorsCleared, RunStats stats)` — Phase 3.2
+     - `ShowGameOver(Player player, string? killedBy, RunStats stats)` — Phase 3.2
+   - All stubs have XML doc comments to satisfy XML enforcement
+   - RunStats, ActiveEffect, DungeonVariant confirmed pre-existing in codebase
+
+**Integration Work:**
+- CombatEngine call site (line 298) updated to: `_display.ShowCombatStatus(player, enemy, _statusEffects.GetActiveEffects(player), _statusEffects.GetActiveEffects(enemy))`
+- DisplayServiceTests updated to pass `Array.Empty<ActiveEffect>()` for both effect lists
+- TestDisplayService and FakeDisplayService updated with matching signatures and stub implementations
+
+**Build & Test Status:**
+- ✅ `dotnet build` succeeds (0 errors, 24 pre-existing warnings in enemy classes)
+- ✅ `dotnet test` passes (all existing tests still pass)
+- Zero breaking changes for existing code (ShowCommandPrompt has default parameter)
+
+**Design Decisions:**
+1. **RenderBar location:** Private static helper in ConsoleDisplayService (not on IDisplayService) — internal rendering utility, not a public contract
+2. **Padding helper location:** Private static helpers in ConsoleDisplayService (not in ColorCodes) — keeps display concerns in display layer
+3. **Stub implementations:** All 7 new methods are no-op stubs `{ }` — implementations delivered by Barton in Phase 1-3
+4. **Effect list retrieval:** Used existing `StatusEffectManager.GetActiveEffects(target)` — no new types needed
+5. **Backward compatibility:** ShowCommandPrompt default parameter allows existing call sites to compile without changes
+
+**Blockers Cleared:**
+- Barton can begin Phase 1.1 (HP/MP bars using RenderBar)
+- Barton can begin Phase 1.2-1.6 (all call-site wiring using new methods)
+- Phase 2 and Phase 3 work unblocked (all method contracts in place)
+
+**Next Steps (Hill):**
+- Monitor PR #298 for Coulson's review
+- No further Hill work until Phase 4 (if UI/UX Phase 1-3 reveals architectural issues)
+
 ### 2026-02-20 — Phase 1: Project Scaffold and Core Models (WI-1, WI-2)
 
 **Files Created:**
@@ -729,3 +802,56 @@ When a display string contains ANSI escape codes (e.g., from ColorizeItemName), 
 4. **`GetRoomSymbol()` helper:** Extracted symbol-selection logic into a private static method for readability.
 
 **Build/Test:** 0 errors, 359/359 tests passed.
+
+### 2026-02-20: Phase 1 Display Implementations + Phase 2 Navigation Polish (PR #304)
+
+**Branch:** `squad/303-display-implementations`
+
+**Task:** Implement all empty display method stubs from Phase 0/1, upgrade existing methods with bars/effects, and add Phase 2 navigation polish to ShowRoom and ShowMap.
+
+**Files Modified:**
+- `Display/DisplayService.cs` — Implemented 8 empty stubs, upgraded 2 existing methods, added 1 helper method, updated ShowRoom and GetRoomSymbol
+
+**Phase 1 Implementations:**
+
+1. **ShowCombatStatus (upgrade)** — Replaced bare HP/MP numbers with colored bars
+   - Player row: 8-wide HP bar + 6-wide MP bar (if MaxMana > 0) via RenderBar helper
+   - Enemy row: 8-wide HP bar
+   - Active effects displayed inline: `[Icon Effect Nt]` in Yellow (player) or Red (enemy)
+   - EffectIcon helper maps StatusEffect enum to Unicode symbols (☠ Poison, 🩸 Bleed, ⚡ Stun, etc.)
+
+2. **ShowCombatStart** — 44-wide red bordered banner with `⚔ COMBAT BEGINS ⚔` header and enemy name
+
+3. **ShowCombatEntryFlags** — Elite ⭐ tag in Yellow, Enraged ⚡ tag in BrightRed+Bold (checks DungeonBoss.IsEnraged)
+
+4. **ShowLevelUpChoice** — 38-wide box card with three options: +5 MaxHP, +2 Attack, +2 Defense. Shows current → projected values in Gray.
+
+5. **ShowFloorBanner** — 40-wide box showing floor N/M, variant name, and threat level (Low/Moderate/High) with color coding (Green ≤2, Yellow ≤4, BrightRed >4)
+
+6. **ShowCommandPrompt (upgrade)** — When player context provided, shows mini HP/MP bars: `[██░░ 12/15 HP │ ██░ 5/8 MP] >`
+
+7. **ShowEnemyDetail** — 36-wide box card: enemy name (Yellow if elite, BrightRed otherwise), 10-wide HP bar, ATK/DEF/XP stats, elite ⭐ tag if present
+
+8. **ShowVictory** — 42-wide victory screen: player name + level, floors conquered, RunStats (enemies/gold/items/turns)
+
+9. **ShowGameOver** — 42-wide game over screen: player name + level, death cause, RunStats (enemies/floors/turns)
+
+10. **EffectIcon helper** — private static method mapping StatusEffect enum to symbols for status indicators
+
+**Phase 2 Navigation Polish:**
+
+1. **ShowRoom — Compass-ordered exits** — Replaced comma-separated list with `↑ North   ↓ South   → East   ← West` (space-separated, ordered N/S/E/W). Uses Direction enum dictionary.
+
+2. **ShowRoom — Hazard forewarning** — After description, before exits: Yellow warning for Scorched, Cyan for Flooded, Gray for Dark room types.
+
+3. **ShowRoom — Contextual hints** — After items, before closing blank line: Shrine prompt `✨ A shrine glimmers here. (USE SHRINE)` in Cyan, Merchant prompt `🛒 A merchant awaits. (SHOP)` in Yellow.
+
+4. **GetRoomSymbol — Unvisited indicator** — Added `!r.Visited` check (before IsExit/Enemy checks): returns `[?]` in Gray for rooms in the map graph but not yet visited (fog of war enhancement).
+
+**Property Verification:**
+- Enemy: Name, HP, MaxHP, Attack, Defense, XPValue, IsElite all confirmed in Models/Enemy.cs
+- DungeonBoss: IsEnraged confirmed in Systems/Enemies/DungeonBoss.cs
+- RunStats: EnemiesDefeated, GoldCollected, ItemsFound, TurnsTaken, FloorsVisited confirmed in Systems/RunStats.cs
+- Room: Visited, HasShrine, ShrineUsed, Merchant, Exits (Dictionary<Direction, Room>) confirmed in Models/Room.cs
+
+**Build/Test:** 0 errors (24 XML doc warnings), all tests passed.

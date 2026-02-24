@@ -48,10 +48,31 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine(room.Description);
         Console.WriteLine();
 
+        // Hazard forewarning
+        var hazardWarning = room.Type switch
+        {
+            RoomType.Scorched => $"{Systems.ColorCodes.Yellow}⚠ The scorched stone radiates heat — take care.{Systems.ColorCodes.Reset}",
+            RoomType.Flooded  => $"{Systems.ColorCodes.Cyan}⚠ The water here looks treacherous.{Systems.ColorCodes.Reset}",
+            RoomType.Dark     => $"{Systems.ColorCodes.Gray}⚠ Darkness presses in around you.{Systems.ColorCodes.Reset}",
+            _                 => null
+        };
+        if (hazardWarning != null)
+            Console.WriteLine(hazardWarning);
+
         if (room.Exits.Count > 0)
         {
-            Console.Write("Exits: ");
-            Console.WriteLine(string.Join(", ", room.Exits.Keys));
+            var exitSymbols = new Dictionary<Direction, string>
+            {
+                [Direction.North] = "↑ North",
+                [Direction.South] = "↓ South",
+                [Direction.East]  = "→ East",
+                [Direction.West]  = "← West"
+            };
+            var ordered = new[] { Direction.North, Direction.South, Direction.East, Direction.West }
+                .Where(d => room.Exits.ContainsKey(d))
+                .Select(d => exitSymbols[d])
+                .ToList();
+            Console.WriteLine($"Exits: {string.Join("   ", ordered)}");
         }
 
         if (room.Enemy != null)
@@ -70,6 +91,12 @@ public class ConsoleDisplayService : IDisplayService
             }
         }
 
+        // Contextual hints
+        if (room.HasShrine)
+            Console.WriteLine($"{Systems.ColorCodes.Cyan}✨ A shrine glimmers here. (USE SHRINE){Systems.ColorCodes.Reset}");
+        if (room.Merchant != null)
+            Console.WriteLine($"{Systems.ColorCodes.Yellow}🛒 A merchant awaits. (SHOP){Systems.ColorCodes.Reset}");
+
         Console.WriteLine();
     }
 
@@ -87,23 +114,40 @@ public class ConsoleDisplayService : IDisplayService
     /// </summary>
     /// <param name="player">The player whose HP is shown on the left side.</param>
     /// <param name="enemy">The enemy whose HP is shown on the right side.</param>
-    public void ShowCombatStatus(Player player, Enemy enemy)
+    public void ShowCombatStatus(Player player, Enemy enemy, 
+        IReadOnlyList<ActiveEffect> playerEffects, 
+        IReadOnlyList<ActiveEffect> enemyEffects)
     {
         Console.WriteLine();
         
-        var playerHpColor = Systems.ColorCodes.HealthColor(player.HP, player.MaxHP);
-        var enemyHpColor = Systems.ColorCodes.HealthColor(enemy.HP, enemy.MaxHP);
-        
-        Console.Write($"[You: {playerHpColor}{player.HP}/{player.MaxHP}{Systems.ColorCodes.Reset} HP");
-        
-        // Add mana display if player has mana
+        // Player row
+        var hpBar = RenderBar(player.HP, player.MaxHP, 8, Systems.ColorCodes.HealthColor(player.HP, player.MaxHP));
+        Console.Write($"You: {hpBar} {Systems.ColorCodes.HealthColor(player.HP, player.MaxHP)}{player.HP}/{player.MaxHP}{Systems.ColorCodes.Reset} HP");
         if (player.MaxMana > 0)
         {
-            var manaColor = Systems.ColorCodes.ManaColor(player.Mana, player.MaxMana);
-            Console.Write($" │ {manaColor}{player.Mana}/{player.MaxMana}{Systems.ColorCodes.Reset} MP");
+            var mpBar = RenderBar(player.Mana, player.MaxMana, 6, Systems.ColorCodes.ManaColor(player.Mana, player.MaxMana));
+            Console.Write($"  {mpBar} {Systems.ColorCodes.ManaColor(player.Mana, player.MaxMana)}{player.Mana}/{player.MaxMana}{Systems.ColorCodes.Reset} MP");
         }
+        // Active player effects
+        if (playerEffects.Count > 0)
+        {
+            Console.Write("  ");
+            foreach (var e in playerEffects)
+                Console.Write($"{Systems.ColorCodes.Yellow}[{EffectIcon(e.Effect)} {e.Effect} {e.RemainingTurns}t]{Systems.ColorCodes.Reset} ");
+        }
+        Console.WriteLine();
         
-        Console.WriteLine($"] vs [{enemy.Name}: {enemyHpColor}{enemy.HP}/{enemy.MaxHP}{Systems.ColorCodes.Reset} HP]");
+        // Enemy row
+        var enemyHpBar = RenderBar(enemy.HP, enemy.MaxHP, 8, Systems.ColorCodes.HealthColor(enemy.HP, enemy.MaxHP));
+        Console.Write($"{enemy.Name}: {enemyHpBar} {Systems.ColorCodes.HealthColor(enemy.HP, enemy.MaxHP)}{enemy.HP}/{enemy.MaxHP}{Systems.ColorCodes.Reset} HP");
+        // Active enemy effects
+        if (enemyEffects.Count > 0)
+        {
+            Console.Write("  ");
+            foreach (var e in enemyEffects)
+                Console.Write($"{Systems.ColorCodes.Red}[{EffectIcon(e.Effect)} {e.Effect} {e.RemainingTurns}t]{Systems.ColorCodes.Reset} ");
+        }
+        Console.WriteLine();
         Console.WriteLine();
     }
 
@@ -186,13 +230,10 @@ public class ConsoleDisplayService : IDisplayService
                     : string.Empty;
                 var countTag    = count > 1 ? $" ×{count}" : string.Empty;
                 var statLabel   = PrimaryStatLabel(item);
-                var nameField   = $"{icon} {ColorizeItemName(item)}{equippedTag}{countTag}";
-                var namePlain   = $"  {icon} {TruncateName(item.Name)}{(isEquipped ? " [E]" : "")}{countTag}";
-                int namePad     = Math.Max(0, 30 - namePlain.Length);
+                var nameField   = $"  {icon} {ColorizeItemName(item)}{equippedTag}{countTag}";
                 var statColored = $"{Systems.ColorCodes.Cyan}{statLabel}{Systems.ColorCodes.Reset}";
-                int statPad     = Math.Max(0, 20 - statLabel.Length);
                 var wtEach      = count > 1 ? $"[{item.Weight} wt each]" : $"[{item.Weight} wt]";
-                Console.WriteLine($"  {nameField}{new string(' ', namePad)}{statColored}{new string(' ', statPad)}{Systems.ColorCodes.Gray}{wtEach}{Systems.ColorCodes.Reset}");
+                Console.WriteLine($"{PadRightVisible(nameField, 32)}{PadRightVisible(statColored, 22)}{Systems.ColorCodes.Gray}{wtEach}{Systems.ColorCodes.Reset}");
             }
         }
         
@@ -215,8 +256,8 @@ public class ConsoleDisplayService : IDisplayService
             _                 => "[Common]"
         };
         Console.WriteLine("╔══════════════════════════════════════╗");
-        Console.WriteLine($"║  {header,-36}║");
-        Console.WriteLine($"║  {tierLabel,-36}║");
+        Console.WriteLine($"║  {PadRightVisible(header, 36)}║");
+        Console.WriteLine($"║  {PadRightVisible(tierLabel, 36)}║");
         Console.WriteLine($"║  {icon} {ColorizeItemName(item)}{namePad}║");
 
         // Build stat line with optional "new best" indicator
@@ -226,6 +267,26 @@ public class ConsoleDisplayService : IDisplayService
             int delta = item.AttackBonus - player.EquippedWeapon.AttackBonus;
             if (delta > 0)
                 statLine += $"  {Systems.ColorCodes.Green}(+{delta} vs equipped!){Systems.ColorCodes.Reset}";
+        }
+        else if (item.DefenseBonus > 0 && player.EquippedArmor != null)
+        {
+            int delta = item.DefenseBonus - player.EquippedArmor.DefenseBonus;
+            if (delta > 0)
+                statLine += $"  {Systems.ColorCodes.Green}(+{delta} vs equipped!){Systems.ColorCodes.Reset}";
+        }
+        else if (item.Type == ItemType.Accessory && player.EquippedAccessory != null)
+        {
+            // Compare all relevant stats for accessories
+            var deltas = new List<string>();
+            if (item.StatModifier > player.EquippedAccessory.StatModifier)
+                deltas.Add($"+{item.StatModifier - player.EquippedAccessory.StatModifier} HP");
+            if (item.AttackBonus > player.EquippedAccessory.AttackBonus)
+                deltas.Add($"+{item.AttackBonus - player.EquippedAccessory.AttackBonus} ATK");
+            if (item.DefenseBonus > player.EquippedAccessory.DefenseBonus)
+                deltas.Add($"+{item.DefenseBonus - player.EquippedAccessory.DefenseBonus} DEF");
+            
+            if (deltas.Count > 0)
+                statLine += $"  {Systems.ColorCodes.Green}({string.Join(", ", deltas)} vs equipped!){Systems.ColorCodes.Reset}";
         }
         Console.WriteLine($"║  {Systems.ColorCodes.Cyan}{statLine,-36}{Systems.ColorCodes.Reset}• {item.Weight} wt  ║");
         Console.WriteLine("╚══════════════════════════════════════╝");
@@ -508,9 +569,26 @@ public class ConsoleDisplayService : IDisplayService
     /// Writes the standard "&gt; " input prompt without a trailing newline, signalling
     /// to the player that they should type an exploration command.
     /// </summary>
-    public void ShowCommandPrompt()
+    public void ShowCommandPrompt(Player? player = null)
     {
-        Console.Write("> ");
+        if (player == null)
+        {
+            Console.Write("> ");
+            return;
+        }
+        
+        var hpBar = RenderBar(player.HP, player.MaxHP, 6, Systems.ColorCodes.HealthColor(player.HP, player.MaxHP));
+        var hpText = $"{player.HP}/{player.MaxHP}";
+        
+        Console.Write($"[{hpBar} {Systems.ColorCodes.HealthColor(player.HP, player.MaxHP)}{hpText}{Systems.ColorCodes.Reset} HP");
+        
+        if (player.MaxMana > 0)
+        {
+            var mpBar = RenderBar(player.Mana, player.MaxMana, 4, Systems.ColorCodes.ManaColor(player.Mana, player.MaxMana));
+            Console.Write($" │ {mpBar} {Systems.ColorCodes.ManaColor(player.Mana, player.MaxMana)}{player.Mana}/{player.MaxMana}{Systems.ColorCodes.Reset} MP");
+        }
+        
+        Console.Write($"] {Systems.ColorCodes.Gray}>{Systems.ColorCodes.Reset} ");
     }
 
     /// <summary>
@@ -650,6 +728,7 @@ public class ConsoleDisplayService : IDisplayService
     private static string GetRoomSymbol(Room r, Room currentRoom)
     {
         if (r == currentRoom)                              return "[*]";
+        if (!r.Visited)                                    return $"{Systems.ColorCodes.Gray}[?]{Systems.ColorCodes.Reset}";
         if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0) return "[B]";
         if (r.IsExit)                                      return "[E]";
         if (r.Enemy != null && r.Enemy.HP > 0)             return "[!]";
@@ -976,4 +1055,161 @@ public class ConsoleDisplayService : IDisplayService
         var filled = Math.Clamp((int)Math.Round((double)value / max * width), 0, width);
         return new string('█', filled) + new string('░', width - filled);
     }
+
+    /// <summary>Stub implementation — displays combat start banner.</summary>
+    public void ShowCombatStart(Enemy enemy)
+    {
+        var line = new string('═', 44);
+        Console.WriteLine();
+        Console.WriteLine($"{Systems.ColorCodes.BrightRed}{line}{Systems.ColorCodes.Reset}");
+        var banner = "  ⚔  COMBAT BEGINS  ⚔";
+        var pad = new string(' ', Math.Max(0, 44 - banner.Length));
+        Console.WriteLine($"{Systems.ColorCodes.BrightRed}{Systems.ColorCodes.Bold}{banner}{pad}{Systems.ColorCodes.Reset}");
+        Console.WriteLine($"{Systems.ColorCodes.BrightRed}  {enemy.Name}{Systems.ColorCodes.Reset}");
+        Console.WriteLine($"{Systems.ColorCodes.BrightRed}{line}{Systems.ColorCodes.Reset}");
+        Console.WriteLine();
+    }
+    
+    /// <summary>Stub implementation — displays combat entry flags.</summary>
+    public void ShowCombatEntryFlags(Enemy enemy)
+    {
+        if (enemy.IsElite)
+            Console.WriteLine($"  {Systems.ColorCodes.Yellow}⭐ ELITE — enhanced stats and loot{Systems.ColorCodes.Reset}");
+        
+        if (enemy is Systems.Enemies.DungeonBoss boss && boss.IsEnraged)
+            Console.WriteLine($"  {Systems.ColorCodes.BrightRed}{Systems.ColorCodes.Bold}⚡ ENRAGED{Systems.ColorCodes.Reset}");
+    }
+    
+    /// <summary>Stub implementation — displays level-up choice menu.</summary>
+    public void ShowLevelUpChoice(Player player)
+    {
+        const int W = 38;
+        var border = new string('═', W);
+        Console.WriteLine();
+        Console.WriteLine($"╔{border}╗");
+        Console.WriteLine($"║  {Systems.ColorCodes.Bold}{Systems.ColorCodes.BrightWhite}★ LEVEL UP!{Systems.ColorCodes.Reset}{new string(' ', W - 12)}║");
+        Console.WriteLine($"╠{border}╣");
+        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}[1]{Systems.ColorCodes.Reset} +5 Max HP     {Systems.ColorCodes.Gray}({player.MaxHP} → {player.MaxHP + 5}){Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 26 - (player.MaxHP + 5).ToString().Length - player.MaxHP.ToString().Length))}║");
+        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}[2]{Systems.ColorCodes.Reset} +2 Attack     {Systems.ColorCodes.Gray}({player.Attack} → {player.Attack + 2}){Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 26 - (player.Attack + 2).ToString().Length - player.Attack.ToString().Length))}║");
+        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}[3]{Systems.ColorCodes.Reset} +2 Defense    {Systems.ColorCodes.Gray}({player.Defense} → {player.Defense + 2}){Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 26 - (player.Defense + 2).ToString().Length - player.Defense.ToString().Length))}║");
+        Console.WriteLine($"╚{border}╝");
+        Console.WriteLine();
+    }
+    
+    /// <summary>Stub implementation — displays floor banner.</summary>
+    public void ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant)
+    {
+        var threatColor = floor <= 2 ? Systems.ColorCodes.Green 
+                        : floor <= 4 ? Systems.ColorCodes.Yellow 
+                        : Systems.ColorCodes.BrightRed;
+        var threat = floor <= 2 ? "Low" : floor <= 4 ? "Moderate" : "High";
+        
+        const int W = 40;
+        var border = new string('═', W);
+        var floorLine = $"Floor {floor} of {maxFloor}";
+        var variantLine = variant.Name;
+        var threatLine = $"⚠ Danger: {threat}";
+        
+        Console.WriteLine();
+        Console.WriteLine($"╔{border}╗");
+        Console.WriteLine($"║  {threatColor}{floorLine.PadRight(W - 4)}{Systems.ColorCodes.Reset}  ║");
+        Console.WriteLine($"║  {Systems.ColorCodes.BrightWhite}{variantLine.PadRight(W - 4)}{Systems.ColorCodes.Reset}  ║");
+        Console.WriteLine($"║  {threatColor}{threatLine.PadRight(W - 4)}{Systems.ColorCodes.Reset}  ║");
+        Console.WriteLine($"╚{border}╝");
+        Console.WriteLine();
+    }
+    
+    /// <summary>Stub implementation — displays enemy detail card.</summary>
+    public void ShowEnemyDetail(Enemy enemy)
+    {
+        const int W = 36;
+        var border = new string('═', W);
+        var nameUpper = enemy.Name.ToUpperInvariant();
+        var nameColor = enemy.IsElite ? Systems.ColorCodes.Yellow : Systems.ColorCodes.BrightRed;
+        var hpBar = RenderBar(enemy.HP, enemy.MaxHP, 10, Systems.ColorCodes.HealthColor(enemy.HP, enemy.MaxHP));
+        var eliteTag = enemy.IsElite ? $" {Systems.ColorCodes.Yellow}⭐ ELITE{Systems.ColorCodes.Reset}" : "";
+        
+        Console.WriteLine($"╔{border}╗");
+        Console.WriteLine($"║  {nameColor}{nameUpper}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 4 - nameUpper.Length))}║");
+        Console.WriteLine($"╠{border}╣");
+        Console.WriteLine($"║  HP:      {hpBar} {enemy.HP}/{enemy.MaxHP}{new string(' ', Math.Max(0, W - 14 - enemy.HP.ToString().Length - enemy.MaxHP.ToString().Length))}║");
+        Console.WriteLine($"║  ATK:     {Systems.ColorCodes.BrightRed}{enemy.Attack}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 11 - enemy.Attack.ToString().Length))}║");
+        Console.WriteLine($"║  DEF:     {Systems.ColorCodes.Cyan}{enemy.Defense}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 11 - enemy.Defense.ToString().Length))}║");
+        Console.WriteLine($"║  XP:      {Systems.ColorCodes.Green}{enemy.XPValue}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 11 - enemy.XPValue.ToString().Length))}║");
+        if (!string.IsNullOrEmpty(eliteTag))
+            Console.WriteLine($"║  {eliteTag}{new string(' ', Math.Max(0, W - 12))}║");
+        Console.WriteLine($"╚{border}╝");
+    }
+    
+    /// <summary>Stub implementation — displays victory screen.</summary>
+    public void ShowVictory(Player player, int floorsCleared, Systems.RunStats stats)
+    {
+        const int W = 42;
+        var border = new string('═', W);
+        
+        Console.WriteLine();
+        Console.WriteLine($"╔{border}╗");
+        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}{Systems.ColorCodes.Bold}✦  V I C T O R Y  ✦{Systems.ColorCodes.Reset}{new string(' ', W - 22)}║");
+        Console.WriteLine($"╠{border}╣");
+        Console.WriteLine($"║  {player.Name}  •  Level {player.Level}{new string(' ', Math.Max(0, W - 4 - player.Name.Length - 10 - player.Level.ToString().Length))}║");
+        Console.WriteLine($"║  {floorsCleared} floor{(floorsCleared != 1 ? "s" : "")} conquered{new string(' ', Math.Max(0, W - 4 - 11 - floorsCleared.ToString().Length - (floorsCleared != 1 ? 1 : 0)))}║");
+        Console.WriteLine($"╠{border}╣");
+        Console.WriteLine($"║  Enemies slain:  {Systems.ColorCodes.BrightRed}{stats.EnemiesDefeated}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.EnemiesDefeated.ToString().Length))}║");
+        Console.WriteLine($"║  Gold earned:    {Systems.ColorCodes.Yellow}{stats.GoldCollected}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.GoldCollected.ToString().Length))}║");
+        Console.WriteLine($"║  Items found:    {Systems.ColorCodes.Cyan}{stats.ItemsFound}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.ItemsFound.ToString().Length))}║");
+        Console.WriteLine($"║  Turns taken:    {Systems.ColorCodes.Gray}{stats.TurnsTaken}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.TurnsTaken.ToString().Length))}║");
+        Console.WriteLine($"╚{border}╝");
+        Console.WriteLine();
+    }
+    
+    /// <summary>Stub implementation — displays game over screen.</summary>
+    public void ShowGameOver(Player player, string? killedBy, Systems.RunStats stats)
+    {
+        const int W = 42;
+        var border = new string('═', W);
+        var deathLine = killedBy != null ? $"Killed by: {killedBy}" : "Cause of death: unknown";
+        
+        Console.WriteLine();
+        Console.WriteLine($"╔{border}╗");
+        Console.WriteLine($"║  {Systems.ColorCodes.BrightRed}{Systems.ColorCodes.Bold}☠  G A M E  O V E R  ☠{Systems.ColorCodes.Reset}{new string(' ', W - 24)}║");
+        Console.WriteLine($"╠{border}╣");
+        Console.WriteLine($"║  {player.Name}  •  Level {player.Level}{new string(' ', Math.Max(0, W - 4 - player.Name.Length - 10 - player.Level.ToString().Length))}║");
+        Console.WriteLine($"║  {Systems.ColorCodes.Red}{deathLine}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 4 - deathLine.Length))}║");
+        Console.WriteLine($"╠{border}╣");
+        Console.WriteLine($"║  Enemies slain:  {Systems.ColorCodes.BrightRed}{stats.EnemiesDefeated}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.EnemiesDefeated.ToString().Length))}║");
+        Console.WriteLine($"║  Floors reached: {Systems.ColorCodes.Cyan}{stats.FloorsVisited}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.FloorsVisited.ToString().Length))}║");
+        Console.WriteLine($"║  Turns survived: {Systems.ColorCodes.Gray}{stats.TurnsTaken}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.TurnsTaken.ToString().Length))}║");
+        Console.WriteLine($"╚{border}╝");
+        Console.WriteLine();
+    }
+
+    private static string RenderBar(int current, int max, int width, string fillColor, string emptyColor = Systems.ColorCodes.Gray)
+    {
+        current = Math.Clamp(current, 0, max);
+        if (max <= 0) return emptyColor + new string('░', width) + Systems.ColorCodes.Reset;
+        int fillCount = (int)Math.Round((double)current / max * width);
+        fillCount = Math.Clamp(fillCount, 0, width);
+        return fillColor   + new string('█', fillCount)          + Systems.ColorCodes.Reset
+             + emptyColor  + new string('░', width - fillCount)  + Systems.ColorCodes.Reset;
+    }
+
+    private static string EffectIcon(StatusEffect effect) => effect switch
+    {
+        StatusEffect.Poison   => "☠",
+        StatusEffect.Bleed    => "🩸",
+        StatusEffect.Stun     => "⚡",
+        StatusEffect.Regen    => "✨",
+        StatusEffect.Fortified => "🛡",
+        StatusEffect.Weakened => "💀",
+        _                     => "●"
+    };
+
+    private static int VisibleLength(string s)
+        => Systems.ColorCodes.StripAnsiCodes(s).Length;
+
+    private static string PadRightVisible(string s, int totalWidth)
+        => s + new string(' ', Math.Max(0, totalWidth - VisibleLength(s)));
+
+    private static string PadLeftVisible(string s, int totalWidth)
+        => new string(' ', Math.Max(0, totalWidth - VisibleLength(s))) + s;
 }
