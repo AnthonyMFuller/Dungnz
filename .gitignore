@@ -1,3 +1,7 @@
 .ai-team-templates
 bin/
 obj/
+
+# Test result artifacts
+*.trx
+**/TestResults/
