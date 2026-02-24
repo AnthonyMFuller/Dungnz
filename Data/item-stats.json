@@ -259,6 +259,7 @@
             "Tier": "Rare",
             "Description": "A single ember-warm feather from an immortal bird. Channels the fire of rebirth into your wounds.",
             "Id": "phoenix-feather",
+            "MerchantExclusive": true,
             "Weight": 1,
             "MerchantExclusive": true
         },
@@ -273,6 +274,7 @@
             "Tier": "Rare",
             "Description": "Ancient runes burn away as you read them, flooding your body with raw arcane force.",
             "Id": "scroll-of-power",
+            "MerchantExclusive": true,
             "Weight": 1,
             "MerchantExclusive": true
         },
@@ -560,6 +562,7 @@
             "Tier": "Rare",
             "Description": "Thin plates of silvery mithril shaped to the body. Weighs almost nothing. Stops almost everything.",
             "Id": "mithril-plate",
+            "MerchantExclusive": true,
             "Weight": 8,
             "MerchantExclusive": true
         },
@@ -626,6 +629,7 @@
             "Tier": "Uncommon",
             "Description": "A silver pendant bearing an open eye. Wearing it sharpens your thoughts and deepens your arcane reserves.",
             "Id": "amulet-of-the-sage",
+            "MerchantExclusive": true,
             "Weight": 1,
             "MerchantExclusive": true
         },
@@ -640,6 +644,7 @@
             "Tier": "Uncommon",
             "Description": "Soft-soled boots stitched with speed glyphs. Your footsteps become nearly silent. Your reactions quicken.",
             "Id": "boots-of-swiftness",
+            "MerchantExclusive": true,
             "Weight": 2,
             "MerchantExclusive": true
         },
