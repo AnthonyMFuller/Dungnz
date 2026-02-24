@@ -141,6 +141,8 @@ public class InventoryManager
         {
             case ItemType.Consumable:
                 player.Heal(item.HealAmount);
+                if (item.ManaRestore > 0)
+                    player.RestoreMana(item.ManaRestore);
                 _display.ShowMessage($"You used {item.Name}. HP restored to {player.HP}/{player.MaxHP}.");
                 player.Inventory.Remove(item);
                 return UseResult.Used;
