@@ -1,18 +1,83 @@
 #!/bin/bash
-# Blocks direct pushes to master/main.
-# All changes must go through a feature branch and PR.
+# Pre-push hook with two checks:
+# 1. Blocks direct pushes to master/main
+# 2. Warns if code changes occur without README update
+#
 # This hook is committed to the repo — configure with:
 #   git config core.hooksPath scripts
+
+set -e
 
 protected_branch="master"
 
 while read local_ref local_sha remote_ref remote_sha; do
+    # Check 1: Block direct pushes to protected branch
     if [[ "$remote_ref" == "refs/heads/$protected_branch" ]]; then
         echo ""
         echo "  ✗ Direct push to '$protected_branch' is not allowed."
         echo "    Create a feature branch, open a PR, and have Coulson review it."
         echo "    Branch naming: squad/{issue-number}-{slug}"
         echo ""
+        exit 1
+    fi
+
+    # Check 2: Warn if code changed without README update
+    # Skip if deleting a branch
+    if [ "$local_sha" = "0000000000000000000000000000000000000000" ]; then
+        continue
+    fi
+
+    # Determine base ref for comparison
+    if [ "$remote_sha" = "0000000000000000000000000000000000000000" ]; then
+        # New branch — compare against origin/HEAD or main/master
+        if git rev-parse --verify origin/HEAD >/dev/null 2>&1; then
+            base_ref="origin/HEAD"
+        elif git rev-parse --verify origin/main >/dev/null 2>&1; then
+            base_ref="origin/main"
+        elif git rev-parse --verify origin/master >/dev/null 2>&1; then
+            base_ref="origin/master"
+        else
+            # No remote baseline — skip check
+            continue
+        fi
+    else
+        # Updating existing branch — compare against remote
+        base_ref="$remote_sha"
+    fi
+
+    # Get list of changed files
+    changed_files=$(git diff --name-only "$base_ref" "$local_sha" 2>/dev/null || echo "")
+
+    code_changed=false
+    readme_changed=false
+
+    while IFS= read -r file; do
+        case "$file" in
+            Engine/*|Systems/*|Models/*|Data/*|Program.cs)
+                code_changed=true
+                ;;
+            README.md)
+                readme_changed=true
+                ;;
+        esac
+    done <<< "$changed_files"
+
+    # If code changed but README did not, warn and block
+    if [ "$code_changed" = true ] && [ "$readme_changed" = false ]; then
+        echo "❌ Pre-push check failed!"
+        echo ""
+        echo "You're pushing changes to Engine/, Systems/, Models/, Data/, or Program.cs"
+        echo "without updating README.md."
+        echo ""
+        echo "Please review README.md and update any affected sections:"
+        echo "  - Commands and their usage"
+        echo "  - Enemy types and behaviors"
+        echo "  - Game systems and architecture"
+        echo "  - Any other relevant documentation"
+        echo ""
+        echo "If this change genuinely does not affect anything documented in README.md,"
+        echo "you can skip this hook with:"
+        echo "  git push --no-verify"
         exit 1
     fi
 done
