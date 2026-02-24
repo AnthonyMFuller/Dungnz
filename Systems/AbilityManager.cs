@@ -117,11 +117,18 @@ public class AbilityManager
     /// <summary>
     /// Registers the specified ability as being on cooldown for the given number of turns,
     /// preventing its use until <see cref="TickCooldowns"/> has been called that many times.
+    /// Applies cooldown reduction from the Relentless passive (reduces Flurry/Assassinate by 1).
     /// </summary>
     /// <param name="type">The ability type to put on cooldown.</param>
     /// <param name="turns">The number of turns before the ability becomes available again.</param>
-    public void PutOnCooldown(AbilityType type, int turns)
+    /// <param name="player">The player using the ability (optional, for cooldown reduction).</param>
+    public void PutOnCooldown(AbilityType type, int turns, Player? player = null)
     {
+        if (player != null)
+        {
+            var reduction = player.GetCooldownReduction(type);
+            turns = Math.Max(0, turns - reduction);
+        }
         _cooldowns[type] = turns;
     }
     
@@ -182,11 +189,18 @@ public class AbilityManager
         if (IsOnCooldown(type))
             return UseAbilityResult.OnCooldown;
         
-        if (player.Mana < ability.ManaCost)
+        // Calculate effective mana cost with Spell Weaver passive
+        int effectiveCost = ability.ManaCost;
+        if (player.Class == PlayerClass.Mage && ability.ClassRestriction == PlayerClass.Mage)
+        {
+            effectiveCost = Math.Max(1, (int)(ability.ManaCost * player.GetSpellCostMultiplier()));
+        }
+        
+        if (player.Mana < effectiveCost)
             return UseAbilityResult.InsufficientMana;
         
-        player.SpendMana(ability.ManaCost);
-        PutOnCooldown(type, ability.CooldownTurns);
+        player.SpendMana(effectiveCost);
+        PutOnCooldown(type, ability.CooldownTurns, player);
 
         if (_abilityFlavor.TryGetValue(type.ToString(), out var flavorText))
             display.ShowCombatMessage(flavorText);
@@ -235,27 +249,36 @@ public class AbilityManager
             
             case AbilityType.LastStand:
                 // TODO: Phase 3 — see Issue #362
+                // NOTE: Check player.GetLastStandThreshold() for Unbreakable passive (50% vs 40%)
                 break;
 
             // Mage abilities - TODO: Phase 3 implementation (Issue #362)
             case AbilityType.ArcaneBolt:
                 // TODO: Phase 3 — see Issue #362
+                // NOTE: Check player.GetSpellCostMultiplier() for Spell Weaver passive (10% cost reduction)
+                // NOTE: Check player.IsOverchargeActive() for Overcharge passive (+25% damage)
                 break;
             
             case AbilityType.FrostNova:
                 // TODO: Phase 3 — see Issue #362
+                // NOTE: Check player.GetSpellCostMultiplier() for Spell Weaver passive (10% cost reduction)
+                // NOTE: Check player.IsOverchargeActive() for Overcharge passive (+25% damage)
                 break;
             
             case AbilityType.ManaShield:
                 // TODO: Phase 3 — see Issue #362
+                // NOTE: Check player.GetSpellCostMultiplier() for Spell Weaver passive (10% cost reduction)
                 break;
             
             case AbilityType.ArcaneSacrifice:
                 // TODO: Phase 3 — see Issue #362
+                // NOTE: Check player.GetSpellCostMultiplier() for Spell Weaver passive (10% cost reduction)
                 break;
             
             case AbilityType.Meteor:
                 // TODO: Phase 3 — see Issue #362
+                // NOTE: Check player.GetSpellCostMultiplier() for Spell Weaver passive (10% cost reduction)
+                // NOTE: Check player.IsOverchargeActive() for Overcharge passive (+25% damage)
                 break;
 
             // Rogue abilities - TODO: Phase 3 implementation (Issue #362)
@@ -265,10 +288,12 @@ public class AbilityManager
             
             case AbilityType.Backstab:
                 // TODO: Phase 3 — see Issue #362
+                // NOTE: Use player.ShouldTriggerBackstabBonus(enemy, statusEffects.HasEffect) for Opportunist passive
                 break;
             
             case AbilityType.Evade:
                 // TODO: Phase 3 — see Issue #362
+                // NOTE: Use player.GetEvadeComboPointGrant() for Shadow Master passive (2 CP instead of 1)
                 break;
             
             case AbilityType.Flurry:

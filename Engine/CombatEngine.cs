@@ -270,6 +270,9 @@ public class CombatEngine : ICombatEngine
             if (enemy.HP <= 0) break;
 
             int manaRegen = player.Skills.IsUnlocked(Skill.ManaFlow) ? 15 : 10;
+            // Ley Conduit passive — +5 mana regeneration/turn
+            if (player.Skills.IsUnlocked(Skill.LeyConduit))
+                manaRegen += 5;
             player.RestoreMana(manaRegen);
             _abilities.TickCooldowns();
 
@@ -506,6 +509,17 @@ public class CombatEngine : ICombatEngine
             // Bug #86: PowerStrike skill passive â +15% damage
             if (player.Skills.IsUnlocked(Skill.PowerStrike))
                 playerDmg = Math.Max(1, (int)(playerDmg * 1.15));
+            // Berserker's Edge passive: +10% damage per 25% HP missing
+            if (player.Skills.IsUnlocked(Skill.BerserkersEdge))
+            {
+                var hpPercent = (float)player.HP / player.MaxHP;
+                var multiplier = 1.0f;
+                if (hpPercent <= 0.25f) multiplier = 1.40f;      // 75% missing = +40%
+                else if (hpPercent <= 0.50f) multiplier = 1.30f; // 50% missing = +30%
+                else if (hpPercent <= 0.75f) multiplier = 1.20f; // 25% missing = +20%
+                else multiplier = 1.10f;                         // <25% missing = +10%
+                playerDmg = Math.Max(1, (int)(playerDmg * multiplier));
+            }
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
             var hitPool = player.Class switch {
@@ -638,9 +652,15 @@ public class CombatEngine : ICombatEngine
             // BattleHardened skill passive — 5% damage reduction (matches skill description)
             if (player.Skills.IsUnlocked(Skill.BattleHardened))
                 enemyDmg = Math.Max(1, (int)(enemyDmg * 0.95f));
+            // Iron Constitution passive — 5% damage reduction
+            if (player.Skills.IsUnlocked(Skill.IronConstitution))
+                enemyDmg = Math.Max(1, (int)(enemyDmg * 0.95f));
             player.TakeDamage(enemyDmg);
             _stats.DamageTaken += enemyDmg;
             _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmg), enemyDmg));
+
+            // TODO: Phase 4 — Check player.ShouldTriggerUndyingWill() and apply Regen status if needed
+            // Requires tracking "once per combat" flag for UndyingWill passive
 
             string? statusApplied = null;
 
@@ -772,6 +792,9 @@ public class CombatEngine : ICombatEngine
                           + player.ClassDodgeBonus;
         // Bug #86: Swiftness skill passive — +5% dodge chance
         if (player.Skills.IsUnlocked(Skill.Swiftness))
+            dodgeChance += 0.05f;
+        // Quick Reflexes passive — +5% dodge chance
+        if (player.Skills.IsUnlocked(Skill.QuickReflexes))
             dodgeChance += 0.05f;
         dodgeChance = Math.Min(dodgeChance, 0.95f);
         return _rng.NextDouble() < dodgeChance;

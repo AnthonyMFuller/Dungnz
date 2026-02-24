@@ -14,6 +14,36 @@ public enum Skill
     ManaFlow,       // +10 max mana + mana regen +5/turn
     /// <summary>Reduces all incoming damage by 5%.</summary>
     BattleHardened, // Take 5% less damage
+
+    // Warrior passives
+    /// <summary>Warrior passive: +15 MaxHP, +5% damage reduction.</summary>
+    IronConstitution,
+    /// <summary>Warrior passive: When HP drops below 25%, gain Regen for 2 turns (once per combat).</summary>
+    UndyingWill,
+    /// <summary>Warrior passive: +10% damage per 25% HP missing (stacks, max +40%).</summary>
+    BerserkersEdge,
+    /// <summary>Warrior passive: Last Stand ability can be activated at ≤50% HP instead of 40%.</summary>
+    Unbreakable,
+
+    // Mage passives
+    /// <summary>Mage passive: +20 MaxMana.</summary>
+    ArcaneReservoir,
+    /// <summary>Mage passive: All spells cost 10% less mana (rounded down, min 1).</summary>
+    SpellWeaver,
+    /// <summary>Mage passive: Mana regen per turn +5.</summary>
+    LeyConduit,
+    /// <summary>Mage passive: When mana > 80% max, spell damage +25%.</summary>
+    Overcharge,
+
+    // Rogue passives
+    /// <summary>Rogue passive: +5% dodge chance.</summary>
+    QuickReflexes,
+    /// <summary>Rogue passive: Backstab conditional bonus also triggers on Poison (not just Slow/Stun/Bleed).</summary>
+    Opportunist,
+    /// <summary>Rogue passive: Flurry and Assassinate cooldowns reduced by 1.</summary>
+    Relentless,
+    /// <summary>Rogue passive: Evade grants 2 Combo Points instead of 1.</summary>
+    ShadowMaster,
 }
 
 /// <summary>
@@ -40,7 +70,8 @@ public class SkillTree
 
     /// <summary>
     /// Attempts to unlock the specified skill for the player. Fails if the skill is already
-    /// unlocked or the player has not yet reached the required level.
+    /// unlocked or the player has not yet reached the required level, or if the skill has
+    /// a class restriction that doesn't match the player's class.
     /// </summary>
     /// <param name="player">The player attempting to unlock the skill.</param>
     /// <param name="skill">The skill to unlock.</param>
@@ -48,18 +79,51 @@ public class SkillTree
     public bool TryUnlock(Player player, Skill skill)
     {
         if (_unlocked.Contains(skill)) return false;
-        var minLevel = skill switch {
-            Skill.PowerStrike => 3,
-            Skill.IronSkin => 3,
-            Skill.Swiftness => 5,
-            Skill.ManaFlow => 4,
-            Skill.BattleHardened => 6,
-            _ => 1
-        };
+        
+        var (minLevel, classRestriction) = GetSkillRequirements(skill);
+        
         if (player.Level < minLevel) return false;
+        if (classRestriction != null && classRestriction != player.Class) return false;
+        
         _unlocked.Add(skill);
         ApplySkillBonus(player, skill);
         return true;
+    }
+
+    /// <summary>
+    /// Returns the minimum level and class restriction for a given skill.
+    /// </summary>
+    private static (int minLevel, PlayerClass? classRestriction) GetSkillRequirements(Skill skill)
+    {
+        return skill switch
+        {
+            // Universal skills (no class restriction)
+            Skill.PowerStrike => (3, null),
+            Skill.IronSkin => (3, null),
+            Skill.Swiftness => (5, null),
+            Skill.ManaFlow => (4, null),
+            Skill.BattleHardened => (6, null),
+
+            // Warrior passives
+            Skill.IronConstitution => (3, PlayerClass.Warrior),
+            Skill.UndyingWill => (5, PlayerClass.Warrior),
+            Skill.BerserkersEdge => (6, PlayerClass.Warrior),
+            Skill.Unbreakable => (8, PlayerClass.Warrior),
+
+            // Mage passives
+            Skill.ArcaneReservoir => (3, PlayerClass.Mage),
+            Skill.SpellWeaver => (4, PlayerClass.Mage),
+            Skill.LeyConduit => (6, PlayerClass.Mage),
+            Skill.Overcharge => (8, PlayerClass.Mage),
+
+            // Rogue passives
+            Skill.QuickReflexes => (3, PlayerClass.Rogue),
+            Skill.Opportunist => (4, PlayerClass.Rogue),
+            Skill.Relentless => (6, PlayerClass.Rogue),
+            Skill.ShadowMaster => (8, PlayerClass.Rogue),
+
+            _ => (1, null)
+        };
     }
 
     private void ApplySkillBonus(Player player, Skill skill)
@@ -73,8 +137,14 @@ public class SkillTree
                 player.MaxMana += 10;
                 player.Mana = Math.Min(player.Mana + 10, player.MaxMana);
                 break;
+            case Skill.IronConstitution:
+                player.FortifyMaxHP(15);
+                break;
+            case Skill.ArcaneReservoir:
+                player.FortifyMaxMana(20);
+                break;
         }
-        // PowerStrike, Swiftness, BattleHardened are passive — applied in combat
+        // PowerStrike, Swiftness, BattleHardened, and class-specific combat passives are applied in combat
     }
 
     /// <summary>
@@ -88,6 +158,41 @@ public class SkillTree
         Skill.Swiftness => "+5% dodge chance",
         Skill.ManaFlow => "+10 max mana, +5 mana/turn",
         Skill.BattleHardened => "Take 5% less damage",
+
+        // Warrior passives
+        Skill.IronConstitution => "+15 MaxHP, +5% damage reduction",
+        Skill.UndyingWill => "When HP < 25%, gain Regen for 2 turns",
+        Skill.BerserkersEdge => "+10% damage per 25% HP missing",
+        Skill.Unbreakable => "Last Stand activates at ≤50% HP",
+
+        // Mage passives
+        Skill.ArcaneReservoir => "+20 MaxMana",
+        Skill.SpellWeaver => "Spells cost 10% less mana",
+        Skill.LeyConduit => "+5 mana regeneration/turn",
+        Skill.Overcharge => "+25% spell damage when mana > 80%",
+
+        // Rogue passives
+        Skill.QuickReflexes => "+5% dodge chance",
+        Skill.Opportunist => "Backstab bonus on Poisoned enemies",
+        Skill.Relentless => "Flurry/Assassinate cooldowns -1",
+        Skill.ShadowMaster => "Evade grants 2 Combo Points",
+
         _ => ""
     };
+
+    /// <summary>
+    /// Returns a list of all skills available to the specified player class at the given level.
+    /// Includes universal skills and class-specific skills.
+    /// </summary>
+    public static List<Skill> GetAvailableSkills(Player player)
+    {
+        var allSkills = Enum.GetValues<Skill>();
+        return allSkills
+            .Where(s => {
+                var (minLevel, classRestriction) = GetSkillRequirements(s);
+                return player.Level >= minLevel && 
+                       (classRestriction == null || classRestriction == player.Class);
+            })
+            .ToList();
+    }
 }
