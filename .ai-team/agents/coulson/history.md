@@ -1451,3 +1451,77 @@ Detailed assessment written to `.ai-team/decisions/inbox/coulson-ascii-art-feasi
 - Issue assignments clarify which agent is responsible for what aspect of each feature
 
 ---
+
+---
+
+## 2026-02-24: Retrospective Ceremony
+
+**Context:** Facilitated team retrospective after sell-item feature (PR #357) and Phase 1-4 delivery. Gathered input from all five agents (Hill, Barton, Romanoff, Fury, Fitz) in parallel.
+
+**Key Patterns Observed:**
+
+**Architecture delivers when respected:**
+- Separation of concerns (display/logic/data) held under sell feature load
+- IDisplayService contract discipline prevented test-breaking surprises
+- Data-driven design (SellPrice as JSON field) eliminated hardcoded values
+- NarrationService scaled with zero structural changes
+- Test-first culture is internalizing across Hill and Barton
+
+**Process gaps exposed:**
+- Duplicate PR (#356/#355) was entirely preventable: missing `Closes #N` in PR description left issue orphaned
+- No issue-claiming protocol before work starts — agents and Copilot coding agent both legitimately grabbed unclaimed work
+- No content owner labels on GitHub issues — ambiguous ownership created collision window
+- No PR description linter to enforce issue linkage
+
+**Technical debt accumulating:**
+- `GameLoop.cs` becoming command handler dumping ground (HandleSell, HandleCraft, HandleCombat all inline)
+- Command dispatch in `Program.cs` untestable — top-level script code with no test coverage
+- `ItemConfig.cs` won't scale: 53 items inline, every attribute change touches all 53 entries
+- SellPrice has no documented formula — values are judgment calls, future drift guaranteed
+- CI workflows (`ci.yml` vs `squad-ci.yml`) overlap inconsistently — same codebase, different signals
+
+**Content/UX gaps:**
+- Sell narration pools thin relative to importance (5 lines vs buy's deeper pool)
+- No content brief reached Fury early — reactive rather than proactive
+- No warning when selling equipped items
+- Sell prices arbitrary — no economy pass to ensure tier perception
+
+**Process Improvements Identified:**
+
+1. **P0 — Critical process discipline:**
+   - Fitz: Add PR description linter (enforce `Closes #N`)
+   - Romanoff: Gate PRs missing issue reference
+   - Fury: Add `content: fury` labels to issues
+
+2. **P1 — High-value refactors:**
+   - Hill: Migrate ItemConfig to JSON (template: MerchantInventoryConfig)
+   - Hill/Barton: Extract command handlers from GameLoop
+   - Romanoff: Extract command dispatch from Program.cs into CommandRouter
+   - Barton: Spike MerchantSystem class
+   - Fitz: Unify CI workflows, fix release versioning
+   - Barton: Green-light ASCII art (feasibility complete)
+   - Coulson/Barton/Fury: Sell-price economy review
+
+3. **P2 — Nice-to-haves:**
+   - Fury: Expand sell narration pools, draft Narration Brief template
+   - Fitz: Add NuGet caching
+   - Barton: Equip-protection warning on sell
+   - Romanoff: Pool-size assertions in tests
+
+**Leadership Observations:**
+- All five agents independently surfaced the duplicate-PR incident as top pain point — unanimous signal
+- Process failure, not code failure — discipline gaps cost real time
+- Strong team consensus on GameLoop/CommandRouter refactor — architectural smell now widely recognized
+- CI inconsistency (ci.yml vs squad-ci.yml) is confusing team — Fitz owns the fix
+- Test-first culture working: 442/442 green at merge, 11 tests shipped with feature
+- Narration system architecture validated: zero structural changes to add sell flavor
+
+**Next Actions:**
+- P0 items are merge-blockers going forward
+- CommandRouter refactor gates next command feature (CRAFT, HAGGLE, etc)
+- ASCII art approved — Barton may proceed
+- Schedule sell-price economy review session
+
+**Files:**
+- Ceremony summary: `.ai-team/log/2026-02-24-retrospective-ceremony.md`
+- Action items: `.ai-team/decisions/inbox/coulson-retro-action-items.md`
