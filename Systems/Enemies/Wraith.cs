@@ -46,5 +46,23 @@ public class Wraith : Enemy
             XPValue = 35;
             LootTable = new LootTable(minGold: 8, maxGold: 20);
         }
+
+        if (itemConfig != null)
+        {
+            var shadowEssence = itemConfig.FirstOrDefault(i => i.Name == "Shadow Essence");
+            if (shadowEssence != null)
+                LootTable.AddDrop(ItemConfig.CreateItem(shadowEssence), 0.20);
+        }
+        else
+        {
+            LootTable.AddDrop(new Item
+            {
+                Name = "Shadow Essence",
+                Type = ItemType.Consumable,
+                HealAmount = 20,
+                Description = "Distilled shadow. Restores health when consumed — somehow.",
+                Tier = ItemTier.Rare
+            }, 0.20);
+        }
     }
 }

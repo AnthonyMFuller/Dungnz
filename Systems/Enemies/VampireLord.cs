@@ -46,5 +46,23 @@ public class VampireLord : Enemy
             XPValue = 60;
             LootTable = new LootTable(minGold: 15, maxGold: 30);
         }
+
+        if (itemConfig != null)
+        {
+            var bloodVial = itemConfig.FirstOrDefault(i => i.Name == "Blood Vial");
+            if (bloodVial != null)
+                LootTable.AddDrop(ItemConfig.CreateItem(bloodVial), 0.45);
+        }
+        else
+        {
+            LootTable.AddDrop(new Item
+            {
+                Name = "Blood Vial",
+                Type = ItemType.Consumable,
+                HealAmount = 30,
+                Description = "Vampire's blood. Bitter, warm. Works.",
+                Tier = ItemTier.Rare
+            }, 0.45);
+        }
     }
 }

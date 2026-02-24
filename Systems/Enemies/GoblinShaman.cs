@@ -46,5 +46,23 @@ public class GoblinShaman : Enemy
             XPValue = 25;
             LootTable = new LootTable(minGold: 5, maxGold: 15);
         }
+
+        if (itemConfig != null)
+        {
+            var antidote = itemConfig.FirstOrDefault(i => i.Name == "Antidote");
+            if (antidote != null)
+                LootTable.AddDrop(ItemConfig.CreateItem(antidote), 0.4);
+        }
+        else
+        {
+            LootTable.AddDrop(new Item
+            {
+                Name = "Antidote",
+                Type = ItemType.Consumable,
+                HealAmount = 8,
+                Description = "A bitter green liquid that neutralises toxins.",
+                Tier = ItemTier.Common
+            }, 0.4);
+        }
     }
 }

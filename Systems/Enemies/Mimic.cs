@@ -46,5 +46,28 @@ public class Mimic : Enemy
             XPValue = 40;
             LootTable = new LootTable(minGold: 10, maxGold: 25);
         }
+
+        // Mimic always drops a Rare item — it is the reward for surviving the ambush
+        if (itemConfig != null)
+        {
+            var rareItems = itemConfig.Where(i => i.Tier.Equals("Rare", StringComparison.OrdinalIgnoreCase)
+                                                  && i.Name != "Boss Key").ToList();
+            if (rareItems.Count > 0)
+            {
+                var pick = rareItems[new Random().Next(rareItems.Count)];
+                LootTable.AddDrop(ItemConfig.CreateItem(pick), 1.0);
+            }
+        }
+        else
+        {
+            LootTable.AddDrop(new Item
+            {
+                Name = "Phoenix Feather",
+                Type = ItemType.Consumable,
+                HealAmount = 60,
+                Description = "Channels the fire of rebirth into your wounds.",
+                Tier = ItemTier.Rare
+            }, 1.0);
+        }
     }
 }
