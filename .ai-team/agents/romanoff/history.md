@@ -527,3 +527,26 @@
 - Boundary test important: the `>0.8` vs `>=0.8` distinction at exactly-80% is a common off-by-one risk; documented both sides in tests
 - `EquippedWeapon` can be set directly (`player.EquippedWeapon = equippedSword`) without going through `Equip()` — valid for unit tests
 - All 17 tests pass against existing production code with no mocking needed
+
+---
+
+## Issue #316 — ShowEnemyArt Display and Combat Integration Tests
+
+**Branch:** `squad/316-ascii-art-tests`  
+**PR:** #321  
+**File:** `Dungnz.Tests/Display/ShowEnemyArtTests.cs`
+
+### Tests written (4 total)
+
+1. **`ShowEnemyArt_EmptyAsciiArt_DoesNotAddEntryToAllOutput`** — `AsciiArt = []` → no `"enemy_art:"` entry in `AllOutput`
+2. **`ShowEnemyArt_WithAsciiArt_AddsJoinedEntryToAllOutput`** — `AsciiArt = ["line1", "line2"]` → `"enemy_art:line1|line2"` in `AllOutput`
+3. **`AllEnemyArtLines_AreAtMost34CharactersLong`** — loads `Data/enemy-stats.json` via `EnemyConfig.Load`, checks every art line ≤ 34 chars across all 23 enemies
+4. **`CombatEngine_RunCombat_CallsShowEnemyArt`** — integration test: `RunCombat` triggers `ShowEnemyArt`, confirmed via `FakeDisplayService.AllOutput` containing `"enemy_art:"` prefix
+
+### Learnings
+
+- **`AsciiArt` has `protected set`** on `Enemy` base class — cannot set from outside. Solution: define a private inner `ArtEnemy : Enemy` test subclass that accepts art lines in its constructor and assigns `AsciiArt` directly (works because it's a derived class).
+- **`Enemy_Stub` is defined locally** inside `CombatEngineTests.cs`, not in `Helpers/`. Each test file needing a concrete enemy should define its own local subclass.
+- **JSON path pattern** for `EnemyConfig.Load` in tests: `Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Data", "enemy-stats.json")` — same as `EnemyFactoryFixture`.
+- **`FakeDisplayService.ShowEnemyArt`** already guards empty art with a null/length check, so the empty-art test naturally passes without any changes to production code.
+- **Result:** 427 existing + 4 new = 431 tests, all passing.
