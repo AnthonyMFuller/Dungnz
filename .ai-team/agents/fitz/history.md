@@ -69,4 +69,25 @@ Implemented approved plan to reduce GitHub Actions usage by ~40%:
 
 **Impact:** Reduces automated workflow runs while maintaining all quality gates. README check now runs locally, saving CI minutes and providing faster feedback.
 
+### Second Round of GitHub Actions Optimization (Feb 2026)
+
+Implemented three additional reductions to further eliminate redundant workflow steps:
+
+1. **Removed build/test from squad-release.yml** — Main branch releases no longer duplicate the build + test steps already executed in squad-ci.yml during PR validation. Release workflow now only handles git tagging and GitHub release creation using pre-installed git/gh CLI tools.
+
+2. **Deleted squad-preview.yml** — Preview branch validation consolidated into squad-ci.yml by:
+   - Adding `preview` to squad-ci.yml's push trigger
+   - Adding conditional `.ai-team/` tracking check (only runs on preview branch)
+   - Eliminating duplicate test execution (squad-ci.yml already tests preview PRs)
+
+3. **Made squad-heartbeat.yml workflow_dispatch-only** — Removed `issues:` and `pull_request:` event triggers since Ralph runs in-session for a solo dev project. Event-driven triggers were spinning up runners on every issue label/close and PR close unnecessarily.
+
+**Key files changed:**
+- `.github/workflows/squad-release.yml` — removed Setup .NET, Restore, Build, and Run tests steps
+- `.github/workflows/squad-ci.yml` — added `preview` to push branches, added conditional .ai-team/ check
+- `.github/workflows/squad-heartbeat.yml` — removed event triggers, kept workflow_dispatch only
+- `.github/workflows/squad-preview.yml` — deleted (fully consolidated into squad-ci.yml)
+
+**Impact:** Eliminates ~60% of redundant workflow runs (release re-tests, preview re-tests, heartbeat event spam) while maintaining all quality gates through pre-merge validation in squad-ci.yml.
+
 _To be updated as work progresses._

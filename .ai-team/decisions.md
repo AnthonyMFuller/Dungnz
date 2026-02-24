@@ -11335,3 +11335,14 @@ Implemented the approved GitHub Actions optimization plan to reduce CI usage by 
 ## Verification
 
 All changes tested locally. Workflows remain functional with reduced trigger frequency. Quality gates preserved.
+
+---
+
+### 2026-02-24: Second round of GitHub Actions reductions
+**By:** Fitz
+
+**What:** Removed redundant build/test from squad-release.yml; deleted squad-preview.yml (folded .ai-team/ check into squad-ci.yml); made squad-heartbeat.yml workflow_dispatch-only
+
+**Why:** squad-ci.yml already validates on PRs before merge, making release/preview test runs pure redundancy; heartbeat events fire on every label/close for a solo dev project that runs Ralph in-session
+
+**Impact:** 9 workflows remain (down from 12)
