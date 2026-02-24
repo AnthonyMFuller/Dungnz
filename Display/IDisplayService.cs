@@ -196,6 +196,12 @@ public interface IDisplayService
     void ShowShop(IEnumerable<(Dungnz.Models.Item item, int price)> stock, int playerGold);
 
     /// <summary>
+    /// Renders a numbered sell menu listing items the player can sell with tier-colored names
+    /// and green sell prices.
+    /// </summary>
+    void ShowSellMenu(IEnumerable<(Dungnz.Models.Item item, int sellPrice)> items, int playerGold);
+
+    /// <summary>
     /// Renders a box-drawn recipe card showing the craftable result's stats and each ingredient
     /// with ✅ (player has it) or ❌ (missing) availability indicators.
     /// </summary>
