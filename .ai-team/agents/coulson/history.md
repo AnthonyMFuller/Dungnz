@@ -1525,3 +1525,37 @@ Detailed assessment written to `.ai-team/decisions/inbox/coulson-ascii-art-feasi
 **Files:**
 - Ceremony summary: `.ai-team/log/2026-02-24-retrospective-ceremony.md`
 - Action items: `.ai-team/decisions/inbox/coulson-retro-action-items.md`
+
+---
+
+## 2026-02-24: PR #366 Code Review — Class-Differentiated Combat Abilities
+
+**Context:** Reviewed PR #366 implementing per-class combat abilities for Warrior, Mage, and Rogue. Closes issues #359–#365 (all 7 open issues). 4,691 additions, 106 deletions, 17 changed files.
+
+**Review Findings:**
+
+**Architecture — Approved:**
+- Clean separation: class-specific logic properly isolated in `AbilityManager`, helper methods in `PlayerSkillHelpers.cs`
+- `Ability.ClassRestriction` field elegantly filters abilities by class
+- `PlayerStats` additions (ComboPoints, IsManaShieldActive, EvadeNextAttack, LastStandTurns) minimal and focused
+- SkillTree extended with class-gated passives using `(minLevel, classRestriction)` tuple pattern
+- CombatEngine integration surgical: hooks for Mana Shield damage absorption, Evade guaranteed dodge, Last Stand damage reduction
+- `AbilityFlavorText.cs` provides separation of narration content from ability logic
+
+**Test Coverage:**
+- 505 tests passing (63 new Phase 6 tests)
+- Tests verify ability filtering, effect mechanics, passive interactions, execute conditions, combo point flow
+
+**Blocking Issue:**
+- `Dungnz.Tests/TestResults/_anthony-nobara-pc_2026-02-23_22_25_07.trx` — 2,685-line local test artifact committed
+- `.gitignore` missing `*.trx` and `**/TestResults/` patterns
+
+**Verdict:** CHANGES REQUIRED — remove TRX artifact and update .gitignore, then APPROVED.
+
+**Process Notes:**
+- `squad-ci.yml` did not trigger on this PR (targets dev/preview/main, not master)
+- Manual code review served as the CI gate
+- This is a P0 process issue: Fitz should update CI triggers to include master branch
+
+**Files Written:**
+- `.ai-team/decisions/inbox/coulson-pr366-review.md`

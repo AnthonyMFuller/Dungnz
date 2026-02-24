@@ -1,17 +1,7 @@
 name: Squad Heartbeat (Ralph)
 
 on:
-  schedule:
-    # Every 30 minutes — adjust or remove if not needed
-    - cron: '*/30 * * * *'
-
-  # React to completed work or new squad work
-  issues:
-    types: [closed, labeled]
-  pull_request:
-    types: [closed]
-
-  # Manual trigger
+  # Manual trigger only — Ralph monitors in-session
   workflow_dispatch:
 
 permissions:

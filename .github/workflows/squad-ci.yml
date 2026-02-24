@@ -5,7 +5,7 @@ on:
     branches: [dev, preview, main]
     types: [opened, synchronize, reopened]
   push:
-    branches: [dev]
+    branches: [dev, preview, main, master]
 
 permissions:
   contents: read
@@ -24,5 +24,20 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore
 
-      - name: Run tests
-        run: dotnet test Dungnz.Tests --verbosity normal
+      - name: Build
+        run: dotnet build --no-restore
+
+      - name: Enforce XML documentation
+        run: dotnet build Dungnz.csproj --no-restore
+
+      - name: Run tests with coverage
+        run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Threshold=70 /p:ThresholdType=line
+
+      - name: Check no .ai-team/ files are tracked (preview only)
+        if: github.ref == 'refs/heads/preview'
+        run: |
+          if git ls-files --error-unmatch .ai-team/ 2>/dev/null; then
+            echo "::error::❌ .ai-team/ files are tracked on preview — this must not ship."
+            exit 1
+          fi
+          echo "✅ No .ai-team/ files tracked — clean for release."
