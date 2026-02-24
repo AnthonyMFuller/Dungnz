@@ -785,8 +785,7 @@ public class GameLoop
 
         if (!sellable.Any())
         {
-            // TODO: replace with MerchantNarration pool when WI-4 is done
-            _display.ShowMessage("Nothing to sell.");
+            _display.ShowMessage(MerchantNarration.GetNoSell());
             return;
         }
 
@@ -818,8 +817,7 @@ public class GameLoop
         _player.Inventory.Remove(item);
         _player.AddGold(price);
         _display.ShowMessage($"You sold {item.Name} for {price}g. Gold remaining: {_player.Gold}g");
-        // TODO: replace with MerchantNarration pool when WI-4 is done
-        _display.ShowMessage("The merchant pockets the item.");
+        _display.ShowMessage(MerchantNarration.GetAfterSale());
     }
 
     private void HandleSkills()
