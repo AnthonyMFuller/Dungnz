@@ -15,6 +15,9 @@ public static class EnemyFactory
     private static Dictionary<string, EnemyStats>? _enemyConfig;
     private static List<ItemStats>? _itemConfig;
 
+    /// <summary>Exposes the loaded item configuration for use by other engine components (e.g., DungeonGenerator).</summary>
+    public static List<ItemStats>? Items => _itemConfig;
+
     /// <summary>
     /// Loads enemy base-stat and item-drop configuration from external data files so
     /// that all subsequent factory methods have data to work from. Must be called once
