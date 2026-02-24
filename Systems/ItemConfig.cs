@@ -35,6 +35,9 @@ public record ItemStats
 
     /// <summary>The power tier of this item; defaults to <see cref="ItemTier.Common"/> when absent from the JSON.</summary>
     public string Tier { get; init; } = "Common";
+
+    /// <summary>The stable slug identifier for this item (e.g. "health-potion"). Used for reliable cross-system matching.</summary>
+    public string Id { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -113,6 +116,10 @@ public static class ItemConfig
                 {
                     throw new InvalidDataException($"Item '{item.Name}' has negative stat values");
                 }
+                if (string.IsNullOrWhiteSpace(item.Id))
+                {
+                    Console.WriteLine($"WARNING: Item '{item.Name}' has no Id slug defined.");
+                }
             }
 
             return config.Items;
@@ -121,6 +128,23 @@ public static class ItemConfig
         {
             throw new InvalidDataException($"Failed to parse item config file '{path}': {ex.Message}", ex);
         }
+    }
+
+    /// <summary>
+    /// Returns all items from <paramref name="items"/> whose <see cref="ItemStats.Tier"/> matches
+    /// <paramref name="tier"/>, converted to runtime <see cref="Item"/> instances.
+    /// The Boss Key is always excluded so it cannot appear in random loot pools.
+    /// </summary>
+    /// <param name="items">The full item list returned by <see cref="Load"/>.</param>
+    /// <param name="tier">The tier to filter by.</param>
+    /// <returns>A read-only list of <see cref="Item"/> objects for the requested tier.</returns>
+    public static IReadOnlyList<Item> GetByTier(List<ItemStats> items, ItemTier tier)
+    {
+        return items
+            .Where(s => s.Tier.Equals(tier.ToString(), StringComparison.OrdinalIgnoreCase)
+                        && s.Name != "Boss Key")
+            .Select(CreateItem)
+            .ToList();
     }
 
     /// <summary>
@@ -140,6 +164,7 @@ public static class ItemConfig
         return new Item
         {
             Name = stats.Name,
+            ItemId = stats.Id,
             Type = itemType,
             HealAmount = stats.HealAmount,
             AttackBonus = stats.AttackBonus,

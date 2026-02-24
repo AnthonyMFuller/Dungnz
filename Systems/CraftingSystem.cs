@@ -7,8 +7,8 @@ public class CraftingRecipe
     /// <summary>Gets the display name of this recipe.</summary>
     public string Name { get; init; } = "";
 
-    /// <summary>Gets the list of ingredients required, each as a tuple of item name and required count.</summary>
-    public List<(string ItemName, int Count)> Ingredients { get; init; } = new();
+    /// <summary>Gets the list of ingredients required, each as a tuple of item ID slug, display name, and required count.</summary>
+    public List<(string ItemId, string DisplayName, int Count)> Ingredients { get; init; } = new();
 
     /// <summary>Gets the item that is produced when this recipe is crafted successfully.</summary>
     public Item Result { get; init; } = null!;
@@ -28,21 +28,21 @@ public class CraftingSystem
     {
         new CraftingRecipe {
             Name = "Health Elixir",
-            Ingredients = new() { ("Health Potion", 2) },
+            Ingredients = new() { ("health-potion", "Health Potion", 2) },
             GoldCost = 0,
-            Result = new Item { Name = "Health Elixir", Type = ItemType.Consumable, HealAmount = 75, Description = "Two potions rendered down into something stronger. The colour is wrong, but the effect is not.", Tier = ItemTier.Uncommon }
+            Result = new Item { Name = "Health Elixir", ItemId = "health-elixir", Type = ItemType.Consumable, HealAmount = 75, Description = "Two potions rendered down into something stronger. The colour is wrong, but the effect is not.", Tier = ItemTier.Uncommon }
         },
         new CraftingRecipe {
             Name = "Reinforced Sword",
-            Ingredients = new() { ("Iron Sword", 1) },
+            Ingredients = new() { ("iron-sword", "Iron Sword", 1) },
             GoldCost = 30,
-            Result = new Item { Name = "Reinforced Sword", Type = ItemType.Weapon, AttackBonus = 8, IsEquippable = true, Description = "The iron has been retempered and the edge reground. It bites deeper now.", Tier = ItemTier.Rare }
+            Result = new Item { Name = "Reinforced Sword", ItemId = "reinforced-sword", Type = ItemType.Weapon, AttackBonus = 8, IsEquippable = true, Description = "The iron has been retempered and the edge reground. It bites deeper now.", Tier = ItemTier.Rare }
         },
         new CraftingRecipe {
             Name = "Reinforced Armor",
-            Ingredients = new() { ("Leather Armor", 1) },
+            Ingredients = new() { ("leather-armor", "Leather Armor", 1) },
             GoldCost = 25,
-            Result = new Item { Name = "Reinforced Armor", Type = ItemType.Armor, DefenseBonus = 8, IsEquippable = true, Description = "Extra plates riveted over the weak points. Heavier, but considerably harder to kill through.", Tier = ItemTier.Uncommon }
+            Result = new Item { Name = "Reinforced Armor", ItemId = "reinforced-armor", Type = ItemType.Armor, DefenseBonus = 8, IsEquippable = true, Description = "Extra plates riveted over the weak points. Heavier, but considerably harder to kill through.", Tier = ItemTier.Uncommon }
         },
     };
 
@@ -66,23 +66,23 @@ public class CraftingSystem
             return (false, "Your inventory is full.");
 
         // Check ingredients
-        foreach (var (itemName, count) in recipe.Ingredients)
+        foreach (var (itemId, displayName, count) in recipe.Ingredients)
         {
-            var held = player.Inventory.Count(i => i.Name.Equals(itemName, StringComparison.OrdinalIgnoreCase));
+            var held = player.Inventory.Count(i => MatchIngredient(i, itemId));
             if (held < count)
-                return (false, $"Need {count}x {itemName} (have {held}).");
+                return (false, $"Need {count}x {displayName} (have {held}).");
         }
         // Check gold
         if (player.Gold < recipe.GoldCost)
             return (false, $"Need {recipe.GoldCost} gold (have {player.Gold}).");
 
         // Consume ingredients
-        foreach (var (itemName, count) in recipe.Ingredients)
+        foreach (var (itemId, _, count) in recipe.Ingredients)
         {
             int removed = 0;
             for (int i = player.Inventory.Count - 1; i >= 0 && removed < count; i--)
             {
-                if (player.Inventory[i].Name.Equals(itemName, StringComparison.OrdinalIgnoreCase))
+                if (MatchIngredient(player.Inventory[i], itemId))
                 {
                     player.Inventory.RemoveAt(i);
                     removed++;
@@ -97,5 +97,19 @@ public class CraftingSystem
         // Add result — clone so the shared recipe definition is never mutated
         player.Inventory.Add(recipe.Result.Clone());
         return (true, $"You crafted {recipe.Result.Name}!");
+    }
+
+    /// <summary>
+    /// Returns true if <paramref name="item"/> matches the given <paramref name="itemId"/>.
+    /// Matches on <see cref="Item.ItemId"/> when set; falls back to a case-insensitive
+    /// name comparison for items created without an ID (e.g. in tests or legacy code).
+    /// </summary>
+    private static bool MatchIngredient(Item item, string itemId)
+    {
+        if (!string.IsNullOrEmpty(item.ItemId))
+            return item.ItemId == itemId;
+        // Fallback: compare slug-style name (hyphens → spaces) case-insensitively
+        var nameFromSlug = itemId.Replace("-", " ");
+        return item.Name.Equals(nameFromSlug, StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -28,6 +28,20 @@
       "legacy_named": false,
       "status": "active"
     },
+    "fury": {
+      "persistent_name": "Fury",
+      "universe": "Marvel Cinematic Universe",
+      "created_at": "2026-02-24T00:00:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
+    "fitz": {
+      "persistent_name": "Fitz",
+      "universe": "Marvel Cinematic Universe",
+      "created_at": "2026-02-24T00:00:00Z",
+      "legacy_named": false,
+      "status": "active"
+    },
     "scribe": {
       "persistent_name": "Scribe",
       "universe": "exempt",

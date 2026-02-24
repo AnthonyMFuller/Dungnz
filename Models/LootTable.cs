@@ -12,26 +12,44 @@ public class LootTable
     private readonly int _maxGold;
     private readonly Random _rng;
 
-    // Tiered item pools by player level
-    private static readonly List<Item> Tier1Items = new()
+    // Shared tier pools loaded from item-stats.json — set once via SetTierPools().
+    // When null, RollDrop falls back to the small hardcoded lists below.
+    private static IReadOnlyList<Item>? _sharedTier1;
+    private static IReadOnlyList<Item>? _sharedTier2;
+    private static IReadOnlyList<Item>? _sharedTier3;
+
+    private static readonly IReadOnlyList<Item> FallbackTier1 = new List<Item>
     {
-        new Item { Name = "Short Sword", Type = ItemType.Weapon, AttackBonus = 2, Description = "A basic blade.", IsEquippable = true, Tier = ItemTier.Common },
-        new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 5, Description = "Light protection.", IsEquippable = true, Tier = ItemTier.Common }
+        new Item { Name = "Short Sword", ItemId = "short-sword", Type = ItemType.Weapon, AttackBonus = 2, Description = "A basic blade.", IsEquippable = true, Tier = ItemTier.Common },
+        new Item { Name = "Leather Armor", ItemId = "leather-armor", Type = ItemType.Armor, DefenseBonus = 5, Description = "Light protection.", IsEquippable = true, Tier = ItemTier.Common }
     };
-    private static readonly List<Item> Tier2Items = new()
+    private static readonly IReadOnlyList<Item> FallbackTier2 = new List<Item>
     {
-        new Item { Name = "Steel Sword", Type = ItemType.Weapon, AttackBonus = 5, Description = "A quality weapon.", IsEquippable = true, Tier = ItemTier.Uncommon },
-        new Item { Name = "Chain Mail", Type = ItemType.Armor, DefenseBonus = 10, Description = "Solid protection.", IsEquippable = true, Tier = ItemTier.Uncommon },
-        new Item { Name = "Sword of Flames", Type = ItemType.Weapon, AttackBonus = 5, Description = "Burns with inner fire. Applies Bleed on hit.", IsEquippable = true, AppliesBleedOnHit = true, Tier = ItemTier.Uncommon },
-        new Item { Name = "Armor of the Turtle", Type = ItemType.Armor, DefenseBonus = 15, Description = "Heavy shell. Grants Poison immunity.", IsEquippable = true, PoisonImmunity = true, Tier = ItemTier.Uncommon }
+        new Item { Name = "Steel Sword", ItemId = "steel-sword", Type = ItemType.Weapon, AttackBonus = 5, Description = "A quality weapon.", IsEquippable = true, Tier = ItemTier.Uncommon },
+        new Item { Name = "Chain Mail", ItemId = "chain-mail", Type = ItemType.Armor, DefenseBonus = 10, Description = "Solid protection.", IsEquippable = true, Tier = ItemTier.Uncommon },
+        new Item { Name = "Sword of Flames", ItemId = "sword-of-flames", Type = ItemType.Weapon, AttackBonus = 5, Description = "Burns with inner fire. Applies Bleed on hit.", IsEquippable = true, AppliesBleedOnHit = true, Tier = ItemTier.Uncommon },
+        new Item { Name = "Armor of the Turtle", ItemId = "armor-of-the-turtle", Type = ItemType.Armor, DefenseBonus = 15, Description = "Heavy shell. Grants Poison immunity.", IsEquippable = true, PoisonImmunity = true, Tier = ItemTier.Uncommon }
     };
-    private static readonly List<Item> Tier3Items = new()
+    private static readonly IReadOnlyList<Item> FallbackTier3 = new List<Item>
     {
-        new Item { Name = "Mythril Blade", Type = ItemType.Weapon, AttackBonus = 8, Description = "Razor-sharp alloy.", IsEquippable = true, Tier = ItemTier.Rare },
-        new Item { Name = "Plate Armor", Type = ItemType.Armor, DefenseBonus = 15, Description = "Near-impenetrable.", IsEquippable = true, Tier = ItemTier.Rare },
-        new Item { Name = "Ring of Focus", Type = ItemType.Accessory, StatModifier = 0, Description = "+15 MaxMana, -20% ability cooldowns.", IsEquippable = true, MaxManaBonus = 15, Tier = ItemTier.Rare },
-        new Item { Name = "Cloak of Shadows", Type = ItemType.Accessory, Description = "+10% dodge chance.", IsEquippable = true, DodgeBonus = 0.10f, Tier = ItemTier.Rare }
+        new Item { Name = "Mythril Blade", ItemId = "mythril-blade", Type = ItemType.Weapon, AttackBonus = 8, Description = "Razor-sharp alloy.", IsEquippable = true, Tier = ItemTier.Rare },
+        new Item { Name = "Plate Armor", ItemId = "plate-armor", Type = ItemType.Armor, DefenseBonus = 15, Description = "Near-impenetrable.", IsEquippable = true, Tier = ItemTier.Rare },
+        new Item { Name = "Ring of Focus", ItemId = "ring-of-focus", Type = ItemType.Accessory, StatModifier = 0, Description = "+15 MaxMana, -20% ability cooldowns.", IsEquippable = true, MaxManaBonus = 15, Tier = ItemTier.Rare },
+        new Item { Name = "Cloak of Shadows", ItemId = "cloak-of-shadows", Type = ItemType.Accessory, Description = "+10% dodge chance.", IsEquippable = true, DodgeBonus = 0.10f, Tier = ItemTier.Rare }
     };
+
+    /// <summary>
+    /// Populates the shared tier pools from the loaded item catalog so that all
+    /// <see cref="LootTable"/> instances pick from the full item set rather than the small
+    /// fallback lists. Should be called once from <c>EnemyFactory.Initialize()</c>.
+    /// Boss Key must already be excluded from the supplied lists.
+    /// </summary>
+    public static void SetTierPools(IReadOnlyList<Item> tier1, IReadOnlyList<Item> tier2, IReadOnlyList<Item> tier3)
+    {
+        _sharedTier1 = tier1;
+        _sharedTier2 = tier2;
+        _sharedTier3 = tier3;
+    }
 
     /// <summary>
     /// Initialises a new <see cref="LootTable"/> with an optional random-number generator and
@@ -85,12 +103,12 @@ public class LootTable
         // 30% chance of a tiered item drop if none already rolled
         if (dropped == null && _rng.NextDouble() < 0.30)
         {
-            var pool = playerLevel >= 7 ? Tier3Items
-                     : playerLevel >= 4 ? Tier2Items
-                     : Tier1Items;
+            var pool = playerLevel >= 7 ? (_sharedTier3 ?? FallbackTier3)
+                     : playerLevel >= 4 ? (_sharedTier2 ?? FallbackTier2)
+                     : (_sharedTier1 ?? FallbackTier1);
 
             // Elite enemies guarantee tier-2+ drop
-            if (enemy?.IsElite == true && pool == Tier1Items) pool = Tier2Items;
+            if (enemy?.IsElite == true && playerLevel < 4) pool = _sharedTier2 ?? FallbackTier2;
 
             dropped = pool[_rng.Next(pool.Count)].Clone();
         }

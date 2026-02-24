@@ -1385,3 +1385,69 @@ Detailed assessment written to `.ai-team/decisions/inbox/coulson-ascii-art-feasi
 - Issue #315 (Barton): Wire ShowEnemyArt into CombatEngine encounter start
 - Issue #318 (Barton): Add ASCII art content to all enemies in enemy-stats.json
 - Issue #316 (Romanoff): Write tests for ShowEnemyArt display and combat integration
+
+---
+
+## 2026-02-24: Team Expansion & Phase 4 GitHub Issues
+
+**Charter Task:** Add Fury and Fitz to the team roster, create 16 GitHub issues for Phase 4 (Narration, Items, Gameplay, Code Quality).
+
+**Fury — Content Writer (Added 2026-02-24)**
+- Role: Narrative content, flavor text, story writing
+- Files Owned: Systems/NarrationService.cs, all narration systems, narrative content pools
+- Charter: `.ai-team/agents/fury/charter.md`
+- History: `.ai-team/agents/fury/history.md`
+- MCU Casting: Nick Fury (Strategic, commanding, flavor-focused)
+
+**Fitz — DevOps (Added 2026-02-24)**
+- Role: CI/CD pipelines, GitHub Actions, build tooling, test infrastructure
+- Files Owned: `.github/workflows/`, `scripts/`
+- Charter: `.ai-team/agents/fitz/charter.md`
+- History: `.ai-team/agents/fitz/history.md`
+- Known Issue: `squad-release.yml` uses `node --test` on .NET project (should be `dotnet test`)
+- MCU Casting: Leo Fitz (Technical, engineer-focused, infrastructure)
+
+**Team Updates:**
+- Updated `.ai-team/team.md` to add Fury and Fitz to Members table
+- Updated `.ai-team/routing.md` to add routing for Fury (Narration ✍️) and Fitz (DevOps ⚙️)
+- Updated `.ai-team/casting/registry.json` to register both agents as active MCU members
+
+**Phase 4: GitHub Issues Created (16 Total)**
+
+*Narration Issues (A1-A5):*
+- #324: Room state tracking & cleared-room flavor text (Fury + Hill)
+- #325: Merchant encounter banter (Fury)
+- #326: Shrine atmospheric descriptions (Fury)
+- #327: Item interaction flavor (pickup, equip, use) (Fury + Hill) — depends: #324
+- #328: Floor transition ceremony sequences (Fury)
+
+*Items Cohesion (B1-B6):*
+- #329: Data-drive merchant inventory via merchant-inventory.json (Hill + Barton)
+- #330: Data-drive crafting recipes via crafting-recipes.json (Hill + Barton) — depends: ItemId issue
+- #331: Expand loot table pools to use full 62-item catalog (Barton)
+- #332: Scale room floor loot by player level / floor depth (Barton) — depends: #331
+- #333: Complete accessory effects (DodgeBonus, MaxManaBonus) (Hill)
+- #334: Wire ManaRestore for Mana Potion or remove dead code (Hill)
+
+*Gameplay Expansion (C1-C3):*
+- #335: Add 3-5 merchant-exclusive items (cannot be looted) (Fury + Barton) — depends: #329
+- #336: Expand crafting to 10+ recipes (Fury + Barton) — depends: #330
+- #337: Enemy-specific themed loot drops (Barton + Fury) — depends: #331
+
+*Code Quality (D1-D2):*
+- #338: Add ItemId system to replace fragile string.Contains() matching (Hill)
+- #339: Add Weight field to item-stats.json for all 62 items (Hill)
+
+**Work Decomposition Notes:**
+- Narration work is 100% Fury-driven for content; Hill handles integration plumbing
+- Items work is balanced: Hill owns schema/loading (#330, #333, #334, #338, #339); Barton owns game logic (#331, #332)
+- Gameplay expansion pairs Fury (design) with Hill/Barton (implementation) on feature-complete issues
+- All issues are labeled `squad` and tagged with GitHub's auto-added `squad:coulson` label
+
+**Team Coordination Outcomes:**
+- Fury's charter makes clear she owns narration systems but delegates C# integration
+- Fitz's charter identifies the specific bug in squad-release.yml and prioritizes its fix
+- Both agents have clear file ownership and boundaries established upfront
+- Issue assignments clarify which agent is responsible for what aspect of each feature
+
+---
