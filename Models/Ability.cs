@@ -31,6 +31,9 @@ public class Ability
     /// <summary>Gets the type identifier that determines the specific gameplay effect applied when this ability is used.</summary>
     public AbilityType Type { get; }
 
+    /// <summary>Gets the class restriction for this ability, or null if available to all classes.</summary>
+    public PlayerClass? ClassRestriction { get; init; } = null;
+
     /// <summary>
     /// Initialises a new <see cref="Ability"/> with all defining characteristics.
     /// </summary>
@@ -67,5 +70,41 @@ public enum AbilityType
     PoisonDart,
 
     /// <summary>Channels inner resolve to restore a portion of the player's HP mid-combat without using an item.</summary>
-    SecondWind
+    SecondWind,
+
+    // Warrior abilities
+    /// <summary>Warrior ability: Strikes with shield, dealing damage and stunning the enemy.</summary>
+    ShieldBash,
+    /// <summary>Warrior ability: Rallying cry that boosts attack power temporarily.</summary>
+    BattleCry,
+    /// <summary>Warrior ability: Fortifies defenses, reducing incoming damage.</summary>
+    Fortify,
+    /// <summary>Warrior ability: High-risk attack that deals massive damage but reduces defense.</summary>
+    RecklessBlow,
+    /// <summary>Warrior ability: Desperate stand that activates automatically at low HP.</summary>
+    LastStand,
+
+    // Mage abilities
+    /// <summary>Mage ability: Launches a bolt of arcane energy dealing magical damage.</summary>
+    ArcaneBolt,
+    /// <summary>Mage ability: Freezing blast that slows the enemy.</summary>
+    FrostNova,
+    /// <summary>Mage ability: Shields the caster by absorbing damage with mana.</summary>
+    ManaShield,
+    /// <summary>Mage ability: Sacrifices HP to restore mana.</summary>
+    ArcaneSacrifice,
+    /// <summary>Mage ability: Ultimate spell that calls down a devastating meteor.</summary>
+    Meteor,
+
+    // Rogue abilities
+    /// <summary>Rogue ability: Fast strike that generates combo points.</summary>
+    QuickStrike,
+    /// <summary>Rogue ability: Strike from behind dealing bonus damage with combo points.</summary>
+    Backstab,
+    /// <summary>Rogue ability: Dodge the next enemy attack.</summary>
+    Evade,
+    /// <summary>Rogue ability: Rapid succession of attacks generating combo points.</summary>
+    Flurry,
+    /// <summary>Rogue ability: Execute enemy, dealing massive damage based on combo points.</summary>
+    Assassinate
 }

@@ -23,5 +23,8 @@ public enum StatusEffect
     Fortified,
 
     /// <summary>Temporarily reduces the bearer's attack stat, lowering damage dealt while active.</summary>
-    Weakened
+    Weakened,
+
+    /// <summary>Reduces attack damage by 25% and makes the target attack last in turn order.</summary>
+    Slow
 }

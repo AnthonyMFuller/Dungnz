@@ -60,6 +60,16 @@ public partial class Player
     public int MaxMana { get; set; } = 30;
 
     /// <summary>
+    /// Gets the player's current combo points (Rogue mechanic). Maximum is 5.
+    /// </summary>
+    public int ComboPoints { get; private set; } = 0;
+
+    /// <summary>
+    /// Gets or sets whether the Mana Shield ability is currently active (Mage mechanic).
+    /// </summary>
+    public bool IsManaShieldActive { get; set; } = false;
+
+    /// <summary>
     /// Raised whenever the player's <see cref="HP"/> value changes, supplying the values
     /// immediately before and after the change.
     /// </summary>
@@ -207,6 +217,28 @@ public partial class Player
         MaxMana += 10;
         Mana = MaxMana;
     }
+
+    /// <summary>
+    /// Adds combo points to the player, capping at a maximum of 5.
+    /// </summary>
+    /// <param name="amount">The number of combo points to add.</param>
+    public void AddComboPoints(int amount) => ComboPoints = Math.Min(5, ComboPoints + amount);
+
+    /// <summary>
+    /// Spends all accumulated combo points and returns the count.
+    /// </summary>
+    /// <returns>The number of combo points that were spent.</returns>
+    public int SpendComboPoints()
+    {
+        var pts = ComboPoints;
+        ComboPoints = 0;
+        return pts;
+    }
+
+    /// <summary>
+    /// Resets combo points to zero without returning the count.
+    /// </summary>
+    public void ResetComboPoints() => ComboPoints = 0;
 }
 
 /// <summary>
