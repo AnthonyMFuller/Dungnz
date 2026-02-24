@@ -9,6 +9,9 @@ using Dungnz.Models;
 /// </summary>
 public record ItemStats
 {
+    /// <summary>The unique kebab-case identifier for this item, used for cross-referencing (e.g. in merchant inventory config).</summary>
+    public string Id { get; init; } = string.Empty;
+
     /// <summary>The display name of the item as shown to the player.</summary>
     public string Name { get; init; } = string.Empty;
 
@@ -156,6 +159,7 @@ public static class ItemConfig
 
         return new Item
         {
+            Id = stats.Id,
             Name = stats.Name,
             Type = itemType,
             HealAmount = stats.HealAmount,

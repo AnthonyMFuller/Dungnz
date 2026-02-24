@@ -14,7 +14,8 @@ var difficultySettings = DifficultySettings.For(chosenDifficulty);
 display.ShowMessage($"Run #{prestige.TotalRuns + 1} — Seed: {actualSeed} (share to replay)");
 
 EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
-var generator = new DungeonGenerator(actualSeed);
+var allItems = ItemConfig.Load("Data/item-stats.json").Select(ItemConfig.CreateItem).ToList();
+var generator = new DungeonGenerator(actualSeed, allItems);
 var (startRoom, _) = generator.Generate(difficulty: difficultySettings);
 
 var combat = new CombatEngine(display, inputReader);

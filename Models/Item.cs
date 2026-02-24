@@ -7,6 +7,9 @@ namespace Dungnz.Models;
 /// </summary>
 public class Item
 {
+    /// <summary>Gets or sets the unique kebab-case identifier for this item (e.g. "health-potion").</summary>
+    public string Id { get; set; } = string.Empty;
+
     /// <summary>Gets or sets the display name of the item shown in inventory and loot lists.</summary>
     public string Name { get; set; } = string.Empty;
 
