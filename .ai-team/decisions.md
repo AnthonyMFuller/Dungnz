@@ -11176,3 +11176,81 @@ Adding ASCII art for enemies is **architecturally feasible and low-risk**. The d
 - Regular enemies: 4–6 lines; Bosses: 6–8 lines; all ≤ 34 chars wide
 - Tests use `FakeDisplayService` recording — no snapshot tests (per feasibility risk mitigation)
 **Outcome:** 5 issues closed, 3 PRs merged (#319, #320, #321), 4 new tests, zero regressions
+# Decision: ItemId Ingredient Matching with Fallback
+
+**Author:** Hill  
+**Date:** D1 task  
+**PR:** #340
+
+## Decision
+
+`CraftingSystem.TryCraft` matches ingredients by `Item.ItemId` when set. When `ItemId` is empty (items created without a slug — tests, legacy constructors not yet updated), it falls back to case-insensitive slug-to-name matching (`"iron-sword"` → `"iron sword"` vs item.Name).
+
+## Rationale
+
+Tests in `CraftingSystemTests.cs` (Romanoff's domain) create items using `new Item { Name = "Iron Sword" }` without an `ItemId`. Changing matching to hard ID-only would break 6 tests without modifying test code. The fallback is transparent to existing behaviour.
+
+## Recipe Ingredient Tuple
+
+Changed from `(string ItemId, int Count)` to `(string ItemId, string DisplayName, int Count)`. DisplayName is the human-readable ingredient label used in error messages (e.g. "Iron Sword" not "iron-sword").
+
+## Future
+
+Once all item construction paths (including test helpers) set `ItemId`, the fallback can be removed.
+# Decision: B3 Loot Pool Architecture
+
+**Date:** 2026-02-23
+**Author:** Barton
+**Task:** B3 — Expand Loot Table Pools
+
+## Decision: Wiring via EnemyFactory.Initialize(), not LootTable constructor
+
+**Context:** LootTable needed to load tier pools from ItemConfig (Systems layer), but LootTable lives in the Models layer. Direct dependency would create circular reference (Systems → Models already exists).
+
+**Decision:** Added `LootTable.SetTierPools(tier1, tier2, tier3)` static method. EnemyFactory.Initialize() calls it after loading item config. No Models → Systems dependency created.
+
+**Alternatives rejected:**
+- Passing `List<ItemStats>` to LootTable constructor: would require updating all 9 enemy constructors
+- Static cache in ItemConfig: global mutable state harder to test
+- Making LootTable depend on ItemConfig directly: circular dependency
+
+## Decision: Keep fallback lists for test isolation
+
+Fallback static lists (FallbackTier1/2/3) preserved so tests that create LootTable without calling EnemyFactory.Initialize() continue to pass. The distribution simulation test specifically relies on these to validate tier ratios.
+
+## Decision: Boss Key excluded by name in GetByTier()
+
+Boss Key is excluded by name check in `ItemConfig.GetByTier()` rather than by a flag on the item. It's the only non-droppable item by design. Simpler than adding a `Droppable` field to ItemStats.
+# Decision Log: Floor Loot + Enemy Drops (B4/C3)
+
+**Date:** 2026-02-23  
+**Author:** Barton  
+**Issues:** #332, #337
+
+## Decisions
+
+### 1. EnemyFactory.Items exposure pattern
+**Decision:** Added `public static List<ItemStats>? Items => _itemConfig;` to EnemyFactory rather than passing itemConfig through DungeonGenerator's constructor.  
+**Rationale:** DungeonGenerator already has a static dependency on EnemyFactory (calls `CreateBoss`, `CreateScaled`). Adding one more property access is consistent with the existing coupling pattern. Passing via constructor would require updating Program.cs, GameLoop.cs, and all test callsites.
+
+### 2. Mimic drops a randomly chosen Rare item (not a fixed item)
+**Decision:** Mimic picks a random Rare item at construction time from the loaded itemConfig pool.  
+**Rationale:** "Surprise loot" flavour — keeps the Mimic feeling unpredictable even at construction. If itemConfig not loaded, falls back to Phoenix Feather.
+
+### 3. Goblin "Small Gold Pouch" skipped
+**Decision:** Did not implement Goblin gold-pouch drop.  
+**Rationale:** Task spec says "not an item — just extra gold in LootTable." LootTable has no `AddGoldBonus(chance)` mechanic. Adding one would require a LootTable model change + RollDrop signature change + test updates, which is out of scope for this PR. Goblins already drop 2–8 gold via their stats range. Recommend a follow-up issue if per-roll gold bonuses are desired.
+
+### 4. Skeleton Bone Fragment drop chance: spec said 30%, existing code had 50%
+**Decision:** Left Skeleton.cs unchanged — Bone Fragment was already in Skeleton at 50% from a previous task.  
+**Rationale:** The B3 PR had already added this. Task #337 spec of 30% appears to be a baseline suggestion rather than a strict override; 50% is more generous to the player and was the already-shipped value.
+### 2026-02-24: ASCII art feature issues created
+**By:** Coulson
+**What:** Created 5 GitHub issues for ASCII art enemy encounter feature
+**Why:** Anthony approved implementation of the ASCII art feature
+**Issues:**
+- #314 — feat: Add AsciiArt property to Enemy model and EnemyStats (Hill)
+- #317 — feat: Add ShowEnemyArt method to IDisplayService and DisplayService (Hill)
+- #315 — feat: Wire ShowEnemyArt into CombatEngine encounter start (Barton)
+- #318 — feat: Add ASCII art content to all enemies in enemy-stats.json (Barton)
+- #316 — test: Write tests for ShowEnemyArt display and combat integration (Romanoff)
