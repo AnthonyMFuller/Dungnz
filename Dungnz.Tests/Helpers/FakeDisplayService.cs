@@ -127,5 +127,10 @@ public class FakeDisplayService : IDisplayService
     public void ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant) { AllOutput.Add($"floor_banner:{floor}/{maxFloor}"); }
     public void ShowEnemyDetail(Enemy enemy) { AllOutput.Add($"enemy_detail:{enemy.Name}"); }
     public void ShowVictory(Player player, int floorsCleared, RunStats stats) { AllOutput.Add($"victory:{player.Name}"); }
-    public void ShowGameOver(Player player, string? killedBy, RunStats stats) { AllOutput.Add($"gameover:{killedBy ?? "unknown"}"); }
+    public void ShowGameOver(Player player, string? killedBy, RunStats stats)
+    {
+        var msg = killedBy != null ? $"YOU HAVE FALLEN — defeated by {killedBy}" : "YOU HAVE FALLEN";
+        Messages.Add(msg);
+        AllOutput.Add($"gameover:{killedBy ?? "unknown"}");
+    }
 }
