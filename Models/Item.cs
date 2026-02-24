@@ -10,6 +10,9 @@ public class Item
     /// <summary>Gets or sets the display name of the item shown in inventory and loot lists.</summary>
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>Gets or inits the stable slug identifier for this item (e.g. "health-potion"). Used for reliable cross-system matching.</summary>
+    public string ItemId { get; init; } = string.Empty;
+
     /// <summary>Gets or sets the category of this item, determining how it can be used or equipped.</summary>
     public ItemType Type { get; set; }
 

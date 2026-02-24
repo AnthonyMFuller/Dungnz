@@ -32,6 +32,14 @@ public static class EnemyFactory
     {
         _enemyConfig = EnemyConfig.Load(enemyConfigPath);
         _itemConfig = ItemConfig.Load(itemConfigPath);
+
+        // Populate the shared loot tier pools from the full item catalog.
+        // Boss Key is excluded from random pools (it is an explicit guaranteed drop on bosses).
+        LootTable.SetTierPools(
+            ItemConfig.GetByTier(_itemConfig, ItemTier.Common),
+            ItemConfig.GetByTier(_itemConfig, ItemTier.Uncommon),
+            ItemConfig.GetByTier(_itemConfig, ItemTier.Rare)
+        );
     }
 
     /// <summary>

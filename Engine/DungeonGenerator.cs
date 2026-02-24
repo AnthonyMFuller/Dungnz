@@ -175,6 +175,7 @@ public class DungeonGenerator
             0 => new Item 
             { 
                 Name = "Health Potion", 
+                ItemId = "health-potion",
                 Type = ItemType.Consumable, 
                 HealAmount = 20, 
                 Description = "Restores 20 HP",
@@ -183,6 +184,7 @@ public class DungeonGenerator
             1 => new Item 
             { 
                 Name = "Iron Sword", 
+                ItemId = "iron-sword",
                 Type = ItemType.Weapon, 
                 AttackBonus = 5, 
                 IsEquippable = true,
@@ -192,6 +194,7 @@ public class DungeonGenerator
             2 => new Item 
             { 
                 Name = "Leather Armor", 
+                ItemId = "leather-armor",
                 Type = ItemType.Armor, 
                 DefenseBonus = 3, 
                 IsEquippable = true,
@@ -201,6 +204,7 @@ public class DungeonGenerator
             _ => new Item 
             { 
                 Name = "Large Health Potion", 
+                ItemId = "large-health-potion",
                 Type = ItemType.Consumable, 
                 HealAmount = 50, 
                 Description = "Restores 50 HP",
