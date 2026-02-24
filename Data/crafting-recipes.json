@@ -1,0 +1,209 @@
+{
+  "recipes": [
+    {
+      "id": "health-elixir",
+      "name": "Health Elixir",
+      "ingredients": [
+        { "itemId": "health-potion", "displayName": "Health Potion", "count": 2 }
+      ],
+      "goldCost": 0,
+      "description": "Two potions rendered down into something stronger. The colour is wrong, but the effect is not.",
+      "result": {
+        "itemId": "health-elixir",
+        "name": "Health Elixir",
+        "type": "Consumable",
+        "tier": "Uncommon",
+        "healAmount": 75,
+        "attackBonus": 0,
+        "defenseBonus": 0,
+        "isEquippable": false,
+        "description": "Two potions rendered down into something stronger. The colour is wrong, but the effect is not."
+      }
+    },
+    {
+      "id": "reinforced-sword",
+      "name": "Reinforced Sword",
+      "ingredients": [
+        { "itemId": "iron-sword", "displayName": "Iron Sword", "count": 1 }
+      ],
+      "goldCost": 30,
+      "description": "The iron has been retempered and the edge reground. It bites deeper now.",
+      "result": {
+        "itemId": "reinforced-sword",
+        "name": "Reinforced Sword",
+        "type": "Weapon",
+        "tier": "Rare",
+        "healAmount": 0,
+        "attackBonus": 8,
+        "defenseBonus": 0,
+        "isEquippable": true,
+        "description": "The iron has been retempered and the edge reground. It bites deeper now."
+      }
+    },
+    {
+      "id": "reinforced-armor",
+      "name": "Reinforced Armor",
+      "ingredients": [
+        { "itemId": "leather-armor", "displayName": "Leather Armor", "count": 1 }
+      ],
+      "goldCost": 25,
+      "description": "Extra plates riveted over the weak points. Heavier, but considerably harder to kill through.",
+      "result": {
+        "itemId": "reinforced-armor",
+        "name": "Reinforced Armor",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 8,
+        "isEquippable": true,
+        "description": "Extra plates riveted over the weak points. Heavier, but considerably harder to kill through."
+      }
+    },
+    {
+      "id": "antidote-strong",
+      "name": "Strong Antidote",
+      "ingredients": [
+        { "itemId": "antidote", "displayName": "Antidote", "count": 2 }
+      ],
+      "goldCost": 0,
+      "description": "Two antidotes distilled into a concentrated cure. Ends poison entirely and restores a little vitality.",
+      "result": {
+        "itemId": "antidote-strong",
+        "name": "Strong Antidote",
+        "type": "Consumable",
+        "tier": "Uncommon",
+        "healAmount": 10,
+        "attackBonus": 0,
+        "defenseBonus": 0,
+        "isEquippable": false,
+        "description": "Two antidotes distilled into a concentrated cure. Ends poison entirely and restores a little vitality."
+      }
+    },
+    {
+      "id": "elixir-of-strength",
+      "name": "Elixir of Strength",
+      "ingredients": [
+        { "itemId": "scroll-of-power", "displayName": "Scroll of Power", "count": 1 },
+        { "itemId": "regeneration-tonic", "displayName": "Regeneration Tonic", "count": 1 }
+      ],
+      "goldCost": 50,
+      "description": "Ancient runes fused with a restorative tonic. The result is something that permanently sharpens the arm.",
+      "result": {
+        "itemId": "elixir-of-strength",
+        "name": "Elixir of Strength",
+        "type": "Consumable",
+        "tier": "Rare",
+        "healAmount": 0,
+        "attackBonus": 2,
+        "defenseBonus": 0,
+        "isEquippable": false,
+        "description": "Ancient runes fused with a restorative tonic. The result is something that permanently sharpens the arm."
+      }
+    },
+    {
+      "id": "chain-vest",
+      "name": "Chain Vest",
+      "ingredients": [
+        { "itemId": "chainmail", "displayName": "Chainmail", "count": 1 },
+        { "itemId": "iron-helm", "displayName": "Iron Helm", "count": 1 }
+      ],
+      "goldCost": 40,
+      "description": "Chainmail reinforced with a helm's iron plates at the shoulders and chest. Protection with room to breathe.",
+      "result": {
+        "itemId": "chain-vest",
+        "name": "Chain Vest",
+        "type": "Armor",
+        "tier": "Rare",
+        "healAmount": 0,
+        "attackBonus": 3,
+        "defenseBonus": 12,
+        "isEquippable": true,
+        "description": "Chainmail reinforced with a helm's iron plates at the shoulders and chest. Protection with room to breathe."
+      }
+    },
+    {
+      "id": "poison-blade",
+      "name": "Poison Blade",
+      "ingredients": [
+        { "itemId": "iron-sword", "displayName": "Iron Sword", "count": 1 },
+        { "itemId": "antidote", "displayName": "Antidote", "count": 1 }
+      ],
+      "goldCost": 35,
+      "description": "The antidote's toxin-base was drawn off and applied to the blade. It knows exactly where it hurts.",
+      "result": {
+        "itemId": "poison-blade",
+        "name": "Poison Blade",
+        "type": "Weapon",
+        "tier": "Rare",
+        "healAmount": 0,
+        "attackBonus": 7,
+        "defenseBonus": 0,
+        "isEquippable": true,
+        "description": "The antidote's toxin-base was drawn off and applied to the blade. It knows exactly where it hurts."
+      }
+    },
+    {
+      "id": "restoration-draught",
+      "name": "Restoration Draught",
+      "ingredients": [
+        { "itemId": "large-health-potion", "displayName": "Large Health Potion", "count": 1 },
+        { "itemId": "mana-draught", "displayName": "Mana Draught", "count": 1 }
+      ],
+      "goldCost": 20,
+      "description": "Healing and mana combined into one unstable compound. Unpleasant to drink. Very good for you.",
+      "result": {
+        "itemId": "restoration-draught",
+        "name": "Restoration Draught",
+        "type": "Consumable",
+        "tier": "Rare",
+        "healAmount": 60,
+        "attackBonus": 0,
+        "defenseBonus": 0,
+        "isEquippable": false,
+        "description": "Healing and mana combined into one unstable compound. Unpleasant to drink. Very good for you."
+      }
+    },
+    {
+      "id": "reinforced-helm",
+      "name": "Reinforced Helm",
+      "ingredients": [
+        { "itemId": "iron-helm", "displayName": "Iron Helm", "count": 1 }
+      ],
+      "goldCost": 20,
+      "description": "The rivets replaced, the padding relined, the cheek guards straightened. A proper helmet at last.",
+      "result": {
+        "itemId": "reinforced-helm",
+        "name": "Reinforced Helm",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 6,
+        "isEquippable": true,
+        "description": "The rivets replaced, the padding relined, the cheek guards straightened. A proper helmet at last."
+      }
+    },
+    {
+      "id": "battle-tonic",
+      "name": "Battle Tonic",
+      "ingredients": [
+        { "itemId": "regeneration-tonic", "displayName": "Regeneration Tonic", "count": 1 },
+        { "itemId": "scroll-of-power", "displayName": "Scroll of Power", "count": 1 }
+      ],
+      "goldCost": 0,
+      "description": "A restorative base charged with raw arcane force. Heals and temporarily sharpens combat instincts.",
+      "result": {
+        "itemId": "battle-tonic",
+        "name": "Battle Tonic",
+        "type": "Consumable",
+        "tier": "Rare",
+        "healAmount": 30,
+        "attackBonus": 3,
+        "defenseBonus": 0,
+        "isEquippable": false,
+        "description": "A restorative base charged with raw arcane force. Heals and temporarily sharpens combat instincts."
+      }
+    }
+  ]
+}

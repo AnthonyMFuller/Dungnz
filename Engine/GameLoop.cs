@@ -810,11 +810,11 @@ public class GameLoop
             {
                 var ingredientsWithAvailability = r.Ingredients
                     .Select(ing => (
-                        $"{ing.Count}x {ing.ItemName}",
-                        _player.Inventory.Count(i => i.Name.Equals(ing.ItemName, StringComparison.OrdinalIgnoreCase)) >= ing.Count
+                        $"{ing.Count}x {ing.DisplayName}",
+                        _player.Inventory.Count(i => i.Name.Equals(ing.DisplayName, StringComparison.OrdinalIgnoreCase)) >= ing.Count
                     ))
                     .ToList();
-                _display.ShowCraftRecipe(r.Name, r.Result, ingredientsWithAvailability);
+                _display.ShowCraftRecipe(r.Name, r.Result.ToItem(), ingredientsWithAvailability);
             }
             _display.ShowMessage("Type CRAFT <recipe name> to craft.");
             return;
