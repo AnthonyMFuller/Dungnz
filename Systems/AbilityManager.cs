@@ -28,22 +28,56 @@ public class AbilityManager
     {
         _abilities = new List<Ability>
         {
-            new Ability("Power Strike", "Deal 2x normal damage", 10, 2, 1, AbilityType.PowerStrike),
-            new Ability("Defensive Stance", "+50% DEF for 2 turns", 8, 3, 3, AbilityType.DefensiveStance),
-            new Ability("Poison Dart", "Apply Poison status effect", 12, 4, 5, AbilityType.PoisonDart),
-            new Ability("Second Wind", "Heal 30% of MaxHP", 15, 5, 7, AbilityType.SecondWind)
+            // Warrior abilities
+            new Ability("Shield Bash", "Strike with shield, stunning the enemy", 8, 2, 1, AbilityType.ShieldBash) 
+                { ClassRestriction = PlayerClass.Warrior },
+            new Ability("Battle Cry", "Rallying cry boosting attack power", 10, 4, 2, AbilityType.BattleCry) 
+                { ClassRestriction = PlayerClass.Warrior },
+            new Ability("Fortify", "Fortify defenses, reducing incoming damage", 12, 3, 3, AbilityType.Fortify) 
+                { ClassRestriction = PlayerClass.Warrior },
+            new Ability("Reckless Blow", "Massive damage but reduces defense", 15, 3, 5, AbilityType.RecklessBlow) 
+                { ClassRestriction = PlayerClass.Warrior },
+            new Ability("Last Stand", "Desperate stand at low HP", 20, 6, 7, AbilityType.LastStand) 
+                { ClassRestriction = PlayerClass.Warrior },
+
+            // Mage abilities
+            new Ability("Arcane Bolt", "Launch arcane energy dealing magical damage", 8, 0, 1, AbilityType.ArcaneBolt) 
+                { ClassRestriction = PlayerClass.Mage },
+            new Ability("Frost Nova", "Freezing blast that slows the enemy", 14, 3, 2, AbilityType.FrostNova) 
+                { ClassRestriction = PlayerClass.Mage },
+            new Ability("Mana Shield", "Absorb damage with mana", 0, 5, 4, AbilityType.ManaShield) 
+                { ClassRestriction = PlayerClass.Mage },
+            new Ability("Arcane Sacrifice", "Sacrifice HP to restore mana", 0, 3, 5, AbilityType.ArcaneSacrifice) 
+                { ClassRestriction = PlayerClass.Mage },
+            new Ability("Meteor", "Call down a devastating meteor", 35, 5, 7, AbilityType.Meteor) 
+                { ClassRestriction = PlayerClass.Mage },
+
+            // Rogue abilities
+            new Ability("Quick Strike", "Fast strike generating combo points", 5, 0, 1, AbilityType.QuickStrike) 
+                { ClassRestriction = PlayerClass.Rogue },
+            new Ability("Backstab", "Strike from behind with bonus damage", 10, 2, 2, AbilityType.Backstab) 
+                { ClassRestriction = PlayerClass.Rogue },
+            new Ability("Evade", "Dodge the next enemy attack", 12, 4, 3, AbilityType.Evade) 
+                { ClassRestriction = PlayerClass.Rogue },
+            new Ability("Flurry", "Rapid succession of attacks", 15, 3, 5, AbilityType.Flurry) 
+                { ClassRestriction = PlayerClass.Rogue },
+            new Ability("Assassinate", "Execute enemy with massive damage", 25, 6, 7, AbilityType.Assassinate) 
+                { ClassRestriction = PlayerClass.Rogue }
         };
     }
     
     /// <summary>
     /// Returns all abilities whose required unlock level is less than or equal to the player's
-    /// current level, regardless of cooldown or mana.
+    /// current level and match the player's class (or have no class restriction), regardless of cooldown or mana.
     /// </summary>
-    /// <param name="player">The player whose level determines which abilities are accessible.</param>
+    /// <param name="player">The player whose level and class determine which abilities are accessible.</param>
     /// <returns>A list of abilities the player has unlocked.</returns>
     public List<Ability> GetUnlockedAbilities(Player player)
     {
-        return _abilities.Where(a => a.UnlockLevel <= player.Level).ToList();
+        return _abilities
+            .Where(a => a.UnlockLevel <= player.Level)
+            .Where(a => a.ClassRestriction == null || a.ClassRestriction == player.Class)
+            .ToList();
     }
     
     /// <summary>
@@ -159,6 +193,7 @@ public class AbilityManager
 
         switch (type)
         {
+            // Old shared abilities - removed in Phase 2
             case AbilityType.PowerStrike:
                 var damage = Math.Max(1, player.Attack * 2 - enemy.Defense);
                 enemy.HP -= damage;
@@ -179,6 +214,69 @@ public class AbilityManager
                 var healAmount = (int)(player.MaxHP * 0.3);
                 player.Heal(healAmount);
                 display.ShowCombatMessage($"Second Wind! You heal {healAmount} HP!");
+                break;
+
+            // Warrior abilities - TODO: Phase 3 implementation (Issue #362)
+            case AbilityType.ShieldBash:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.BattleCry:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.Fortify:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.RecklessBlow:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.LastStand:
+                // TODO: Phase 3 — see Issue #362
+                break;
+
+            // Mage abilities - TODO: Phase 3 implementation (Issue #362)
+            case AbilityType.ArcaneBolt:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.FrostNova:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.ManaShield:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.ArcaneSacrifice:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.Meteor:
+                // TODO: Phase 3 — see Issue #362
+                break;
+
+            // Rogue abilities - TODO: Phase 3 implementation (Issue #362)
+            case AbilityType.QuickStrike:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.Backstab:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.Evade:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.Flurry:
+                // TODO: Phase 3 — see Issue #362
+                break;
+            
+            case AbilityType.Assassinate:
+                // TODO: Phase 3 — see Issue #362
                 break;
         }
         
