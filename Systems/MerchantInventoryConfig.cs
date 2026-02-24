@@ -45,6 +45,17 @@ public static class MerchantInventoryConfig
     private static MerchantInventoryData? _cachedData;
 
     /// <summary>
+    /// Returns the sell price for an item. Uses the item's explicit SellPrice if set,
+    /// otherwise falls back to 40% of the computed buy price (minimum 1g).
+    /// </summary>
+    public static int ComputeSellPrice(Item item)
+    {
+        if (item.SellPrice > 0)
+            return item.SellPrice;
+        return Math.Max(1, ComputePrice(item) * 40 / 100);
+    }
+
+    /// <summary>
     /// Computes a sale price for an item based on its tier and primary stats.
     /// </summary>
     private static int ComputePrice(Item item) => item.Tier switch

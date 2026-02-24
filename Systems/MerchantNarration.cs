@@ -5,6 +5,8 @@ namespace Dungnz.Systems;
 /// </summary>
 public static class MerchantNarration
 {
+    private static readonly Random _rng = new();
+
     // Shown when entering a room with a merchant
     /// <summary>Lines shown when entering a room with a merchant.</summary>
     public static readonly string[] Greetings =
@@ -48,4 +50,35 @@ public static class MerchantNarration
         "\"Mm.\" Nothing more.",
         "The figure returns to whatever it was doing before you arrived."
     };
+
+    // Shown after the player sells an item
+    /// <summary>Lines shown after the player successfully sells an item.</summary>
+    public static readonly string[] AfterSale =
+    {
+        "\"I'll put it to better use,\" the merchant says, barely glancing up.",
+        "The merchant tucks the item away without ceremony.",
+        "\"A fair trade,\" the merchant mutters, already looking elsewhere.",
+        "The merchant examines it briefly, nods, and pockets it.",
+        "\"I've been looking for one of these.\" The merchant doesn't elaborate.",
+        "The merchant weighs it in their hand. Satisfied.",
+        "\"Done.\" The merchant says nothing more.",
+        "The coin clinks into your pouch. The item disappears under the counter.",
+    };
+
+    // Shown when player tries to sell but has nothing to sell
+    /// <summary>Lines shown when the player opens the sell menu with nothing to sell.</summary>
+    public static readonly string[] NoSell =
+    {
+        "The merchant watches you leave. Nothing to say.",
+        "\"Nothing worth selling? Come back when you do.\"",
+        "The merchant shrugs and turns back to their wares.",
+        "\"Empty pockets won't fill mine.\"",
+        "The merchant sighs quietly.",
+        "\"If you find something worth trading, you know where I am.\"",
+    };
+
+    /// <summary>Returns a random line from <see cref="AfterSale"/>.</summary>
+    public static string GetAfterSale() => AfterSale[_rng.Next(AfterSale.Length)];
+    /// <summary>Returns a random line from <see cref="NoSell"/>.</summary>
+    public static string GetNoSell() => NoSell[_rng.Next(NoSell.Length)];
 }

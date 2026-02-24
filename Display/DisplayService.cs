@@ -436,6 +436,35 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <summary>
+    /// Renders a numbered list of items the player can sell, showing tier-colored names
+    /// and green sell prices, with a header displaying current gold.
+    /// </summary>
+    public void ShowSellMenu(IEnumerable<(Item item, int sellPrice)> items, int playerGold)
+    {
+        const int Inner = 40;
+        var itemList = items.ToList();
+        Console.WriteLine();
+        Console.WriteLine($"=== SELL ITEMS ===  Your gold: {Systems.ColorCodes.Yellow}{playerGold}g{Systems.ColorCodes.Reset}");
+        Console.WriteLine(new string('─', Inner));
+
+        for (int i = 0; i < itemList.Count; i++)
+        {
+            var (item, price) = itemList[i];
+            var tierColor = item.Tier switch
+            {
+                ItemTier.Uncommon => Systems.ColorCodes.Green,
+                ItemTier.Rare     => Systems.ColorCodes.BrightCyan,
+                _                 => Systems.ColorCodes.BrightWhite
+            };
+            Console.WriteLine($"  [{i + 1}] {tierColor}{TruncateName(item.Name)}{Systems.ColorCodes.Reset}  — sell for {Systems.ColorCodes.Green}{price}g{Systems.ColorCodes.Reset}");
+        }
+
+        Console.WriteLine(new string('─', Inner));
+        Console.WriteLine($"  {Systems.ColorCodes.Gray}[#] Sell item  [X] Cancel{Systems.ColorCodes.Reset}");
+        Console.WriteLine();
+    }
+
+    /// <summary>
     /// Renders a box-drawn recipe card showing the result item's stats and each ingredient
     /// with a ✅ (player has it) or ❌ (missing) availability indicator.
     /// </summary>
@@ -557,6 +586,7 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine("    unequip [item]               Unequip an item back to inventory");
         Console.WriteLine("    craft [recipe]               Craft an item (CRAFT alone lists recipes)");
         Console.WriteLine("    shop                         Browse the merchant (if one is present)");
+        Console.WriteLine("    sell                         Sell items to the merchant (if one is present)");
         Console.WriteLine();
         Console.WriteLine("  Character");
         Console.WriteLine("    stats                        Show player stats and current floor");
