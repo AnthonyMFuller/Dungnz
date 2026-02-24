@@ -229,6 +229,7 @@ public class CombatEngine : ICombatEngine
         player.ActiveEffects.Clear();
 
         _display.ShowCombatStart(enemy);
+        _display.ShowEnemyArt(enemy);
         _display.ShowCombatEntryFlags(enemy);
         
         if (enemy is DungeonBoss)

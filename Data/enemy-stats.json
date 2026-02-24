@@ -6,7 +6,14 @@
     "Defense": 2,
     "XPValue": 15,
     "MinGold": 2,
-    "MaxGold": 8
+    "MaxGold": 8,
+    "AsciiArt": [
+      "  _,.",
+      " (o o)",
+      "  )Y(",
+      " /   \\\\",
+      "/_____\\\\"
+    ]
   },
   "Skeleton": {
     "Name": "Skeleton",
@@ -15,7 +22,14 @@
     "Defense": 5,
     "XPValue": 25,
     "MinGold": 5,
-    "MaxGold": 15
+    "MaxGold": 15,
+    "AsciiArt": [
+      "  ,---.",
+      " ( o o )",
+      "  \\\\___/",
+      "  | | |",
+      " /|   |\\\\"
+    ]
   },
   "Troll": {
     "Name": "Troll",
@@ -24,7 +38,15 @@
     "Defense": 8,
     "XPValue": 40,
     "MinGold": 10,
-    "MaxGold": 25
+    "MaxGold": 25,
+    "AsciiArt": [
+      " ,-----,",
+      "| o   o |",
+      "|  ___  |",
+      " \\\\___/",
+      "  |   |",
+      " /|   |\\\\"
+    ]
   },
   "DarkKnight": {
     "Name": "Dark Knight",
@@ -33,7 +55,15 @@
     "Defense": 12,
     "XPValue": 55,
     "MinGold": 20,
-    "MaxGold": 40
+    "MaxGold": 40,
+    "AsciiArt": [
+      "  [###]",
+      " |o   o|",
+      " |  _  |",
+      " |_____|",
+      "  |   |",
+      " /|   |\\\\"
+    ]
   },
   "DungeonBoss": {
     "Name": "Dungeon Boss",
@@ -42,7 +72,17 @@
     "Defense": 15,
     "XPValue": 100,
     "MinGold": 50,
-    "MaxGold": 100
+    "MaxGold": 100,
+    "AsciiArt": [
+      " _______",
+      "| O   O |",
+      "|  /^\\ |",
+      "| |___| |",
+      " \\\\_____/",
+      "   |   |",
+      "  /|   |\\\\",
+      " /_|___|_\\\\"
+    ]
   },
   "GoblinShaman": {
     "Name": "Goblin Shaman",
@@ -51,7 +91,14 @@
     "Defense": 4,
     "XPValue": 25,
     "MinGold": 5,
-    "MaxGold": 15
+    "MaxGold": 15,
+    "AsciiArt": [
+      "  _,.",
+      " (^ ^)",
+      "  )Y(",
+      " /|~|\\\\",
+      " ~~*~~"
+    ]
   },
   "StoneGolem": {
     "Name": "Stone Golem",
@@ -60,7 +107,15 @@
     "Defense": 20,
     "XPValue": 50,
     "MinGold": 10,
-    "MaxGold": 25
+    "MaxGold": 25,
+    "AsciiArt": [
+      " [=====]",
+      "|[o] [o]|",
+      "| [---] |",
+      "|_______|",
+      "  |   |",
+      " [|   |]"
+    ]
   },
   "Wraith": {
     "Name": "Wraith",
@@ -69,7 +124,14 @@
     "Defense": 2,
     "XPValue": 35,
     "MinGold": 8,
-    "MaxGold": 20
+    "MaxGold": 20,
+    "AsciiArt": [
+      "  ~~~~~",
+      " ( o o )",
+      "  \\\\___/",
+      "  ~~~~",
+      " ~~ ~~"
+    ]
   },
   "VampireLord": {
     "Name": "Vampire Lord",
@@ -78,7 +140,15 @@
     "Defense": 12,
     "XPValue": 60,
     "MinGold": 15,
-    "MaxGold": 30
+    "MaxGold": 30,
+    "AsciiArt": [
+      "  /\\   /\\",
+      " (o  v  o)",
+      "  \\\\ ___ /",
+      "  |     |",
+      "  |_____|",
+      " /|     |\\\\"
+    ]
   },
   "Mimic": {
     "Name": "Mimic",
@@ -87,7 +157,14 @@
     "Defense": 8,
     "XPValue": 40,
     "MinGold": 10,
-    "MaxGold": 25
+    "MaxGold": 25,
+    "AsciiArt": [
+      " _______ ",
+      "|       |",
+      "| .   . |",
+      "|_______|",
+      "|HHHHHHH|"
+    ]
   },
   "GiantRat": {
     "Name": "Giant Rat",
@@ -96,7 +173,14 @@
     "Defense": 1,
     "XPValue": 12,
     "MinGold": 1,
-    "MaxGold": 5
+    "MaxGold": 5,
+    "AsciiArt": [
+      "   __",
+      " _(oo)_",
+      "/|  _ |\\\\",
+      " | (_) |",
+      "  \\\\___/"
+    ]
   },
   "CursedZombie": {
     "Name": "Cursed Zombie",
@@ -105,7 +189,14 @@
     "Defense": 6,
     "XPValue": 28,
     "MinGold": 4,
-    "MaxGold": 12
+    "MaxGold": 12,
+    "AsciiArt": [
+      "  ,---.",
+      " (x   x)",
+      "  ) _ (",
+      " /|   |\\\\",
+      "  |   |"
+    ]
   },
   "BloodHound": {
     "Name": "Blood Hound",
@@ -114,7 +205,14 @@
     "Defense": 5,
     "XPValue": 38,
     "MinGold": 10,
-    "MaxGold": 22
+    "MaxGold": 22,
+    "AsciiArt": [
+      "  /\\_/\\",
+      " (o o  )",
+      "  \\\\_//",
+      " /|   |\\\\",
+      "   |||"
+    ]
   },
   "IronGuard": {
     "Name": "Iron Guard",
@@ -123,7 +221,15 @@
     "Defense": 14,
     "XPValue": 48,
     "MinGold": 15,
-    "MaxGold": 32
+    "MaxGold": 32,
+    "AsciiArt": [
+      "  [###]",
+      " [o   o]",
+      " [#####]",
+      " [#####]",
+      "  |   |",
+      " [|   |]"
+    ]
   },
   "NightStalker": {
     "Name": "Night Stalker",
@@ -132,7 +238,14 @@
     "Defense": 8,
     "XPValue": 58,
     "MinGold": 18,
-    "MaxGold": 38
+    "MaxGold": 38,
+    "AsciiArt": [
+      "   /\\ /\\",
+      "  (o   o)",
+      "   \\\\ /",
+      "  /|   |\\\\",
+      " / |___| \\\\"
+    ]
   },
   "FrostWyvern": {
     "Name": "Frost Wyvern",
@@ -141,7 +254,15 @@
     "Defense": 12,
     "XPValue": 70,
     "MinGold": 25,
-    "MaxGold": 50
+    "MaxGold": 50,
+    "AsciiArt": [
+      "   __*__",
+      "  /o   o\\\\",
+      " / \\\\___/ \\\\",
+      "|  (~~~)  |",
+      " \\\\_____/",
+      "  |||  |||"
+    ]
   },
   "ChaosKnight": {
     "Name": "Chaos Knight",
@@ -150,7 +271,15 @@
     "Defense": 16,
     "XPValue": 80,
     "MinGold": 35,
-    "MaxGold": 60
+    "MaxGold": 60,
+    "AsciiArt": [
+      "  [*#*]",
+      " [O   O]",
+      " [#*#*#]",
+      " [#####]",
+      "  |   |",
+      " *|   |*"
+    ]
   },
   "LichKing": {
     "Name": "Lich King",
@@ -159,6 +288,16 @@
     "Defense": 20,
     "XPValue": 130,
     "MinGold": 70,
-    "MaxGold": 120
+    "MaxGold": 120,
+    "AsciiArt": [
+      "  *~~~~~*",
+      " (X     X)",
+      "  ) ___ (",
+      " /|     |\\\\",
+      " |  ***  |",
+      " |_______|",
+      "  *|   |*",
+      " * |___| *"
+    ]
   }
 }
