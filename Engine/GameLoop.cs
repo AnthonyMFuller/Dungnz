@@ -453,6 +453,7 @@ public class GameLoop
         int weightCurrent = _player.Inventory.Sum(i => i.Weight);
         _display.ShowItemPickup(item, slotsCurrent, Player.MaxInventorySize, weightCurrent, Systems.InventoryManager.MaxWeight);
         _display.ShowMessage(_narration.Pick(_lootLines));
+        _display.ShowMessage(Systems.ItemInteractionNarration.PickUp(item));
         _events?.RaiseItemPicked(_player, item, _currentRoom);
         _stats.ItemsFound++;
         if (item.Type == ItemType.Gold) _stats.GoldCollected += item.StatModifier;
@@ -496,6 +497,7 @@ public class GameLoop
                     var healedAmount = _player.HP - oldHP;
                     _player.Inventory.Remove(item);
                     _display.ShowMessage($"You use {item.Name} and restore {healedAmount} HP. Current HP: {_player.HP}/{_player.MaxHP}");
+                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, healedAmount));
                 }
                 else if (item.ManaRestore > 0)
                 {
@@ -504,12 +506,14 @@ public class GameLoop
                     var restoredMana = _player.Mana - oldMana;
                     _player.Inventory.Remove(item);
                     _display.ShowMessage($"You use {item.Name} and restore {restoredMana} mana. Mana: {_player.Mana}/{_player.MaxMana}");
+                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
                 }
                 else if (item.AttackBonus > 0)
                 {
                     _player.ModifyAttack(item.AttackBonus);
                     _player.Inventory.Remove(item);
                     _display.ShowMessage($"You use {item.Name}. Attack permanently +{item.AttackBonus}. Attack: {_player.Attack}");
+                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
                 }
                 else
                 {
