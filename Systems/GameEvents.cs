@@ -21,6 +21,9 @@ public class GameEvents
     /// <summary>Raised each time the player moves into a new room.</summary>
     public event EventHandler<RoomEnteredEventArgs>? OnRoomEntered;
 
+    /// <summary>Raised when the player unlocks an achievement during a run.</summary>
+    public event EventHandler<AchievementUnlockedEventArgs>? OnAchievementUnlocked;
+
     /// <summary>
     /// Fires the <see cref="OnCombatEnded"/> event with the provided combat participants and result.
     /// </summary>
@@ -63,5 +66,15 @@ public class GameEvents
     public void RaiseRoomEntered(Player player, Room room, Room? previousRoom)
     {
         OnRoomEntered?.Invoke(this, new RoomEnteredEventArgs(player, room, previousRoom));
+    }
+
+    /// <summary>
+    /// Fires the <see cref="OnAchievementUnlocked"/> event when an achievement is unlocked.
+    /// </summary>
+    /// <param name="name">The name of the achievement.</param>
+    /// <param name="description">The description of the achievement.</param>
+    public void RaiseAchievementUnlocked(string name, string description)
+    {
+        OnAchievementUnlocked?.Invoke(this, new AchievementUnlockedEventArgs(name, description));
     }
 }

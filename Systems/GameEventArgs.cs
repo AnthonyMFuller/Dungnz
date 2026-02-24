@@ -120,3 +120,22 @@ public class RoomEnteredEventArgs : EventArgs
         PreviousRoom = previousRoom;
     }
 }
+
+/// <summary>Provides event data for the <see cref="GameEvents.OnAchievementUnlocked"/> event.</summary>
+public class AchievementUnlockedEventArgs : EventArgs
+{
+    /// <summary>
+    /// Initialises a new instance with the achievement name and description.
+    /// </summary>
+    /// <param name="achievementName">The name of the achievement.</param>
+    /// <param name="achievementDescription">The description of the achievement.</param>
+    public AchievementUnlockedEventArgs(string achievementName, string achievementDescription)
+    {
+        Name = achievementName;
+        Description = achievementDescription;
+    }
+    /// <summary>The name of the unlocked achievement.</summary>
+    public string Name { get; }
+    /// <summary>The description of the unlocked achievement.</summary>
+    public string Description { get; }
+}

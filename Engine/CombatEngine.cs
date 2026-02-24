@@ -298,6 +298,12 @@ public class CombatEngine : ICombatEngine
                 continue;
             }
             
+            if (_pendingAchievement != null)
+            {
+                _display.ShowMessage($"{Systems.ColorCodes.Bold}{Systems.ColorCodes.Yellow}{_pendingAchievement}{Systems.ColorCodes.Reset}");
+                _pendingAchievement = null;
+            }
+            
             _display.ShowCombatStatus(player, enemy, 
                 _statusEffects.GetActiveEffects(player), 
                 _statusEffects.GetActiveEffects(enemy));
@@ -683,6 +689,20 @@ public class CombatEngine : ICombatEngine
         var xpToNext = 100 * player.Level;
         _display.ShowMessage($"You gained {enemy.XPValue} XP. (Total: {player.XP}/{xpToNext} to next level)");
         CheckLevelUp(player);
+        
+        _stats.EnemiesDefeated++;
+        
+        // Check combat-relevant achievement milestones
+        if (_events != null)
+        {
+            if (_stats.EnemiesDefeated == 10)
+                _events.RaiseAchievementUnlocked("Slayer", "Defeated 10 enemies");
+            else if (_stats.EnemiesDefeated == 25)
+                _events.RaiseAchievementUnlocked("Veteran", "Defeated 25 enemies");
+            else if (_stats.EnemiesDefeated == 50)
+                _events.RaiseAchievementUnlocked("Champion", "Defeated 50 enemies");
+        }
+        
         _events?.RaiseCombatEnded(player, enemy, CombatResult.Won);
         _statusEffects.Clear(player);
         _statusEffects.Clear(enemy);
