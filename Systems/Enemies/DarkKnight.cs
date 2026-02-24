@@ -63,6 +63,12 @@ public class DarkKnight : Enemy
             {
                 LootTable.AddDrop(ItemConfig.CreateItem(knightArmor), 0.4);
             }
+
+            var studdedArmor = itemConfig.FirstOrDefault(i => i.Name == "Studded Armor");
+            if (studdedArmor != null)
+            {
+                LootTable.AddDrop(ItemConfig.CreateItem(studdedArmor), 0.25);
+            }
         }
         else
         {
@@ -82,6 +88,15 @@ public class DarkKnight : Enemy
                 Description = "Heavy plated armor.",
                 Tier = ItemTier.Uncommon
             }, 0.4);
+            LootTable.AddDrop(new Item
+            {
+                Name = "Studded Armor",
+                Type = ItemType.Armor,
+                DefenseBonus = 8,
+                IsEquippable = true,
+                Description = "Leather reinforced with iron rivets.",
+                Tier = ItemTier.Uncommon
+            }, 0.25);
         }
     }
 }

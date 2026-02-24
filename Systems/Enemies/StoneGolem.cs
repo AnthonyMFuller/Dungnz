@@ -46,5 +46,21 @@ public class StoneGolem : Enemy
             XPValue = 50;
             LootTable = new LootTable(minGold: 10, maxGold: 25);
         }
+        if (itemConfig != null)
+        {
+            var ironOre = itemConfig.FirstOrDefault(i => i.Name == "Iron Ore");
+            if (ironOre != null)
+                LootTable.AddDrop(ItemConfig.CreateItem(ironOre), 0.25);
+        }
+        else
+        {
+            LootTable.AddDrop(new Item
+            {
+                Name = "Iron Ore",
+                Type = ItemType.Consumable,
+                Description = "Raw iron. Could be useful for a blacksmith.",
+                Tier = ItemTier.Common
+            }, 0.25);
+        }
     }
 }
