@@ -38,6 +38,21 @@ public record ItemStats
 
     /// <summary>The power tier of this item; defaults to <see cref="ItemTier.Common"/> when absent from the JSON.</summary>
     public string Tier { get; init; } = "Common";
+
+    /// <summary>The flat bonus added to the player's dodge chance when this item is equipped, expressed in [0, 1].</summary>
+    public float DodgeBonus { get; init; }
+
+    /// <summary>The bonus added to the player's maximum mana when this item is equipped.</summary>
+    public int MaxManaBonus { get; init; }
+
+    /// <summary>The amount of mana restored to the player when this consumable item is used.</summary>
+    public int ManaRestore { get; init; }
+
+    /// <summary>The carry weight of this item. Defaults to <c>1</c>.</summary>
+    public int Weight { get; init; } = 1;
+
+    /// <summary>When true, this item is only available from merchants and must not appear in loot pools or enemy drops.</summary>
+    public bool MerchantExclusive { get; init; }
 }
 
 /// <summary>
@@ -138,7 +153,8 @@ public static class ItemConfig
     {
         return items
             .Where(s => s.Tier.Equals(tier.ToString(), StringComparison.OrdinalIgnoreCase)
-                        && s.Name != "Boss Key")
+                        && s.Name != "Boss Key"
+                        && !s.MerchantExclusive)
             .Select(CreateItem)
             .ToList();
     }
@@ -168,7 +184,12 @@ public static class ItemConfig
             StatModifier = stats.StatModifier,
             Description = stats.Description,
             IsEquippable = stats.IsEquippable,
-            Tier = Enum.TryParse<ItemTier>(stats.Tier, ignoreCase: true, out var tier) ? tier : ItemTier.Common
+            Tier = Enum.TryParse<ItemTier>(stats.Tier, ignoreCase: true, out var tier) ? tier : ItemTier.Common,
+            DodgeBonus = stats.DodgeBonus,
+            MaxManaBonus = stats.MaxManaBonus,
+            ManaRestore = stats.ManaRestore,
+            Weight = stats.Weight,
+            MerchantExclusive = stats.MerchantExclusive
         };
     }
 }
