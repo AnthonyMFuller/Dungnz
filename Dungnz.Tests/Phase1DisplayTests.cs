@@ -331,7 +331,7 @@ public class Phase1DisplayTests
     [Fact]
     public void CombatEngine_AbilityUsed_MessageContainsAbilityName()
     {
-        // Arrange: player with enough mana/level to use Power Strike (level 1+)
+        // Arrange: player with enough mana/level to use Shield Bash (Warrior level 1+)
         var player = new Player 
         { 
             HP = 100, 
@@ -340,7 +340,8 @@ public class Phase1DisplayTests
             Defense = 5,
             Mana = 50,
             MaxMana = 50,
-            Level = 1
+            Level = 1,
+            Class = PlayerClass.Warrior
         };
 
         var enemy = new Enemy_Stub(hp: 100, atk: 1, def: 0, xp: 10);
@@ -352,8 +353,8 @@ public class Phase1DisplayTests
         // Act
         engine.RunCombat(player, enemy);
 
-        // Assert: confirmation message should contain "Power Strike" (first unlocked ability at level 1)
+        // Assert: confirmation message should contain "Shield Bash" (first Warrior ability at level 1)
         var allMessages = string.Join(" ", display.Messages);
-        allMessages.Should().Contain("Power Strike", "ability name should appear in confirmation");
+        allMessages.Should().Contain("Shield Bash", "ability name should appear in confirmation");
     }
 }
