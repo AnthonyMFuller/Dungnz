@@ -189,6 +189,9 @@ public class GameLoop
                 case CommandType.Shop:
                     HandleShop();
                     break;
+                case CommandType.Sell:
+                    HandleSell();
+                    break;
                 case CommandType.Prestige:
                     HandlePrestige();
                     break;
@@ -726,6 +729,7 @@ public class GameLoop
         var merchant = _currentRoom.Merchant;
         _display.ShowMessage($"=== MERCHANT SHOP ({merchant.Name}) ===");
         _display.ShowShop(merchant.Stock.Select(mi => (mi.Item, mi.Price)), _player.Gold);
+        _display.ShowColoredMessage("  💰 Type SELL to sell items to the merchant.", Systems.ColorCodes.Gray);
         _display.ShowCommandPrompt();
 
         var input = _input.ReadLine()?.Trim() ?? "";
@@ -764,6 +768,58 @@ public class GameLoop
             _display.ShowMessage("Leaving the shop.");
             _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.NoBuy));
         }
+    }
+
+    private void HandleSell()
+    {
+        if (_currentRoom.Merchant == null)
+        {
+            _display.ShowError("There is no merchant here.");
+            return;
+        }
+
+        // Items in _player.Inventory are already unequipped; exclude Gold-type items
+        var sellable = _player.Inventory
+            .Where(i => i.Type != ItemType.Gold)
+            .ToList();
+
+        if (!sellable.Any())
+        {
+            // TODO: replace with MerchantNarration pool when WI-4 is done
+            _display.ShowMessage("Nothing to sell.");
+            return;
+        }
+
+        _display.ShowSellMenu(sellable.Select(i => (i, MerchantInventoryConfig.ComputeSellPrice(i))), _player.Gold);
+        _display.ShowCommandPrompt();
+
+        var input = _input.ReadLine()?.Trim() ?? "";
+        if (input.Equals("x", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(input))
+            return;
+
+        if (!int.TryParse(input, out int idx) || idx < 1 || idx > sellable.Count)
+        {
+            _display.ShowError("Invalid selection.");
+            return;
+        }
+
+        var item = sellable[idx - 1];
+        int price = MerchantInventoryConfig.ComputeSellPrice(item);
+
+        _display.ShowMessage($"Sell {item.Name} for {price}g? [Y/N]");
+        var confirm = _input.ReadLine()?.Trim() ?? "";
+        if (!confirm.Equals("y", StringComparison.OrdinalIgnoreCase) &&
+            !confirm.Equals("yes", StringComparison.OrdinalIgnoreCase))
+        {
+            _display.ShowMessage("Changed your mind.");
+            return;
+        }
+
+        _player.Inventory.Remove(item);
+        _player.AddGold(price);
+        _display.ShowMessage($"You sold {item.Name} for {price}g. Gold remaining: {_player.Gold}g");
+        // TODO: replace with MerchantNarration pool when WI-4 is done
+        _display.ShowMessage("The merchant pockets the item.");
     }
 
     private void HandleSkills()

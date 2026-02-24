@@ -59,6 +59,9 @@ public enum CommandType
     /// <summary>Browse the wares of a merchant present in the current room.</summary>
     Shop,
 
+    /// <summary>Sell items from the player's inventory to a merchant in the current room.</summary>
+    Sell,
+
     /// <summary>Display the player's prestige level, total wins/runs, and active stat bonuses.</summary>
     Prestige,
 
@@ -154,6 +157,7 @@ public static class CommandParser
             "descend" or "down" => new ParsedCommand { Type = CommandType.Descend },
             "map" or "m" => new ParsedCommand { Type = CommandType.Map },
             "shop" or "buy" => new ParsedCommand { Type = CommandType.Shop },
+            "sell" => new ParsedCommand { Type = CommandType.Sell },
             "prestige" or "p" => new ParsedCommand { Type = CommandType.Prestige },
             "skills" or "skill" => new ParsedCommand { Type = CommandType.Skills },
             "learn" => new ParsedCommand { Type = CommandType.Learn, Argument = argument },
