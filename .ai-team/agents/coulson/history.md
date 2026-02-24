@@ -1060,6 +1060,39 @@ Decision written to: `.ai-team/decisions/inbox/coulson-intro-sequence-architectu
 **Bottom Line:**
 Strong execution velocity and clean architecture decisions. Primary improvement: sequencing. Tests, specs, and systems must precede implementation, not follow it. All four phases complete, 416 tests passing, no regressions. Team is aligned on process improvements for next cycle.
 
+---
+
+### 2026-02-22: UI/UX Improvement Planning Session
+
+**Context:** Boss requested a comprehensive UI/UX improvement plan for TextGame. Game mechanics (status effects, abilities, multi-floor dungeons, achievements, crafting, equipment slots) have outpaced the rendering layer. Players cannot see the systems they're interacting with.
+
+**Process:** Facilitated planning session gathering domain perspectives from Hill (display/navigation), Barton (combat/systems), and Romanoff (player experience/testability). Synthesized into a phased plan.
+
+**Key Findings from Team:**
+
+*Hill:* Combat status is spreadsheet-like (numbers, no bars). Floor transitions are one-liners. Victory/GameOver screens live in GameLoop doing their own box-drawing — belong in DisplayService. Enemy examine is an inline one-liner vs the full box card that items get. ShowColoredStat label alignment is fragile at 8-char pad width.
+
+*Barton:* Status effects completely invisible during combat — no persistent indicator. Boss enrage flag not shown after the one-time message scrolls. ShowLootDrop has an ANSI padding bug that corrupts box alignment on colored tier strings. Level-up choice menu shows deltas with no current values. Achievement unlocks have no combat notification path.
+
+*Romanoff:* No persistent HP/MP display — player must type STATS to see health. Shrine uses single-char hotkeys that break the verb-driven command model. EXAMINE on enemies is not surfaced anywhere. Map blank spaces are ambiguous (unexplored vs absent). DESCEND command is discovered via one-time scroll message, not persistent.
+
+**Plan Output:** 3 phases, 20 work items, full shared infrastructure list.
+- **Phase 1 (Combat Feel):** HP/MP bars, active effects in status, elite/enrage tags, colorized turn log, level-up with current values, XP progress, ability confirmation, immune feedback, achievement notifications, combat entry separator.
+- **Phase 2 (Navigation Polish):** Compass exits, floor banners, persistent status mini-bar, map unvisited rooms as `[?]`, enemy health state on map, hazard forewarning, DESCEND discoverability, contextual prompt hints.
+- **Phase 3 (Information Architecture):** Enemy examine box card, Victory/GameOver to DisplayService, item descriptions in inventory, equipment slot summary, full loot comparison, shrine command normalization, class abilities preview, save default name.
+
+**Architecture Decisions Made:**
+- `ShowCombatStatus` gains `IReadOnlyList<ActiveEffect>` parameters for player and enemy effects (Barton wires, Hill renders)
+- `ShowCommandPrompt` gains optional `Player?` parameter for persistent status bar (use overload to minimize test churn — coordinate with Romanoff)
+- Victory/GameOver flavor strings: pre-picked in GameLoop, passed as params to display methods — NarrationService stays out of DisplayService
+- ANSI padding fix: standardize `ColorCodes.StripAnsiCodes()` for plain-text width measurement in all box-drawing methods
+- `RenderBar()` private helper in ConsoleDisplayService: shared by combat, stats, prompt status bar
+
+**Files Created:**
+- `.ai-team/plans/uiux-improvement-plan.md` — Full plan with 20 work items, owners, interface changes flagged
+- `.ai-team/decisions/inbox/coulson-uiux-plan.md` — Decision record for Scribe
+
+**Blocked On:** Boss approval before implementation begins. No branches, issues, or PRs created.
 ### 2026-02-22: Phase 0 + Phase 1 Prep PR Review & Merge
 **Outcome:** Merged PR #298 (Hill's Phase 0) and PR #299 (Barton's Phase 1 prep).
 
