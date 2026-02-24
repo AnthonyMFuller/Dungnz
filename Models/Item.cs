@@ -90,6 +90,12 @@ public class Item
     public ItemTier Tier { get; set; } = ItemTier.Common;
 
     /// <summary>
+    /// Gets or sets whether this item can only be purchased from a merchant and must never
+    /// appear in chest loot pools or enemy drop tables.
+    /// </summary>
+    public bool MerchantExclusive { get; set; }
+
+    /// <summary>
     /// Creates a shallow copy of this item with all properties duplicated. Used when adding
     /// crafted items to inventory to avoid sharing references.
     /// </summary>
