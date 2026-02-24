@@ -24,6 +24,7 @@ public class CombatEngine : ICombatEngine
     private int _baseEliteAttack;
     private int _baseEliteDefense;
     private int _shamanHealCooldown;
+    private string? _pendingAchievement;
     private const int MaxLevel = 20; // Fix #183
 
     private static readonly string[] _playerHitMessages =
