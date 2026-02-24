@@ -122,6 +122,7 @@ public class StatusEffectManager
         {
             if (stat == "Attack" && e.Effect == StatusEffect.Weakened) mod -= GetBaseAttack(target) / 2;
             else if (stat == "Attack" && e.Effect == StatusEffect.Slow) mod -= GetBaseAttack(target) / 4;
+            else if (stat == "Attack" && e.Effect == StatusEffect.BattleCry) mod += GetBaseAttack(target) / 4;
             else if (stat == "Defense" && e.Effect == StatusEffect.Fortified) mod += GetBaseDefense(target) / 2;
         }
         return mod;

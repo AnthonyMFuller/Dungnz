@@ -70,6 +70,17 @@ public partial class Player
     public bool IsManaShieldActive { get; set; } = false;
 
     /// <summary>
+    /// Gets or sets whether the Evade ability is active (Rogue mechanic). Next enemy attack will miss.
+    /// </summary>
+    public bool EvadeNextAttack { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets the number of turns remaining for Last Stand effect (Warrior mechanic).
+    /// While active: damage taken -75%, damage dealt +50%.
+    /// </summary>
+    public int LastStandTurns { get; set; } = 0;
+
+    /// <summary>
     /// Raised whenever the player's <see cref="HP"/> value changes, supplying the values
     /// immediately before and after the change.
     /// </summary>

@@ -26,5 +26,8 @@ public enum StatusEffect
     Weakened,
 
     /// <summary>Reduces attack damage by 25% and makes the target attack last in turn order.</summary>
-    Slow
+    Slow,
+
+    /// <summary>Increases the bearer's attack power by 25%, applied by Battle Cry ability.</summary>
+    BattleCry
 }

@@ -160,22 +160,22 @@ public class SkillTree
         Skill.BattleHardened => "Take 5% less damage",
 
         // Warrior passives
-        Skill.IronConstitution => "+15 MaxHP, +5% damage reduction",
-        Skill.UndyingWill => "When HP < 25%, gain Regen for 2 turns",
-        Skill.BerserkersEdge => "+10% damage per 25% HP missing",
-        Skill.Unbreakable => "Last Stand activates at ≤50% HP",
+        Skill.IronConstitution => "Years of being hit have made you hard to kill. (+15 MaxHP, +5% damage reduction)",
+        Skill.UndyingWill => "The body gives out. The will does not. (Regen when HP < 25%)",
+        Skill.BerserkersEdge => "The closer to death, the more dangerous you become. (+10% damage per 25% HP missing)",
+        Skill.Unbreakable => "When the odds are worst, you find another gear. (Last Stand at ≤50% HP)",
 
         // Mage passives
-        Skill.ArcaneReservoir => "+20 MaxMana",
-        Skill.SpellWeaver => "Spells cost 10% less mana",
-        Skill.LeyConduit => "+5 mana regeneration/turn",
-        Skill.Overcharge => "+25% spell damage when mana > 80%",
+        Skill.ArcaneReservoir => "You've learned to hold more of the void inside you. (+20 MaxMana)",
+        Skill.SpellWeaver => "Magic bends to your will, not the other way around. (Spells cost 10% less mana)",
+        Skill.LeyConduit => "The dungeon's energy bleeds into you with every breath. (+5 mana regen/turn)",
+        Skill.Overcharge => "A full well casts the longest shadow. (+25% spell damage when mana > 80%)",
 
         // Rogue passives
-        Skill.QuickReflexes => "+5% dodge chance",
-        Skill.Opportunist => "Backstab bonus on Poisoned enemies",
-        Skill.Relentless => "Flurry/Assassinate cooldowns -1",
-        Skill.ShadowMaster => "Evade grants 2 Combo Points",
+        Skill.QuickReflexes => "You've survived this long by moving first. (+5% dodge)",
+        Skill.Opportunist => "You never let an opening go to waste. (Backstab bonus on Poisoned enemies)",
+        Skill.Relentless => "Rest is for the dead. (Flurry/Assassinate cooldowns -1)",
+        Skill.ShadowMaster => "You were never really there. (Evade grants 2 Combo Points)",
 
         _ => ""
     };

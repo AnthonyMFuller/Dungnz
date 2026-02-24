@@ -27,9 +27,9 @@ public class ActiveEffect
     /// <summary>
     /// Gets whether this effect is a debuff (harmful condition) — specifically
     /// <see cref="StatusEffect.Poison"/>, <see cref="StatusEffect.Bleed"/>,
-    /// <see cref="StatusEffect.Stun"/>, or <see cref="StatusEffect.Weakened"/>.
+    /// <see cref="StatusEffect.Stun"/>, <see cref="StatusEffect.Weakened"/>, or <see cref="StatusEffect.Slow"/>.
     /// </summary>
-    public bool IsDebuff => Effect is StatusEffect.Poison or StatusEffect.Bleed or StatusEffect.Stun or StatusEffect.Weakened;
+    public bool IsDebuff => Effect is StatusEffect.Poison or StatusEffect.Bleed or StatusEffect.Stun or StatusEffect.Weakened or StatusEffect.Slow;
 
     /// <summary>
     /// Gets whether this effect is a buff (beneficial condition), i.e. the inverse of

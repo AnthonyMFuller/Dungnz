@@ -275,6 +275,14 @@ public class CombatEngine : ICombatEngine
                 manaRegen += 5;
             player.RestoreMana(manaRegen);
             _abilities.TickCooldowns();
+            
+            // Decrement Last Stand turns
+            if (player.LastStandTurns > 0)
+            {
+                player.LastStandTurns--;
+                if (player.LastStandTurns == 0)
+                    _display.ShowCombatMessage("Your Last Stand effect has ended.");
+            }
 
             // Boss Phase 2: check enrage
             if (enemy is DungeonBoss boss)
@@ -324,6 +332,9 @@ public class CombatEngine : ICombatEngine
                     _statusEffects.Clear(player);
                     _statusEffects.Clear(enemy);
                     player.ActiveEffects.Clear();
+                    player.ResetComboPoints();
+                    player.LastStandTurns = 0;
+                    player.EvadeNextAttack = false;
                     return CombatResult.Fled;
                 }
                 else
@@ -387,7 +398,22 @@ public class CombatEngine : ICombatEngine
         var unlockedAbilities = _abilities.GetUnlockedAbilities(player);
         if (unlockedAbilities.Any())
         {
-            _display.ShowMessage($"Mana: {player.Mana}/{player.MaxMana}");
+            var manaLine = $"Mana: {player.Mana}/{player.MaxMana}";
+            
+            // Rogue: Show Combo Points
+            if (player.Class == PlayerClass.Rogue)
+            {
+                var comboDots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
+                manaLine += $"  ⚡ Combo: {comboDots}";
+            }
+            
+            // Mage: Show ManaShield status
+            if (player.Class == PlayerClass.Mage && player.IsManaShieldActive)
+            {
+                manaLine += " [SHIELD ACTIVE]";
+            }
+            
+            _display.ShowMessage(manaLine);
         }
     }
 
@@ -520,6 +546,10 @@ public class CombatEngine : ICombatEngine
                 else multiplier = 1.10f;                         // <25% missing = +10%
                 playerDmg = Math.Max(1, (int)(playerDmg * multiplier));
             }
+            // Last Stand damage boost — +50% damage
+            if (player.LastStandTurns > 0)
+                playerDmg = Math.Max(1, (int)(playerDmg * 1.5f));
+            
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
             var hitPool = player.Class switch {
@@ -626,7 +656,13 @@ public class CombatEngine : ICombatEngine
         }
 
         // Bug #85: include equipment and class dodge bonuses for the player
-        if (RollPlayerDodge(player))
+        if (player.EvadeNextAttack)
+        {
+            player.EvadeNextAttack = false;
+            _display.ShowCombatMessage("The enemy's attack finds only shadows.");
+            _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
+        }
+        else if (RollPlayerDodge(player))
         {
             _display.ShowCombatMessage(_narration.Pick(_playerDodgeMessages, enemy.Name));
             _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
@@ -655,6 +691,32 @@ public class CombatEngine : ICombatEngine
             // Iron Constitution passive — 5% damage reduction
             if (player.Skills.IsUnlocked(Skill.IronConstitution))
                 enemyDmg = Math.Max(1, (int)(enemyDmg * 0.95f));
+            // Last Stand damage reduction — 75% damage reduction
+            if (player.LastStandTurns > 0)
+                enemyDmg = Math.Max(1, (int)(enemyDmg * 0.25f));
+            
+            // Mana Shield absorption
+            if (player.IsManaShieldActive)
+            {
+                var manaLost = (int)(enemyDmg * 1.5);
+                if (player.Mana >= manaLost)
+                {
+                    player.Mana -= manaLost;
+                    _display.ShowCombatMessage($"The mana shield absorbs the blow! ({manaLost} mana lost)");
+                    _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, isCrit, false, null));
+                    return; // No HP damage taken
+                }
+                else
+                {
+                    // Shield breaks, take remaining as HP damage
+                    var remainingDamage = enemyDmg - (player.Mana * 2 / 3); // reverse calculation
+                    player.Mana = 0;
+                    player.IsManaShieldActive = false;
+                    enemyDmg = Math.Max(1, remainingDamage);
+                    _display.ShowCombatMessage("Your mana shield shatters!");
+                }
+            }
+            
             player.TakeDamage(enemyDmg);
             _stats.DamageTaken += enemyDmg;
             _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmg), enemyDmg));
@@ -729,6 +791,9 @@ public class CombatEngine : ICombatEngine
         _statusEffects.Clear(player);
         _statusEffects.Clear(enemy);
         player.ActiveEffects.Clear();
+        player.ResetComboPoints();
+        player.LastStandTurns = 0;
+        player.EvadeNextAttack = false;
     }
     
     private void CheckLevelUp(Player player)

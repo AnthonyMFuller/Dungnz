@@ -230,78 +230,229 @@ public class AbilityManager
                 display.ShowCombatMessage($"Second Wind! You heal {healAmount} HP!");
                 break;
 
-            // Warrior abilities - TODO: Phase 3 implementation (Issue #362)
+            // Warrior abilities - Phase 3 implementation (Issue #362)
             case AbilityType.ShieldBash:
-                // TODO: Phase 3 — see Issue #362
+                {
+                    var bashDamage = Math.Max(1, (int)(player.Attack * 1.2) - enemy.Defense);
+                    enemy.HP -= bashDamage;
+                    display.ShowCombatMessage($"You slam your shield into the enemy's skull! ({bashDamage} damage)");
+                    if (new Random().NextDouble() < 0.5)
+                    {
+                        statusEffects.Apply(enemy, StatusEffect.Stun, 1);
+                        display.ShowCombatMessage($"{enemy.Name} is stunned!");
+                    }
+                }
                 break;
             
             case AbilityType.BattleCry:
-                // TODO: Phase 3 — see Issue #362
+                {
+                    statusEffects.RemoveDebuffs(player);
+                    statusEffects.Apply(player, StatusEffect.BattleCry, 3);
+                    display.ShowCombatMessage("A primal roar tears from your throat — you will not fall!");
+                }
                 break;
             
             case AbilityType.Fortify:
-                // TODO: Phase 3 — see Issue #362
+                {
+                    statusEffects.Apply(player, StatusEffect.Fortified, 3);
+                    if (player.HP <= player.MaxHP * 0.5)
+                    {
+                        var fortifyHeal = (int)(player.MaxHP * 0.15);
+                        player.Heal(fortifyHeal);
+                        display.ShowCombatMessage($"You plant your feet and brace for the onslaught. (Healed {fortifyHeal} HP!)");
+                    }
+                    else
+                    {
+                        display.ShowCombatMessage("You plant your feet and brace for the onslaught.");
+                    }
+                }
                 break;
             
             case AbilityType.RecklessBlow:
-                // TODO: Phase 3 — see Issue #362
+                {
+                    var effectiveEnemyDef = enemy.Defense / 2;
+                    var recklessDamage = Math.Max(1, (int)(player.Attack * 2.5) - effectiveEnemyDef);
+                    enemy.HP -= recklessDamage;
+                    
+                    var selfDamage = Math.Max(1, (int)(player.MaxHP * 0.1));
+                    if (player.HP - selfDamage < 1)
+                        selfDamage = player.HP - 1;
+                    player.TakeDamage(selfDamage);
+                    
+                    display.ShowCombatMessage($"You throw caution aside and swing with everything! ({recklessDamage} damage, {selfDamage} self-damage)");
+                }
                 break;
             
             case AbilityType.LastStand:
-                // TODO: Phase 3 — see Issue #362
-                // NOTE: Check player.GetLastStandThreshold() for Unbreakable passive (50% vs 40%)
+                {
+                    var threshold = player.GetLastStandThreshold();
+                    if (player.HP > player.MaxHP * threshold)
+                    {
+                        display.ShowCombatMessage("You must be gravely wounded to use Last Stand!");
+                        player.RestoreMana(effectiveCost); // refund mana
+                        return UseAbilityResult.InsufficientMana; // reuse this as generic failure
+                    }
+                    player.LastStandTurns = 2;
+                    display.ShowCombatMessage("Your vision narrows. Everything slows. This ends now.");
+                }
                 break;
 
-            // Mage abilities - TODO: Phase 3 implementation (Issue #362)
+            // Mage abilities - Phase 3 implementation (Issue #362)
             case AbilityType.ArcaneBolt:
-                // TODO: Phase 3 — see Issue #362
-                // NOTE: Check player.GetSpellCostMultiplier() for Spell Weaver passive (10% cost reduction)
-                // NOTE: Check player.IsOverchargeActive() for Overcharge passive (+25% damage)
+                {
+                    var baseDmg = (int)((player.Attack * 1.5) + (player.Mana / 10));
+                    if (player.IsOverchargeActive())
+                        baseDmg = (int)(baseDmg * 1.25);
+                    // Magic damage bypasses defense (or reduces it significantly)
+                    var arcaneDamage = Math.Max(1, baseDmg - (enemy.Defense / 4));
+                    enemy.HP -= arcaneDamage;
+                    display.ShowCombatMessage($"A crackling bolt of raw energy leaps from your fingertips! ({arcaneDamage} damage)");
+                }
                 break;
             
             case AbilityType.FrostNova:
-                // TODO: Phase 3 — see Issue #362
-                // NOTE: Check player.GetSpellCostMultiplier() for Spell Weaver passive (10% cost reduction)
-                // NOTE: Check player.IsOverchargeActive() for Overcharge passive (+25% damage)
+                {
+                    var baseDmg = (int)(player.Attack * 1.2);
+                    if (player.IsOverchargeActive())
+                        baseDmg = (int)(baseDmg * 1.25);
+                    var frostDamage = Math.Max(1, baseDmg - (enemy.Defense / 4));
+                    enemy.HP -= frostDamage;
+                    statusEffects.Apply(enemy, StatusEffect.Slow, 2);
+                    display.ShowCombatMessage($"A wave of bitter cold explodes outward! ({frostDamage} damage, enemy slowed)");
+                }
                 break;
             
             case AbilityType.ManaShield:
-                // TODO: Phase 3 — see Issue #362
-                // NOTE: Check player.GetSpellCostMultiplier() for Spell Weaver passive (10% cost reduction)
+                {
+                    player.IsManaShieldActive = !player.IsManaShieldActive;
+                    if (player.IsManaShieldActive)
+                        display.ShowCombatMessage("You wrap yourself in a lattice of pure arcane energy.");
+                    else
+                        display.ShowCombatMessage("The arcane barrier dissolves.");
+                }
                 break;
             
             case AbilityType.ArcaneSacrifice:
-                // TODO: Phase 3 — see Issue #362
-                // NOTE: Check player.GetSpellCostMultiplier() for Spell Weaver passive (10% cost reduction)
+                {
+                    var sacrificeDamage = Math.Max(1, (int)(player.MaxHP * 0.15));
+                    if (player.HP - sacrificeDamage < 1)
+                        sacrificeDamage = player.HP - 1;
+                    player.TakeDamage(sacrificeDamage);
+                    
+                    var manaRestore = (int)(player.MaxMana * 0.30);
+                    player.RestoreMana(manaRestore);
+                    
+                    display.ShowCombatMessage($"You draw power from your own essence — dangerous, but effective. ({manaRestore} mana restored)");
+                }
                 break;
             
             case AbilityType.Meteor:
-                // TODO: Phase 3 — see Issue #362
-                // NOTE: Check player.GetSpellCostMultiplier() for Spell Weaver passive (10% cost reduction)
-                // NOTE: Check player.IsOverchargeActive() for Overcharge passive (+25% damage)
+                {
+                    var baseDmg = (player.Attack * 3) + 20;
+                    if (player.IsOverchargeActive())
+                        baseDmg = (int)(baseDmg * 1.25);
+                    var meteorDamage = Math.Max(1, baseDmg);
+                    enemy.HP -= meteorDamage;
+                    
+                    // Check for execute
+                    if (enemy.HP <= enemy.MaxHP * 0.20 && !enemy.IsImmuneToEffects)
+                    {
+                        enemy.HP = 0;
+                        display.ShowCombatMessage("The ceiling cracks. A fragment of the heavens descends. The creature collapses, obliterated.");
+                    }
+                    else
+                    {
+                        display.ShowCombatMessage($"The ceiling cracks. A fragment of the heavens descends! ({meteorDamage} damage)");
+                    }
+                }
                 break;
 
-            // Rogue abilities - TODO: Phase 3 implementation (Issue #362)
+            // Rogue abilities - Phase 3 implementation (Issue #362)
             case AbilityType.QuickStrike:
-                // TODO: Phase 3 — see Issue #362
+                {
+                    var quickDamage = Math.Max(1, player.Attack - enemy.Defense);
+                    enemy.HP -= quickDamage;
+                    player.AddComboPoints(1);
+                    display.ShowCombatMessage($"A lightning-fast jab — you're already setting up the next hit. ({quickDamage} damage, Combo: {player.ComboPoints})");
+                }
                 break;
             
             case AbilityType.Backstab:
-                // TODO: Phase 3 — see Issue #362
-                // NOTE: Use player.ShouldTriggerBackstabBonus(enemy, statusEffects.HasEffect) for Opportunist passive
+                {
+                    bool hasCondition = player.ShouldTriggerBackstabBonus(enemy, statusEffects.HasEffect);
+                    int backstabDamage;
+                    if (hasCondition)
+                    {
+                        backstabDamage = Math.Max(1, (int)(player.Attack * 2.5) - enemy.Defense);
+                        display.ShowCombatMessage($"You find the opening and drive your blade home! Critical backstab! ({backstabDamage} damage)");
+                    }
+                    else
+                    {
+                        backstabDamage = Math.Max(1, (int)(player.Attack * 1.5) - enemy.Defense);
+                        display.ShowCombatMessage($"You find the opening and drive your blade home. ({backstabDamage} damage)");
+                    }
+                    enemy.HP -= backstabDamage;
+                }
                 break;
             
             case AbilityType.Evade:
-                // TODO: Phase 3 — see Issue #362
-                // NOTE: Use player.GetEvadeComboPointGrant() for Shadow Master passive (2 CP instead of 1)
+                {
+                    player.EvadeNextAttack = true;
+                    var comboGrant = player.GetEvadeComboPointGrant();
+                    player.AddComboPoints(comboGrant);
+                    display.ShowCombatMessage($"You melt into the shadows — the blow finds only air. (Combo: {player.ComboPoints})");
+                }
                 break;
             
             case AbilityType.Flurry:
-                // TODO: Phase 3 — see Issue #362
+                {
+                    if (player.ComboPoints < 1)
+                    {
+                        display.ShowCombatMessage("You need at least 1 Combo Point!");
+                        player.RestoreMana(effectiveCost);
+                        return UseAbilityResult.InsufficientMana;
+                    }
+                    var pts = player.SpendComboPoints();
+                    var flurryDamage = Math.Max(1, (int)((0.6 * pts) * player.Attack) - enemy.Defense);
+                    enemy.HP -= flurryDamage;
+                    
+                    // Each "hit" has 30% chance to bleed
+                    var rng = new Random();
+                    for (int i = 0; i < pts; i++)
+                    {
+                        if (rng.NextDouble() < 0.30)
+                        {
+                            statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
+                            break; // Only apply once
+                        }
+                    }
+                    display.ShowCombatMessage($"A blur of steel — {pts} combo strikes! ({flurryDamage} damage, 30% Bleed chance per hit)");
+                }
                 break;
             
             case AbilityType.Assassinate:
-                // TODO: Phase 3 — see Issue #362
+                {
+                    if (player.ComboPoints < 3)
+                    {
+                        display.ShowCombatMessage("Assassinate requires 3+ Combo Points!");
+                        player.RestoreMana(effectiveCost);
+                        return UseAbilityResult.InsufficientMana;
+                    }
+                    var pts = player.SpendComboPoints();
+                    var assassinateDamage = Math.Max(1, (int)((pts * 0.8) * player.Attack) - enemy.Defense);
+                    enemy.HP -= assassinateDamage;
+                    
+                    // Check for execute
+                    if (enemy.HP <= enemy.MaxHP * 0.30 && !enemy.IsImmuneToEffects)
+                    {
+                        enemy.HP = 0;
+                        display.ShowCombatMessage("One clean strike. They never see it coming.");
+                    }
+                    else
+                    {
+                        display.ShowCombatMessage($"One clean strike for {assassinateDamage} damage!");
+                    }
+                }
                 break;
         }
         
