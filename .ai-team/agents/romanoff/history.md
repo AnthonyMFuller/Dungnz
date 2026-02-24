@@ -550,3 +550,36 @@
 - **JSON path pattern** for `EnemyConfig.Load` in tests: `Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "..", "Data", "enemy-stats.json")` — same as `EnemyFactoryFixture`.
 - **`FakeDisplayService.ShowEnemyArt`** already guards empty art with a null/length check, so the empty-art test naturally passes without any changes to production code.
 - **Result:** 427 existing + 4 new = 431 tests, all passing.
+
+### 2026-02-24: PR #366 Phase 6 Class Ability Test Audit
+
+**PR:** #366 `squad/class-abilities` → 845 lines, 57 tests in `Phase6ClassAbilityTests.cs`, refactored `AbilityManagerTests.cs`
+
+**Scope:** Review test quality for WI-22 through WI-27 (class restrictions, warrior/mage/rogue abilities, passives, integration tests)
+
+**Quality Assessment:**
+- ✅ **AAA Structure:** All tests follow Arrange-Act-Assert pattern consistently
+- ✅ **Edge Cases Covered:**
+  - Class restriction filtering (wrong class cannot see other classes' abilities)
+  - HP preservation gates (RecklessBlow/ArcaneSacrifice preserve min 1 HP)
+  - Combo point cap (5 max) and requirements (Flurry ≥1 CP, Assassinate ≥3 CP)
+  - Execute thresholds (Meteor <20%, Assassinate ≤30%) with boss immunity via `IsImmuneToEffects`
+  - Last Stand HP gate (fails >40%, succeeds ≤40% with mana refund on failure)
+  - Conditional damage (Backstab 1.5x base, 2.5x when enemy has Slow/Stun/Bleed)
+  - Fortify heal gate (≤50% HP heals, >50% no heal)
+  - ManaShield toggle on/off
+  - Mana refunds on failed abilities (Last Stand, Flurry, Assassinate)
+  - Passive skill class restrictions (3 tests: warrior/mage/rogue cannot unlock other classes' passives)
+- ✅ **No Trivial Tests:** All assertions verify real behavior with meaningful test data
+- ✅ **Integration Tests:** 3 full combat flows (Warrior ShieldBash, Mage ArcaneBolt, Rogue combo chain to Assassinate)
+
+**AbilityManagerTests Refactor:**
+- Updated from generic Phase 1-5 abilities (PowerStrike/DefensiveStance/PoisonDart/SecondWind) to Warrior-specific Phase 6 abilities (ShieldBash/BattleCry/Fortify/RecklessBlow/LastStand)
+- Coverage NOT weakened — same test patterns applied to new ability system
+- All tests updated to use `PlayerClass.Warrior` and class-specific abilities
+
+**Missing Coverage:** None identified for Phase 6 scope. All WI-22 through WI-27 requirements covered.
+
+**Verdict:** APPROVED — no concerns, recommend merge
+
+**Test Count:** 431 existing + 57 new Phase 6 tests = 488 tests

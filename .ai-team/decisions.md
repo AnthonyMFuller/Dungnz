@@ -11346,3 +11346,70 @@ All changes tested locally. Workflows remain functional with reduced trigger fre
 **Why:** squad-ci.yml already validates on PRs before merge, making release/preview test runs pure redundancy; heartbeat events fire on every label/close for a solo dev project that runs Ralph in-session
 
 **Impact:** 9 workflows remain (down from 12)
+### 2026-02-24: PR #366 Code Review Verdict
+
+**By:** Coulson  
+**What:** CHANGES REQUIRED — excellent feature implementation with one blocking artifact issue
+
+**Why:**
+
+**Architecture Assessment:**
+- ✅ Clean separation: class-specific logic properly isolated in `AbilityManager`, helper methods in `PlayerSkillHelpers.cs`
+- ✅ Model changes minimal and focused: `Ability.ClassRestriction`, `PlayerStats` additions for combo/mana shield/evade/last stand
+- ✅ SkillTree properly extended with class-gated passives using `(minLevel, classRestriction)` tuple pattern
+- ✅ CombatEngine integration surgical: Mana Shield, Evade, Last Stand hooks in damage/turn flow
+- ✅ AbilityFlavorText provides separation of narration content from ability logic (good for future Fury work)
+- ✅ 505 tests passing, including 63 new Phase 6 tests with comprehensive coverage
+
+**Code Quality:**
+- Implementation matches design doc (`class-differentiation-design.md`) faithfully
+- Passive skill interactions (Opportunist, Relentless, Shadow Master, Spell Weaver, Overcharge, Unbreakable) correctly wired via `PlayerSkillHelpers.cs`
+- New `StatusEffect.Slow` and `StatusEffect.BattleCry` properly integrated
+- Combo points mechanics clean with `AddComboPoints`, `SpendComboPoints`, `ResetComboPoints`
+- Execute mechanics (Meteor, Assassinate) respect `IsImmuneToEffects` for bosses
+- Mana Shield toggle + damage absorption math in CombatEngine is correct
+
+**Test Coverage:**
+- 845 lines of new tests covering ability filtering, effect mechanics, passive interactions
+- Tests use proper helper stubs (`Enemy_Stub`, `BossEnemy`, `FakeDisplayService`)
+
+**BLOCKING ISSUE:**
+1. **`Dungnz.Tests/TestResults/_anthony-nobara-pc_2026-02-23_22_25_07.trx`** — 2,685-line local test artifact committed. Must be removed and `.gitignore` updated.
+
+**Required changes before merge:**
+1. Remove `Dungnz.Tests/TestResults/_anthony-nobara-pc_2026-02-23_22_25_07.trx` from the branch
+2. Add `*.trx` and `**/TestResults/` to `.gitignore` to prevent future commits
+
+**Non-blocking observations:**
+- `AbilityFlavorText.cs` duplicates some flavor text that's also in `AbilityManager._abilityFlavor` dictionary — consider consolidating in Phase 2
+- Existing XML comment warnings (CS1572) in enemy files are pre-existing tech debt, not introduced by this PR
+
+Once the TRX file is removed and .gitignore updated: **APPROVED for merge**.
+### 2026-02-24: PR #366 Test Audit
+**By:** Romanoff
+**What:** PASS — 57 tests (845 lines) covering all Phase 6 WI-22 through WI-27 requirements
+**Why:**
+- ✅ Arrange-Act-Assert structure consistently applied across all tests
+- ✅ Edge cases well covered:
+  - Ability class restriction filtering (wrong class cannot see/use other classes' abilities)
+  - Zero HP gates: RecklessBlow preserves min 1 HP, ArcaneSacrifice preserves min 1 HP
+  - Max combo points (5 cap tested)
+  - Mana shield toggle on/off
+  - Execute HP thresholds (Meteor <20%, Assassinate ≤30%) with boss immunity
+  - Last Stand HP threshold gate (fails if >40%, succeeds if ≤40%)
+  - Conditional damage multipliers (Backstab 1.5x base, 2.5x when enemy has Slow/Stun/Bleed)
+  - Fortify heal gate (heals at ≤50% HP, no heal if >50%)
+  - Flurry/Assassinate combo point requirements (≥1 CP, ≥3 CP)
+  - Mana refund on failed ability (Last Stand, Flurry, Assassinate)
+  - Passive skill class restrictions (warrior cannot unlock mage passives, etc.)
+- ✅ No trivial tests — all assertions verify real behavior with meaningful test data
+- ✅ Integration tests present: 3 full combat flows (Warrior ShieldBash, Mage ArcaneBolt, Rogue combo chain)
+- ✅ AbilityManagerTests refactored to use Warrior as default class (old generic abilities replaced with class-specific ones) — coverage NOT weakened, just updated to new Phase 6 system
+
+**Missing coverage:** None identified for Phase 6 scope. All WI requirements (22-27) covered.
+
+**Recommendation:** APPROVE for merge
+### 2026-02-24: Add test result artifacts to .gitignore
+**By:** Fitz
+**What:** Added *.trx and **/TestResults/ to .gitignore; removed accidentally committed test artifact from squad/class-abilities branch
+**Why:** Local test result files (TRX format) should never be committed to the repo. They are machine-specific artifacts.
