@@ -1,50 +1,45 @@
 namespace Dungnz.Systems;
+
+using System.Text.Json;
 using Dungnz.Models;
 
-/// <summary>Defines a single crafting recipe, specifying the required ingredients, gold cost, and the item produced.</summary>
-public class CraftingRecipe
+// Internal DTO used only for deserialising the top-level JSON wrapper.
+internal record RecipeConfigData
 {
-    /// <summary>Gets the display name of this recipe.</summary>
-    public string Name { get; init; } = "";
-
-    /// <summary>Gets the list of ingredients required, each as a tuple of item ID slug, display name, and required count.</summary>
-    public List<(string ItemId, string DisplayName, int Count)> Ingredients { get; init; } = new();
-
-    /// <summary>Gets the item that is produced when this recipe is crafted successfully.</summary>
-    public Item Result { get; init; } = null!;
-
-    /// <summary>Gets the gold cost that must be paid in addition to providing the required ingredients.</summary>
-    public int GoldCost { get; init; }
+    public List<CraftingRecipe> Recipes { get; init; } = new();
 }
 
 /// <summary>
-/// Provides the static list of available crafting recipes and the logic for attempting
-/// to craft an item from a player's inventory and gold.
+/// Provides the list of available crafting recipes and the logic for attempting
+/// to craft an item from a player's inventory and gold. Recipes are loaded from
+/// <c>Data/crafting-recipes.json</c> via <see cref="Load"/>; a set of built-in
+/// defaults is used as a fallback when the file has not been loaded.
 /// </summary>
-public class CraftingSystem
+public static class CraftingSystem
 {
-    /// <summary>Gets all crafting recipes available in the game.</summary>
-    public static readonly List<CraftingRecipe> Recipes = new()
+    private static readonly JsonSerializerOptions JsonOptions = new()
     {
-        new CraftingRecipe {
-            Name = "Health Elixir",
-            Ingredients = new() { ("health-potion", "Health Potion", 2) },
-            GoldCost = 0,
-            Result = new Item { Name = "Health Elixir", ItemId = "health-elixir", Type = ItemType.Consumable, HealAmount = 75, Description = "Two potions rendered down into something stronger. The colour is wrong, but the effect is not.", Tier = ItemTier.Uncommon }
-        },
-        new CraftingRecipe {
-            Name = "Reinforced Sword",
-            Ingredients = new() { ("iron-sword", "Iron Sword", 1) },
-            GoldCost = 30,
-            Result = new Item { Name = "Reinforced Sword", ItemId = "reinforced-sword", Type = ItemType.Weapon, AttackBonus = 8, IsEquippable = true, Description = "The iron has been retempered and the edge reground. It bites deeper now.", Tier = ItemTier.Rare }
-        },
-        new CraftingRecipe {
-            Name = "Reinforced Armor",
-            Ingredients = new() { ("leather-armor", "Leather Armor", 1) },
-            GoldCost = 25,
-            Result = new Item { Name = "Reinforced Armor", ItemId = "reinforced-armor", Type = ItemType.Armor, DefenseBonus = 8, IsEquippable = true, Description = "Extra plates riveted over the weak points. Heavier, but considerably harder to kill through.", Tier = ItemTier.Uncommon }
-        },
+        PropertyNameCaseInsensitive = true
     };
+
+    /// <summary>Gets all crafting recipes currently available in the game.</summary>
+    public static List<CraftingRecipe> Recipes { get; private set; } = BuildDefaultRecipes();
+
+    /// <summary>
+    /// Replaces <see cref="Recipes"/> with the recipes defined in the specified JSON file.
+    /// If the file does not exist, the existing recipes are left unchanged.
+    /// </summary>
+    /// <param name="path">Path to the crafting-recipes.json file.</param>
+    public static void Load(string path = "Data/crafting-recipes.json")
+    {
+        if (!File.Exists(path))
+            return;
+
+        var json = File.ReadAllText(path);
+        var data = JsonSerializer.Deserialize<RecipeConfigData>(json, JsonOptions);
+        if (data?.Recipes is { Count: > 0 })
+            Recipes = data.Recipes;
+    }
 
     /// <summary>
     /// Attempts to craft the given recipe for the specified player, consuming ingredients
@@ -66,23 +61,23 @@ public class CraftingSystem
             return (false, "Your inventory is full.");
 
         // Check ingredients
-        foreach (var (itemId, displayName, count) in recipe.Ingredients)
+        foreach (var ingredient in recipe.Ingredients)
         {
-            var held = player.Inventory.Count(i => MatchIngredient(i, itemId));
-            if (held < count)
-                return (false, $"Need {count}x {displayName} (have {held}).");
+            var held = player.Inventory.Count(i => i.Name.Equals(ingredient.DisplayName, StringComparison.OrdinalIgnoreCase));
+            if (held < ingredient.Count)
+                return (false, $"Need {ingredient.Count}x {ingredient.DisplayName} (have {held}).");
         }
         // Check gold
         if (player.Gold < recipe.GoldCost)
             return (false, $"Need {recipe.GoldCost} gold (have {player.Gold}).");
 
         // Consume ingredients
-        foreach (var (itemId, _, count) in recipe.Ingredients)
+        foreach (var ingredient in recipe.Ingredients)
         {
             int removed = 0;
-            for (int i = player.Inventory.Count - 1; i >= 0 && removed < count; i--)
+            for (int i = player.Inventory.Count - 1; i >= 0 && removed < ingredient.Count; i--)
             {
-                if (MatchIngredient(player.Inventory[i], itemId))
+                if (player.Inventory[i].Name.Equals(ingredient.DisplayName, StringComparison.OrdinalIgnoreCase))
                 {
                     player.Inventory.RemoveAt(i);
                     removed++;
@@ -94,22 +89,35 @@ public class CraftingSystem
             player.SpendGold(recipe.GoldCost);
 
         // Add result
-        // Add result — clone so the shared recipe definition is never mutated
-        player.Inventory.Add(recipe.Result.Clone());
+        player.Inventory.Add(recipe.Result.ToItem());
         return (true, $"You crafted {recipe.Result.Name}!");
     }
 
-    /// <summary>
-    /// Returns true if <paramref name="item"/> matches the given <paramref name="itemId"/>.
-    /// Matches on <see cref="Item.ItemId"/> when set; falls back to a case-insensitive
-    /// name comparison for items created without an ID (e.g. in tests or legacy code).
-    /// </summary>
-    private static bool MatchIngredient(Item item, string itemId)
+    private static List<CraftingRecipe> BuildDefaultRecipes() => new()
     {
-        if (!string.IsNullOrEmpty(item.ItemId))
-            return item.ItemId == itemId;
-        // Fallback: compare slug-style name (hyphens → spaces) case-insensitively
-        var nameFromSlug = itemId.Replace("-", " ");
-        return item.Name.Equals(nameFromSlug, StringComparison.OrdinalIgnoreCase);
-    }
+        new CraftingRecipe
+        {
+            Id = "health-elixir",
+            Name = "Health Elixir",
+            Ingredients = new() { new RecipeIngredient { ItemId = "health-potion", DisplayName = "Health Potion", Count = 2 } },
+            GoldCost = 0,
+            Result = new RecipeResult { ItemId = "health-elixir", Name = "Health Elixir", Type = "Consumable", Tier = "Uncommon", HealAmount = 75, Description = "Two potions rendered down into something stronger. The colour is wrong, but the effect is not." }
+        },
+        new CraftingRecipe
+        {
+            Id = "reinforced-sword",
+            Name = "Reinforced Sword",
+            Ingredients = new() { new RecipeIngredient { ItemId = "iron-sword", DisplayName = "Iron Sword", Count = 1 } },
+            GoldCost = 30,
+            Result = new RecipeResult { ItemId = "reinforced-sword", Name = "Reinforced Sword", Type = "Weapon", Tier = "Rare", AttackBonus = 8, IsEquippable = true, Description = "The iron has been retempered and the edge reground. It bites deeper now." }
+        },
+        new CraftingRecipe
+        {
+            Id = "reinforced-armor",
+            Name = "Reinforced Armor",
+            Ingredients = new() { new RecipeIngredient { ItemId = "leather-armor", DisplayName = "Leather Armor", Count = 1 } },
+            GoldCost = 25,
+            Result = new RecipeResult { ItemId = "reinforced-armor", Name = "Reinforced Armor", Type = "Armor", Tier = "Uncommon", DefenseBonus = 8, IsEquippable = true, Description = "Extra plates riveted over the weak points. Heavier, but considerably harder to kill through." }
+        },
+    };
 }

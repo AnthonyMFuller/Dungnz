@@ -13,6 +13,7 @@ using Dungnz.Systems;
 public class DungeonGenerator
 {
     private readonly Random _rng;
+    private readonly IReadOnlyList<Item> _allItems;
 
     /// <summary>
     /// Initialises a new <see cref="DungeonGenerator"/> with an optional fixed seed.
@@ -22,9 +23,14 @@ public class DungeonGenerator
     /// A seed value for the internal <see cref="Random"/> instance. When
     /// <see langword="null"/>, a non-deterministic seed is used.
     /// </param>
-    public DungeonGenerator(int? seed = null)
+    /// <param name="allItems">
+    /// All available items used to populate merchant stock. When <see langword="null"/>,
+    /// merchants fall back to a hardcoded default set.
+    /// </param>
+    public DungeonGenerator(int? seed = null, IReadOnlyList<Item>? allItems = null)
     {
         _rng = seed.HasValue ? new Random(seed.Value) : new Random();
+        _allItems = allItems ?? Array.Empty<Item>();
     }
 
     /// <summary>
@@ -125,7 +131,7 @@ public class DungeonGenerator
                     room.Enemy = EnemyFactory.CreateScaled(enemyType, playerLevel, effectiveMult);
                 }
 
-                if (_rng.Next(100) < 20) room.Merchant = Merchant.CreateRandom(_rng);
+                if (_rng.Next(100) < 20) room.Merchant = Merchant.CreateRandom(_rng, floor, _allItems);
                 if (_rng.Next(100) < 15) room.Hazard = (HazardType)(_rng.Next(3) + 1); // 1-3 = Spike/Poison/Fire
             }
         }
@@ -139,7 +145,7 @@ public class DungeonGenerator
                 if (room == startRoom || room == exitRoom) continue;
                 if (_rng.NextDouble() < 0.3)
                 {
-                    room.Items.Add(CreateRandomItem());
+                    room.Items.Add(CreateRandomItem(floor));
                 }
             }
         }
@@ -167,49 +173,30 @@ public class DungeonGenerator
         return (startRoom, exitRoom);
     }
 
-    private Item CreateRandomItem()
+    private Item CreateRandomItem(int floor)
     {
-        var itemType = _rng.Next(4);
-        return itemType switch
+        var tier = floor switch
         {
-            0 => new Item 
-            { 
-                Name = "Health Potion", 
-                ItemId = "health-potion",
-                Type = ItemType.Consumable, 
-                HealAmount = 20, 
-                Description = "Restores 20 HP",
-                Tier = ItemTier.Common
-            },
-            1 => new Item 
-            { 
-                Name = "Iron Sword", 
-                ItemId = "iron-sword",
-                Type = ItemType.Weapon, 
-                AttackBonus = 5, 
-                IsEquippable = true,
-                Description = "A sturdy iron blade",
-                Tier = ItemTier.Common
-            },
-            2 => new Item 
-            { 
-                Name = "Leather Armor", 
-                ItemId = "leather-armor",
-                Type = ItemType.Armor, 
-                DefenseBonus = 3, 
-                IsEquippable = true,
-                Description = "Basic leather protection",
-                Tier = ItemTier.Common
-            },
-            _ => new Item 
-            { 
-                Name = "Large Health Potion", 
-                ItemId = "large-health-potion",
-                Type = ItemType.Consumable, 
-                HealAmount = 50, 
-                Description = "Restores 50 HP",
-                Tier = ItemTier.Common
-            }
+            <= 2 => ItemTier.Common,
+            <= 4 => ItemTier.Uncommon,
+            _    => ItemTier.Rare
+        };
+
+        if (_allItems.Count > 0)
+        {
+            var pool = _allItems.Where(i => i.Tier == tier).ToList();
+            if (pool.Count > 0)
+                return pool[_rng.Next(pool.Count)];
+        }
+
+        // Fallback when item config not loaded
+        return new Item
+        {
+            Name = "Health Potion",
+            Type = ItemType.Consumable,
+            HealAmount = 20,
+            Description = "Restores 20 HP",
+            Tier = ItemTier.Common
         };
     }
 

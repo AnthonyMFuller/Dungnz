@@ -599,6 +599,42 @@
       "Tier": "Rare",
       "Description": "A carved obsidian pendant on a dark cord. Dulls the edges of spells and blades that find you.",
       "Id": "pendant-of-resistance"
+    },
+    {
+      "Name": "Iron Ore",
+      "Type": "Consumable",
+      "HealAmount": 0,
+      "AttackBonus": 0,
+      "DefenseBonus": 0,
+      "StatModifier": 0,
+      "IsEquippable": false,
+      "Tier": "Common",
+      "Description": "Raw iron dragged out of the stone. Heavy and dull. Could be useful for a blacksmith.",
+      "Id": "iron-ore"
+    },
+    {
+      "Name": "Shadow Essence",
+      "Type": "Consumable",
+      "HealAmount": 20,
+      "AttackBonus": 0,
+      "DefenseBonus": 0,
+      "StatModifier": 0,
+      "IsEquippable": false,
+      "Tier": "Rare",
+      "Description": "Distilled shadow in a stoppered vial. Cold to the touch. Restores health when consumed — somehow.",
+      "Id": "shadow-essence"
+    },
+    {
+      "Name": "Blood Vial",
+      "Type": "Consumable",
+      "HealAmount": 30,
+      "AttackBonus": 0,
+      "DefenseBonus": 0,
+      "StatModifier": 0,
+      "IsEquippable": false,
+      "Tier": "Rare",
+      "Description": "Vampire's blood, drawn at the kill. Bitter and warm. Works.",
+      "Id": "blood-vial"
     }
   ]
 }

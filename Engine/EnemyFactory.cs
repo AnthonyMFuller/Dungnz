@@ -34,7 +34,7 @@ public static class EnemyFactory
         _itemConfig = ItemConfig.Load(itemConfigPath);
 
         // Populate the shared loot tier pools from the full item catalog.
-        // Boss Key is excluded from random pools (it is an explicit guaranteed drop on bosses).
+        // Boss Key is excluded from random pools — it is an explicit guaranteed boss drop.
         LootTable.SetTierPools(
             ItemConfig.GetByTier(_itemConfig, ItemTier.Common),
             ItemConfig.GetByTier(_itemConfig, ItemTier.Uncommon),

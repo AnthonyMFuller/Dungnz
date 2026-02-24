@@ -9,6 +9,9 @@ using Dungnz.Models;
 /// </summary>
 public record ItemStats
 {
+    /// <summary>The unique kebab-case identifier for this item, used for cross-referencing (e.g. in merchant inventory config).</summary>
+    public string Id { get; init; } = string.Empty;
+
     /// <summary>The display name of the item as shown to the player.</summary>
     public string Name { get; init; } = string.Empty;
 
@@ -35,9 +38,6 @@ public record ItemStats
 
     /// <summary>The power tier of this item; defaults to <see cref="ItemTier.Common"/> when absent from the JSON.</summary>
     public string Tier { get; init; } = "Common";
-
-    /// <summary>The stable slug identifier for this item (e.g. "health-potion"). Used for reliable cross-system matching.</summary>
-    public string Id { get; init; } = string.Empty;
 }
 
 /// <summary>
@@ -116,10 +116,6 @@ public static class ItemConfig
                 {
                     throw new InvalidDataException($"Item '{item.Name}' has negative stat values");
                 }
-                if (string.IsNullOrWhiteSpace(item.Id))
-                {
-                    Console.WriteLine($"WARNING: Item '{item.Name}' has no Id slug defined.");
-                }
             }
 
             return config.Items;
@@ -163,8 +159,8 @@ public static class ItemConfig
 
         return new Item
         {
+            Id = stats.Id,
             Name = stats.Name,
-            ItemId = stats.Id,
             Type = itemType,
             HealAmount = stats.HealAmount,
             AttackBonus = stats.AttackBonus,

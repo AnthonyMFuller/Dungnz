@@ -20,22 +20,22 @@ public class LootTable
 
     private static readonly IReadOnlyList<Item> FallbackTier1 = new List<Item>
     {
-        new Item { Name = "Short Sword", ItemId = "short-sword", Type = ItemType.Weapon, AttackBonus = 2, Description = "A basic blade.", IsEquippable = true, Tier = ItemTier.Common },
-        new Item { Name = "Leather Armor", ItemId = "leather-armor", Type = ItemType.Armor, DefenseBonus = 5, Description = "Light protection.", IsEquippable = true, Tier = ItemTier.Common }
+        new Item { Name = "Short Sword", Type = ItemType.Weapon, AttackBonus = 2, Description = "A basic blade.", IsEquippable = true, Tier = ItemTier.Common },
+        new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 5, Description = "Light protection.", IsEquippable = true, Tier = ItemTier.Common }
     };
     private static readonly IReadOnlyList<Item> FallbackTier2 = new List<Item>
     {
-        new Item { Name = "Steel Sword", ItemId = "steel-sword", Type = ItemType.Weapon, AttackBonus = 5, Description = "A quality weapon.", IsEquippable = true, Tier = ItemTier.Uncommon },
-        new Item { Name = "Chain Mail", ItemId = "chain-mail", Type = ItemType.Armor, DefenseBonus = 10, Description = "Solid protection.", IsEquippable = true, Tier = ItemTier.Uncommon },
-        new Item { Name = "Sword of Flames", ItemId = "sword-of-flames", Type = ItemType.Weapon, AttackBonus = 5, Description = "Burns with inner fire. Applies Bleed on hit.", IsEquippable = true, AppliesBleedOnHit = true, Tier = ItemTier.Uncommon },
-        new Item { Name = "Armor of the Turtle", ItemId = "armor-of-the-turtle", Type = ItemType.Armor, DefenseBonus = 15, Description = "Heavy shell. Grants Poison immunity.", IsEquippable = true, PoisonImmunity = true, Tier = ItemTier.Uncommon }
+        new Item { Name = "Steel Sword", Type = ItemType.Weapon, AttackBonus = 5, Description = "A quality weapon.", IsEquippable = true, Tier = ItemTier.Uncommon },
+        new Item { Name = "Chain Mail", Type = ItemType.Armor, DefenseBonus = 10, Description = "Solid protection.", IsEquippable = true, Tier = ItemTier.Uncommon },
+        new Item { Name = "Sword of Flames", Type = ItemType.Weapon, AttackBonus = 5, Description = "Burns with inner fire. Applies Bleed on hit.", IsEquippable = true, AppliesBleedOnHit = true, Tier = ItemTier.Uncommon },
+        new Item { Name = "Armor of the Turtle", Type = ItemType.Armor, DefenseBonus = 15, Description = "Heavy shell. Grants Poison immunity.", IsEquippable = true, PoisonImmunity = true, Tier = ItemTier.Uncommon }
     };
     private static readonly IReadOnlyList<Item> FallbackTier3 = new List<Item>
     {
-        new Item { Name = "Mythril Blade", ItemId = "mythril-blade", Type = ItemType.Weapon, AttackBonus = 8, Description = "Razor-sharp alloy.", IsEquippable = true, Tier = ItemTier.Rare },
-        new Item { Name = "Plate Armor", ItemId = "plate-armor", Type = ItemType.Armor, DefenseBonus = 15, Description = "Near-impenetrable.", IsEquippable = true, Tier = ItemTier.Rare },
-        new Item { Name = "Ring of Focus", ItemId = "ring-of-focus", Type = ItemType.Accessory, StatModifier = 0, Description = "+15 MaxMana, -20% ability cooldowns.", IsEquippable = true, MaxManaBonus = 15, Tier = ItemTier.Rare },
-        new Item { Name = "Cloak of Shadows", ItemId = "cloak-of-shadows", Type = ItemType.Accessory, Description = "+10% dodge chance.", IsEquippable = true, DodgeBonus = 0.10f, Tier = ItemTier.Rare }
+        new Item { Name = "Mythril Blade", Type = ItemType.Weapon, AttackBonus = 8, Description = "Razor-sharp alloy.", IsEquippable = true, Tier = ItemTier.Rare },
+        new Item { Name = "Plate Armor", Type = ItemType.Armor, DefenseBonus = 15, Description = "Near-impenetrable.", IsEquippable = true, Tier = ItemTier.Rare },
+        new Item { Name = "Ring of Focus", Type = ItemType.Accessory, StatModifier = 0, Description = "+15 MaxMana, -20% ability cooldowns.", IsEquippable = true, MaxManaBonus = 15, Tier = ItemTier.Rare },
+        new Item { Name = "Cloak of Shadows", Type = ItemType.Accessory, Description = "+10% dodge chance.", IsEquippable = true, DodgeBonus = 0.10f, Tier = ItemTier.Rare }
     };
 
     /// <summary>
