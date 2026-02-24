@@ -10970,3 +10970,82 @@ The game's mechanical depth (status effects, abilities, multi-floor dungeons, ac
 - Victory/GameOver screens moved from GameLoop private methods to IDisplayService (structural improvement, not just cosmetic)
 - NarrationService stays in GameLoop — flavor strings passed as parameters to display methods, not injected into ConsoleDisplayService
 - ANSI-safe box padding standardized via `ColorCodes.StripAnsiCodes()` pattern (fixes existing `ShowLootDrop` bug)
+
+
+# Decision: Achievement notifications in combat
+
+**Status:** Implemented  
+**Owner:** Barton  
+**Date:** 2026-02-24  
+**Context:** Issue #280 — achievement unlocks should be visible during combat, not missed by players
+
+## What
+Added `OnAchievementUnlocked` event to `GameEvents`. CombatEngine wires milestone checks to fire the event at turn boundaries, displaying achievement banners during active combat.
+
+## Why
+Previously, achievement notifications were only shown after combat ended. Players engaged in complex battles could miss unlock moments entirely. Moving achievement feedback into combat loop keeps players informed of progress in real time.
+
+## Implementation
+- New event: `GameEvents.OnAchievementUnlocked`
+- CombatEngine checks milestones at turn end and fires event
+- Display layer renders achievement banner immediately
+- Does not interrupt combat flow
+
+## Impact
+- Players see achievement unlocks immediately when earned
+- Increases sense of progression and engagement
+- No mechanical changes; purely feedback loop improvement
+
+## Quality
+- Merged in PR #309
+- Tested with existing achievement system tests
+- No new test failures
+
+# Decision: RunStats type — confirmed exists
+
+**Status:** Resolved  
+**Owner:** Barton  
+**Date:** 2025-01-20  
+
+The UI/UX shared infrastructure spec requires a `RunStats` type for `ShowVictory` and `ShowGameOver` display methods. **CONFIRMED:** `RunStats` already exists in the codebase at `Systems/RunStats.cs` (`Dungnz.Systems.RunStats`).
+
+Existing class provides all necessary fields for end-of-run display:
+- Kills → `EnemiesDefeated`
+- Gold earned → `GoldCollected`
+- Items found → `ItemsFound`
+- Floors cleared → `FloorsVisited`
+- Play time → `TimeElapsed`
+- Damage stats → `DamageDealt`, `DamageTaken`
+
+RunStats exists and is ready to use. No new type needs to be created.
+
+# Decision: Phase 0 UI/UX infrastructure — complete and merged
+
+**Status:** Implemented  
+**Owner:** Coulson  
+**Date:** 2026-02-22  
+
+Phase 0 of the UI/UX improvement plan is complete and merged to master. All shared infrastructure is now in place, unblocking Phase 1 combat enhancements.
+
+**Phase 0 deliverables (complete):**
+
+1. **RenderBar() helper** — Private static method in ConsoleDisplayService. Width-normalized progress bars for HP/MP/XP displays using filled/empty blocks and ANSI colors.
+
+2. **ANSI-safe padding helpers** — VisibleLength, PadRightVisible, PadLeftVisible methods. Fixes alignment bugs in ShowLootDrop and ShowInventory.
+
+3. **New IDisplayService methods** — ShowCombatStatus extended with active effects; ShowCommandPrompt extended with optional Player parameter; 7 new stub methods added (ShowCombatStart, ShowCombatEntryFlags, ShowLevelUpChoice, ShowFloorBanner, ShowEnemyDetail, ShowVictory, ShowGameOver).
+
+**Quality gates:**
+- Build: 0 errors
+- Tests: 416 tests passing
+- Architecture: Phase 0 changes merge cleanly with Barton's Phase 1 prep
+- Backward compatibility: ShowCommandPrompt optional parameter preserves existing call sites
+
+**Key decisions:**
+- RenderBar is private (internal utility, not public contract)
+- ANSI padding helpers in display layer (not ColorCodes)
+- Stub implementations for Phase 1-3 (enables parallel work)
+- Barton's systems changes implemented before Phase 0 merged
+- Achievement notifications (1.9) deferred to future phase
+
+**Merged PRs:** #298 (Hill Phase 0), #299 (Barton Phase 1 prep)
