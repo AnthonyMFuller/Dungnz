@@ -11,7 +11,8 @@
             "Tier": "Common",
             "Description": "A murky red liquid in a stoppered vial. Smells terrible. Works anyway.",
             "Id": "health-potion",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 5
         },
         {
             "Name": "Large Health Potion",
@@ -24,7 +25,8 @@
             "Tier": "Common",
             "Description": "A generous dose of the murky healing brew. Double the smell, double the effect.",
             "Id": "large-health-potion",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 8
         },
         {
             "Name": "Iron Sword",
@@ -37,7 +39,8 @@
             "Tier": "Common",
             "Description": "A battered blade, nicked from hard use. It has drawn blood before and will draw it again.",
             "Id": "iron-sword",
-            "Weight": 5
+            "Weight": 5,
+            "SellPrice": 15
         },
         {
             "Name": "Leather Armor",
@@ -50,7 +53,8 @@
             "Tier": "Common",
             "Description": "Cured hide stitched with coarse thread. Won't stop a greatsword, but it's better than nothing.",
             "Id": "leather-armor",
-            "Weight": 5
+            "Weight": 5,
+            "SellPrice": 10
         },
         {
             "Name": "Rusty Sword",
@@ -63,7 +67,8 @@
             "Tier": "Common",
             "Description": "A pitted blade eaten through by rust. It still has an edge, after a fashion.",
             "Id": "rusty-sword",
-            "Weight": 5
+            "Weight": 5,
+            "SellPrice": 12
         },
         {
             "Name": "Bone Fragment",
@@ -76,7 +81,8 @@
             "Tier": "Common",
             "Description": "Shards gnawed from something that once walked these halls. A grim remedy, but a remedy nonetheless.",
             "Id": "bone-fragment",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 3
         },
         {
             "Name": "Troll Hide",
@@ -89,7 +95,8 @@
             "Tier": "Common",
             "Description": "Thick, warty hide stripped from a troll. It stinks, but blades glance off it admirably.",
             "Id": "troll-hide",
-            "Weight": 6
+            "Weight": 6,
+            "SellPrice": 10
         },
         {
             "Name": "Dark Blade",
@@ -102,7 +109,8 @@
             "Tier": "Uncommon",
             "Description": "Forged in shadow and quenched in something cold. The metal drinks in light and gives nothing back.",
             "Id": "dark-blade",
-            "Weight": 6
+            "Weight": 6,
+            "SellPrice": 25
         },
         {
             "Name": "Knight's Armor",
@@ -115,7 +123,8 @@
             "Tier": "Uncommon",
             "Description": "Heavy plate bearing the dents of many battles. Whoever wore this last did not walk out. You might.",
             "Id": "knights-armor",
-            "Weight": 10
+            "Weight": 10,
+            "SellPrice": 30
         },
         {
             "Name": "Boss Key",
@@ -128,7 +137,8 @@
             "Tier": "Rare",
             "Description": "Cold iron, slick with something you'd rather not examine. It fits the lock ahead.",
             "Id": "boss-key",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 25
         },
         {
             "Name": "Minor Healing Potion",
@@ -141,7 +151,8 @@
             "Tier": "Common",
             "Description": "A small vial of watery red tincture. Barely enough to patch a scratch, but better than nothing.",
             "Id": "minor-healing-potion",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 4
         },
         {
             "Name": "Antidote",
@@ -154,7 +165,8 @@
             "Tier": "Common",
             "Description": "A bitter green liquid that neutralises toxins. Tastes awful. Feels worse going down.",
             "Id": "antidote",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 5
         },
         {
             "Name": "Torch",
@@ -167,7 +179,8 @@
             "Tier": "Common",
             "Description": "A pitch-soaked rag wrapped around a stick. Pushes back the dark for a little while.",
             "Id": "torch",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 3
         },
         {
             "Name": "Bandage",
@@ -180,7 +193,8 @@
             "Tier": "Common",
             "Description": "Strips of linen stiff with old blood. Not sterile by any measure, but wounds have been bound with worse.",
             "Id": "bandage",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 4
         },
         {
             "Name": "Greater Healing Potion",
@@ -193,7 +207,8 @@
             "Tier": "Uncommon",
             "Description": "A deep crimson draught, thick and warm. Knits flesh and bone with alarming speed.",
             "Id": "greater-healing-potion",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 15
         },
         {
             "Name": "Elixir of Speed",
@@ -206,7 +221,8 @@
             "Tier": "Uncommon",
             "Description": "A fizzing amber vial that makes the world slow. Your limbs feel impossibly light.",
             "Id": "elixir-of-speed",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 12
         },
         {
             "Name": "Smoke Bomb",
@@ -219,7 +235,8 @@
             "Tier": "Uncommon",
             "Description": "A clay sphere packed with choking powder. Throw it and run. Try not to breathe in.",
             "Id": "smoke-bomb",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 12
         },
         {
             "Name": "Mana Draught",
@@ -233,7 +250,8 @@
             "Description": "A cool blue liquid that hums faintly. Restores focus and arcane reserves in an instant.",
             "Id": "mana-draught",
             "Weight": 1,
-            "ManaRestore": 30
+            "ManaRestore": 30,
+            "SellPrice": 15
         },
         {
             "Name": "Elixir of Fortitude",
@@ -246,7 +264,8 @@
             "Tier": "Rare",
             "Description": "A bronze-hued potion that hardens skin like iron. Pain becomes a distant memory for a time.",
             "Id": "elixir-of-fortitude",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 25
         },
         {
             "Name": "Phoenix Feather",
@@ -261,7 +280,7 @@
             "Id": "phoenix-feather",
             "MerchantExclusive": true,
             "Weight": 1,
-            "MerchantExclusive": true
+            "SellPrice": 50
         },
         {
             "Name": "Scroll of Power",
@@ -276,7 +295,7 @@
             "Id": "scroll-of-power",
             "MerchantExclusive": true,
             "Weight": 1,
-            "MerchantExclusive": true
+            "SellPrice": 35
         },
         {
             "Name": "Regeneration Tonic",
@@ -289,7 +308,8 @@
             "Tier": "Rare",
             "Description": "A viscous silver liquid that works slowly but thoroughly. Your body begins to knit itself back together.",
             "Id": "regeneration-tonic",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 30
         },
         {
             "Name": "Rusty Dagger",
@@ -302,7 +322,8 @@
             "Tier": "Common",
             "Description": "A short blade eaten by oxidisation. The edge is barely there, but it still finds gaps in armour.",
             "Id": "rusty-dagger",
-            "Weight": 3
+            "Weight": 3,
+            "SellPrice": 10
         },
         {
             "Name": "Bone Club",
@@ -315,7 +336,8 @@
             "Tier": "Common",
             "Description": "A femur lashed to a grip of hide. Crude, heavy, and effective in a grim sort of way.",
             "Id": "bone-club",
-            "Weight": 5
+            "Weight": 5,
+            "SellPrice": 12
         },
         {
             "Name": "Worn Spear",
@@ -328,7 +350,8 @@
             "Tier": "Common",
             "Description": "A shaft of cracked wood tipped with a blunted iron head. The reach is the only thing going for it.",
             "Id": "worn-spear",
-            "Weight": 5
+            "Weight": 5,
+            "SellPrice": 13
         },
         {
             "Name": "Iron Hatchet",
@@ -341,7 +364,8 @@
             "Tier": "Common",
             "Description": "A woodcutter's hatchet pressed into violent service. The grip is wrapped in fresh cord. That's promising.",
             "Id": "iron-hatchet",
-            "Weight": 5
+            "Weight": 5,
+            "SellPrice": 18
         },
         {
             "Name": "Silver Rapier",
@@ -354,7 +378,8 @@
             "Tier": "Uncommon",
             "Description": "A slender blade of polished silver. Quick, precise, and hungry for a vital spot.",
             "Id": "silver-rapier",
-            "Weight": 4
+            "Weight": 4,
+            "SellPrice": 25
         },
         {
             "Name": "Enchanted Axe",
@@ -367,7 +392,8 @@
             "Tier": "Uncommon",
             "Description": "Runic glyphs run along the haft. The blade hums when it cleaves the air, hungry and eager.",
             "Id": "enchanted-axe",
-            "Weight": 7
+            "Weight": 7,
+            "SellPrice": 30
         },
         {
             "Name": "Crossbow",
@@ -380,7 +406,8 @@
             "Tier": "Uncommon",
             "Description": "A compact steel-spanned crossbow with a half-loaded quarrel. Distance becomes your friend.",
             "Id": "crossbow",
-            "Weight": 6
+            "Weight": 6,
+            "SellPrice": 28
         },
         {
             "Name": "Warlord's Maul",
@@ -393,7 +420,8 @@
             "Tier": "Uncommon",
             "Description": "A two-handed iron maul with a head the size of a melon. Subtlety is not its style.",
             "Id": "warlords-maul",
-            "Weight": 8
+            "Weight": 8,
+            "SellPrice": 35
         },
         {
             "Name": "Shadow Blade",
@@ -406,7 +434,8 @@
             "Tier": "Rare",
             "Description": "Forged from crystallised shadow. It cuts through armour like smoke through a keyhole.",
             "Id": "shadow-blade",
-            "Weight": 6
+            "Weight": 6,
+            "SellPrice": 50
         },
         {
             "Name": "Dragon Fang",
@@ -419,7 +448,8 @@
             "Tier": "Rare",
             "Description": "A tooth from a dragon's upper jaw, sharpened to a serrated point and hafted in bone. Still warm.",
             "Id": "dragon-fang",
-            "Weight": 5
+            "Weight": 5,
+            "SellPrice": 55
         },
         {
             "Name": "Arcane Staff",
@@ -432,7 +462,8 @@
             "Tier": "Rare",
             "Description": "A carved staff that crackles with stored lightning. Channels arcane force through the wielder's will.",
             "Id": "arcane-staff",
-            "Weight": 6
+            "Weight": 6,
+            "SellPrice": 50
         },
         {
             "Name": "Starfall Blade",
@@ -445,7 +476,8 @@
             "Tier": "Rare",
             "Description": "Hammered from a fallen meteorite. The blade sings at high speed and leaves cold light in its wake.",
             "Id": "starfall-blade",
-            "Weight": 7
+            "Weight": 7,
+            "SellPrice": 60
         },
         {
             "Name": "Padded Tunic",
@@ -458,7 +490,8 @@
             "Tier": "Common",
             "Description": "Layers of rough linen quilted together. Not much, but it'll soften a glancing blow.",
             "Id": "padded-tunic",
-            "Weight": 3
+            "Weight": 3,
+            "SellPrice": 8
         },
         {
             "Name": "Wooden Shield",
@@ -471,7 +504,8 @@
             "Tier": "Common",
             "Description": "A round shield of bound oak planks. It splinters under heavy blows, but it has a few blocks left in it.",
             "Id": "wooden-shield",
-            "Weight": 5
+            "Weight": 5,
+            "SellPrice": 10
         },
         {
             "Name": "Fur Cloak",
@@ -484,7 +518,8 @@
             "Tier": "Common",
             "Description": "Thick wolf pelt draped across the shoulders. More warmth than protection, but it dulls a blade's edge.",
             "Id": "fur-cloak",
-            "Weight": 3
+            "Weight": 3,
+            "SellPrice": 8
         },
         {
             "Name": "Iron Helm",
@@ -497,7 +532,8 @@
             "Tier": "Common",
             "Description": "A riveted iron skullcap dented from previous ownership. Fits poorly. Protects adequately.",
             "Id": "iron-helm",
-            "Weight": 4
+            "Weight": 4,
+            "SellPrice": 12
         },
         {
             "Name": "Chainmail",
@@ -510,7 +546,8 @@
             "Tier": "Uncommon",
             "Description": "Rings of iron woven into a mesh shirt. Heavy and jangling, but it turns aside most cuts.",
             "Id": "chainmail",
-            "Weight": 10
+            "Weight": 10,
+            "SellPrice": 25
         },
         {
             "Name": "Studded Armor",
@@ -523,7 +560,8 @@
             "Tier": "Uncommon",
             "Description": "Leather reinforced with iron rivets across the chest and arms. Flexible enough to move in, strong enough to matter.",
             "Id": "studded-armor",
-            "Weight": 9
+            "Weight": 9,
+            "SellPrice": 28
         },
         {
             "Name": "Iron Buckler",
@@ -536,7 +574,8 @@
             "Tier": "Uncommon",
             "Description": "A compact iron shield worn on the forearm. Fast to position and reliable at turning a thrust.",
             "Id": "iron-buckler",
-            "Weight": 6
+            "Weight": 6,
+            "SellPrice": 22
         },
         {
             "Name": "Scale Mail",
@@ -549,7 +588,8 @@
             "Tier": "Uncommon",
             "Description": "Overlapping iron scales sewn onto a leather backing. Moves like a living thing and deflects like stone.",
             "Id": "scale-mail",
-            "Weight": 11
+            "Weight": 11,
+            "SellPrice": 32
         },
         {
             "Name": "Mithril Plate",
@@ -564,7 +604,7 @@
             "Id": "mithril-plate",
             "MerchantExclusive": true,
             "Weight": 8,
-            "MerchantExclusive": true
+            "SellPrice": 70
         },
         {
             "Name": "Dragon Scale Armor",
@@ -577,7 +617,8 @@
             "Tier": "Rare",
             "Description": "Scales stripped from a dead dragon and shaped into a cuirass. Fire doesn't touch you in this. Neither does much else.",
             "Id": "dragon-scale-armor",
-            "Weight": 12
+            "Weight": 12,
+            "SellPrice": 65
         },
         {
             "Name": "Arcane Robe",
@@ -590,7 +631,8 @@
             "Tier": "Rare",
             "Description": "Woven from enchanted thread, this robe shimmers faintly. Wards deflect blows and magic alike.",
             "Id": "arcane-robe",
-            "Weight": 6
+            "Weight": 6,
+            "SellPrice": 55
         },
         {
             "Name": "Obsidian Plate",
@@ -603,7 +645,8 @@
             "Tier": "Rare",
             "Description": "Volcanic glass forged in a forge hotter than reason allows. It absorbs impact like nothing else.",
             "Id": "obsidian-plate",
-            "Weight": 15
+            "Weight": 15,
+            "SellPrice": 70
         },
         {
             "Name": "Ring of Vitality",
@@ -616,7 +659,8 @@
             "Tier": "Common",
             "Description": "A plain copper ring set with a red stone. The stone pulses faintly with your heartbeat. You feel sturdier.",
             "Id": "ring-of-vitality",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 12
         },
         {
             "Name": "Amulet of the Sage",
@@ -631,7 +675,7 @@
             "Id": "amulet-of-the-sage",
             "MerchantExclusive": true,
             "Weight": 1,
-            "MerchantExclusive": true
+            "SellPrice": 25
         },
         {
             "Name": "Boots of Swiftness",
@@ -646,7 +690,7 @@
             "Id": "boots-of-swiftness",
             "MerchantExclusive": true,
             "Weight": 2,
-            "MerchantExclusive": true
+            "SellPrice": 25
         },
         {
             "Name": "Pendant of Resistance",
@@ -659,7 +703,8 @@
             "Tier": "Rare",
             "Description": "A carved obsidian pendant on a dark cord. Dulls the edges of spells and blades that find you.",
             "Id": "pendant-of-resistance",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 40
         },
         {
             "Name": "Iron Ore",
@@ -672,7 +717,8 @@
             "Tier": "Common",
             "Description": "Raw iron dragged out of the stone. Heavy and dull. Could be useful for a blacksmith.",
             "Id": "iron-ore",
-            "Weight": 3
+            "Weight": 3,
+            "SellPrice": 5
         },
         {
             "Name": "Shadow Essence",
@@ -683,9 +729,10 @@
             "StatModifier": 0,
             "IsEquippable": false,
             "Tier": "Rare",
-            "Description": "Distilled shadow in a stoppered vial. Cold to the touch. Restores health when consumed \u2014 somehow.",
+            "Description": "Distilled shadow in a stoppered vial. Cold to the touch. Restores health when consumed — somehow.",
             "Id": "shadow-essence",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 25
         },
         {
             "Name": "Blood Vial",
@@ -698,7 +745,8 @@
             "Tier": "Rare",
             "Description": "Vampire's blood, drawn at the kill. Bitter and warm. Works.",
             "Id": "blood-vial",
-            "Weight": 1
+            "Weight": 1,
+            "SellPrice": 30
         }
     ]
 }

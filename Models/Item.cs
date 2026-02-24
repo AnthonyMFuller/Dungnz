@@ -96,6 +96,12 @@ public class Item
     public bool MerchantExclusive { get; set; }
 
     /// <summary>
+    /// Gets or sets the gold the player receives when selling this item to a merchant.
+    /// Populated from item-stats.json; items without an explicit value fall back to a tier-derived amount.
+    /// </summary>
+    public int SellPrice { get; set; }
+
+    /// <summary>
     /// Creates a shallow copy of this item with all properties duplicated. Used when adding
     /// crafted items to inventory to avoid sharing references.
     /// </summary>
