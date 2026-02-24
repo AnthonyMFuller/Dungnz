@@ -69,6 +69,7 @@ public class EquipmentManager
             
             player.EquipItem(item);
             _display.ShowMessage($"✓ Equipped {item.Name}");
+            _display.ShowMessage(ItemInteractionNarration.Equip(item));
             if (!string.IsNullOrEmpty(item.Description))
                 _display.ShowMessage($"  {item.Description}");
         }
