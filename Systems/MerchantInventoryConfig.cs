@@ -47,13 +47,20 @@ public static class MerchantInventoryConfig
     /// <summary>
     /// Computes a sale price for an item based on its tier and primary stats.
     /// </summary>
-    private static int ComputePrice(Item item) => item.Tier switch
+    public static int ComputePrice(Item item) => item.Tier switch
     {
         ItemTier.Common    => 15 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 5,
         ItemTier.Uncommon  => 40 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 6,
         ItemTier.Rare      => 80 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 8,
         _                  => 20
     };
+
+    /// <summary>
+    /// Computes a reasonable sell price for an item not loaded via ItemConfig.
+    /// Approximately 40% of the buy price, minimum 1g.
+    /// </summary>
+    public static int ComputeSellPrice(Item item) =>
+        Math.Max(1, ComputePrice(item) * 40 / 100);
 
     /// <summary>
     /// Returns merchant stock appropriate for the given floor by resolving item IDs against

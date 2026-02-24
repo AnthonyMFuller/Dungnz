@@ -189,6 +189,9 @@ public class GameLoop
                 case CommandType.Shop:
                     HandleShop();
                     break;
+                case CommandType.Sell:
+                    HandleSell();
+                    break;
                 case CommandType.Prestige:
                     HandlePrestige();
                     break;
@@ -725,6 +728,7 @@ public class GameLoop
 
         var merchant = _currentRoom.Merchant;
         _display.ShowMessage($"=== MERCHANT SHOP ({merchant.Name}) ===");
+        _display.ShowMessage("💰 To sell items, type SELL.");
         _display.ShowShop(merchant.Stock.Select(mi => (mi.Item, mi.Price)), _player.Gold);
         _display.ShowCommandPrompt();
 
@@ -766,8 +770,62 @@ public class GameLoop
         }
     }
 
-    private void HandleSkills()
+    private void HandleSell()
     {
+        if (_currentRoom.Merchant == null)
+        {
+            _display.ShowError("There is no merchant here. You need a merchant to sell items.");
+            return;
+        }
+
+        _display.ShowSellMenu(_player);
+        _display.ShowMessage("Enter item number to sell (or press Enter to cancel):");
+        var input = _input.ReadLine()?.Trim() ?? "";
+
+        if (string.IsNullOrEmpty(input))
+        {
+            _display.ShowMessage("You decide not to sell anything.");
+            return;
+        }
+
+        var sellableItems = _player.Inventory
+            .Where(i => i.Type != Models.ItemType.Gold)
+            .ToList();
+
+        Item? target = null;
+        if (int.TryParse(input, out var choice) && choice >= 1 && choice <= sellableItems.Count)
+        {
+            target = sellableItems[choice - 1];
+        }
+        else
+        {
+            var inputLower = input.ToLowerInvariant();
+            target = sellableItems.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(inputLower));
+        }
+
+        if (target == null)
+        {
+            _display.ShowError("Item not found.");
+            return;
+        }
+
+        if (_player.EquippedWeapon == target || _player.EquippedArmor == target || _player.EquippedAccessory == target)
+        {
+            _display.ShowError($"Unequip {target.Name} before selling it.");
+            return;
+        }
+
+        var sellPrice = target.SellPrice > 0
+            ? target.SellPrice
+            : Systems.MerchantInventoryConfig.ComputeSellPrice(target);
+
+        _player.Inventory.Remove(target);
+        _player.AddGold(sellPrice);
+        _display.ShowMessage($"You sold {target.Name} for {sellPrice}g. Gold: {_player.Gold}g");
+        _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.AfterSale));
+    }
+
+    private void HandleSkills()    {
         _display.ShowMessage("=== SKILL TREE ===");
         _display.ShowMessage($"Your level: {_player.Level}");
         foreach (Skill skill in Enum.GetValues<Skill>())

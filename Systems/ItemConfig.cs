@@ -53,6 +53,9 @@ public record ItemStats
 
     /// <summary>When true, this item is only available from merchants and must not appear in loot pools or enemy drops.</summary>
     public bool MerchantExclusive { get; init; }
+
+    /// <summary>The gold the player receives when selling this item to a merchant.</summary>
+    public int SellPrice { get; init; }
 }
 
 /// <summary>
@@ -189,7 +192,17 @@ public static class ItemConfig
             MaxManaBonus = stats.MaxManaBonus,
             ManaRestore = stats.ManaRestore,
             Weight = stats.Weight,
-            MerchantExclusive = stats.MerchantExclusive
+            MerchantExclusive = stats.MerchantExclusive,
+            SellPrice = stats.SellPrice > 0 ? stats.SellPrice : ComputeSellPrice(stats)
         };
     }
+
+    private static int ComputeSellPrice(ItemStats stats) => stats.Tier switch
+    {
+        "Common"   => Math.Max(1, 10 + stats.HealAmount / 4 + (stats.AttackBonus + stats.DefenseBonus) * 2),
+        "Uncommon" => Math.Max(5, 20 + stats.HealAmount / 4 + (stats.AttackBonus + stats.DefenseBonus) * 3),
+        "Rare"     => Math.Max(10, 35 + stats.HealAmount / 4 + (stats.AttackBonus + stats.DefenseBonus) * 4),
+        _          => 5
+    };
+
 }

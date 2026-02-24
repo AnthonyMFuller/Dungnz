@@ -48,4 +48,17 @@ public static class MerchantNarration
         "\"Mm.\" Nothing more.",
         "The figure returns to whatever it was doing before you arrived."
     };
+
+    /// <summary>Lines shown after the player sells an item to the merchant.</summary>
+    public static readonly string[] AfterSale =
+    [
+        "You're selling. The merchant nods without looking up.",
+        "A coin slides across the counter. It disappears before you can count it.",
+        "He turns the item over twice, then drops gold on the counter. No comment.",
+        "The merchant weighs it in one hand. Sets it down. Slides you the coin.",
+        "She doesn't haggle. She doesn't need to.",
+        "A fair trade, by dungeon standards.",
+        "The merchant pockets it. You pocket the coin. That's how it works.",
+        "No receipt. No questions. That's the policy."
+    ];
 }
