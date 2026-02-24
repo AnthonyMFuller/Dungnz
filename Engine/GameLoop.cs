@@ -262,6 +262,13 @@ public class GameLoop
         if (_narration.Chance(0.15))
             _display.ShowMessage(_narration.Pick(AmbientEvents.ForFloor(_currentFloor)));
 
+        // Show revisit flavor when returning to an already-explored room
+        if (_currentRoom.Visited)
+        {
+            _display.ShowMessage(_narration.Pick(RoomStateNarration.RevisitedRoom));
+            _currentRoom.State = RoomState.Revisited;
+        }
+
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
         _events?.RaiseRoomEntered(_player, _currentRoom, previousRoom);
@@ -328,6 +335,8 @@ public class GameLoop
                 var enemyName = _currentRoom.Enemy!.Name;
                 _currentRoom.Enemy = null;
                 _display.ShowMessage(_narration.Pick(_postCombatLines, enemyName));
+                _currentRoom.State = RoomState.Cleared;
+                _display.ShowMessage(_narration.Pick(RoomStateNarration.ClearedRoom));
             }
 
             if (result == CombatResult.Fled)
@@ -598,6 +607,8 @@ public class GameLoop
         }
 
         _currentFloor++;
+        foreach (var line in FloorTransitionNarration.GetSequence(_currentFloor))
+            _display.ShowMessage(line);
         _display.ShowMessage($"You descend deeper into the dungeon... Floor {_currentFloor}");
 
         float floorMult = 1.0f + (_currentFloor - 1) * 0.5f;
@@ -651,6 +662,7 @@ public class GameLoop
                 _player.Heal(_player.MaxHP);
                 _display.ShowMessage($"The shrine heals you fully! HP: {_player.HP}/{_player.MaxHP}");
                 _currentRoom.ShrineUsed = true;
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.UseShrine));
                 break;
             case "B":
                 if (_player.Gold < 50) { _display.ShowError("Not enough gold (need 50g)."); return; }
@@ -659,6 +671,7 @@ public class GameLoop
                 _player.ModifyDefense(2);
                 _display.ShowMessage("The shrine blesses you! +2 ATK/DEF.");
                 _currentRoom.ShrineUsed = true;
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.UseShrine));
                 break;
             case "F":
                 if (_player.Gold < 75) { _display.ShowError("Not enough gold (need 75g)."); return; }
@@ -666,6 +679,7 @@ public class GameLoop
                 _player.FortifyMaxHP(10);
                 _display.ShowMessage($"The shrine fortifies you! MaxHP permanently +10. ({_player.MaxHP} MaxHP)");
                 _currentRoom.ShrineUsed = true;
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.UseShrine));
                 break;
             case "M":
                 if (_player.Gold < 75) { _display.ShowError("Not enough gold (need 75g)."); return; }
@@ -673,6 +687,7 @@ public class GameLoop
                 _player.FortifyMaxMana(10);
                 _display.ShowMessage($"The shrine expands your mind! MaxMana permanently +10. ({_player.MaxMana} MaxMana)");
                 _currentRoom.ShrineUsed = true;
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.UseShrine));
                 break;
             case "L":
                 _display.ShowMessage("You leave the shrine.");
@@ -713,6 +728,7 @@ public class GameLoop
         if (input.Equals("x", StringComparison.OrdinalIgnoreCase))
         {
             _display.ShowMessage("You leave the shop.");
+            _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.NoBuy));
             return;
         }
 
@@ -735,12 +751,14 @@ public class GameLoop
                 {
                     merchant.Stock.RemoveAt(choice - 1);
                     _display.ShowMessage($"You bought {selected.Item.Name} for {selected.Price}g. Gold remaining: {_player.Gold}g");
+                    _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.AfterPurchase));
                 }
             }
         }
         else
         {
             _display.ShowMessage("Leaving the shop.");
+            _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.NoBuy));
         }
     }
 

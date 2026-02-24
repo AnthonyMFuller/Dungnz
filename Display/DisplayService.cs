@@ -93,9 +93,17 @@ public class ConsoleDisplayService : IDisplayService
 
         // Contextual hints
         if (room.HasShrine)
+        {
+            var shrineAtmosphere = Systems.ShrineNarration.Presence[Random.Shared.Next(Systems.ShrineNarration.Presence.Length)];
+            Console.WriteLine($"{Systems.ColorCodes.Cyan}{shrineAtmosphere}{Systems.ColorCodes.Reset}");
             Console.WriteLine($"{Systems.ColorCodes.Cyan}✨ A shrine glimmers here. (USE SHRINE){Systems.ColorCodes.Reset}");
+        }
         if (room.Merchant != null)
+        {
+            var greeting = Systems.MerchantNarration.Greetings[Random.Shared.Next(Systems.MerchantNarration.Greetings.Length)];
+            Console.WriteLine($"{Systems.ColorCodes.Yellow}{greeting}{Systems.ColorCodes.Reset}");
             Console.WriteLine($"{Systems.ColorCodes.Yellow}🛒 A merchant awaits. (SHOP){Systems.ColorCodes.Reset}");
+        }
 
         Console.WriteLine();
     }
