@@ -11049,3 +11049,102 @@ Phase 0 of the UI/UX improvement plan is complete and merged to master. All shar
 - Achievement notifications (1.9) deferred to future phase
 
 **Merged PRs:** #298 (Hill Phase 0), #299 (Barton Phase 1 prep)
+
+---
+
+# Decision: ASCII Art for Enemy Encounters — Feasibility Assessment
+
+**By:** Coulson  
+**Date:** 2026-02-24  
+**Status:** RESEARCH COMPLETE — Ready for Phase Planning
+
+## Executive Summary
+
+Adding ASCII art for enemies is **architecturally feasible and low-risk**. The display layer is well-abstracted, multi-line output is already established, and enemy data can be extended without disrupting existing systems. **Effort estimate: Phase 1 (small, 1–2 work items).**
+
+## Key Findings
+
+### 1. Architectural Fit: Display Layer Already Supports Multi-Line Blocks ✅
+
+**Current Architecture:**
+- `IDisplayService` is the central abstraction for all console output
+- No `Console.Write` calls exist in game logic — all output routed through `DisplayService`
+- DisplayService already renders complex multi-line structures:
+  - Enhanced title screen with colored box-drawing (ShowEnhancedTitle, 9 lines)
+  - Class selection cards with stat bars (SelectClass, 20+ lines each, 3 options)
+  - Equipment comparison with dynamic padding (ShowEquipmentComparison, 8–10 lines)
+  - Loot drop cards with box-drawing (ShowLootDrop, 6 lines)
+  - Enemy detail cards (ShowEnemyDetail, 36-wide box, multi-stat display)
+
+**Conclusion:** Multi-line ASCII art blocks fit naturally into IDisplayService without requiring interface changes. The display abstraction is flexible and extensible.
+
+### 2. Integration Point: Combat Start Banner ✅
+
+**Natural Location:** `ShowCombatStart(Enemy enemy)` method
+
+**Where ASCII Art Fits:**
+- **BEFORE** current banner: Enemy portrait/icon above the "COMBAT BEGINS" line
+- **AFTER** banner: Enemy silhouette/portrait below the enemy name
+- **Alternative:** Replace the current banner section entirely with a more decorative art-based layout
+
+**Call Site is Stable:** The method already receives the Enemy object, so accessing enemy type/name is straightforward.
+
+### 3. Console Size and Layout Constraints ✅
+
+**ASCII Art Size Recommendation:**
+- **Width:** 30–42 characters (fits within standard 80-char terminal with 2-space margins)
+- **Height:** 5–10 lines (keeps combat start banner readable without excessive scrolling)
+- **Safe pattern:** Match existing card widths (36 chars inner content)
+
+### 4. Scope Estimate: Phase 1 Effort ✅
+
+**Work Breakdown:**
+
+1. **Art Design & Definition** (Small)
+   - Design 10–12 ASCII portraits
+   - ~5–10 min per portrait (text-based, hand-drawn, 5–8 lines each)
+   - **Estimate:** 1 short work item
+
+2. **Display Integration** (Small)
+   - Extract art data into a structure (static method or lookup dict)
+   - Modify ShowCombatStart to render enemy portrait between banner and name
+   - Add color support (use existing ColorCodes utility for enemy type theming)
+   - **Estimate:** 0.5 work item (1–2 hours)
+
+3. **Testing** (Small)
+   - Verify art renders correctly for all enemy types
+   - Check terminal width edge cases
+   - Spot-check visual alignment with existing UI
+   - **Estimate:** 0.5 work item
+
+**Total Phase 1 Effort:** ~2 work items, ~6–8 hours of implementation + test work.
+
+## Risks and Mitigations
+
+### 1. Terminal Width Compatibility ⚠️
+**Mitigation:** Add Console.WindowWidth check; provide compact fallback art for terminals < 60 chars
+
+### 2. ANSI Color Portability ⚠️
+**Mitigation:** Stick to 16 standard ANSI colors already in use; provide monochrome fallback
+
+### 3. Test Complexity 🟡
+**Mitigation:** Don't snapshot-test exact art; test behavioral verification instead (output non-empty lines, etc.)
+
+### 4. Maintenance Burden 🟡
+**Mitigation:** Store art in isolated section (AsciiArtRegistry class); consider Phase 2 migration to JSON if collection grows
+
+### 5. Visual Consistency 🟡
+**Mitigation:** Establish simple template (max 8 lines, 36 chars wide); use consistent character palettes; single designer for all art
+
+## Recommendation
+
+**Go ahead.** ASCII art for enemy encounters is a **low-risk, high-flavor addition** that:
+- ✅ Fits cleanly into the existing display architecture
+- ✅ Requires no interface changes (just a ShowCombatStart enhancement)
+- ✅ Uses existing color and box-drawing infrastructure
+- ✅ Is sized appropriately for the console UI (5–10 lines, 30–42 chars wide)
+- ✅ Is a small Phase 1 effort (~2 work items)
+- ✅ Has clear, manageable risks with straightforward mitigations
+
+**Phase 2 possibilities:** Per-type color theming, elite/boss variants, animated frames.
+

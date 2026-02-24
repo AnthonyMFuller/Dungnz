@@ -251,4 +251,11 @@ public interface IDisplayService
     /// <param name="killedBy">Optional cause of death.</param>
     /// <param name="stats">Run statistics.</param>
     void ShowGameOver(Player player, string? killedBy, Dungnz.Systems.RunStats stats);
+
+    /// <summary>
+    /// Renders the enemy's ASCII art in a styled box before combat, if art is present.
+    /// Does nothing when <paramref name="enemy"/> has no art.
+    /// </summary>
+    /// <param name="enemy">The enemy whose art should be displayed.</param>
+    void ShowEnemyArt(Enemy enemy);
 }

@@ -855,3 +855,71 @@ When a display string contains ANSI escape codes (e.g., from ColorizeItemName), 
 - Room: Visited, HasShrine, ShrineUsed, Merchant, Exits (Dictionary<Direction, Room>) confirmed in Models/Room.cs
 
 **Build/Test:** 0 errors (24 XML doc warnings), all tests passed.
+
+### 2026-02-23 — Research: ASCII Art Enemy Display Feasibility
+
+**Scope:** RESEARCH ONLY — assessed display layer extensibility for multi-line ASCII art of enemies during combat encounters. No implementation.
+
+**Key Findings:**
+
+1. **IDisplayService Interface: Multi-Line Capability**
+   - No existing method for multi-line art display
+   - Current combat methods are single-line: `ShowCombat(string message)`, `ShowCombatMessage(string message)`, `ShowCombatStart(Enemy enemy)`, `ShowCombatEntryFlags(Enemy enemy)`
+   - **Feasible addition:** A new method like `void ShowEnemyArt(string[] lines)` would fit naturally alongside ShowCombatStart
+   - Method signature would mirror existing patterns (target parameter only, no return value, output routed through console)
+
+2. **DisplayService Combat Rendering Patterns**
+   - **ShowCombatStart (lines 1061-1072):** 44-char-wide box using `═` horizontal lines, enemy name displayed on 3rd line in BrightRed
+   - **ShowCombatEntryFlags (lines 1075-1082):** Single-line flags (Elite, Enraged) indented with 2 spaces, using conditional Console.WriteLine per flag
+   - **ShowEnemyDetail (lines 1124-1143):** 36-char-wide box using box-drawing chars (`╔╗╠╣╚╝`), with stats stacked vertically
+   - Pattern: All UI boxes use `const int W = X;` for width, `new string('═', W)` for borders, indentation with 2 spaces after `║`
+   - **Combat zone has more breathing room** (44-char boxes) vs item cards (36-38 chars)
+
+3. **Console Width Constraints**
+   - Standard assumed width: 80 columns (implied by 44-char combat box with breathing room)
+   - Largest implemented box: ShowLootDrop (38-char width at line 258 using `╔══════════════════════════════════════╗`)
+   - **20-character ASCII art block:** Would fit comfortably beside text (e.g., 20-char art + 2-char gutter + 26-char stat block = 48 chars, leaving 32 for margins/layout)
+   - **Practical limit for side-by-side layout:** ~18-20 chars wide ASCII art to avoid cramping
+
+4. **ANSI Color Integration: Full Support Available**
+   - ColorCodes static class (Systems/ColorCodes.cs) provides 8 basic + 4 bright colors (Red, Green, Yellow, Blue, Cyan, Magenta, White, Gray, BrightRed, BrightCyan, BrightWhite)
+   - **VisibleLength/PadRightVisible pattern proven robust:** Already used throughout DisplayService to handle ANSI-padded text (line 1208-1212)
+   - Color escapes embedded in ASCII art strings work seamlessly: `$"{Red}▓▓{Reset}{Green}██{Reset}"` — padding helpers account for invisible codes
+   - **No modification needed to ColorCodes:** Existing StripAnsiCodes (line 202) and color constants support multi-line colored art natively
+   - Example: `string[] dragonArt = { $"{ColorCodes.BrightRed}▓▓▓{Reset}", $"{ColorCodes.Red}███{Reset}" };` would render colored, padded correctly
+
+5. **Multi-Line Rendering Pattern: Already Established**
+   - **Precedent in ShowCombatStatus (lines 117-151):** Loops through effect lists to render conditional status flags
+   - **Precedent in ShowInventory (lines 195-240):** Iterates items in a loop, rendering each on separate lines with PadRightVisible
+   - **ShowEnemyArt(string[] lines) implementation sketch:**
+     ```csharp
+     public void ShowEnemyArt(string[] lines)
+     {
+         Console.WriteLine();
+         foreach (var line in lines)
+             Console.WriteLine($"  {line}");
+         Console.WriteLine();
+     }
+     ```
+   - Could be placed after ShowCombatStart (line 1072) in DisplayService
+   - IDisplayService method signature: `void ShowEnemyArt(string[] artLines);`
+
+6. **FakeDisplayService Test Stub Requirements**
+   - Current pattern: Methods store output in public Lists (Messages, CombatMessages, AllOutput, etc.) or track state (booleans for method calls)
+   - **Minimal stub for ShowEnemyArt:**
+     ```csharp
+     public void ShowEnemyArt(string[] artLines) 
+     { 
+         AllOutput.Add($"enemy_art:{string.Join("|", artLines)}"); 
+     }
+     ```
+   - 2-3 lines per new display method; 4-5 total lines to add (FakeDisplayService.cs lines ~129-136)
+   - Stripping ANSI from art: `ColorCodes.StripAnsiCodes()` can be applied per-line if tests need plain-text verification
+
+7. **Zero-Impact Integration**
+   - **Existing code unaffected:** New method is additive, not a breaking change to IDisplayService signatures
+   - **Build & test status:** No modifications to existing code paths
+   - **Combat flow:** Would insert ShowEnemyArt after ShowCombatStart in game loop's encounter sequence (future work for GameEngine wiring)
+
+**Conclusion:**
+Display layer is **well-structured for multi-line ASCII art integration**. VisibleLength/PadRightVisible helpers already solve ANSI-color padding. Box-drawing patterns are established. A ShowEnemyArt(string[] lines) method fits naturally into IDisplayService contract with minimal FakeDisplayService overhead. Recommended width: 18-22 chars for ASCII art to fit standard 80-column layout. No architectural barriers.

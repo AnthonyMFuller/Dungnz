@@ -133,4 +133,10 @@ public class FakeDisplayService : IDisplayService
         Messages.Add(msg);
         AllOutput.Add($"gameover:{killedBy ?? "unknown"}");
     }
+
+    public void ShowEnemyArt(Enemy enemy)
+    {
+        if (enemy.AsciiArt != null && enemy.AsciiArt.Length > 0)
+            AllOutput.Add($"enemy_art:{string.Join("|", enemy.AsciiArt)}");
+    }
 }

@@ -130,4 +130,9 @@ public class TestDisplayService : IDisplayService
     public void ShowEnemyDetail(Enemy enemy) { AllOutput.Add($"enemy_detail:{enemy.Name}"); }
     public void ShowVictory(Player player, int floorsCleared, RunStats stats) { AllOutput.Add($"victory:{player.Name}"); }
     public void ShowGameOver(Player player, string? killedBy, RunStats stats) { AllOutput.Add($"gameover:{killedBy ?? "unknown"}"); }
+    public void ShowEnemyArt(Enemy enemy)
+    {
+        if (enemy.AsciiArt != null && enemy.AsciiArt.Length > 0)
+            AllOutput.Add($"enemy_art:{string.Join("|", enemy.AsciiArt)}");
+    }
 }

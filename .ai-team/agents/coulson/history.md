@@ -1296,3 +1296,92 @@ Strong execution velocity and clean architecture decisions. Primary improvement:
 - PR #308 and #309 had overlapping changes (both contained achievement code) — merge order mattered
 - Empty test file in PR #307 indicates test implementation wasn't completed before PR creation
 - Build issues (missing field) discovered post-merge — PRs were incomplete at submission time
+
+---
+
+## 2026-02-24: ASCII Art for Enemy Encounters — Feasibility Research
+
+**Charter Task:** Research adding ASCII art for enemies when encountered. Assess architectural fit, integration points, data architecture, console constraints, scope, and risks.
+
+**Research Scope:**
+- Reviewed IDisplayService interface and DisplayService implementation (1200+ lines)
+- Analyzed existing multi-line UI rendering (title screen, class selection, equipment comparison, loot cards, enemy detail cards)
+- Examined Enemy model hierarchy and data structures
+- Traced ShowCombatStart call site in CombatEngine.cs (line 231)
+- Analyzed console constraints (80-char terminal baseline, box-drawing character usage, ANSI color codes)
+
+**Key Findings:**
+
+1. **Architectural Fit: ✅ EXCELLENT**
+   - IDisplayService is fully abstracted; no game logic calls Console.Write directly
+   - DisplayService already renders complex multi-line blocks (class cards ~20 lines each, equipment comparison 8–10 lines)
+   - Box-drawing and ANSI colors are well-established infrastructure
+   - No interface changes required; just enhance ShowCombatStart method
+
+2. **Integration Point: ✅ NATURAL**
+   - ShowCombatStart(Enemy enemy) is the ideal location (already receives enemy object)
+   - Current implementation: 12 lines rendering a simple banner
+   - Art would fit between the red border and enemy name or as a replacement banner
+   - Call site is stable and won't change
+
+3. **Data Architecture: ✅ THREE OPTIONS**
+   - **Phase 1 Recommended:** Hardcoded in Enemy subclasses (zero I/O, no deserialization, simple)
+   - Phase 2 Alternative: Separate JSON asset file (`Data/enemy-art.json`) for asset separation
+   - Phase 2 Polish: C# 11 multi-line string literals for cleaner code
+
+4. **Console Constraints: ✅ MANAGEABLE**
+   - ASCII art should be 30–42 chars wide, 5–10 lines tall (matches existing card widths)
+   - Standard 80-char terminal remains safe with 2-space margins
+   - Defensive fallback: narrow terminal (< 60 chars) gets simple icon-only art
+   - ANSI compatibility: stick to 16-color palette already in use (BrightRed, Yellow, Cyan, Gray, etc.)
+
+5. **Scope Estimate: ✅ PHASE 1 (Small)**
+   - Art Design: 1 short work item (~5–10 min per portrait × 10–12 enemy types)
+   - Display Integration: 0.5 work item (modify ShowCombatStart, integrate art lookup)
+   - Testing: 0.5 work item (test coverage, edge cases, visual spot-check)
+   - **Total:** ~2 work items, 6–8 hours implementation + test
+
+6. **Risks & Mitigations: ✅ LOW-RISK**
+   - **Terminal Width:** Add Console.WindowWidth check, fallback art for narrow displays
+   - **ANSI Color:** Stick to 16-color palette, test on common terminal types
+   - **Test Brittleness:** Avoid snapshot tests on art; test behavior instead (non-empty output, correct call sites)
+   - **Maintenance:** Document art in comments, store in isolated AsciiArtRegistry class
+   - **Visual Consistency:** Establish template (max 8 lines, 36 chars), one designer for all art
+
+**Recommendation:**
+**Go ahead.** ASCII art for enemies is architecturally sound, low-effort, and high-flavor. No risks beyond standard terminal compatibility (which are well-understood and mitigated by existing patterns in the codebase).
+
+**Next Actions:**
+- Approve for Phase planning
+- Assign art design work (Hill or team volunteer)
+- Schedule ShowCombatStart enhancement after art is ready
+- Include in Phase N test coverage plan (Romanoff)
+
+**Feasibility Report:**
+Detailed assessment written to `.ai-team/decisions/inbox/coulson-ascii-art-feasibility.md`
+
+## Learnings
+
+**Display Architecture Resilience:**
+- Multi-line UI blocks are well-supported by the DisplayService abstraction
+- Box-drawing + ANSI colors are mature infrastructure; no hacks or workarounds needed
+- RenderBar helper pattern demonstrates that reusable visual components can be built cleanly
+- ANSI code handling (StripAnsiCodes for padding, ColorCodes.HealthColor() for theming) is rock-solid
+
+**IDisplayService Contract Quality:**
+- The interface definition (IDisplayService.cs) is comprehensive and prevents display layer leakage
+- ShowCombatStart method signature (Enemy enemy) is sufficient for all art purposes; no param expansion needed
+- Design clarity around DisplayService responsibilities has enabled straightforward feature additions (Phase 1, Phase 2 display features merged without integration issues)
+
+**ASCII Art Feasibility Pattern:**
+- Adding graphical flavor to a console app doesn't require architectural change if the display layer is abstracted
+- Multi-line output, box-drawing, and color codes are sufficient for high-quality ASCII art
+- Console width constraints are real but manageable with simple fallback patterns
+
+**ASCII Art Feature Decomposition (2026-02-24):**
+- Decomposed ASCII art feature into 5 GitHub issues across 3 team members
+- Issue #314 (Hill): Add AsciiArt property to Enemy model and EnemyStats
+- Issue #317 (Hill): Add ShowEnemyArt method to IDisplayService and DisplayService
+- Issue #315 (Barton): Wire ShowEnemyArt into CombatEngine encounter start
+- Issue #318 (Barton): Add ASCII art content to all enemies in enemy-stats.json
+- Issue #316 (Romanoff): Write tests for ShowEnemyArt display and combat integration

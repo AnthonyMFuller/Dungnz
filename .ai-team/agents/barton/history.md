@@ -657,3 +657,166 @@ Branch: `squad/272-phase1-combat-prep`
 
 **Documentation:** Analysis and implementation notes in `.ai-team/plans/barton-phase1-analysis.md` and `.ai-team/decisions/inbox/barton-runstats.md`
 
+
+## Learnings
+
+### ASCII Art for Enemies — Feasibility Research (2026-02-23)
+
+**Research Objective:** Assess feasibility of adding ASCII art visualization for enemies during encounters.
+
+#### 1. Enemy Model Analysis
+**File:** `Models/Enemy.cs`
+- Abstract base class with 10 properties: Name, HP, MaxHP, Attack, Defense, XPValue, LootTable
+- 9 additional mechanic flags: IsImmuneToEffects, FlatDodgeChance, LifestealPercent, AppliesPoisonOnHit, IsAmbush, IsElite
+- **No AsciiArt property currently exists**
+- **Viability:** Adding AsciiArt as `public string[] AsciiArt { get; set; }` would be a clean addition — follows existing pattern of optional properties (LootTable is already optional). Would not break JSON serialization (already uses JsonPolymorphic for 12 derived types).
+
+#### 2. Enemy Data Format
+**File:** `Data/enemy-stats.json` (164 lines)
+- **Format:** Flat JSON object with enemy type as key (Goblin, Skeleton, etc.)
+- **Current fields:** Name, MaxHP, Attack, Defense, XPValue, MinGold, MaxGold
+- **18 unique enemy types:** Goblin, Skeleton, Troll, DarkKnight, GoblinShaman, StoneGolem, Wraith, VampireLord, Mimic, BloodHound, CursedZombie, GiantRat, IronGuard, NightStalker, FrostWyvern, ChaosKnight, LichKing, DungeonBoss
+- **Viability:** Data-driven approach is STRONG here. Adding `AsciiArt: ["line1", "line2", ...]` to each enemy in the JSON would be straightforward and follows existing convention. **This is the natural fit.**
+
+#### 3. Enemy Class Implementation
+**Files:** `Systems/Enemies/Goblin.cs`, `Skeleton.cs`, `Troll.cs`, `DarkKnight.cs`, etc.
+- Each enemy class has constructor: `Enemy(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)`
+- Stats are loaded from config and assigned in constructor
+- **Current pattern:** All stats come from JSON config OR fallback to hardcoded defaults
+- **Viability:** AsciiArt could be loaded alongside other stats in EnemyStats, following the same pattern. Minimal changes to constructors.
+
+#### 4. Combat Encounter Flow — Exact Display Moment
+**File:** `Engine/CombatEngine.cs`, method `RunCombat(Player, Enemy)`
+
+**Sequence of calls:**
+1. Line 231: `_display.ShowCombatStart(enemy)` — displays red banner with "COMBAT BEGINS" and enemy name
+2. Line 232: `_display.ShowCombatEntryFlags(enemy)` — shows Elite/Enraged flags
+3. Lines 234-242: Conditional narration display:
+   - If DungeonBoss: calls `BossNarration.GetIntro(enemy.Name)` → 3-4 dramatic lines printed sequentially
+   - Otherwise: calls `_narration.Pick(EnemyNarration.GetIntros(enemy.Name))` → one random intro from pool
+4. Then combat loop begins (player input, turn-based combat)
+
+**Best insertion point for ASCII art:** 
+- **AFTER ShowCombatStart (line 231), BEFORE narration (line 234).**
+- This places art immediately after the red banner but before any story text, creating visual impact without interrupting narrative flow.
+- Could also insert AFTER narration for a different pacing feel (enemy appears, then gets described).
+
+**Viability:** DisplayService already has all the infrastructure. Adding `ShowEnemyAscii(Enemy enemy)` method would integrate cleanly into the existing display pipeline. The CombatEngine already calls several display methods in sequence.
+
+#### 5. Boss vs. Regular Enemies
+**5 Boss Variants (derived from DungeonBoss):**
+- DungeonBoss
+- LichKing
+- StoneTitan
+- ShadowWraith
+- VampireBoss
+
+**Regular Enemies (derive from Enemy):**
+- 13 standard types in EnemyFactory.CreateRandom() pool
+- Elites: 5% chance to spawn any enemy as Elite variant (name prefixed with "Elite", 1.5x stats, IsElite flag set)
+
+**Design Opportunity:**
+- Boss art could be more elaborate (5-8 lines), printed by both regular narration and ASCII
+- Regular enemy art: 3-5 lines, simple and readable
+- Elite variants: Could reuse base enemy art with Elite header or have optional Elite-specific variants
+- **Recommendation:** Boss art warrants investment (5 unique multi-line pieces); regular enemies: 13 pieces at 4-5 lines each (feasible). Total art content: ~70 lines.
+
+#### 6. Data-Driven Viability Assessment
+
+**Current Data Architecture:**
+- EnemyStats object (EnemyConfig.cs) loads from JSON
+- Each enemy constructor receives EnemyStats? and itemConfig
+- Pattern is established: all stat variation comes from data, not hardcoding
+
+**Data-Driven Approach (RECOMMENDED):**
+```json
+{
+  "Goblin": {
+    "Name": "Goblin",
+    "MaxHP": 20,
+    "Attack": 8,
+    "Defense": 2,
+    "XPValue": 15,
+    "MinGold": 2,
+    "MaxGold": 8,
+    "AsciiArt": [
+      "  /\\_/\\",
+      " ( o_o )",
+      "  > ^ <",
+      "   / \\"
+    ]
+  }
+}
+```
+
+**Integration Path:**
+1. Add `public string[]? AsciiArt { get; set; }` to EnemyStats class
+2. Add `public string[] AsciiArt { get; set; } = Array.Empty<string>();` to Enemy base class
+3. In each enemy constructor: `if (stats?.AsciiArt != null) AsciiArt = stats.AsciiArt;`
+4. Add `public void ShowEnemyAscii(Enemy enemy)` to IDisplayService + DisplayService
+5. Call in CombatEngine.RunCombat() after ShowCombatStart()
+
+**Why Data-Driven Wins:**
+- Matches project convention (all stats already driven by JSON)
+- Decouples art from code — artists can edit JSON without rebuilding
+- Scales linearly: add enemy type → add JSON entry → done
+- Zero impact on existing constructors (optional property)
+- Easy to test (mock JSON, verify display calls)
+
+**Hardcoding Comparison (NOT RECOMMENDED):**
+- Would require maintaining art strings in 18+ enemy classes
+- Breaks convention of data-driven design
+- Harder to maintain/update visually
+
+#### 7. Feasibility Summary
+
+| Aspect | Feasibility | Notes |
+|--------|-------------|-------|
+| **Enemy model change** | ✅ High | Add optional string[] property, no breaking changes |
+| **Data format change** | ✅ High | JSON already extensible; add AsciiArt array per enemy |
+| **Display integration** | ✅ High | CombatEngine already calls sequential display methods; ShowEnemyAscii fits cleanly |
+| **Encounter flow** | ✅ High | Clear insertion point (after ShowCombatStart, before narration) |
+| **Boss support** | ✅ High | Bosses use same Enemy base class; can vary art length |
+| **Elite support** | ✅ Medium | Either reuse base art or add optional Elite variant art |
+| **Scope (content)** | ✅ Medium | 70-100 lines of ASCII art total across 18 enemies + 5 bosses |
+| **Test impact** | ✅ None | Display-layer change; existing combat tests unchanged |
+
+#### 8. Design Recommendations
+
+**Implementation Priority (if greenlit):**
+1. **Phase 1 (Data layer):** Add AsciiArt to EnemyStats + JSON (non-breaking)
+2. **Phase 2 (Model layer):** Add AsciiArt to Enemy; update constructors
+3. **Phase 3 (Display layer):** Add ShowEnemyAscii() method; call in CombatEngine
+4. **Phase 4 (Content):** Create 18 ASCII art pieces for regular enemies
+5. **Phase 5 (Content):** Create 5 elaborate ASCII art pieces for bosses
+
+**Key Design Decisions:**
+- **Placement:** After ShowCombatStart, before narration (visual impact without narrative interruption)
+- **Data location:** In Data/enemy-stats.json alongside other stats
+- **Scaling:** Different art lengths by type (boss > regular > not all need art)
+- **Fallback:** Empty array if no art defined (graceful degradation)
+
+#### 9. Code Impact Assessment
+
+**Zero Breaking Changes:**
+- Enemy.AsciiArt can be optional (Array.Empty<string> default)
+- EnemyStats.AsciiArt can be nullable
+- JSON deserializer handles missing fields gracefully
+- DisplayService.ShowEnemyAscii() is new method, doesn't affect existing calls
+- CombatEngine.RunCombat() adds one display call
+
+**Minimal Touch Points:**
+- Models/Enemy.cs: +1 property
+- Models/EnemyStats.cs (in EnemyConfig.cs): +1 field
+- Systems/Enemies/*.cs: Optional, only if hardcoding needed (NOT recommended)
+- Display/IDisplayService.cs: +1 method
+- Display/DisplayService.cs: +1 implementation
+- Engine/CombatEngine.cs: +1 method call (line 232.5)
+- Data/enemy-stats.json: +1 field per enemy entry
+
+**Testing:** Existing tests unaffected. New tests could verify ShowEnemyAscii() called at correct time with correct enemy.
+
+#### Conclusion
+
+Adding ASCII art for enemies is **highly feasible**. The project's existing data-driven architecture (JSON-based stats, EnemyStats loading pattern) provides a natural home for ASCII art. The display layer (DisplayService) and encounter flow (CombatEngine.RunCombat) have clear insertion points. Content scope is manageable (18 regular + 5 boss pieces). Implementation has zero breaking changes and minimal surface area. Ready to proceed if approved.
+

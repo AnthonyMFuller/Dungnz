@@ -82,4 +82,10 @@ public abstract class Enemy
     /// tier-2 or higher item drop from its <see cref="LootTable"/>.
     /// </summary>
     public bool IsElite { get; set; }  // boosted stats, guaranteed tier-2 drop
+
+    /// <summary>
+    /// Gets the ASCII art lines for this enemy, displayed before combat if non-empty.
+    /// An empty array means no art is shown.
+    /// </summary>
+    public string[] AsciiArt { get; protected set; } = Array.Empty<string>();
 }
