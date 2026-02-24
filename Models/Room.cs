@@ -98,4 +98,18 @@ public class Room
 
     /// <summary>Gets or sets the environmental hazard in this room that damages the player on entry.</summary>
     public HazardType Hazard { get; set; } = HazardType.None;
+
+    /// <summary>Gets or sets the narrative state of this room: Fresh on first entry, Cleared after its enemy is defeated, Revisited on subsequent entries.</summary>
+    public RoomState State { get; set; } = RoomState.Fresh;
+}
+
+/// <summary>Tracks the narrative state of a room for flavor text selection.</summary>
+public enum RoomState
+{
+    /// <summary>Room has not yet been entered by the player.</summary>
+    Fresh,
+    /// <summary>Room has been cleared of its enemy.</summary>
+    Cleared,
+    /// <summary>Room has been visited before.</summary>
+    Revisited
 }
