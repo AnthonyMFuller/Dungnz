@@ -1,5 +1,7 @@
 namespace Dungnz.Models;
 
+using Dungnz.Systems;
+
 /// <summary>Represents a single item in a merchant's stock along with its sale price.</summary>
 public class MerchantItem
 {
@@ -23,25 +25,39 @@ public class Merchant
     public List<MerchantItem> Stock { get; init; } = new();
 
     /// <summary>
-    /// Creates a new <see cref="Merchant"/> with a randomly chosen subset of three items from
-    /// the predefined pool of available goods.
+    /// Creates a new <see cref="Merchant"/> with stock loaded from merchant-inventory.json for
+    /// the given floor. Falls back to a basic hardcoded set if the JSON cannot be loaded.
     /// </summary>
     /// <param name="rng">The random number generator used to select the stock.</param>
-    /// <returns>A new <see cref="Merchant"/> instance with three randomly chosen items.</returns>
-    public static Merchant CreateRandom(Random rng)
+    /// <param name="floor">The dungeon floor number (1–5), used to select appropriate items.</param>
+    /// <param name="allItems">All available items for resolving IDs; pass empty/null to trigger fallback.</param>
+    /// <returns>A new <see cref="Merchant"/> instance stocked for the given floor.</returns>
+    public static Merchant CreateRandom(Random rng, int floor = 1, IReadOnlyList<Item>? allItems = null)
     {
-        var items = new List<MerchantItem>
+        List<MerchantItem> stock;
+
+        if (allItems is { Count: > 0 })
         {
-            new() { Item = new Item { Name="Health Potion", ItemId="health-potion", Type=ItemType.Consumable, HealAmount=20, Description="A murky red liquid in a stoppered vial. Smells terrible. Works anyway.", Tier=ItemTier.Common }, Price = 25 },
-            new() { Item = new Item { Name="Mana Potion", ItemId="mana-potion", Type=ItemType.Consumable, HealAmount=0, ManaRestore=20, Description="Faintly luminescent blue liquid. The arcane energy inside makes your fingers tingle.", Tier=ItemTier.Common }, Price = 20 },
-            new() { Item = new Item { Name="Iron Sword", ItemId="iron-sword", Type=ItemType.Weapon, AttackBonus=4, IsEquippable=true, Description="A battered blade, nicked from hard use. It has drawn blood before and will draw it again.", Tier=ItemTier.Common }, Price = 50 },
-            new() { Item = new Item { Name="Iron Shield", ItemId="iron-shield", Type=ItemType.Armor, DefenseBonus=4, IsEquippable=true, Description="Dented iron, dull as old pewter. It has stopped worse than whatever is down here.", Tier=ItemTier.Common }, Price = 45 },
-            new() { Item = new Item { Name="Elixir of Strength", ItemId="elixir-of-strength", Type=ItemType.Consumable, HealAmount=0, Description="A thick amber fluid. Warriors swear by it. It tastes like iron and lightning.", AttackBonus=2, Tier=ItemTier.Uncommon }, Price = 80 },
-        };
-        // Pick 3 random items to stock
-        var stock = new List<MerchantItem>();
-        var indices = Enumerable.Range(0, items.Count).OrderBy(_ => rng.Next()).Take(3).ToList();
-        foreach (var i in indices) stock.Add(items[i]);
+            stock = MerchantInventoryConfig.GetStockForFloor(floor, allItems, rng);
+        }
+        else
+        {
+            stock = new List<MerchantItem>();
+        }
+
+        // Fallback: if JSON loading yielded nothing, use a minimal hardcoded set
+        if (stock.Count == 0)
+        {
+            stock = GetFallbackStock();
+        }
+
         return new Merchant { Stock = stock };
     }
+
+    private static List<MerchantItem> GetFallbackStock() =>
+    [
+        new() { Item = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 20, Description = "Restores 20 HP.", Tier = ItemTier.Common }, Price = 25 },
+        new() { Item = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true, Description = "A sturdy iron blade.", Tier = ItemTier.Common }, Price = 50 },
+        new() { Item = new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 3, IsEquippable = true, Description = "Basic leather protection.", Tier = ItemTier.Common }, Price = 40 },
+    ];
 }
