@@ -327,7 +327,6 @@ public class GameLoop
             {
                 var enemyName = _currentRoom.Enemy!.Name;
                 _currentRoom.Enemy = null;
-                _stats.EnemiesDefeated++;
                 _display.ShowMessage(_narration.Pick(_postCombatLines, enemyName));
             }
 
