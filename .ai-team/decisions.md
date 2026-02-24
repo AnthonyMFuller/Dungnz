@@ -11148,3 +11148,31 @@ Adding ASCII art for enemies is **architecturally feasible and low-risk**. The d
 
 **Phase 2 possibilities:** Per-type color theming, elite/boss variants, animated frames.
 
+
+
+---
+
+## ASCII Art Feature
+
+### 2026-02-24: Issues Created
+**By:** Coulson  
+**What:** Created 5 GitHub issues for ASCII art enemy encounter feature  
+**Why:** Anthony approved implementation following unanimous feasibility recommendation  
+**Issues:**
+- #314 — feat: Add AsciiArt property to Enemy model and EnemyStats (Hill)
+- #315 — feat: Wire ShowEnemyArt into CombatEngine encounter start (Barton)
+- #316 — test: Write tests for ShowEnemyArt display and combat integration (Romanoff)
+- #317 — feat: Add ShowEnemyArt method to IDisplayService and DisplayService (Hill)
+- #318 — feat: Add ASCII art content to all enemies in enemy-stats.json (Barton)
+
+### 2026-02-23: Implementation Complete
+**By:** Hill, Barton, Romanoff  
+**What:** Full implementation of ASCII art for enemy encounters merged to master  
+**Decisions made:**
+- `AsciiArt string[]` stored directly on `EnemyStats` / `Enemy` — data-driven, follows `BossNarration` precedent
+- `ShowEnemyArt(Enemy)` placed on `IDisplayService` (not inlined in `CombatEngine`) — keeps display logic in display layer
+- 36-char box width with ANSI color keyed to enemy tier — consistent with existing card widths
+- Art called after `ShowCombatStart` in `CombatEngine.RunCombat()` — natural insertion point
+- Regular enemies: 4–6 lines; Bosses: 6–8 lines; all ≤ 34 chars wide
+- Tests use `FakeDisplayService` recording — no snapshot tests (per feasibility risk mitigation)
+**Outcome:** 5 issues closed, 3 PRs merged (#319, #320, #321), 4 new tests, zero regressions
