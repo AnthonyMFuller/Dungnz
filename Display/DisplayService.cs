@@ -1037,15 +1037,15 @@ public class ConsoleDisplayService : IDisplayService
         const int baseMana = 30;
 
         var classes = new[] {
-            (def: PlayerClassDefinition.Warrior,    icon: "⚔",  number: 1),
-            (def: PlayerClassDefinition.Mage,       icon: "🔮", number: 2),
-            (def: PlayerClassDefinition.Rogue,      icon: "🗡", number: 3),
-            (def: PlayerClassDefinition.Paladin,    icon: "🛡", number: 4),
-            (def: PlayerClassDefinition.Necromancer,icon: "💀", number: 5),
-            (def: PlayerClassDefinition.Ranger,     icon: "🏹", number: 6)
+            (def: PlayerClassDefinition.Warrior,    icon: "⚔",  number: 1, iconWidth: 1),
+            (def: PlayerClassDefinition.Mage,       icon: "🔮", number: 2, iconWidth: 2),
+            (def: PlayerClassDefinition.Rogue,       icon: "🗡",  number: 3, iconWidth: 1),
+            (def: PlayerClassDefinition.Paladin,    icon: "🛡",  number: 4, iconWidth: 1),
+            (def: PlayerClassDefinition.Necromancer,icon: "💀", number: 5, iconWidth: 2),
+            (def: PlayerClassDefinition.Ranger,     icon: "🏹", number: 6, iconWidth: 2)
         };
 
-        foreach (var (def, icon, number) in classes)
+        foreach (var (def, icon, number, iconWidth) in classes)
         {
             // Calculate effective stats
             int effectiveHP = baseHP + def.BonusMaxHP;
@@ -1086,7 +1086,8 @@ public class ConsoleDisplayService : IDisplayService
 
             const int boxInner = 48;
             Console.WriteLine($"{cyan}┌────────────────────────────────────────────────┐{reset}");
-            Console.WriteLine($"{cyan}│{reset} [{number}] {icon}  {def.Name.ToUpper(),-39} {cyan}│{reset}");
+            int nameColWidth = 39 - (iconWidth - 1); // reduce padding for 2-wide emoji
+            Console.WriteLine($"{cyan}│{reset} [{number}] {icon}  {def.Name.ToUpper().PadRight(nameColWidth)} {cyan}│{reset}");
             
             // HP line with ANSI-aware padding (clamped to handle prestige overflow-safe)
             var hpLine = $" HP:      {hpBar}  {hpDisplay}";
@@ -1105,7 +1106,7 @@ public class ConsoleDisplayService : IDisplayService
             
             Console.WriteLine($"{cyan}│{reset} Mana:    {manaBar}  {effectiveMana,-25} {cyan}│{reset}");
             Console.WriteLine($"{cyan}│{reset} Trait: {def.TraitDescription,-39} {cyan}│{reset}");
-            Console.WriteLine($"{cyan}│{reset} {gray}\"{def.Description}\"{reset}{new string(' ', Math.Max(0, 46 - def.Description.Length))}{cyan}│{reset}");
+            Console.WriteLine($"{cyan}│{reset} {gray}\"{def.Description}\"{reset}{new string(' ', Math.Max(0, 45 - def.Description.Length))}{cyan}│{reset}");
             Console.WriteLine($"{cyan}└────────────────────────────────────────────────┘{reset}");
             Console.WriteLine();
         }
