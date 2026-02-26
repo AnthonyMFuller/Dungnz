@@ -35,6 +35,12 @@ public partial class Player
     public int TempAttackBonus { get; set; } = 0;
 
     /// <summary>
+    /// Temporary defense bonus applied by consumables (e.g. Stone Skin Elixir, Elixir of Swiftness).
+    /// Reset to 0 on floor descent.
+    /// </summary>
+    public int TempDefenseBonus { get; set; } = 0;
+
+    /// <summary>
     /// When <see langword="true"/>, the next shrine visit automatically heals 30% MaxHP
     /// (Sacred Ground blessing from a Forgotten Shrine). Cleared after triggering.
     /// </summary>

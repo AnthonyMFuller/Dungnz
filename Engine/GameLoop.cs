@@ -559,6 +559,44 @@ public class GameLoop
                     _display.ShowMessage($"Dragonheart warmth spreads through you. MaxHP +100! ({_player.MaxHP} MaxHP)");
                     _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
                 }
+                else if (item.PassiveEffectId == "cure_all")
+                {
+                    _player.ActiveEffects.RemoveAll(e => e.IsDebuff);
+                    _player.Heal(_player.MaxHP);
+                    _player.Inventory.Remove(item);
+                    _display.ShowMessage($"The Panacea purges all ailments and restores you to full health. HP: {_player.HP}/{_player.MaxHP}");
+                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
+                }
+                else if (item.PassiveEffectId == "berserk_buff")
+                {
+                    int atkGain = Math.Max(1, _player.Attack / 2);
+                    int defLoss = Math.Max(1, _player.Defense * 3 / 10);
+                    _player.ModifyAttack(atkGain);
+                    _player.TempAttackBonus += atkGain;
+                    _player.ModifyDefense(-defLoss);
+                    _player.TempDefenseBonus -= defLoss;
+                    _player.Inventory.Remove(item);
+                    _display.ShowMessage($"Rage floods your veins. ATK +{atkGain}, DEF -{defLoss} until next floor. ATK: {_player.Attack}, DEF: {_player.Defense}");
+                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
+                }
+                else if (item.PassiveEffectId == "stone_skin_buff")
+                {
+                    int defGain = Math.Max(1, _player.Defense * 2 / 5);
+                    _player.ModifyDefense(defGain);
+                    _player.TempDefenseBonus += defGain;
+                    _player.Inventory.Remove(item);
+                    _display.ShowMessage($"Your skin hardens to granite. DEF +{defGain} until next floor. DEF: {_player.Defense}");
+                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
+                }
+                else if (item.PassiveEffectId == "swiftness_buff")
+                {
+                    int atkGain = Math.Max(1, _player.Attack / 4);
+                    _player.ModifyAttack(atkGain);
+                    _player.TempAttackBonus += atkGain;
+                    _player.Inventory.Remove(item);
+                    _display.ShowMessage($"The world slows; you do not. ATK +{atkGain} until next floor. ATK: {_player.Attack}");
+                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
+                }
                 else
                 {
                     _display.ShowError($"You can't use {item.Name} right now.");
@@ -656,6 +694,7 @@ public class GameLoop
 
         _currentFloor++;
         if (_player.TempAttackBonus > 0) { _player.ModifyAttack(-_player.TempAttackBonus); _player.TempAttackBonus = 0; }
+        if (_player.TempDefenseBonus != 0) { _player.ModifyDefense(-_player.TempDefenseBonus); _player.TempDefenseBonus = 0; }
         foreach (var line in FloorTransitionNarration.GetSequence(_currentFloor))
             _display.ShowMessage(line);
         _display.ShowMessage($"You descend deeper into the dungeon... Floor {_currentFloor}");
