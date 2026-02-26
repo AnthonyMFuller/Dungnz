@@ -65,13 +65,13 @@ public class PlayerClassDefinition
     /// <summary>The predefined definition for the Paladin class.</summary>
     public static readonly PlayerClassDefinition Paladin = new() {
         Class = PlayerClass.Paladin, Name = "Paladin",
-        Description = "Holy warrior. High defense and HP. Smites undead.",
+        Description = "Holy warrior. High DEF/HP. Smites undead.",
         BonusAttack = 1, BonusDefense = 4, BonusMaxHP = 30, BonusMaxMana = 5
     };
     /// <summary>The predefined definition for the Necromancer class.</summary>
     public static readonly PlayerClassDefinition Necromancer = new() {
         Class = PlayerClass.Necromancer, Name = "Necromancer",
-        Description = "Death magic and minion summoning. High mana, low survivability.",
+        Description = "Death magic and minions. High mana, low HP.",
         BonusAttack = -2, BonusDefense = -2, BonusMaxHP = -20, BonusMaxMana = 40
     };
     /// <summary>The predefined definition for the Ranger class.</summary>
@@ -86,9 +86,9 @@ public class PlayerClassDefinition
         PlayerClass.Warrior => "Passive: +5% damage when HP < 50%",
         PlayerClass.Mage => "Passive: Spells deal +20% damage",
         PlayerClass.Rogue => "Passive: +10% dodge chance",
-        PlayerClass.Paladin => "Passive: Divine Favor — auto-heal once per combat at 30% HP",
-        PlayerClass.Necromancer => "Passive: Soul Harvest — gain 2 max mana on each enemy kill",
-        PlayerClass.Ranger => "Passive: Hunter's Mark — first attack each combat +25% damage",
+        PlayerClass.Paladin => "Divine Favor: auto-heal at 30% HP",
+        PlayerClass.Necromancer => "Soul Harvest: +2 max mana on kill",
+        PlayerClass.Ranger => "Hunter's Mark: +25% first attack",
         _ => ""
     };
 
