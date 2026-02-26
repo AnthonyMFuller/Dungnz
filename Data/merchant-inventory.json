@@ -3,49 +3,132 @@
     {
       "floor": 1,
       "guaranteed": ["health-potion", "iron-sword", "leather-armor"],
-      "pool": ["health-potion", "large-health-potion", "iron-sword", "leather-armor", "rusty-sword", "antidote", "bandage"],
-      "stockCount": 4
+      "pool": [
+        "health-potion", "large-health-potion", "iron-sword", "rusty-sword", "antidote", "bandage",
+        "leather-armor", "padded-tunic", "troll-hide",
+        "iron-helm", "leather-skullcap",
+        "padded-shoulders", "iron-spaulders",
+        "canvas-leggings", "iron-tassets",
+        "worn-boots", "iron-boots",
+        "rough-gloves", "studded-gloves",
+        "wooden-shield", "battered-kite-shield",
+        "fur-cloak", "travelers-cloak"
+      ],
+      "stockCount": 5
     },
     {
       "floor": 2,
       "guaranteed": ["health-potion", "iron-sword", "leather-armor"],
-      "pool": ["health-potion", "large-health-potion", "iron-sword", "leather-armor", "iron-helm", "chainmail", "antidote", "mana-draught"],
-      "stockCount": 4
+      "pool": [
+        "health-potion", "large-health-potion", "iron-sword", "antidote", "mana-draught",
+        "leather-armor", "padded-tunic",
+        "iron-helm", "iron-greathelm", "scouts-hood",
+        "padded-shoulders", "iron-spaulders",
+        "iron-tassets", "scavenger-leggings",
+        "iron-boots", "scouts-boots",
+        "studded-gloves", "rough-gloves",
+        "wooden-shield", "battered-kite-shield",
+        "fur-cloak", "travelers-cloak"
+      ],
+      "stockCount": 5
     },
     {
       "floor": 3,
       "guaranteed": ["health-potion"],
-      "pool": ["health-potion", "large-health-potion", "studded-armor", "silver-rapier", "enchanted-axe", "boots-of-swiftness", "regeneration-tonic", "scroll-of-power"],
-      "stockCount": 5
+      "pool": [
+        "health-potion", "large-health-potion", "silver-rapier", "enchanted-axe", "regeneration-tonic", "scroll-of-power",
+        "studded-armor", "chainmail",
+        "reinforced-helm", "warlords-visor", "enchanted-cowl",
+        "chain-shoulders", "steel-pauldrons",
+        "chain-leggings", "steel-legguards",
+        "reinforced-boots", "steel-sabatons",
+        "chain-gloves", "iron-gauntlets",
+        "iron-buckler", "heater-shield",
+        "mages-cloak", "hunters-cloak",
+        "boots-of-swiftness"
+      ],
+      "stockCount": 6
     },
     {
       "floor": 4,
       "guaranteed": ["health-potion"],
-      "pool": ["health-potion", "large-health-potion", "scale-mail", "crossbow", "knights-armor", "ring-of-vitality", "amulet-of-the-sage", "phoenix-feather"],
-      "stockCount": 5
+      "pool": [
+        "health-potion", "large-health-potion", "crossbow", "ring-of-vitality", "amulet-of-the-sage", "phoenix-feather",
+        "scale-mail", "knights-armor",
+        "warlords-visor", "enchanted-cowl",
+        "steel-pauldrons", "sages-shoulderguards",
+        "steel-legguards", "sages-trousers",
+        "steel-sabatons", "rangers-boots",
+        "iron-gauntlets", "rangers-gloves",
+        "heater-shield", "apprentices-focus",
+        "hunters-cloak", "mages-cloak"
+      ],
+      "stockCount": 6
     },
     {
       "floor": 5,
       "guaranteed": ["health-potion", "phoenix-feather"],
-      "pool": ["health-potion", "large-health-potion", "mithril-plate", "dragon-scale-armor", "starfall-blade", "shadow-blade", "arcane-robe", "ring-of-vitality", "amulet-of-the-sage"],
-      "stockCount": 5
+      "pool": [
+        "health-potion", "large-health-potion", "starfall-blade", "shadow-blade", "ring-of-vitality", "amulet-of-the-sage",
+        "mithril-plate", "dragon-scale-armor", "arcane-robe",
+        "battlelords-helm", "arcane-circlet", "shadowstep-hood",
+        "arcanists-mantle", "vanguard-pauldrons", "rangers-spaulders",
+        "ironclad-greaves", "ascendant-legwraps", "shadowstep-leggings",
+        "warlords-sabatons", "arcane-slippers", "shadowstep-boots",
+        "gauntlets-of-might", "spellthread-gloves",
+        "tower-shield", "arcane-codex",
+        "cloak-of-the-magi", "ascendant-shroud", "assassins-cape"
+      ],
+      "stockCount": 6
     },
     {
       "floor": 6,
       "guaranteed": ["dragonheart-elixir"],
-      "pool": ["warriors-sigil", "rogues-talisman", "cloak-of-the-magi", "berserk-tonic", "stone-skin-elixir", "health-potion", "large-health-potion", "phoenix-feather", "mithril-plate", "starfall-blade", "shadow-blade", "dragon-scale-armor"],
+      "pool": [
+        "warriors-sigil", "rogues-talisman", "berserk-tonic", "stone-skin-elixir", "health-potion", "large-health-potion", "phoenix-feather", "starfall-blade", "shadow-blade",
+        "mithril-plate", "dragon-scale-armor", "arcane-robe", "frost-scale-armor",
+        "battlelords-helm", "arcane-circlet", "shadowstep-hood",
+        "arcanists-mantle", "spellweave-mantle",
+        "ironclad-greaves", "shadowstep-leggings",
+        "warlords-sabatons", "shadowstep-boots",
+        "ironclad-set-gauntlets", "shadowstep-gloves",
+        "tower-shield", "arcane-codex",
+        "cloak-of-the-magi", "assassins-cape"
+      ],
       "stockCount": 6
     },
     {
       "floor": 7,
       "guaranteed": ["bone-flute", "panacea"],
-      "pool": ["gauntlets-of-might", "belt-of-regeneration", "elixir-of-swiftness", "crown-of-ascension", "health-potion", "large-health-potion", "phoenix-feather", "obsidian-plate", "starfall-blade"],
-      "stockCount": 6
+      "pool": [
+        "belt-of-regeneration", "elixir-of-swiftness", "crown-of-ascension", "health-potion", "large-health-potion", "phoenix-feather", "starfall-blade",
+        "obsidian-plate", "ascendant-robe", "sentinel-hauberk", "battlemages-cuirass",
+        "ironclad-set-helm", "ascendant-crown",
+        "ascendant-mantle", "sentinel-pauldrons",
+        "sentinel-cuisses", "wrathbound-legplates",
+        "swiftwind-treads", "cursed-sabatons",
+        "battlelords-fists", "arcane-handwraps",
+        "bulwark-of-eternity", "grimoire-of-the-void",
+        "voidwardens-cloak", "thundercloak",
+        "crown-of-the-undying"
+      ],
+      "stockCount": 7
     },
     {
       "floor": 8,
       "guaranteed": ["crown-of-ascension", "health-potion", "large-health-potion", "phoenix-feather"],
-      "pool": ["panacea", "dragonheart-elixir", "bone-flute", "berserk-tonic", "stone-skin-elixir", "elixir-of-swiftness", "obsidian-plate", "mithril-plate", "dragon-scale-armor", "starfall-blade", "shadow-blade", "arcane-staff"],
+      "pool": [
+        "panacea", "dragonheart-elixir", "bone-flute", "berserk-tonic", "stone-skin-elixir", "elixir-of-swiftness", "starfall-blade", "shadow-blade", "arcane-staff",
+        "ironheart-plate", "void-mantle",
+        "crown-of-the-undying",
+        "pauldrons-of-ruin",
+        "leggings-of-the-eternal",
+        "boots-of-the-abyss",
+        "gauntlets-of-the-forsaken",
+        "aegis-of-immortal", "titans-rampart",
+        "shadowmeld-cloak", "mantle-of-eternal-night",
+        "obsidian-plate", "ascendant-robe"
+      ],
       "stockCount": 8
     }
   ]
