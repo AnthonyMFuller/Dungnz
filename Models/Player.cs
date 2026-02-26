@@ -83,4 +83,18 @@ public partial class Player
 
     /// <summary>Counter used by the Shadowstalker 3-piece set bonus — auto-crit on every 3rd attack.</summary>
     public int ShadowDanceCounter { get; set; } = 0;
+
+    // ── 4-piece set bonus flags (set by SetBonusManager.ApplySetBonuses) ──────
+
+    /// <summary>Ironclad 4-piece: fraction of incoming damage reflected back to the attacker (e.g. 0.1 = 10%).</summary>
+    public float DamageReflectPercent { get; set; } = 0f;
+
+    /// <summary>Shadowstep 4-piece: guaranteed Bleed application on every hit.</summary>
+    public bool SetBonusAppliesBleed { get; set; } = false;
+
+    /// <summary>Arcane Ascendant 4-piece: flat mana discount applied to all ability costs.</summary>
+    public int ManaDiscount { get; set; } = 0;
+
+    /// <summary>Sentinel 4-piece: player cannot be stunned.</summary>
+    public bool IsStunImmune { get; set; } = false;
 }

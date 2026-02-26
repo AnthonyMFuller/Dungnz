@@ -719,6 +719,13 @@ public class CombatEngine : ICombatEngine
                 statusApplied = "Bleed";
                 _display.ShowColoredCombatMessage($"{enemy.Name} is bleeding!", ColorCodes.Red);
             }
+            // Shadowstep 4-pc set bonus: guaranteed bleed on every hit
+            if (player.SetBonusAppliesBleed && enemy.HP > 0)
+            {
+                _statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
+                statusApplied ??= "Bleed";
+                _display.ShowColoredCombatMessage($"[Shadowstep] {enemy.Name} is bleeding!", ColorCodes.Red);
+            }
             _turnLog.Add(new CombatTurn("You", "Attack", playerDmg, isCrit, false, statusApplied));
 
             // IronGuard counter-strike: fires AFTER player hits, BEFORE status ticks
@@ -1046,6 +1053,17 @@ public class CombatEngine : ICombatEngine
                 var divineHeal = (int)(player.MaxHP * 0.10);
                 player.Heal(divineHeal);
                 _display.ShowCombatMessage($"✨ Divine Favor! You are healed for {divineHeal} HP!");
+            }
+
+            // ── Ironclad 4-pc set bonus: DamageReflectPercent ──────────────
+            if (player.DamageReflectPercent > 0 && enemyDmgFinal > 0)
+            {
+                int reflected = (int)Math.Round(enemyDmgFinal * player.DamageReflectPercent);
+                if (reflected > 0 && enemy.HP > 0)
+                {
+                    enemy.HP -= reflected;
+                    _display.ShowColoredCombatMessage($"[Ironclad] Reflected {reflected} damage!", ColorCodes.BrightCyan);
+                }
             }
 
             // ── Passive effects: on player take damage ──────────────────────
