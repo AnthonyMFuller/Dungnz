@@ -29,7 +29,7 @@ public class ManaLeech : Enemy
         {
             Name = "Mana Leech";
             HP = MaxHP = 42;
-            Attack = 14;
+            Attack = 17;
             Defense = 5;
             XPValue = 38;
             LootTable = new LootTable(minGold: 10, maxGold: 22);

@@ -220,7 +220,7 @@
     "IronGuard": {
         "Name": "Iron Guard",
         "MaxHP": 50,
-        "Attack": 14,
+        "Attack": 18,
         "Defense": 14,
         "XPValue": 48,
         "MinGold": 15,
@@ -237,7 +237,7 @@
     "NightStalker": {
         "Name": "Night Stalker",
         "MaxHP": 55,
-        "Attack": 20,
+        "Attack": 25,
         "Defense": 8,
         "XPValue": 58,
         "MinGold": 18,
@@ -253,7 +253,7 @@
     "FrostWyvern": {
         "Name": "Frost Wyvern",
         "MaxHP": 75,
-        "Attack": 22,
+        "Attack": 28,
         "Defense": 12,
         "XPValue": 70,
         "MinGold": 25,
@@ -270,7 +270,7 @@
     "ChaosKnight": {
         "Name": "Chaos Knight",
         "MaxHP": 85,
-        "Attack": 24,
+        "Attack": 30,
         "Defense": 16,
         "XPValue": 80,
         "MinGold": 35,
@@ -337,7 +337,7 @@
     "DarkSorcerer": {
         "Name": "Dark Sorcerer",
         "MaxHP": 45,
-        "Attack": 15,
+        "Attack": 18,
         "Defense": 6,
         "XPValue": 40,
         "MinGold": 10,
@@ -368,14 +368,14 @@
     "CryptPriest": {
         "Name": "Crypt Priest",
         "MaxHP": 52,
-        "Attack": 13,
+        "Attack": 16,
         "Defense": 8,
         "XPValue": 45,
         "MinGold": 12,
         "MaxGold": 26,
         "IsUndead": true,
         "AsciiArt": [
-            "  \\†/",
+            "  \\\u2020/",
             " (x x)",
             "  ) (",
             " /|_|\\"
@@ -384,7 +384,7 @@
     "PlagueBear": {
         "Name": "Plague Bear",
         "MaxHP": 48,
-        "Attack": 16,
+        "Attack": 19,
         "Defense": 7,
         "XPValue": 44,
         "MinGold": 12,
@@ -399,7 +399,7 @@
     "SiegeOgre": {
         "Name": "Siege Ogre",
         "MaxHP": 65,
-        "Attack": 18,
+        "Attack": 23,
         "Defense": 10,
         "XPValue": 58,
         "MinGold": 16,
@@ -415,7 +415,7 @@
     "BladeDancer": {
         "Name": "Blade Dancer",
         "MaxHP": 50,
-        "Attack": 19,
+        "Attack": 24,
         "Defense": 7,
         "XPValue": 46,
         "MinGold": 14,
@@ -430,7 +430,7 @@
     "ManaLeech": {
         "Name": "Mana Leech",
         "MaxHP": 42,
-        "Attack": 14,
+        "Attack": 17,
         "Defense": 5,
         "XPValue": 38,
         "MinGold": 10,
@@ -445,7 +445,7 @@
     "ShieldBreaker": {
         "Name": "Shield Breaker",
         "MaxHP": 55,
-        "Attack": 17,
+        "Attack": 21,
         "Defense": 8,
         "XPValue": 50,
         "MinGold": 14,
@@ -460,7 +460,7 @@
     "ArchlichSovereign": {
         "Name": "Archlich Sovereign",
         "MaxHP": 180,
-        "Attack": 28,
+        "Attack": 42,
         "Defense": 14,
         "XPValue": 150,
         "MinGold": 80,
@@ -469,9 +469,9 @@
         "AsciiArt": [
             "   *~*~*~*~*",
             "  (X       X)",
-            "   ) _*†*_ (",
+            "   ) _*\u2020*_ (",
             "  /|       |\\",
-            "  | *†*†*† |",
+            "  | *\u2020*\u2020*\u2020 |",
             "  |_________|",
             "   **|   |**",
             "   * |___| *"
@@ -480,7 +480,7 @@
     "AbyssalLeviathan": {
         "Name": "Abyssal Leviathan",
         "MaxHP": 220,
-        "Attack": 32,
+        "Attack": 48,
         "Defense": 12,
         "XPValue": 180,
         "MinGold": 100,
@@ -499,7 +499,7 @@
     "InfernalDragon": {
         "Name": "Infernal Dragon",
         "MaxHP": 250,
-        "Attack": 36,
+        "Attack": 54,
         "Defense": 16,
         "XPValue": 220,
         "MinGold": 120,

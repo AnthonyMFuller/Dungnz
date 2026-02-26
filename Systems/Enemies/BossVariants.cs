@@ -71,13 +71,13 @@ public class ArchlichSovereign : DungeonBoss
 
     /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
     [System.Text.Json.Serialization.JsonConstructor]
-    public ArchlichSovereign() : base(null, null) { Name = "Archlich Sovereign"; HP = MaxHP = 180; Attack = 28; Defense = 14; XPValue = 150; IsUndead = true; }
+    public ArchlichSovereign() : base(null, null) { Name = "Archlich Sovereign"; HP = MaxHP = 180; Attack = 42; Defense = 14; XPValue = 150; IsUndead = true; }
 
     /// <summary>Creates an ArchlichSovereign with optional data-driven stats.</summary>
     public ArchlichSovereign(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
     {
         Name = "Archlich Sovereign";
-        HP = MaxHP = 180; Attack = 28; Defense = 14; XPValue = 150;
+        HP = MaxHP = 180; Attack = 42; Defense = 14; XPValue = 150;
         IsUndead = true;
         AddLoot(itemConfig);
     }
@@ -96,13 +96,13 @@ public class AbyssalLeviathan : DungeonBoss
 {
     /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
     [System.Text.Json.Serialization.JsonConstructor]
-    public AbyssalLeviathan() : base(null, null) { Name = "Abyssal Leviathan"; HP = MaxHP = 220; Attack = 32; Defense = 12; XPValue = 180; }
+    public AbyssalLeviathan() : base(null, null) { Name = "Abyssal Leviathan"; HP = MaxHP = 220; Attack = 48; Defense = 12; XPValue = 180; }
 
     /// <summary>Creates an AbyssalLeviathan with optional data-driven stats.</summary>
     public AbyssalLeviathan(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
     {
         Name = "Abyssal Leviathan";
-        HP = MaxHP = 220; Attack = 32; Defense = 12; XPValue = 180;
+        HP = MaxHP = 220; Attack = 48; Defense = 12; XPValue = 180;
         AddLoot(itemConfig);
     }
 
@@ -120,13 +120,13 @@ public class InfernalDragon : DungeonBoss
 {
     /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
     [System.Text.Json.Serialization.JsonConstructor]
-    public InfernalDragon() : base(null, null) { Name = "Infernal Dragon"; HP = MaxHP = 250; Attack = 36; Defense = 16; XPValue = 220; FlameBreathCooldown = 2; }
+    public InfernalDragon() : base(null, null) { Name = "Infernal Dragon"; HP = MaxHP = 250; Attack = 54; Defense = 16; XPValue = 220; FlameBreathCooldown = 2; }
 
     /// <summary>Creates an InfernalDragon with optional data-driven stats.</summary>
     public InfernalDragon(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
     {
         Name = "Infernal Dragon";
-        HP = MaxHP = 250; Attack = 36; Defense = 16; XPValue = 220;
+        HP = MaxHP = 250; Attack = 54; Defense = 16; XPValue = 220;
         FlameBreathCooldown = 2; // first breath fires on turn 2 (decrement-first)
         AddLoot(itemConfig);
     }

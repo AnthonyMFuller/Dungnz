@@ -28,7 +28,7 @@ public class CryptPriest : Enemy
         {
             Name = "Crypt Priest";
             HP = MaxHP = 52;
-            Attack = 13;
+            Attack = 16;
             Defense = 8;
             XPValue = 45;
             IsUndead = true;
