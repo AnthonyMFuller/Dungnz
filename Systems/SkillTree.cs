@@ -44,6 +44,36 @@ public enum Skill
     Relentless,
     /// <summary>Rogue passive: Evade grants 2 Combo Points instead of 1.</summary>
     ShadowMaster,
+
+    // Paladin passives
+    /// <summary>Paladin passive: +3 DEF permanently on unlock.</summary>
+    BlessedArmor,
+    /// <summary>Paladin passive: Reduce all incoming damage by 5%.</summary>
+    AuraOfProtection,
+    /// <summary>Paladin passive: HolyStrike and Consecrate deal +15% bonus damage.</summary>
+    HolyFervor,
+    /// <summary>Paladin passive: When HP < 20%: ATK +20%, all heals +25%.</summary>
+    MartyrResolve,
+
+    // Necromancer passives
+    /// <summary>Necromancer passive: Minions have +20% HP.</summary>
+    UndyingServants,
+    /// <summary>Necromancer passive: LifeDrain heals +15% extra.</summary>
+    VampiricTouch,
+    /// <summary>Necromancer passive: Raise Dead cooldown -1; minions have +10% ATK.</summary>
+    MasterOfDeath,
+    /// <summary>Necromancer passive: When HP < 15%, all abilities cost 0 mana for 1 turn.</summary>
+    LichsBargain,
+
+    // Ranger passives
+    /// <summary>Ranger passive: PreciseShot deals +10% damage.</summary>
+    KeenEye,
+    /// <summary>Ranger passive: Wolf companion ATK +15%.</summary>
+    PackTactics,
+    /// <summary>Ranger passive: Traps can trigger twice before expiring.</summary>
+    TrapMastery,
+    /// <summary>Ranger passive: If enemy HP < 40%, all Ranger attacks deal +20% damage.</summary>
+    ApexPredator,
 }
 
 /// <summary>
@@ -122,6 +152,24 @@ public class SkillTree
             Skill.Relentless => (6, PlayerClass.Rogue),
             Skill.ShadowMaster => (8, PlayerClass.Rogue),
 
+            // Paladin passives
+            Skill.BlessedArmor => (3, PlayerClass.Paladin),
+            Skill.AuraOfProtection => (4, PlayerClass.Paladin),
+            Skill.HolyFervor => (6, PlayerClass.Paladin),
+            Skill.MartyrResolve => (8, PlayerClass.Paladin),
+
+            // Necromancer passives
+            Skill.UndyingServants => (3, PlayerClass.Necromancer),
+            Skill.VampiricTouch => (4, PlayerClass.Necromancer),
+            Skill.MasterOfDeath => (6, PlayerClass.Necromancer),
+            Skill.LichsBargain => (8, PlayerClass.Necromancer),
+
+            // Ranger passives
+            Skill.KeenEye => (3, PlayerClass.Ranger),
+            Skill.PackTactics => (4, PlayerClass.Ranger),
+            Skill.TrapMastery => (6, PlayerClass.Ranger),
+            Skill.ApexPredator => (8, PlayerClass.Ranger),
+
             _ => (1, null)
         };
     }
@@ -142,6 +190,9 @@ public class SkillTree
                 break;
             case Skill.ArcaneReservoir:
                 player.FortifyMaxMana(20);
+                break;
+            case Skill.BlessedArmor:
+                player.ModifyDefense(3);
                 break;
         }
         // PowerStrike, Swiftness, BattleHardened, and class-specific combat passives are applied in combat
@@ -176,6 +227,24 @@ public class SkillTree
         Skill.Opportunist => "You never let an opening go to waste. (Backstab bonus on Poisoned enemies)",
         Skill.Relentless => "Rest is for the dead. (Flurry/Assassinate cooldowns -1)",
         Skill.ShadowMaster => "You were never really there. (Evade grants 2 Combo Points)",
+
+        // Paladin passives
+        Skill.BlessedArmor => "Your armor is blessed with holy light. (+3 Defense)",
+        Skill.AuraOfProtection => "A holy aura shields you from harm. (5% damage reduction)",
+        Skill.HolyFervor => "Holy power surges through your strikes. (HolyStrike and Consecrate +15% damage)",
+        Skill.MartyrResolve => "The closer to death, the more righteous your wrath. (HP < 20%: ATK +20%, heals +25%)",
+
+        // Necromancer passives
+        Skill.UndyingServants => "Your servants refuse to truly die. (Minion HP +20%)",
+        Skill.VampiricTouch => "You drink deeply from your fallen foes. (LifeDrain heals +15% extra)",
+        Skill.MasterOfDeath => "Death itself bends to your will. (RaiseDead CD -1, minion ATK +10%)",
+        Skill.LichsBargain => "The lich offers power at a terrible price. (HP < 15%: free abilities for 1 turn)",
+
+        // Ranger passives
+        Skill.KeenEye => "Years of hunting have sharpened your aim. (PreciseShot +10% damage)",
+        Skill.PackTactics => "You and your wolf move as one. (Wolf ATK +15%)",
+        Skill.TrapMastery => "You've learned to make your traps last. (Traps trigger twice)",
+        Skill.ApexPredator => "You always finish what you start. (Enemy HP < 40%: +20% damage)",
 
         _ => ""
     };

@@ -8,7 +8,13 @@ public enum PlayerClass
     /// <summary>Represents the Mage class: high mana and spell power, low HP.</summary>
     Mage,
     /// <summary>Represents the Rogue class: balanced stats with an additional dodge bonus.</summary>
-    Rogue
+    Rogue,
+    /// <summary>Represents the Paladin class: holy warrior with high defense and HP, smites undead.</summary>
+    Paladin,
+    /// <summary>Represents the Necromancer class: death magic and minion summoning, high mana, low survivability.</summary>
+    Necromancer,
+    /// <summary>Represents the Ranger class: traps, wolf companion, and precise shots.</summary>
+    Ranger
 }
 
 /// <summary>
@@ -56,15 +62,36 @@ public class PlayerClassDefinition
         Description = "Balanced. Extra dodge chance.",
         BonusAttack = 2, BonusDefense = 0, BonusMaxHP = 0, BonusMaxMana = 0
     };
+    /// <summary>The predefined definition for the Paladin class.</summary>
+    public static readonly PlayerClassDefinition Paladin = new() {
+        Class = PlayerClass.Paladin, Name = "Paladin",
+        Description = "Holy warrior. High defense and HP. Smites undead.",
+        BonusAttack = 1, BonusDefense = 4, BonusMaxHP = 30, BonusMaxMana = 5
+    };
+    /// <summary>The predefined definition for the Necromancer class.</summary>
+    public static readonly PlayerClassDefinition Necromancer = new() {
+        Class = PlayerClass.Necromancer, Name = "Necromancer",
+        Description = "Death magic and minion summoning. High mana, low survivability.",
+        BonusAttack = -2, BonusDefense = -2, BonusMaxHP = -20, BonusMaxMana = 40
+    };
+    /// <summary>The predefined definition for the Ranger class.</summary>
+    public static readonly PlayerClassDefinition Ranger = new() {
+        Class = PlayerClass.Ranger, Name = "Ranger",
+        Description = "Traps, a wolf companion, and precise shots.",
+        BonusAttack = 2, BonusDefense = 0, BonusMaxHP = 5, BonusMaxMana = 10
+    };
 
     /// <summary>Gets a short description of the class's passive combat trait.</summary>
     public string TraitDescription => Class switch {
         PlayerClass.Warrior => "Passive: +5% damage when HP < 50%",
         PlayerClass.Mage => "Passive: Spells deal +20% damage",
         PlayerClass.Rogue => "Passive: +10% dodge chance",
+        PlayerClass.Paladin => "Passive: Divine Favor — auto-heal once per combat at 30% HP",
+        PlayerClass.Necromancer => "Passive: Soul Harvest — gain 2 max mana on each enemy kill",
+        PlayerClass.Ranger => "Passive: Hunter's Mark — first attack each combat +25% damage",
         _ => ""
     };
 
     /// <summary>Gets a read-only list of all available class definitions.</summary>
-    public static IReadOnlyList<PlayerClassDefinition> All => new[] { Warrior, Mage, Rogue };
+    public static IReadOnlyList<PlayerClassDefinition> All => new[] { Warrior, Mage, Rogue, Paladin, Necromancer, Ranger };
 }

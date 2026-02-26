@@ -62,7 +62,43 @@ public class AbilityManager
             new Ability("Flurry", "Rapid succession of attacks", 15, 3, 5, AbilityType.Flurry) 
                 { ClassRestriction = PlayerClass.Rogue },
             new Ability("Assassinate", "Execute enemy with massive damage", 25, 6, 7, AbilityType.Assassinate) 
-                { ClassRestriction = PlayerClass.Rogue }
+                { ClassRestriction = PlayerClass.Rogue },
+
+            // Paladin abilities
+            new Ability("Holy Strike", "Holy attack; 150% vs undead", 8, 0, 1, AbilityType.HolyStrike)
+                { ClassRestriction = PlayerClass.Paladin },
+            new Ability("Lay on Hands", "Heal 40% MaxHP (50% when HP < 25%)", 15, 4, 2, AbilityType.LayOnHands)
+                { ClassRestriction = PlayerClass.Paladin },
+            new Ability("Divine Shield", "Absorb all damage for 2 turns", 12, 3, 3, AbilityType.DivineShield)
+                { ClassRestriction = PlayerClass.Paladin },
+            new Ability("Consecrate", "Holy damage + Bleed; Stun vs undead", 18, 3, 5, AbilityType.Consecrate)
+                { ClassRestriction = PlayerClass.Paladin },
+            new Ability("Judgment", "Massive damage scaling with missing HP; execute at ≤20% HP", 25, 5, 7, AbilityType.Judgment)
+                { ClassRestriction = PlayerClass.Paladin },
+
+            // Necromancer abilities
+            new Ability("Death Bolt", "Shadow damage; 120% vs poisoned/bleeding targets", 8, 0, 1, AbilityType.DeathBolt)
+                { ClassRestriction = PlayerClass.Necromancer },
+            new Ability("Curse", "Weaken enemy: -25% damage for 3 turns", 10, 2, 2, AbilityType.Curse)
+                { ClassRestriction = PlayerClass.Necromancer },
+            new Ability("Raise Dead", "Raise a skeleton minion from the last slain enemy", 25, 4, 3, AbilityType.RaiseDead)
+                { ClassRestriction = PlayerClass.Necromancer },
+            new Ability("Life Drain", "Deal damage and heal for the full amount", 15, 2, 5, AbilityType.LifeDrain)
+                { ClassRestriction = PlayerClass.Necromancer },
+            new Ability("Corpse Explosion", "Sacrifice all minions for massive damage", 30, 5, 7, AbilityType.CorpseExplosion)
+                { ClassRestriction = PlayerClass.Necromancer },
+
+            // Ranger abilities
+            new Ability("Precise Shot", "110% ATK; 130% vs enemies with status effects", 6, 0, 1, AbilityType.PreciseShot)
+                { ClassRestriction = PlayerClass.Ranger },
+            new Ability("Lay Trap (Poison)", "Place a poison trap that triggers before next enemy attack", 10, 3, 2, AbilityType.LayTrapPoison)
+                { ClassRestriction = PlayerClass.Ranger },
+            new Ability("Summon Companion", "Summon a wolf companion (or replace existing)", 15, 5, 3, AbilityType.SummonCompanion)
+                { ClassRestriction = PlayerClass.Ranger },
+            new Ability("Lay Trap (Snare)", "Place a snare trap that slows and stuns", 12, 3, 5, AbilityType.LayTrapSnare)
+                { ClassRestriction = PlayerClass.Ranger },
+            new Ability("Volley", "Multi-attack; bonus damage with wolf or trap synergy", 25, 4, 7, AbilityType.Volley)
+                { ClassRestriction = PlayerClass.Ranger }
         };
     }
     
@@ -154,6 +190,17 @@ public class AbilityManager
                 _cooldowns[key]--;
         }
     }
+
+    /// <summary>Reduces all active ability cooldowns by <paramref name="amount"/> (minimum 0).</summary>
+    public void ReduceAllCooldowns(int amount)
+    {
+        var keys = _cooldowns.Keys.ToList();
+        foreach (var key in keys)
+        {
+            if (_cooldowns[key] > 0)
+                _cooldowns[key] = Math.Max(0, _cooldowns[key] - amount);
+        }
+    }
     
     /// <summary>
     /// Looks up and returns the <see cref="Ability"/> definition for the given type,
@@ -194,6 +241,14 @@ public class AbilityManager
         if (player.Class == PlayerClass.Mage && ability.ClassRestriction == PlayerClass.Mage)
         {
             effectiveCost = Math.Max(1, (int)(ability.ManaCost * player.GetSpellCostMultiplier()));
+        }
+        
+        // LichsBargain passive: HP < 15% = 0 cost abilities for 1 turn
+        if (player.Class == PlayerClass.Necromancer && player.HasSkill(Skill.LichsBargain) 
+            && player.HP < player.MaxHP * 0.15f)
+        {
+            player.LichsBargainActive = true;
+            effectiveCost = 0;
         }
         
         if (player.Mana < effectiveCost)
@@ -451,6 +506,266 @@ public class AbilityManager
                     else
                     {
                         display.ShowCombatMessage($"One clean strike for {assassinateDamage} damage!");
+                    }
+                }
+                break;
+
+            // Paladin abilities - Phase 6B (Issue #374)
+            case AbilityType.HolyStrike:
+                {
+                    var baseDmg = (int)(player.Attack * 1.0);
+                    if (enemy.IsUndead)
+                        baseDmg = (int)(player.Attack * 1.5);
+                    // HolyFervor passive: +15% damage
+                    if (player.HasSkill(Skill.HolyFervor))
+                        baseDmg = (int)(baseDmg * 1.15);
+                    var holyDmg = Math.Max(1, baseDmg - enemy.Defense);
+                    enemy.HP -= holyDmg;
+                    display.ShowCombatMessage(enemy.IsUndead
+                        ? $"Divine light sears the undead! Holy Strike deals {holyDmg} damage!"
+                        : $"You channel holy power into your strike! ({holyDmg} damage)");
+                }
+                break;
+
+            case AbilityType.LayOnHands:
+                {
+                    float healFraction = player.HP < player.MaxHP * 0.25f ? 0.50f : 0.40f;
+                    // MartyrResolve passive: heals +25% when HP < 20%
+                    if (player.HasSkill(Skill.MartyrResolve) && player.HP < player.MaxHP * 0.20f)
+                        healFraction *= 1.25f;
+                    var healAmt = (int)(player.MaxHP * healFraction);
+                    player.Heal(healAmt);
+                    display.ShowCombatMessage($"Divine energy floods your body! You heal {healAmt} HP!");
+                }
+                break;
+
+            case AbilityType.DivineShield:
+                {
+                    player.DivineShieldTurnsRemaining = 2;
+                    display.ShowCombatMessage("A barrier of holy light surrounds you! (Divine Shield: 2 turns)");
+                }
+                break;
+
+            case AbilityType.Consecrate:
+                {
+                    var baseDmg = (int)(player.Attack * 0.80);
+                    // HolyFervor passive: +15% damage
+                    if (player.HasSkill(Skill.HolyFervor))
+                        baseDmg = (int)(baseDmg * 1.15);
+                    var consecDmg = Math.Max(1, baseDmg - enemy.Defense);
+                    enemy.HP -= consecDmg;
+                    statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
+                    display.ShowCombatMessage($"Holy fire consecrates the ground! ({consecDmg} damage, Bleed applied)");
+                    if (enemy.IsUndead && enemy.HP > 0)
+                    {
+                        statusEffects.Apply(enemy, StatusEffect.Stun, 1);
+                        display.ShowCombatMessage("The undead recoils from the holy ground! (Stunned)");
+                    }
+                }
+                break;
+
+            case AbilityType.Judgment:
+                {
+                    var baseDmg = (int)(player.Attack * 2.0);
+                    var missingHpBonus = (int)((player.MaxHP - player.HP) * 0.5);
+                    var judgDmg = Math.Max(1, baseDmg + missingHpBonus - enemy.Defense);
+                    enemy.HP -= judgDmg;
+                    display.ShowCombatMessage($"JUDGMENT! ({judgDmg} damage, {missingHpBonus} bonus from missing HP)");
+                    // Execute non-boss at ≤20% HP
+                    if (enemy.HP > 0 && enemy.HP <= enemy.MaxHP * 0.20 && !enemy.IsImmuneToEffects)
+                    {
+                        enemy.HP = 0;
+                        display.ShowCombatMessage("The Light passes judgment — the enemy is smote from existence!");
+                    }
+                }
+                break;
+
+            // Necromancer abilities - Phase 6B (Issue #375)
+            case AbilityType.DeathBolt:
+                {
+                    var baseDmg = (int)(player.Attack * 0.90);
+                    bool hasDoT = statusEffects.HasEffect(enemy, StatusEffect.Poison) ||
+                                  statusEffects.HasEffect(enemy, StatusEffect.Bleed);
+                    if (hasDoT)
+                        baseDmg = (int)(player.Attack * 1.20);
+                    var deathDmg = Math.Max(1, baseDmg - (enemy.Defense / 4)); // shadow magic pierces some defense
+                    enemy.HP -= deathDmg;
+                    display.ShowCombatMessage(hasDoT
+                        ? $"Shadow energy surges through the weakened foe! ({deathDmg} damage)"
+                        : $"A bolt of necrotic energy tears through the enemy! ({deathDmg} damage)");
+                }
+                break;
+
+            case AbilityType.Curse:
+                {
+                    statusEffects.Apply(enemy, StatusEffect.Weakened, 3);
+                    display.ShowCombatMessage($"You invoke a withering curse! {enemy.Name} is weakened for 3 turns!");
+                }
+                break;
+
+            case AbilityType.RaiseDead:
+                {
+                    if (player.LastKilledEnemyHp == 0)
+                    {
+                        display.ShowCombatMessage("No fallen enemy to raise.");
+                        player.RestoreMana(effectiveCost);
+                        return UseAbilityResult.InsufficientMana;
+                    }
+                    if (player.ActiveMinions.Count >= 2)
+                    {
+                        display.ShowCombatMessage("Your minions are at full strength.");
+                        player.RestoreMana(effectiveCost);
+                        return UseAbilityResult.InsufficientMana;
+                    }
+                    var skeleHp = (int)(player.LastKilledEnemyHp * 0.3);
+                    var skeleAtk = (int)(player.Attack * 0.5);
+                    // MasterOfDeath passive: +10% minion ATK
+                    if (player.HasSkill(Skill.MasterOfDeath))
+                        skeleAtk = (int)(skeleAtk * 1.10);
+                    // UndyingServants passive: +20% minion HP
+                    if (player.HasSkill(Skill.UndyingServants))
+                        skeleHp = (int)(skeleHp * 1.20);
+                    var skeleton = new Dungnz.Models.Minion
+                    {
+                        Name = "Skeleton Minion",
+                        HP = Math.Max(1, skeleHp),
+                        MaxHP = Math.Max(1, skeleHp),
+                        ATK = Math.Max(1, skeleAtk),
+                        AttackFlavorText = "Your skeletal servant rakes the enemy for {dmg} damage!"
+                    };
+                    player.ActiveMinions.Add(skeleton);
+                    display.ShowCombatMessage($"You tear a soul from the void! A Skeleton Minion rises! (HP: {skeleton.HP}, ATK: {skeleton.ATK})");
+                }
+                break;
+
+            case AbilityType.LifeDrain:
+                {
+                    var drainDmg = Math.Max(1, (int)(player.Attack * 0.70) - (enemy.Defense / 4));
+                    enemy.HP -= drainDmg;
+                    // VampiricTouch passive: +15% extra heal
+                    var healAmt = player.HasSkill(Skill.VampiricTouch)
+                        ? (int)(drainDmg * 1.15)
+                        : drainDmg;
+                    player.Heal(healAmt);
+                    display.ShowCombatMessage($"You drink deep from your foe's life force! ({drainDmg} damage, {healAmt} healed)");
+                }
+                break;
+
+            case AbilityType.CorpseExplosion:
+                {
+                    if (player.ActiveMinions.Count == 0)
+                    {
+                        display.ShowCombatMessage("No minions to sacrifice.");
+                        player.RestoreMana(effectiveCost);
+                        return UseAbilityResult.InsufficientMana;
+                    }
+                    var totalMinionHp = player.ActiveMinions.Sum(m => m.MaxHP);
+                    var explosionDmg = (int)(totalMinionHp * 1.5);
+                    player.ActiveMinions.Clear();
+                    enemy.HP -= explosionDmg;
+                    display.ShowCombatMessage($"Your minions detonate in a shower of necrotic energy! ({explosionDmg} damage!)");
+                }
+                break;
+
+            // Ranger abilities - Phase 6B (Issue #376)
+            case AbilityType.PreciseShot:
+                {
+                    bool hasStatus = statusEffects.GetActiveEffects(enemy).Any();
+                    var baseDmg = hasStatus
+                        ? (int)(player.Attack * 1.30)
+                        : (int)(player.Attack * 1.10);
+                    // KeenEye passive: +10% damage
+                    if (player.HasSkill(Skill.KeenEye))
+                        baseDmg = (int)(baseDmg * 1.10);
+                    var shotDmg = Math.Max(1, baseDmg - enemy.Defense);
+                    enemy.HP -= shotDmg;
+                    display.ShowCombatMessage(hasStatus
+                        ? $"You exploit the enemy's weakened state! ({shotDmg} damage)"
+                        : $"A precisely aimed shot finds its mark! ({shotDmg} damage)");
+                }
+                break;
+
+            case AbilityType.LayTrapPoison:
+                {
+                    var poisonTrap = new Dungnz.Models.Trap
+                    {
+                        Name = "Poison Trap",
+                        DamagePercent = 0.5f,
+                        AppliedStatus = StatusEffect.Poison,
+                        StatusDuration = 3,
+                        FlavorText = "*SNAP* — your poison trap springs! The enemy takes {dmg} damage and is poisoned!",
+                        Triggered = false
+                    };
+                    // TrapMastery passive: traps trigger twice
+                    if (player.HasSkill(Skill.TrapMastery))
+                        poisonTrap.MaxTriggers = 2;
+                    player.ActiveTraps.Add(poisonTrap);
+                    display.ShowCombatMessage("You carefully set a poison trap — it will spring before the next enemy attack.");
+                }
+                break;
+
+            case AbilityType.SummonCompanion:
+                {
+                    // Remove existing wolf if any
+                    var existingWolf = player.ActiveMinions.FirstOrDefault(m => m.Name == "Wolf Companion");
+                    if (existingWolf != null)
+                    {
+                        player.ActiveMinions.Remove(existingWolf);
+                        display.ShowCombatMessage("You dismiss your current wolf companion.");
+                    }
+                    var wolfHp = (int)(player.MaxHP * 0.4);
+                    var wolfAtk = (int)(player.Attack * 0.6);
+                    // PackTactics passive: wolf ATK +15%
+                    if (player.HasSkill(Skill.PackTactics))
+                        wolfAtk = (int)(wolfAtk * 1.15);
+                    var wolf = new Dungnz.Models.Minion
+                    {
+                        Name = "Wolf Companion",
+                        HP = Math.Max(1, wolfHp),
+                        MaxHP = Math.Max(1, wolfHp),
+                        ATK = Math.Max(1, wolfAtk),
+                        AttackFlavorText = "Your wolf lunges at the enemy for {dmg} damage!"
+                    };
+                    player.ActiveMinions.Add(wolf);
+                    display.ShowCombatMessage($"A fierce wolf bounds to your side! (HP: {wolf.HP}, ATK: {wolf.ATK})");
+                }
+                break;
+
+            case AbilityType.LayTrapSnare:
+                {
+                    var snareTrap = new Dungnz.Models.Trap
+                    {
+                        Name = "Snare Trap",
+                        DamagePercent = 0.3f,
+                        AppliedStatus = StatusEffect.Slow,
+                        StatusDuration = 2,
+                        FlavorText = "*CRACK* — your snare catches the enemy! They take {dmg} damage and are slowed!",
+                        Triggered = false
+                    };
+                    // TrapMastery passive: traps trigger twice
+                    if (player.HasSkill(Skill.TrapMastery))
+                        snareTrap.MaxTriggers = 2;
+                    player.ActiveTraps.Add(snareTrap);
+                    display.ShowCombatMessage("You set a snare trap — it will spring and slow the enemy before their next attack.");
+                }
+                break;
+
+            case AbilityType.Volley:
+                {
+                    var baseDmg = (int)(player.Attack * 0.80);
+                    // TrapTriggeredThisCombat: +30% total damage
+                    if (player.TrapTriggeredThisCombat)
+                        baseDmg = (int)(baseDmg * 1.30);
+                    var volleyDmg = Math.Max(1, baseDmg - enemy.Defense);
+                    enemy.HP -= volleyDmg;
+                    display.ShowCombatMessage($"You loose a volley of arrows! ({volleyDmg} damage)");
+                    // Wolf companion also attacks
+                    var wolf = player.ActiveMinions.FirstOrDefault(m => m.Name == "Wolf Companion" && m.HP > 0);
+                    if (wolf != null && enemy.HP > 0)
+                    {
+                        var wolfDmg = Math.Max(1, wolf.ATK - enemy.Defense);
+                        enemy.HP -= wolfDmg;
+                        display.ShowCombatMessage($"Your wolf lunges at the enemy for {wolfDmg} damage!");
                     }
                 }
                 break;
