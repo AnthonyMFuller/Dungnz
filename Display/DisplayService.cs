@@ -267,9 +267,10 @@ public class ConsoleDisplayService : IDisplayService
         var header = isElite ? $"✦ {Systems.ColorCodes.Yellow}ELITE LOOT DROP{Systems.ColorCodes.Reset}" : "✦ LOOT DROP";
         var tierLabel = item.Tier switch
         {
-            ItemTier.Uncommon => $"[{Systems.ColorCodes.Green}Uncommon{Systems.ColorCodes.Reset}]",
-            ItemTier.Rare     => $"[{Systems.ColorCodes.BrightCyan}Rare{Systems.ColorCodes.Reset}]",
-            _                 => "[Common]"
+            ItemTier.Uncommon  => $"[{Systems.ColorCodes.Green}Uncommon{Systems.ColorCodes.Reset}]",
+            ItemTier.Rare      => $"[{Systems.ColorCodes.BrightCyan}Rare{Systems.ColorCodes.Reset}]",
+            ItemTier.Legendary => $"[{Systems.ColorCodes.Yellow}Legendary{Systems.ColorCodes.Reset}]",
+            _                  => "[Common]"
         };
         Console.WriteLine("╔══════════════════════════════════════╗");
         Console.WriteLine($"║  {PadRightVisible(header, 36)}║");
@@ -349,9 +350,10 @@ public class ConsoleDisplayService : IDisplayService
         var titleName  = TruncateName(item.Name).ToUpperInvariant();
         var titleColor = item.Tier switch
         {
-            ItemTier.Uncommon => Systems.ColorCodes.Green,
-            ItemTier.Rare     => Systems.ColorCodes.BrightCyan,
-            _                 => Systems.ColorCodes.BrightWhite
+            ItemTier.Uncommon  => Systems.ColorCodes.Green,
+            ItemTier.Rare      => Systems.ColorCodes.BrightCyan,
+            ItemTier.Legendary => Systems.ColorCodes.Yellow,
+            _                  => Systems.ColorCodes.BrightWhite
         };
         var titlePlain = $"  {icon} {titleName}";
         var titlePad   = new string(' ', Math.Max(0, W - titlePlain.Length));
@@ -419,9 +421,10 @@ public class ConsoleDisplayService : IDisplayService
             var tierBadge  = $"[{item.Tier}]";
             var tierColor  = item.Tier switch
             {
-                ItemTier.Uncommon => Systems.ColorCodes.Green,
-                ItemTier.Rare     => Systems.ColorCodes.BrightCyan,
-                _                 => Systems.ColorCodes.BrightWhite
+                ItemTier.Uncommon  => Systems.ColorCodes.Green,
+                ItemTier.Rare      => Systems.ColorCodes.BrightCyan,
+                ItemTier.Legendary => Systems.ColorCodes.Yellow,
+                _                  => Systems.ColorCodes.BrightWhite
             };
             var priceColor = playerGold >= price ? Systems.ColorCodes.Green : Systems.ColorCodes.Red;
             var stat       = PrimaryStatLabel(item);
@@ -460,9 +463,10 @@ public class ConsoleDisplayService : IDisplayService
             var (item, price) = itemList[i];
             var tierColor = item.Tier switch
             {
-                ItemTier.Uncommon => Systems.ColorCodes.Green,
-                ItemTier.Rare     => Systems.ColorCodes.BrightCyan,
-                _                 => Systems.ColorCodes.BrightWhite
+                ItemTier.Uncommon  => Systems.ColorCodes.Green,
+                ItemTier.Rare      => Systems.ColorCodes.BrightCyan,
+                ItemTier.Legendary => Systems.ColorCodes.Yellow,
+                _                  => Systems.ColorCodes.BrightWhite
             };
             Console.WriteLine($"  [{i + 1}] {tierColor}{TruncateName(item.Name)}{Systems.ColorCodes.Reset}  — sell for {Systems.ColorCodes.Green}{price}g{Systems.ColorCodes.Reset}");
         }

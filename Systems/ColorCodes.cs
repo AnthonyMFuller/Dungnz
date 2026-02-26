@@ -151,15 +151,16 @@ public static class ColorCodes
 
     /// <summary>
     /// Returns the item's name wrapped in the ANSI color appropriate for its tier:
-    /// BrightWhite (Common), Green (Uncommon), BrightCyan (Rare).
+    /// BrightWhite (Common), Green (Uncommon), BrightCyan (Rare), Yellow (Legendary).
     /// </summary>
     public static string ColorizeItemName(string name, ItemTier tier)
     {
         var color = tier switch
         {
-            ItemTier.Uncommon => Green,
-            ItemTier.Rare     => BrightCyan,
-            _                 => BrightWhite
+            ItemTier.Uncommon  => Green,
+            ItemTier.Rare      => BrightCyan,
+            ItemTier.Legendary => Yellow,
+            _                  => BrightWhite
         };
         return $"{color}{name}{Reset}";
     }
