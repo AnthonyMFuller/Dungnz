@@ -17,6 +17,9 @@ public class LootTable
     private static IReadOnlyList<Item>? _sharedTier1;
     private static IReadOnlyList<Item>? _sharedTier2;
     private static IReadOnlyList<Item>? _sharedTier3;
+    private static IReadOnlyList<Item>? _sharedLegendary;
+
+    private static readonly IReadOnlyList<Item> FallbackLegendary = new List<Item>();
 
     private static readonly IReadOnlyList<Item> FallbackTier1 = new List<Item>
     {
@@ -44,11 +47,33 @@ public class LootTable
     /// fallback lists. Should be called once from <c>EnemyFactory.Initialize()</c>.
     /// Boss Key must already be excluded from the supplied lists.
     /// </summary>
-    public static void SetTierPools(IReadOnlyList<Item> tier1, IReadOnlyList<Item> tier2, IReadOnlyList<Item> tier3)
+    public static void SetTierPools(IReadOnlyList<Item> tier1, IReadOnlyList<Item> tier2, IReadOnlyList<Item> tier3,
+        IReadOnlyList<Item>? legendary = null)
     {
         _sharedTier1 = tier1;
         _sharedTier2 = tier2;
         _sharedTier3 = tier3;
+        _sharedLegendary = legendary ?? Array.Empty<Item>();
+    }
+
+    /// <summary>
+    /// Picks a random item of the specified tier from the shared tier pools.
+    /// Returns <see langword="null"/> if the tier pool is empty.
+    /// </summary>
+    /// <param name="tier">The desired item tier.</param>
+    /// <returns>A randomly selected item, or <see langword="null"/> if the pool is empty.</returns>
+    public static Item? RollTier(ItemTier tier)
+    {
+        IReadOnlyList<Item>? pool = tier switch
+        {
+            ItemTier.Common    => _sharedTier1 ?? FallbackTier1,
+            ItemTier.Uncommon  => _sharedTier2 ?? FallbackTier2,
+            ItemTier.Rare      => _sharedTier3 ?? FallbackTier3,
+            ItemTier.Legendary => _sharedLegendary ?? FallbackLegendary,
+            _                  => _sharedTier2 ?? FallbackTier2
+        };
+        if (pool.Count == 0) return null;
+        return pool[Random.Shared.Next(pool.Count)].Clone();
     }
 
     /// <summary>
@@ -84,11 +109,15 @@ public class LootTable
     /// the gold amount to award. Explicit drops (registered via <see cref="AddDrop"/>) are tried
     /// first; if none trigger, a 30 % chance of a random tiered item applies based on
     /// <paramref name="playerLevel"/>. Elite enemies are guaranteed at least a tier-2 item.
+    /// Bosses (DungeonBoss or subclass) always drop one Legendary item when the Legendary pool is loaded.
+    /// Floors 6-8 chest/room loot has a 5% Legendary chance.
     /// </summary>
     /// <param name="enemy">The defeated enemy, used to check <see cref="Enemy.IsElite"/> for tier escalation.</param>
     /// <param name="playerLevel">The player's current level, used to select the appropriate item tier pool.</param>
+    /// <param name="isBossRoom">When <see langword="true"/>, guarantees a Legendary drop from the boss pool.</param>
+    /// <param name="dungeoonFloor">Current dungeon floor (1-8); floors 6-8 have a 5% Legendary chance.</param>
     /// <returns>A <see cref="LootResult"/> containing the optional item drop and the gold amount.</returns>
-    public LootResult RollDrop(Enemy enemy, int playerLevel = 1)
+    public LootResult RollDrop(Enemy enemy, int playerLevel = 1, bool isBossRoom = false, int dungeoonFloor = 1)
     {
         int gold = _minGold == _maxGold ? _minGold : _rng.Next(_minGold, _maxGold + 1);
 
@@ -98,6 +127,19 @@ public class LootTable
         foreach (var (item, chance) in _drops)
         {
             if (_rng.NextDouble() < chance) { dropped = item.Clone(); break; }
+        }
+
+        // Boss rooms: guaranteed Legendary drop (overrides tiered roll if Legendary pool available)
+        var legendaryPool = _sharedLegendary ?? FallbackLegendary;
+        if (dropped == null && isBossRoom && legendaryPool.Count > 0)
+        {
+            dropped = legendaryPool[_rng.Next(legendaryPool.Count)].Clone();
+        }
+
+        // Floors 6-8: 5% Legendary chance
+        if (dropped == null && dungeoonFloor >= 6 && legendaryPool.Count > 0 && _rng.NextDouble() < 0.05)
+        {
+            dropped = legendaryPool[_rng.Next(legendaryPool.Count)].Clone();
         }
 
         // 30% chance of a tiered item drop if none already rolled

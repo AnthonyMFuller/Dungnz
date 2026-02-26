@@ -303,5 +303,208 @@
       "  *|   |*",
       " * |___| *"
     ]
+  },
+  "ShadowImp": {
+    "Name": "Shadow Imp",
+    "MaxHP": 22,
+    "Attack": 10,
+    "Defense": 3,
+    "XPValue": 18,
+    "MinGold": 3,
+    "MaxGold": 10,
+    "AsciiArt": [
+      "  /\\  /\\",
+      " (x  x)",
+      "  \\__/",
+      "  /  \\",
+      " / || \\"
+    ]
+  },
+  "CarrionCrawler": {
+    "Name": "Carrion Crawler",
+    "MaxHP": 35,
+    "Attack": 12,
+    "Defense": 4,
+    "XPValue": 30,
+    "MinGold": 5,
+    "MaxGold": 14,
+    "AsciiArt": [
+      " /~~~~~\\",
+      "(o  o  o)",
+      " \\~~~~~/"
+    ]
+  },
+  "DarkSorcerer": {
+    "Name": "Dark Sorcerer",
+    "MaxHP": 45,
+    "Attack": 15,
+    "Defense": 6,
+    "XPValue": 40,
+    "MinGold": 10,
+    "MaxGold": 22,
+    "AsciiArt": [
+      "  (*)",
+      " (o o)",
+      "  )Y(",
+      " /|~|\\"
+    ]
+  },
+  "BoneArcher": {
+    "Name": "Bone Archer",
+    "MaxHP": 38,
+    "Attack": 14,
+    "Defense": 5,
+    "XPValue": 33,
+    "MinGold": 8,
+    "MaxGold": 18,
+    "IsUndead": true,
+    "AsciiArt": [
+      "  ,---.",
+      " ( x x )",
+      "  )___(",
+      " /| - |\\"
+    ]
+  },
+  "CryptPriest": {
+    "Name": "Crypt Priest",
+    "MaxHP": 52,
+    "Attack": 13,
+    "Defense": 8,
+    "XPValue": 45,
+    "MinGold": 12,
+    "MaxGold": 26,
+    "IsUndead": true,
+    "AsciiArt": [
+      "  \\\u2020/",
+      " (x x)",
+      "  ) (",
+      " /|_|\\"
+    ]
+  },
+  "PlagueBear": {
+    "Name": "Plague Bear",
+    "MaxHP": 48,
+    "Attack": 16,
+    "Defense": 7,
+    "XPValue": 44,
+    "MinGold": 12,
+    "MaxGold": 26,
+    "AsciiArt": [
+      " /UU\\",
+      "(o  o)",
+      " \\__/",
+      " /  \\"
+    ]
+  },
+  "SiegeOgre": {
+    "Name": "Siege Ogre",
+    "MaxHP": 65,
+    "Attack": 18,
+    "Defense": 10,
+    "XPValue": 58,
+    "MinGold": 16,
+    "MaxGold": 32,
+    "AsciiArt": [
+      " ,-----,",
+      "|O     O|",
+      "| ===== |",
+      "|_______|",
+      "  || ||"
+    ]
+  },
+  "BladeDancer": {
+    "Name": "Blade Dancer",
+    "MaxHP": 50,
+    "Attack": 19,
+    "Defense": 7,
+    "XPValue": 46,
+    "MinGold": 14,
+    "MaxGold": 28,
+    "AsciiArt": [
+      " /|\\ /|\\",
+      "(o   o)",
+      " \\___/",
+      "  | |"
+    ]
+  },
+  "ManaLeech": {
+    "Name": "Mana Leech",
+    "MaxHP": 42,
+    "Attack": 14,
+    "Defense": 5,
+    "XPValue": 38,
+    "MinGold": 10,
+    "MaxGold": 22,
+    "AsciiArt": [
+      "  ~~~~",
+      " (o  o)",
+      "  \\__/",
+      "  ~~~~"
+    ]
+  },
+  "ShieldBreaker": {
+    "Name": "Shield Breaker",
+    "MaxHP": 55,
+    "Attack": 17,
+    "Defense": 8,
+    "XPValue": 50,
+    "MinGold": 14,
+    "MaxGold": 28,
+    "AsciiArt": [
+      "  [\\\\]",
+      " (o o)",
+      " [===]",
+      "  | |"
+    ]
+  },
+  "ArchlichSovereign": {
+    "Name": "Archlich Sovereign",
+    "MaxHP": 180,
+    "Attack": 28,
+    "Defense": 14,
+    "XPValue": 150,
+    "MinGold": 80,
+    "MaxGold": 150,
+    "IsUndead": true,
+    "AsciiArt": [
+      "  *~~~~~*",
+      " (X     X)",
+      "  ) _\u2020_ (",
+      " /|     |\\",
+      " | *\u2020\u2020\u2020* |",
+      " |_______|",
+      "  *|   |*"
+    ]
+  },
+  "AbyssalLeviathan": {
+    "Name": "Abyssal Leviathan",
+    "MaxHP": 220,
+    "Attack": 32,
+    "Defense": 12,
+    "XPValue": 180,
+    "MinGold": 100,
+    "MaxGold": 200,
+    "AsciiArt": [
+      "  ~~~~~~~",
+      " (~O   O~)",
+      " |~~~~~~~|",
+      "  \\_____/"
+    ]
+  },
+  "InfernalDragon": {
+    "Name": "Infernal Dragon",
+    "MaxHP": 250,
+    "Attack": 36,
+    "Defense": 16,
+    "XPValue": 220,
+    "MinGold": 120,
+    "MaxGold": 250,
+    "AsciiArt": [
+      "   /\\ /\\",
+      "  (O   O)",
+      " /|~~~~~|\\",
+      "/  \\___/  \\",
+      "  ||   ||"
+    ]
   }
 }

@@ -29,5 +29,8 @@ public enum StatusEffect
     Slow,
 
     /// <summary>Increases the bearer's attack power by 25%, applied by Battle Cry ability.</summary>
-    BattleCry
+    BattleCry,
+
+    /// <summary>Deals 8 fire damage per turn; applied by Infernal Dragon's Flame Breath.</summary>
+    Burn
 }

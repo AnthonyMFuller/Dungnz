@@ -36,6 +36,13 @@ public class StatusEffectManager
             return;
         }
 
+        // ChaosKnight is immune to Stun
+        if (target is Enemy stunImmuneEnemy && stunImmuneEnemy.IsStunImmune && effect == StatusEffect.Stun)
+        {
+            _display.ShowMessage($"The {stunImmuneEnemy.Name} shrugs off the stun!");
+            return;
+        }
+
         if (!_activeEffects.ContainsKey(target)) _activeEffects[target] = new List<ActiveEffect>();
         var existing = _activeEffects[target].FirstOrDefault(e => e.Effect == effect);
         if (existing != null) existing.RemainingTurns = Math.Max(existing.RemainingTurns, duration);
@@ -70,6 +77,10 @@ public class StatusEffectManager
                     break;
                 case StatusEffect.Stun:
                     // Stun message is emitted by CombatEngine before ProcessTurnStart is called.
+                    break;
+                case StatusEffect.Burn:
+                    if (target is Player pb) { pb.TakeDamage(8); _display.ShowCombatMessage($"{GetTargetName(target)} takes 8 burn damage!"); }
+                    else if (target is Enemy eb) { eb.HP -= 8; _display.ShowCombatMessage($"{GetTargetName(target)} takes 8 burn damage!"); }
                     break;
             }
             ae.RemainingTurns--;

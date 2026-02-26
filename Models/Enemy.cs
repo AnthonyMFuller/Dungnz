@@ -23,6 +23,26 @@ namespace Dungnz.Models;
 [JsonDerivedType(typeof(StoneTitan), "stonetitan")]
 [JsonDerivedType(typeof(ShadowWraith), "shadowwraith")]
 [JsonDerivedType(typeof(VampireBoss), "vampireboss")]
+[JsonDerivedType(typeof(GiantRat), "giantrat")]
+[JsonDerivedType(typeof(CursedZombie), "cursedzombie")]
+[JsonDerivedType(typeof(BloodHound), "bloodhound")]
+[JsonDerivedType(typeof(IronGuard), "ironguard")]
+[JsonDerivedType(typeof(NightStalker), "nightstalker")]
+[JsonDerivedType(typeof(FrostWyvern), "frostwyvern")]
+[JsonDerivedType(typeof(ChaosKnight), "chaosknight")]
+[JsonDerivedType(typeof(ShadowImp), "shadowimp")]
+[JsonDerivedType(typeof(CarrionCrawler), "carrioncrawler")]
+[JsonDerivedType(typeof(DarkSorcerer), "darksorcerer")]
+[JsonDerivedType(typeof(BoneArcher), "bonearcher")]
+[JsonDerivedType(typeof(CryptPriest), "cryptpriest")]
+[JsonDerivedType(typeof(PlagueBear), "plaguebear")]
+[JsonDerivedType(typeof(SiegeOgre), "siegeogre")]
+[JsonDerivedType(typeof(BladeDancer), "bladedancer")]
+[JsonDerivedType(typeof(ManaLeech), "manaleech")]
+[JsonDerivedType(typeof(ShieldBreaker), "shieldbreaker")]
+[JsonDerivedType(typeof(ArchlichSovereign), "archlichsovereign")]
+[JsonDerivedType(typeof(AbyssalLeviathan), "abyssalleviathan")]
+[JsonDerivedType(typeof(InfernalDragon), "infernaldragon")]
 public abstract class Enemy
 {
     /// <summary>Gets or sets the enemy's display name used in combat and room descriptions.</summary>
@@ -94,4 +114,104 @@ public abstract class Enemy
     /// An empty array means no art is shown.
     /// </summary>
     public string[] AsciiArt { get; protected set; } = Array.Empty<string>();
+
+    // ── WI-C1/C2/C3 special mechanic properties ────────────────────────────
+
+    /// <summary>GiantRat: pack size (1–3); ATK += 2 * (PackCount - 1) up to +6.</summary>
+    public int PackCount { get; set; }
+
+    /// <summary>CursedZombie: status effect to apply to the player on death (null = none).</summary>
+    public StatusEffect? OnDeathEffect { get; protected set; }
+
+    /// <summary>BloodHound / PlagueBear on-hit: chance [0,1] to apply Bleed to the player.</summary>
+    public float BleedOnHitChance { get; protected set; }
+
+    /// <summary>IronGuard: probability [0,1] of a counter-strike after the player attacks.</summary>
+    public float CounterStrikeChance { get; protected set; }
+
+    /// <summary>NightStalker / BoneArcher: multiplier for the first attack in combat.</summary>
+    public float FirstAttackMultiplier { get; protected set; } = 1f;
+
+    /// <summary>NightStalker / BoneArcher: set to true once the first-attack bonus has fired.</summary>
+    public bool FirstAttackUsed { get; set; }
+
+    /// <summary>FrostWyvern: use Frost Breath every Nth attack (0 = disabled).</summary>
+    public int FrostBreathEvery { get; protected set; }
+
+    /// <summary>FrostWyvern: cumulative count of attacks performed this combat.</summary>
+    public int AttackCount { get; set; }
+
+    /// <summary>ChaosKnight: flat critical-hit chance [0,1] on every attack.</summary>
+    public float EnemyCritChance { get; protected set; }
+
+    /// <summary>ChaosKnight: when true, Stun applications silently fail.</summary>
+    public bool IsStunImmune { get; protected set; }
+
+    /// <summary>CarrionCrawler / CryptPriest: HP regenerated at the start of the enemy turn each round.</summary>
+    public int RegenPerTurn { get; protected set; }
+
+    /// <summary>DarkSorcerer: chance [0,1] to apply Weakened to the player instead of dealing damage.</summary>
+    public float WeakenOnAttackChance { get; protected set; }
+
+    /// <summary>CryptPriest: self-heal amount triggered every <see cref="SelfHealEveryTurns"/> turns.</summary>
+    public int SelfHealAmount { get; protected set; }
+
+    /// <summary>CryptPriest: number of turns between self-heals.</summary>
+    public int SelfHealEveryTurns { get; protected set; }
+
+    /// <summary>CryptPriest: internal cooldown counter; decremented each enemy turn.</summary>
+    public int SelfHealCooldown { get; set; }
+
+    /// <summary>PlagueBear: when true, applies Poison to the player at combat start.</summary>
+    public bool PoisonOnCombatStart { get; protected set; }
+
+    /// <summary>PlagueBear: chance [0,1] to reapply Poison on death.</summary>
+    public float PoisonOnDeathChance { get; protected set; }
+
+    /// <summary>SiegeOgre: remaining hits that receive a flat damage reduction (thick hide).</summary>
+    public int ThickHideHitsRemaining { get; set; }
+
+    /// <summary>SiegeOgre: flat damage reduction per hit while thick hide is active.</summary>
+    public int ThickHideDamageReduction { get; protected set; }
+
+    /// <summary>BladeDancer: chance [0,1] of a counter-attack when the player successfully dodges.</summary>
+    public float OnDodgeCounterChance { get; protected set; }
+
+    /// <summary>ManaLeech: mana drained from the player on each successful hit.</summary>
+    public int ManaDrainPerHit { get; protected set; }
+
+    /// <summary>ManaLeech: ATK bonus multiplier applied when the player has 0 mana.</summary>
+    public float ZeroManaAtkBonus { get; protected set; }
+
+    /// <summary>ShieldBreaker: player DEF threshold above which 50% of DEF is ignored.</summary>
+    public int ShieldBreakerDefThreshold { get; protected set; }
+
+    /// <summary>ShadowImp: flat damage reduction applied on each incoming hit (simulates pack).</summary>
+    public int GroupDamageReduction { get; protected set; }
+
+    /// <summary>BoneArcher: critical-hit chance on the first attack only (stacks with FirstAttackMultiplier).</summary>
+    public float FirstAttackCritChance { get; protected set; }
+
+    // ── Boss mechanic properties ────────────────────────────────────────────
+
+    /// <summary>ArchlichSovereign: number of skeletal-add guards currently alive.</summary>
+    public int AddsAlive { get; set; }
+
+    /// <summary>ArchlichSovereign / InfernalDragon: when true, player attacks hit an add instead of the boss.</summary>
+    public bool DamageImmune { get; set; }
+
+    /// <summary>ArchlichSovereign: has already triggered its once-per-combat revive.</summary>
+    public bool HasRevived { get; set; }
+
+    /// <summary>AbyssalLeviathan: turn counter used to track submerge cycles.</summary>
+    public int TurnCount { get; set; }
+
+    /// <summary>AbyssalLeviathan: when true, the player's attack is skipped this turn.</summary>
+    public bool IsSubmerged { get; set; }
+
+    /// <summary>InfernalDragon: when true, the flight-phase 40% miss chance is active.</summary>
+    public bool FlightPhaseActive { get; set; }
+
+    /// <summary>InfernalDragon: turns until next Flame Breath (fires every 2nd enemy turn).</summary>
+    public int FlameBreathCooldown { get; set; }
 }
