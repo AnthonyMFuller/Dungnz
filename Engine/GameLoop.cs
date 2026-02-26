@@ -1170,37 +1170,4 @@ public class GameLoop
         _display.ShowVictory(_player, _currentFloor, _stats);
     }
 
-    /// <summary>Handles player interaction with a Petrified Library special room.</summary>
-    private void HandlePetrifiedLibrary()
-    {
-        _display.ShowColoredMessage("📚 Ancient tomes line the shelves, their pages filled with forgotten lore.", Systems.ColorCodes.Cyan);
-        _display.ShowMessage("You study the texts and gain insight. MaxMana +5.");
-        _player.FortifyMaxMana(5);
-        _currentRoom.SpecialRoomUsed = true;
-    }
-
-    /// <summary>Handles player interaction with a Contested Armory special room.</summary>
-    private void HandleContestedArmory()
-    {
-        if (_currentRoom.SpecialRoomUsed)
-        {
-            _display.ShowMessage("The armory has already been claimed.");
-            return;
-        }
-        _display.ShowColoredMessage("⚔ You approach the weapon racks and claim a trophy.", Systems.ColorCodes.Yellow);
-        _display.ShowMessage("Attack +2 (battle-hardened from the armory's trials).");
-        _player.ModifyAttack(2);
-        _currentRoom.SpecialRoomUsed = true;
-    }
-
-    /// <summary>Handles player interaction with a Forgotten Shrine special room.</summary>
-    private void HandleForgottenShrine()
-    {
-        _display.ShowColoredMessage("✨ A forgotten shrine pulses with ancient power.", Systems.ColorCodes.BrightRed);
-        _display.ShowMessage("The shrine blesses you with renewed vitality.");
-        _player.Heal((int)(_player.MaxHP * 0.25));
-        _display.ShowMessage($"Healed for 25% of MaxHP. HP: {_player.HP}/{_player.MaxHP}");
-        _currentRoom.SpecialRoomUsed = true;
-    }
-
 }
