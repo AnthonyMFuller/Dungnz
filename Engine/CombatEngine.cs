@@ -335,6 +335,9 @@ public class CombatEngine : ICombatEngine
                     player.ResetComboPoints();
                     player.LastStandTurns = 0;
                     player.EvadeNextAttack = false;
+                    player.ActiveMinions.Clear();
+                    player.ActiveTraps.Clear();
+                    player.TrapTriggeredThisCombat = false;
                     return CombatResult.Fled;
                 }
                 else
@@ -656,6 +659,9 @@ public class CombatEngine : ICombatEngine
         }
 
         // Bug #85: include equipment and class dodge bonuses for the player
+        PerformTrapTriggerPhase(player, enemy);
+        if (enemy.HP <= 0) return;
+
         if (player.EvadeNextAttack)
         {
             player.EvadeNextAttack = false;
@@ -749,8 +755,42 @@ public class CombatEngine : ICombatEngine
         }
     }
     
+    private void PerformMinionAttackPhase(Player player, Enemy enemy)
+    {
+        foreach (var minion in player.ActiveMinions.Where(m => m.HP > 0).ToList())
+        {
+            var dmg = Math.Max(1, minion.ATK - enemy.Defense);
+            enemy.HP -= dmg;
+            _stats.DamageDealt += dmg;
+            _display.ShowCombatMessage(ColorizeDamage($"{minion.AttackFlavorText} ({dmg} damage)", dmg));
+            if (enemy.HP <= 0) break;
+        }
+        player.ActiveMinions.RemoveAll(m => m.HP <= 0);
+    }
+
+    private void PerformTrapTriggerPhase(Player player, Enemy enemy)
+    {
+        var trap = player.ActiveTraps.FirstOrDefault(t => !t.Triggered);
+        if (trap == null) return;
+
+        trap.Triggered = true;
+        player.TrapTriggeredThisCombat = true;
+        var dmg = Math.Max(1, (int)(player.Attack * trap.DamagePercent));
+        enemy.HP -= dmg;
+        _stats.DamageDealt += dmg;
+        _display.ShowCombatMessage(ColorizeDamage($"{trap.FlavorText} ({dmg} damage)", dmg));
+
+        if (trap.AppliedStatus.HasValue && enemy.HP > 0)
+        {
+            _statusEffects.Apply(enemy, trap.AppliedStatus.Value, trap.StatusDuration);
+            _display.ShowColoredCombatMessage($"{enemy.Name} is affected by {trap.AppliedStatus.Value}!", ColorCodes.Green);
+        }
+    }
+
     private void HandleLootAndXP(Player player, Enemy enemy)
     {
+        player.LastKilledEnemyHp = enemy.MaxHP;
+
         if (enemy.LootTable != null)
         {
         var loot = enemy.LootTable.RollDrop(enemy, player.Level);
@@ -794,6 +834,9 @@ public class CombatEngine : ICombatEngine
         player.ResetComboPoints();
         player.LastStandTurns = 0;
         player.EvadeNextAttack = false;
+        player.ActiveMinions.Clear();
+        player.ActiveTraps.Clear();
+        player.TrapTriggeredThisCombat = false;
     }
     
     private void CheckLevelUp(Player player)
