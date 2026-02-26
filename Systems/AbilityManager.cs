@@ -243,6 +243,10 @@ public class AbilityManager
             effectiveCost = Math.Max(1, (int)(ability.ManaCost * player.GetSpellCostMultiplier()));
         }
         
+        // Arcane Ascendant 4-pc set bonus: flat mana discount
+        if (player.ManaDiscount > 0)
+            effectiveCost = Math.Max(0, effectiveCost - player.ManaDiscount);
+        
         // LichsBargain passive: HP < 15% = 0 cost abilities for 1 turn
         if (player.Class == PlayerClass.Necromancer && player.HasSkill(Skill.LichsBargain) 
             && player.HP < player.MaxHP * 0.15f)
