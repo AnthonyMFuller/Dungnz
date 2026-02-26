@@ -43,10 +43,22 @@ public class StatusEffectManager
             return;
         }
 
+        // Sentinel 4-pc set bonus: player stun immunity
+        if (target is Player p && p.IsStunImmune && effect == StatusEffect.Stun)
+        {
+            _display.ShowColoredMessage("[Sentinel] Stun resisted!", ColorCodes.BrightCyan);
+            return;
+        }
+
         if (!_activeEffects.ContainsKey(target)) _activeEffects[target] = new List<ActiveEffect>();
         var existing = _activeEffects[target].FirstOrDefault(e => e.Effect == effect);
         if (existing != null) existing.RemainingTurns = Math.Max(existing.RemainingTurns, duration);
-        else _activeEffects[target].Add(new ActiveEffect(effect, duration));
+        else
+        {
+            _activeEffects[target].Add(new ActiveEffect(effect, duration));
+            if (effect == StatusEffect.Curse)
+                _display.ShowCombatMessage($"[Cursed] {GetTargetName(target)}'s ATK and DEF reduced by 25%!");
+        }
     }
     
     /// <summary>
@@ -81,6 +93,13 @@ public class StatusEffectManager
                 case StatusEffect.Burn:
                     if (target is Player pb) { pb.TakeDamage(8); _display.ShowCombatMessage($"{GetTargetName(target)} takes 8 burn damage!"); }
                     else if (target is Enemy eb) { eb.HP -= 8; _display.ShowCombatMessage($"{GetTargetName(target)} takes 8 burn damage!"); }
+                    break;
+                case StatusEffect.Freeze:
+                    // Freeze message is emitted by CombatEngine before ProcessTurnStart is called.
+                    break;
+                case StatusEffect.Silence:
+                case StatusEffect.Curse:
+                    // No per-turn effect; Silence blocks abilities, Curse modifies stats via GetStatModifier.
                     break;
             }
             ae.RemainingTurns--;
@@ -135,6 +154,8 @@ public class StatusEffectManager
             else if (stat == "Attack" && e.Effect == StatusEffect.Slow) mod -= GetBaseAttack(target) / 4;
             else if (stat == "Attack" && e.Effect == StatusEffect.BattleCry) mod += GetBaseAttack(target) / 4;
             else if (stat == "Defense" && e.Effect == StatusEffect.Fortified) mod += GetBaseDefense(target) / 2;
+            else if (stat == "Attack" && e.Effect == StatusEffect.Curse) mod -= GetBaseAttack(target) / 4;
+            else if (stat == "Defense" && e.Effect == StatusEffect.Curse) mod -= GetBaseDefense(target) / 4;
         }
         return mod;
     }
@@ -142,6 +163,23 @@ public class StatusEffectManager
     private string GetTargetName(object t) => t switch { Player p => p.Name, Enemy e => e.Name, _ => "Unknown" };
     private int GetBaseAttack(object t) => t switch { Player p => p.Attack, Enemy e => e.Attack, _ => 0 };
     private int GetBaseDefense(object t) => t switch { Player p => p.Defense, Enemy e => e.Defense, _ => 0 };
+
+    /// <summary>
+    /// Notifies the manager that physical damage was dealt to the target.
+    /// If the target is Frozen, the Freeze is immediately cleared (broken by impact).
+    /// </summary>
+    /// <param name="target">The combat entity that received physical damage.</param>
+    public void NotifyPhysicalDamage(object target)
+    {
+        if (!_activeEffects.ContainsKey(target)) return;
+        var freeze = _activeEffects[target].FirstOrDefault(e => e.Effect == StatusEffect.Freeze);
+        if (freeze != null)
+        {
+            _activeEffects[target].Remove(freeze);
+            _display.ShowCombatMessage("[Freeze broken by impact!]");
+        }
+    }
+
     /// <summary>Removes all active effects from the target, typically called when combat ends or the entity dies.</summary>
     /// <param name="target">The combat entity whose effect list should be cleared.</param>
     public void Clear(object target) { if (_activeEffects.ContainsKey(target)) _activeEffects.Remove(target); }
