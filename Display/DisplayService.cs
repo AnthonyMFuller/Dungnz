@@ -254,7 +254,7 @@ public class ConsoleDisplayService : IDisplayService
                 var count = group.Count();
                 var icon  = ItemTypeIcon(item.Type);
                 var isEquipped = item == player.EquippedWeapon
-                              || item == player.EquippedArmor
+                              || item == player.EquippedChest
                               || item == player.EquippedAccessory;
                 var equippedTag = isEquipped
                     ? $" {Systems.ColorCodes.Green}[E]{Systems.ColorCodes.Reset}"
@@ -300,9 +300,9 @@ public class ConsoleDisplayService : IDisplayService
             if (delta > 0)
                 statLine += $"  {Systems.ColorCodes.Green}(+{delta} vs equipped!){Systems.ColorCodes.Reset}";
         }
-        else if (item.DefenseBonus > 0 && player.EquippedArmor != null)
+        else if (item.DefenseBonus > 0 && player.EquippedChest != null)
         {
-            int delta = item.DefenseBonus - player.EquippedArmor.DefenseBonus;
+            int delta = item.DefenseBonus - player.EquippedChest.DefenseBonus;
             if (delta > 0)
                 statLine += $"  {Systems.ColorCodes.Green}(+{delta} vs equipped!){Systems.ColorCodes.Reset}";
         }

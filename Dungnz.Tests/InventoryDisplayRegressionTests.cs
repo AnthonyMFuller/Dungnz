@@ -495,11 +495,11 @@ public class InventoryDisplayRegressionTests : IDisposable
                 manager.HandleEquip(player, a.Name);
         };
         equipAct.Should().NotThrow("equipping armors of every tier must not throw");
-        player.EquippedArmor.Should().NotBeNull();
+        player.EquippedChest.Should().NotBeNull();
 
         var unequipAct = () => manager.HandleUnequip(player, "armor");
         unequipAct.Should().NotThrow("unequipping the armor slot must not throw");
-        player.EquippedArmor.Should().BeNull();
+        player.EquippedChest.Should().BeNull();
     }
 
     [Fact]
@@ -563,7 +563,7 @@ public class InventoryDisplayRegressionTests : IDisposable
         var player   = new Player { Name = "Romanoff", HP = 100, MaxHP = 100 };
         var uncommon = new Item { Name = "Shadow Cloak", Type = ItemType.Armor, Tier = ItemTier.Uncommon, DefenseBonus = 6, IsEquippable = true, Weight = 2 };
         player.Inventory.Add(uncommon);
-        player.EquippedArmor = uncommon;
+        player.EquippedChest = uncommon;
 
         // Act
         _svc.ShowInventory(player);

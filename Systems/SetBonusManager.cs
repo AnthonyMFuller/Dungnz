@@ -96,7 +96,7 @@ public static class SetBonusManager
     {
         int count = 0;
         if (player.EquippedWeapon?.SetId == setId)   count++;
-        if (player.EquippedArmor?.SetId == setId)    count++;
+        if (player.EquippedChest?.SetId == setId)    count++;
         if (player.EquippedAccessory?.SetId == setId) count++;
         return count;
     }
@@ -183,7 +183,7 @@ public static class SetBonusManager
     {
         var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (player.EquippedWeapon?.SetId != null)    ids.Add(player.EquippedWeapon.SetId);
-        if (player.EquippedArmor?.SetId != null)     ids.Add(player.EquippedArmor.SetId);
+        if (player.EquippedChest?.SetId != null)     ids.Add(player.EquippedChest.SetId);
         if (player.EquippedAccessory?.SetId != null) ids.Add(player.EquippedAccessory.SetId);
         return ids;
     }

@@ -124,7 +124,7 @@ public class Phase6IntegrationTests
     public void AegisOfImmortal_FirstLethalHit_SurvivesAtOneHP()
     {
         var player = MakePlayer(PlayerClass.Warrior, hp: 0, maxHp: 100);
-        player.EquippedArmor = new Item
+        player.EquippedChest = new Item
         {
             Name = "Aegis of the Immortal", Type = ItemType.Armor,
             IsEquippable = true, PassiveEffectId = "survive_at_one"
@@ -142,7 +142,7 @@ public class Phase6IntegrationTests
     public void AegisOfImmortal_SecondLethalHit_DoesNotSave()
     {
         var player = MakePlayer(PlayerClass.Warrior, hp: 0, maxHp: 100);
-        player.EquippedArmor = new Item
+        player.EquippedChest = new Item
         {
             Name = "Aegis of the Immortal", Type = ItemType.Armor,
             IsEquippable = true, PassiveEffectId = "survive_at_one"
@@ -201,7 +201,7 @@ public class Phase6IntegrationTests
     public void SetBonus_TwoPieces_ActivatesTwoPieceBonus()
     {
         var player = MakePlayer(PlayerClass.Rogue);
-        player.EquippedArmor = new Item { Name = "Shadowstalker Garb", Type = ItemType.Armor, IsEquippable = true, SetId = "shadowstalker" };
+        player.EquippedChest = new Item { Name = "Shadowstalker Garb", Type = ItemType.Armor, IsEquippable = true, SetId = "shadowstalker" };
         player.EquippedWeapon = new Item { Name = "Shadowstalker Blades", Type = ItemType.Weapon, IsEquippable = true, SetId = "shadowstalker" };
 
         var bonuses = SetBonusManager.GetActiveBonuses(player);
@@ -215,7 +215,7 @@ public class Phase6IntegrationTests
     public void SetBonus_ThreePieces_ActivatesThreePieceBonus()
     {
         var player = MakePlayer(PlayerClass.Rogue);
-        player.EquippedArmor = new Item { Name = "Shadowstalker Garb", Type = ItemType.Armor, IsEquippable = true, SetId = "shadowstalker" };
+        player.EquippedChest = new Item { Name = "Shadowstalker Garb", Type = ItemType.Armor, IsEquippable = true, SetId = "shadowstalker" };
         player.EquippedWeapon = new Item { Name = "Shadowstalker Blades", Type = ItemType.Weapon, IsEquippable = true, SetId = "shadowstalker" };
         player.EquippedAccessory = new Item { Name = "Shadowstalker Hood", Type = ItemType.Accessory, IsEquippable = true, SetId = "shadowstalker" };
 
@@ -306,7 +306,7 @@ public class Phase6IntegrationTests
     public void DamageReflect_WhenPlayerTakesDamage_Reflects25Percent()
     {
         var player = MakePlayer(PlayerClass.Warrior);
-        player.EquippedArmor = new Item
+        player.EquippedChest = new Item
         {
             Name = "Ironheart Plate", Type = ItemType.Armor,
             IsEquippable = true, PassiveEffectId = "damage_reflect"

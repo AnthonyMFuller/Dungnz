@@ -5,8 +5,28 @@ public partial class Player
     /// <summary>Gets the weapon currently equipped by the player, or <c>null</c> if the weapon slot is empty.</summary>
     public Item? EquippedWeapon { get; set; }
 
-    /// <summary>Gets the armor currently equipped by the player, or <c>null</c> if the armor slot is empty.</summary>
-    public Item? EquippedArmor { get; set; }
+    /// <summary>Head slot — helms, hoods, crowns.</summary>
+    public Item? EquippedHead      { get; set; }
+    /// <summary>Shoulder slot — pauldrons, mantles.</summary>
+    public Item? EquippedShoulders { get; set; }
+    /// <summary>Chest slot — cuirasses, robes, tunics.</summary>
+    public Item? EquippedChest     { get; set; }
+    /// <summary>Hand slot — gauntlets, gloves, bracers.</summary>
+    public Item? EquippedHands     { get; set; }
+    /// <summary>Leg slot — greaves, leggings.</summary>
+    public Item? EquippedLegs      { get; set; }
+    /// <summary>Foot slot — boots, sabatons.</summary>
+    public Item? EquippedFeet      { get; set; }
+    /// <summary>Back slot — cloaks, capes.</summary>
+    public Item? EquippedBack      { get; set; }
+    /// <summary>Off-hand slot — shields and spell focuses.</summary>
+    public Item? EquippedOffHand   { get; set; }
+
+    /// <summary>Iterates all currently equipped armor pieces across all 8 body slots.</summary>
+    public IEnumerable<Item> AllEquippedArmor =>
+        new[] { EquippedHead, EquippedShoulders, EquippedChest, EquippedHands,
+                EquippedLegs, EquippedFeet, EquippedBack, EquippedOffHand }
+        .Where(x => x != null)!;
 
     /// <summary>Gets the accessory currently equipped by the player, or <c>null</c> if the accessory slot is empty.</summary>
     public Item? EquippedAccessory { get; set; }
@@ -60,12 +80,13 @@ public partial class Player
                 break;
 
             case ItemType.Armor:
-                if (EquippedArmor != null)
+                var armorSlot = GetArmorSlotRef(item.Slot);
+                if (armorSlot != null)
                 {
-                    previousItem = EquippedArmor;
+                    previousItem = armorSlot;
                     RemoveStatBonuses(previousItem);
                 }
-                EquippedArmor = item;
+                SetArmorSlot(item.Slot, item);
                 break;
 
             case ItemType.Accessory:
@@ -192,6 +213,36 @@ public partial class Player
         RemoveStatBonuses(item);
         Inventory.Add(item);
         return item;
+    }
+
+    /// <summary>Returns the item in the specified armor slot, or null if empty.</summary>
+    public Item? GetArmorSlotItem(ArmorSlot slot) => GetArmorSlotRef(slot);
+
+    private Item? GetArmorSlotRef(ArmorSlot slot) => slot switch
+    {
+        ArmorSlot.Head      => EquippedHead,
+        ArmorSlot.Shoulders => EquippedShoulders,
+        ArmorSlot.Hands     => EquippedHands,
+        ArmorSlot.Legs      => EquippedLegs,
+        ArmorSlot.Feet      => EquippedFeet,
+        ArmorSlot.Back      => EquippedBack,
+        ArmorSlot.OffHand   => EquippedOffHand,
+        _                   => EquippedChest, // None and Chest both map to Chest
+    };
+
+    private void SetArmorSlot(ArmorSlot slot, Item? item)
+    {
+        switch (slot)
+        {
+            case ArmorSlot.Head:      EquippedHead      = item; break;
+            case ArmorSlot.Shoulders: EquippedShoulders = item; break;
+            case ArmorSlot.Hands:     EquippedHands     = item; break;
+            case ArmorSlot.Legs:      EquippedLegs      = item; break;
+            case ArmorSlot.Feet:      EquippedFeet      = item; break;
+            case ArmorSlot.Back:      EquippedBack      = item; break;
+            case ArmorSlot.OffHand:   EquippedOffHand   = item; break;
+            default:                  EquippedChest     = item; break;
+        }
     }
 
     private void ApplyStatBonuses(Item item)

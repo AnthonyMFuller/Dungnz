@@ -1329,7 +1329,7 @@ public class CombatEngine : ICombatEngine
     /// <summary>Returns true when any of the player's equipped items has the given passive effect id.</summary>
     private static bool HasPassiveEffect(Player player, string effectId)
         => player.EquippedWeapon?.PassiveEffectId == effectId
-        || player.EquippedArmor?.PassiveEffectId == effectId
+        || player.EquippedChest?.PassiveEffectId == effectId
         || player.EquippedAccessory?.PassiveEffectId == effectId;
 }
 

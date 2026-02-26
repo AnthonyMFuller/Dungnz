@@ -73,7 +73,7 @@ public class PassiveEffectProcessor
         var equipped = new[]
         {
             player.EquippedWeapon,
-            player.EquippedArmor,
+            player.EquippedChest,
             player.EquippedAccessory
         };
 

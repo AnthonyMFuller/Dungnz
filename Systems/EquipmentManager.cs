@@ -57,7 +57,7 @@ public class EquipmentManager
         var currentlyEquipped = item.Type switch
         {
             ItemType.Weapon    => player.EquippedWeapon,
-            ItemType.Armor     => player.GetArmorSlot(item.Slot == ArmorSlot.None ? ArmorSlot.Chest : item.Slot),
+            ItemType.Armor     => player.GetArmorSlotItem(item.Slot == ArmorSlot.None ? ArmorSlot.Chest : item.Slot),
             ItemType.Accessory => player.EquippedAccessory,
             _                  => null
         };
