@@ -34,7 +34,7 @@ public class GameLoop
     /// <summary>Set to <see langword="true"/> when the run ends (win, death) to break the Run() loop.</summary>
     private bool _gameOver = false;
 
-    private const int FinalFloor = 5;
+    private const int FinalFloor = 8;
 
     private static readonly string[] _postCombatLines =
     {
@@ -379,6 +379,19 @@ public class GameLoop
         {
             _display.ShowMessage("✨ There is a Shrine in this room. Type USE SHRINE to interact.");
         }
+
+        // Auto-trigger PetrifiedLibrary on first entry
+        if (_currentRoom.Type == RoomType.PetrifiedLibrary && !_currentRoom.SpecialRoomUsed)
+        {
+            _currentRoom.SpecialRoomUsed = true;
+            HandlePetrifiedLibrary();
+        }
+
+        // Prompt for ContestedArmory
+        if (_currentRoom.Type == RoomType.ContestedArmory && !_currentRoom.SpecialRoomUsed)
+        {
+            _display.ShowMessage("⚔ Trapped weapons line the walls. (USE ARMORY to approach)");
+        }
     }
 
     private void HandleLook()
@@ -478,6 +491,13 @@ public class GameLoop
             return;
         }
 
+        // Special: USE ARMORY
+        if (itemName.Equals("armory", StringComparison.OrdinalIgnoreCase))
+        {
+            HandleContestedArmory();
+            return;
+        }
+
         var itemNameLower = itemName.ToLowerInvariant();
         var item = _player.Inventory.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(itemNameLower));
 
@@ -516,6 +536,27 @@ public class GameLoop
                     _player.ModifyAttack(item.AttackBonus);
                     _player.Inventory.Remove(item);
                     _display.ShowMessage($"You use {item.Name}. Attack permanently +{item.AttackBonus}. Attack: {_player.Attack}");
+                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
+                }
+                else if (item.DefenseBonus > 0)
+                {
+                    _player.ModifyDefense(item.DefenseBonus);
+                    _player.Inventory.Remove(item);
+                    _display.ShowMessage($"You use {item.Name}. Defense permanently +{item.DefenseBonus}. Defense: {_player.Defense}");
+                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
+                }
+                else if (item.PassiveEffectId == "bone_flute")
+                {
+                    _player.ActiveMinions.Add(new Models.Minion { Name = "Skeletal Ally", HP = 60, MaxHP = 60, ATK = 15, AttackFlavorText = "The Skeletal Ally rattles forward and strikes!" });
+                    _player.Inventory.Remove(item);
+                    _display.ShowMessage("The flute's hollow note summons a Skeletal Ally to fight alongside you!");
+                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
+                }
+                else if (item.PassiveEffectId == "dragonheart_elixir")
+                {
+                    _player.FortifyMaxHP(100);
+                    _player.Inventory.Remove(item);
+                    _display.ShowMessage($"Dragonheart warmth spreads through you. MaxHP +100! ({_player.MaxHP} MaxHP)");
                     _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
                 }
                 else
@@ -614,6 +655,7 @@ public class GameLoop
         }
 
         _currentFloor++;
+        if (_player.TempAttackBonus > 0) { _player.ModifyAttack(-_player.TempAttackBonus); _player.TempAttackBonus = 0; }
         foreach (var line in FloorTransitionNarration.GetSequence(_currentFloor))
             _display.ShowMessage(line);
         _display.ShowMessage($"You descend deeper into the dungeon... Floor {_currentFloor}");
@@ -641,6 +683,9 @@ public class GameLoop
 
     private void HandleShrine()
     {
+        bool isForgottenShrine = _currentRoom.Type == RoomType.ForgottenShrine;
+        if (isForgottenShrine && !_currentRoom.SpecialRoomUsed) { HandleForgottenShrine(); return; }
+
         if (!_currentRoom.HasShrine)
         {
             _display.ShowError("There is no shrine here.");
@@ -650,6 +695,17 @@ public class GameLoop
         {
             _display.ShowMessage("The shrine has already been used.");
             return;
+        }
+
+        // SacredGroundActive auto-heal on shrine entry
+        if (_player.SacredGroundActive)
+        {
+            var healed = _player.MaxHP - _player.HP;
+            if (healed > 0)
+            {
+                _player.Heal(healed);
+                _display.ShowMessage($"Sacred Ground pulses beneath your feet, restoring you to full health! HP: {_player.HP}/{_player.MaxHP}");
+            }
         }
 
         _display.ShowColoredMessage("✨ [Shrine Menu] — press H/B/F/M or L to leave.", Systems.ColorCodes.Cyan);
@@ -715,6 +771,166 @@ public class GameLoop
             _display.ShowMessage($"Bonuses: +{data.BonusStartAttack} Attack, +{data.BonusStartDefense} Defense, +{data.BonusStartHP} Max HP");
         else
             _display.ShowMessage("Win 3 runs to earn your first Prestige level!");
+    }
+
+    private void HandleForgottenShrine()
+    {
+        _display.ShowColoredMessage("🕯 [Forgotten Shrine] — choose a blessing:", Systems.ColorCodes.Cyan);
+        _display.ShowMessage("[1] Holy Strength   — +5 ATK (lasts until next floor)");
+        _display.ShowMessage("[2] Sacred Ground   — Auto-heal at shrines");
+        _display.ShowMessage("[3] Warding Veil    — Reduce all ability cooldowns by 1 each floor");
+        _display.ShowMessage("[L]eave");
+        _display.ShowCommandPrompt();
+
+        var choice = _input.ReadLine()?.Trim().ToUpperInvariant() ?? "";
+        switch (choice)
+        {
+            case "1":
+                _player.TempAttackBonus += 5;
+                _player.ModifyAttack(5);
+                _display.ShowMessage("Holy light surges through your arms. Attack +5 until next floor!");
+                _currentRoom.SpecialRoomUsed = true;
+                break;
+            case "2":
+                _player.SacredGroundActive = true;
+                _display.ShowMessage("The shrine's blessing lingers — shrines will restore you fully.");
+                _currentRoom.SpecialRoomUsed = true;
+                break;
+            case "3":
+                _player.WardingVeilActive = true;
+                _display.ShowMessage("A shimmering veil wraps around you. Ability cooldowns diminish each floor.");
+                _currentRoom.SpecialRoomUsed = true;
+                break;
+            case "L":
+                _display.ShowMessage("You leave the forgotten shrine.");
+                break;
+            default:
+                _display.ShowError("Invalid choice.");
+                break;
+        }
+    }
+
+    private void HandlePetrifiedLibrary()
+    {
+        var roll = new Random().Next(3);
+        switch (roll)
+        {
+            case 0:
+                _player.FortifyMaxHP(10);
+                _display.ShowMessage("📜 Scroll of Fortitude: Ancient runes fortify your body. MaxHP +10!");
+                break;
+            case 1:
+                _player.AddXP(15);
+                _display.ShowMessage("📖 Tome of the Archivist: Forbidden knowledge floods your mind. +15 XP!");
+                break;
+            default:
+                var exitRoom = FindExitRoom();
+                if (exitRoom != null)
+                {
+                    _display.ShowMessage("📙 Codex of Names: The pages reveal the guardian ahead...");
+                    if (exitRoom.Enemy != null)
+                        _display.ShowMessage($"  ⚠ Boss: {exitRoom.Enemy.Name} — HP {exitRoom.Enemy.HP}, ATK {exitRoom.Enemy.Attack}, DEF {exitRoom.Enemy.Defense}");
+                    else
+                        _display.ShowMessage("  The exit room appears to be clear of guardians.");
+                }
+                else
+                {
+                    _display.ShowMessage("📙 Codex of Names: The pages crumble — no guardian is recorded.");
+                }
+                break;
+        }
+    }
+
+    private void HandleContestedArmory()
+    {
+        if (_currentRoom.Type != RoomType.ContestedArmory)
+        {
+            _display.ShowError("There is no armory here.");
+            return;
+        }
+        if (_currentRoom.SpecialRoomUsed)
+        {
+            _display.ShowMessage("The armory has already been looted.");
+            return;
+        }
+
+        _display.ShowColoredMessage("⚔ [Contested Armory] — how do you approach?", Systems.ColorCodes.Cyan);
+        _display.ShowMessage($"[1] Careful approach — disarm traps (requires DEF > 12, yours: {_player.Defense})");
+        _display.ShowMessage("[2] Reckless grab   — take what you can (15-30 damage)");
+        _display.ShowMessage("[L]eave");
+        _display.ShowCommandPrompt();
+
+        var armoryChoice = _input.ReadLine()?.Trim().ToUpperInvariant() ?? "";
+        switch (armoryChoice)
+        {
+            case "1":
+                if (_player.Defense > 12)
+                {
+                    _display.ShowMessage("You carefully disarm the traps and claim a fine weapon.");
+                    GiveArmoryLoot(uncommon: false);
+                    _currentRoom.SpecialRoomUsed = true;
+                }
+                else
+                {
+                    _display.ShowMessage("You lack the fortitude to safely disarm the traps. Try a reckless grab or leave.");
+                }
+                break;
+            case "2":
+                var dmg = new Random().Next(15, 31);
+                _player.TakeDamage(dmg);
+                _display.ShowMessage($"Blades nick you as you grab the weapon! -{dmg} HP. HP: {_player.HP}/{_player.MaxHP}");
+                GiveArmoryLoot(uncommon: true);
+                _currentRoom.SpecialRoomUsed = true;
+                if (_player.HP <= 0)
+                {
+                    ShowGameOver(killedBy: "armory trap");
+                    _gameOver = true;
+                }
+                break;
+            case "L":
+                _display.ShowMessage("You leave the armory untouched.");
+                break;
+            default:
+                _display.ShowError("Invalid choice.");
+                break;
+        }
+    }
+
+    private void GiveArmoryLoot(bool uncommon)
+    {
+        var tier = uncommon ? Models.ItemTier.Uncommon : Models.ItemTier.Rare;
+        var loot = Models.LootTable.RollTier(tier);
+        if (loot != null)
+        {
+            _player.Inventory.Add(loot);
+            _display.ShowMessage($"You obtained: {loot.Name}!");
+        }
+        else
+        {
+            _display.ShowMessage("The armory yields only dust.");
+        }
+    }
+
+    private Room? FindExitRoom()
+    {
+        var visited = new HashSet<Room>();
+        var queue = new Queue<Room>();
+        queue.Enqueue(_currentRoom);
+        visited.Add(_currentRoom);
+        while (queue.Count > 0)
+        {
+            var room = queue.Dequeue();
+            if (room.IsExit) return room;
+            foreach (var next in room.Exits.Values)
+            {
+                if (!visited.Contains(next))
+                {
+                    visited.Add(next);
+                    queue.Enqueue(next);
+                }
+            }
+        }
+        return null;
     }
 
     private void HandleShop()
@@ -952,6 +1168,39 @@ public class GameLoop
     private void ShowVictory()
     {
         _display.ShowVictory(_player, _currentFloor, _stats);
+    }
+
+    /// <summary>Handles player interaction with a Petrified Library special room.</summary>
+    private void HandlePetrifiedLibrary()
+    {
+        _display.ShowColoredMessage("📚 Ancient tomes line the shelves, their pages filled with forgotten lore.", Systems.ColorCodes.Cyan);
+        _display.ShowMessage("You study the texts and gain insight. MaxMana +5.");
+        _player.FortifyMaxMana(5);
+        _currentRoom.SpecialRoomUsed = true;
+    }
+
+    /// <summary>Handles player interaction with a Contested Armory special room.</summary>
+    private void HandleContestedArmory()
+    {
+        if (_currentRoom.SpecialRoomUsed)
+        {
+            _display.ShowMessage("The armory has already been claimed.");
+            return;
+        }
+        _display.ShowColoredMessage("⚔ You approach the weapon racks and claim a trophy.", Systems.ColorCodes.Yellow);
+        _display.ShowMessage("Attack +2 (battle-hardened from the armory's trials).");
+        _player.ModifyAttack(2);
+        _currentRoom.SpecialRoomUsed = true;
+    }
+
+    /// <summary>Handles player interaction with a Forgotten Shrine special room.</summary>
+    private void HandleForgottenShrine()
+    {
+        _display.ShowColoredMessage("✨ A forgotten shrine pulses with ancient power.", Systems.ColorCodes.BrightRed);
+        _display.ShowMessage("The shrine blesses you with renewed vitality.");
+        _player.Heal((int)(_player.MaxHP * 0.25));
+        _display.ShowMessage($"Healed for 25% of MaxHP. HP: {_player.HP}/{_player.MaxHP}");
+        _currentRoom.SpecialRoomUsed = true;
     }
 
 }
