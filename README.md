@@ -237,6 +237,38 @@ Prestige data is saved to `%AppData%/Dungnz/prestige.json` and persists across a
 
 ---
 
+## Equipment
+
+### Equipment Slots
+
+| Slot | Icon | Description |
+|---|---|---|
+| Weapon | ⚔ | Offensive weapon — increases Attack |
+| Accessory | 💍 | Special bonuses: dodge, mana, immunities |
+| Head | 🪖 | Helms, hoods, crowns |
+| Shoulders | 🥋 | Pauldrons, mantles |
+| Chest | 🛡 | Cuirasses, robes, tunics, chainmail |
+| Hands | 🧤 | Gauntlets, gloves, bracers |
+| Legs | 👖 | Greaves, leggings, chaps |
+| Feet | 👟 | Boots, sabatons, shoes |
+| Back | 🧥 | Cloaks, capes |
+| Off-Hand | ⛨ | Shields, spell focuses |
+
+**Armor Weight Classes:** Heavy armor (plate) is restricted to Warriors and Paladins. Cloth/Robes are restricted to Mages and Necromancers. Leather armor is restricted to Rogues and Rangers. Universal (medium) armor can be worn by any class.
+
+### Armor Sets
+
+Equip multiple pieces of a named set for powerful bonuses:
+
+| Set | Class | Pieces | 2-Piece Bonus | 4-Piece Bonus |
+|---|---|---|---|---|
+| Ironclad Set | Warrior / Paladin | Head, Chest, Hands, Legs | +5 DEF | 10% damage reflect |
+| Shadowstep Set | Rogue / Ranger | Head, Hands, Legs, Feet | +8% dodge chance | Bleed on every hit |
+| Arcane Ascendant Set | Mage / Necromancer | Head, Shoulders, Chest, Legs | +20 max mana | -1 mana cost on abilities |
+| Sentinel Set | Any class | Shoulders, Chest, Legs | +8 DEF, +20 HP | Stun immunity |
+
+---
+
 ## Enemies
 
 ### Regular enemies
@@ -336,6 +368,8 @@ Use `craft <recipe>` to combine ingredients. Gold is consumed along with the lis
 | Health Elixir | 2× Health Potion | — | Heals 75 HP |
 | Reinforced Sword | 1× Iron Sword | 30g | +8 ATK weapon |
 | Reinforced Armor | 1× Leather Armor | 25g | +8 DEF armour |
+
+Armor crafting recipes are now available for all equipment slots (Head, Shoulders, Chest, Hands, Legs, Feet, Back, Off-Hand). Browse the full recipe list via the **Petrified Library** special room or `craft` command in-game.
 
 ---
 
