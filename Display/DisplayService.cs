@@ -1037,9 +1037,12 @@ public class ConsoleDisplayService : IDisplayService
         const int baseMana = 30;
 
         var classes = new[] {
-            (def: PlayerClassDefinition.Warrior, icon: "⚔", number: 1),
-            (def: PlayerClassDefinition.Mage, icon: "🔮", number: 2),
-            (def: PlayerClassDefinition.Rogue, icon: "🗡", number: 3)
+            (def: PlayerClassDefinition.Warrior,    icon: "⚔",  number: 1),
+            (def: PlayerClassDefinition.Mage,       icon: "🔮", number: 2),
+            (def: PlayerClassDefinition.Rogue,      icon: "🗡", number: 3),
+            (def: PlayerClassDefinition.Paladin,    icon: "🛡", number: 4),
+            (def: PlayerClassDefinition.Necromancer,icon: "💀", number: 5),
+            (def: PlayerClassDefinition.Ranger,     icon: "🏹", number: 6)
         };
 
         foreach (var (def, icon, number) in classes)
@@ -1117,8 +1120,11 @@ public class ConsoleDisplayService : IDisplayService
                 case "1": return PlayerClassDefinition.Warrior;
                 case "2": return PlayerClassDefinition.Mage;
                 case "3": return PlayerClassDefinition.Rogue;
+                case "4": return PlayerClassDefinition.Paladin;
+                case "5": return PlayerClassDefinition.Necromancer;
+                case "6": return PlayerClassDefinition.Ranger;
                 default:
-                    Console.WriteLine($"{Systems.ColorCodes.Red}Invalid choice. Please enter 1, 2, or 3.{reset}");
+                    Console.WriteLine($"{Systems.ColorCodes.Red}Invalid choice. Please enter 1–6.{reset}");
                     break;
             }
         }
