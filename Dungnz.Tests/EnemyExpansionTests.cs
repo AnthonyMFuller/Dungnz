@@ -238,17 +238,15 @@ public class EnemyExpansionTests
     private bool SimulateSelfHealTick(Enemy enemy)
     {
         if (enemy.SelfHealEveryTurns <= 0) return false;
-        if (enemy.SelfHealCooldown > 0)
+        // Mirrors CombatEngine's decrement-first approach
+        enemy.SelfHealCooldown--;
+        if (enemy.SelfHealCooldown <= 0)
         {
-            enemy.SelfHealCooldown--;
-            return false;
-        }
-        else
-        {
-            enemy.SelfHealCooldown = enemy.SelfHealEveryTurns - 1;
+            enemy.SelfHealCooldown = enemy.SelfHealEveryTurns;
             enemy.HP = Math.Min(enemy.MaxHP, enemy.HP + enemy.SelfHealAmount);
             return true;
         }
+        return false;
     }
 
     [Fact]
@@ -419,9 +417,14 @@ public class EnemyExpansionTests
     private bool SimulateFlameBreath(InfernalDragon dragon)
     {
         if (!dragon.FlightPhaseActive) return false;
-        if (dragon.FlameBreathCooldown > 0) { dragon.FlameBreathCooldown--; return false; }
-        dragon.FlameBreathCooldown = 1;
-        return true;
+        // Mirrors CombatEngine's decrement-first approach (FlameBreathCooldown starts at 2)
+        dragon.FlameBreathCooldown--;
+        if (dragon.FlameBreathCooldown <= 0)
+        {
+            dragon.FlameBreathCooldown = 2;
+            return true;
+        }
+        return false;
     }
 }
 
