@@ -1259,7 +1259,7 @@
             "Weight": 2,
             "SellPrice": 40,
             "DodgeBonus": 0.05,
-            "SetId": "shadowstalker",
+            "SetId": "shadowstalker-set",
             "Slot": "Head"
         },
         {
@@ -1277,7 +1277,7 @@
             "Weight": 5,
             "SellPrice": 42,
             "DodgeBonus": 0.07,
-            "SetId": "shadowstalker"
+            "SetId": "shadowstalker-set"
         },
         {
             "Name": "Shadowstalker Blades",
@@ -1292,7 +1292,7 @@
             "Id": "shadowstalker-blades",
             "Weight": 4,
             "SellPrice": 42,
-            "SetId": "shadowstalker"
+            "SetId": "shadowstalker-set"
         },
         {
             "Name": "Ironclad Helm",
@@ -1354,7 +1354,7 @@
             "Weight": 2,
             "SellPrice": 40,
             "MaxManaBonus": 20,
-            "SetId": "arcanist",
+            "SetId": "arcanist-set",
             "Slot": "Head"
         },
         {
@@ -1372,7 +1372,7 @@
             "Weight": 5,
             "SellPrice": 42,
             "MaxManaBonus": 25,
-            "SetId": "arcanist"
+            "SetId": "arcanist-set"
         },
         {
             "Name": "Arcanist's Tome",
@@ -1388,7 +1388,7 @@
             "Weight": 3,
             "SellPrice": 42,
             "MaxManaBonus": 20,
-            "SetId": "arcanist"
+            "SetId": "arcanist-set"
         },
         {
             "Name": "FrostScaleArmor",
@@ -2971,9 +2971,9 @@
             "Slot": "Head",
             "Tier": "Epic",
             "SetId": "sentinel-set",
-            "Description": "A full-face coif of layered chain and plate, worn by the Sentinel order's most decorated veterans. Functional. Dour. Undefeated.",
+            "Description": "A full-faced helm bearing the Sentinel crest. Its weight is reassuring rather than burdensome.",
             "Id": "sentinel-coif",
-            "Weight": 6,
+            "Weight": 8,
             "SellPrice": 150
         }
     ]
