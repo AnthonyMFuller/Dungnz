@@ -944,91 +944,6 @@
             "MaxManaBonus": 15
         },
         {
-            "Name": "Gauntlets of Might",
-            "Type": "Accessory",
-            "HealAmount": 0,
-            "AttackBonus": 6,
-            "DefenseBonus": 0,
-            "StatModifier": 0,
-            "IsEquippable": true,
-            "Tier": "Rare",
-            "Description": "+6 ATK. Heavy gauntlets that add devastating power to each blow, though the bulk costs some guard.",
-            "Id": "gauntlets-of-might",
-            "Weight": 4,
-            "SellPrice": 35
-        },
-        {
-            "Name": "Belt of Regeneration",
-            "Type": "Accessory",
-            "HealAmount": 0,
-            "AttackBonus": 0,
-            "DefenseBonus": 0,
-            "StatModifier": 0,
-            "IsEquippable": true,
-            "Tier": "Rare",
-            "Description": "A living belt woven with healing moss. Restores 3 HP at the start of each combat turn.",
-            "Id": "belt-of-regeneration",
-            "Weight": 2,
-            "SellPrice": 35,
-            "PassiveEffectId": "belt_regen"
-        },
-        {
-            "Name": "Cloak of the Magi",
-            "Type": "Accessory",
-            "HealAmount": 0,
-            "AttackBonus": 0,
-            "DefenseBonus": 0,
-            "StatModifier": 0,
-            "IsEquippable": true,
-            "Tier": "Rare",
-            "Description": "+20 max mana. A mage's cloak that channels arcane energy, reducing the cost of spells.",
-            "Id": "cloak-of-the-magi",
-            "Weight": 3,
-            "SellPrice": 38,
-            "MaxManaBonus": 20,
-            "ClassRestriction": [
-                "Mage",
-                "Necromancer"
-            ]
-        },
-        {
-            "Name": "Rogue's Talisman",
-            "Type": "Accessory",
-            "HealAmount": 0,
-            "AttackBonus": 0,
-            "DefenseBonus": 0,
-            "StatModifier": 0,
-            "IsEquippable": true,
-            "Tier": "Rare",
-            "Description": "+3% dodge, +10% crit chance. A rogue's lucky charm, attuned to the art of the precise kill.",
-            "Id": "rogues-talisman",
-            "Weight": 1,
-            "SellPrice": 38,
-            "DodgeBonus": 0.03,
-            "ClassRestriction": [
-                "Rogue",
-                "Ranger"
-            ]
-        },
-        {
-            "Name": "Warrior's Sigil",
-            "Type": "Accessory",
-            "HealAmount": 0,
-            "AttackBonus": 0,
-            "DefenseBonus": 8,
-            "StatModifier": 5,
-            "IsEquippable": true,
-            "Tier": "Rare",
-            "Description": "+8 DEF, +5 max HP. A warrior's emblem that fortifies the body against punishment.",
-            "Id": "warriors-sigil",
-            "Weight": 2,
-            "SellPrice": 38,
-            "ClassRestriction": [
-                "Warrior",
-                "Paladin"
-            ]
-        },
-        {
             "Name": "Battlemaster's Cleaver",
             "Type": "Weapon",
             "HealAmount": 0,
@@ -1450,34 +1365,6 @@
             "SetId": "arcanist"
         },
         {
-            "Name": "BloodVial",
-            "Type": "Consumable",
-            "HealAmount": 0,
-            "AttackBonus": 0,
-            "DefenseBonus": 0,
-            "StatModifier": 0,
-            "IsEquippable": false,
-            "Tier": "Uncommon",
-            "Description": "A vial of dark, viscous blood. Used in dark alchemy.",
-            "Id": "blood-vial",
-            "Weight": 1,
-            "SellPrice": 15
-        },
-        {
-            "Name": "WyvernFang",
-            "Type": "Consumable",
-            "HealAmount": 0,
-            "AttackBonus": 0,
-            "DefenseBonus": 0,
-            "StatModifier": 0,
-            "IsEquippable": false,
-            "Tier": "Rare",
-            "Description": "A curved fang from a Frost Wyvern. Still ice-cold to the touch.",
-            "Id": "wyvern-fang",
-            "Weight": 2,
-            "SellPrice": 30
-        },
-        {
             "Name": "FrostScaleArmor",
             "Type": "Armor",
             "HealAmount": 0,
@@ -1520,20 +1407,6 @@
             "SellPrice": 200
         },
         {
-            "Name": "SoulGem",
-            "Type": "Consumable",
-            "HealAmount": 0,
-            "AttackBonus": 0,
-            "DefenseBonus": 0,
-            "StatModifier": 0,
-            "IsEquippable": false,
-            "Tier": "Rare",
-            "Description": "A gem pulsing with trapped life essence. Revives the holder at 25% HP once per run.",
-            "Id": "soul-gem",
-            "Weight": 1,
-            "SellPrice": 80
-        },
-        {
             "Name": "InfernalGreatsword",
             "Type": "Weapon",
             "HealAmount": 0,
@@ -1546,20 +1419,6 @@
             "Id": "infernal-greatsword",
             "Weight": 10,
             "SellPrice": 250
-        },
-        {
-            "Name": "DragonScale",
-            "Type": "Consumable",
-            "HealAmount": 0,
-            "AttackBonus": 0,
-            "DefenseBonus": 0,
-            "StatModifier": 0,
-            "IsEquippable": false,
-            "Tier": "Rare",
-            "Description": "A scale from the Infernal Dragon. Radiates intense heat.",
-            "Id": "dragon-scale",
-            "Weight": 3,
-            "SellPrice": 50
         },
         {
             "Name": "Rodent Pelt",
@@ -1666,34 +1525,6 @@
             "SellPrice": 100
         },
         {
-            "Name": "Berserk Tonic",
-            "Type": "Consumable",
-            "HealAmount": 0,
-            "AttackBonus": 6,
-            "DefenseBonus": 0,
-            "StatModifier": 0,
-            "IsEquippable": false,
-            "Tier": "Rare",
-            "Description": "Tastes like copper and fury. Your hands shake after. That's fine. That's good.",
-            "Id": "berserk-tonic",
-            "Weight": 1,
-            "SellPrice": 32
-        },
-        {
-            "Name": "Stone Skin Elixir",
-            "Type": "Consumable",
-            "HealAmount": 0,
-            "AttackBonus": 0,
-            "DefenseBonus": 5,
-            "StatModifier": 0,
-            "IsEquippable": false,
-            "Tier": "Rare",
-            "Description": "Drinking it makes you feel dense. Heavier. Harder. Like something that doesn't break easily.",
-            "Id": "stone-skin-elixir",
-            "Weight": 1,
-            "SellPrice": 32
-        },
-        {
             "Name": "Gauntlets of Might",
             "Type": "Armor",
             "HealAmount": 0,
@@ -1720,34 +1551,6 @@
             "Id": "belt-of-regeneration",
             "Weight": 1,
             "SellPrice": 120
-        },
-        {
-            "Name": "Elixir of Swiftness",
-            "Type": "Consumable",
-            "HealAmount": 0,
-            "AttackBonus": 0,
-            "DefenseBonus": 3,
-            "StatModifier": 0,
-            "IsEquippable": false,
-            "Tier": "Uncommon",
-            "Description": "Your limbs feel like water — fast, fluid, impossible to catch.",
-            "Id": "elixir-of-swiftness",
-            "Weight": 1,
-            "SellPrice": 24
-        },
-        {
-            "Name": "Panacea",
-            "Type": "Consumable",
-            "HealAmount": 200,
-            "AttackBonus": 0,
-            "DefenseBonus": 0,
-            "StatModifier": 0,
-            "IsEquippable": false,
-            "Tier": "Rare",
-            "Description": "Cures everything. Truly. Every wound, every poison, every curse. The aftertaste is extraordinary.",
-            "Id": "panacea",
-            "Weight": 1,
-            "SellPrice": 60
         }
     ]
 }
