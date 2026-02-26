@@ -2,6 +2,137 @@ namespace Dungnz.Systems.Enemies;
 using Dungnz.Models;
 using Dungnz.Systems;
 
+// ─── Floor 1–5 Named Bosses ──────────────────────────────────────────────────
+
+/// <summary>
+/// Goblin Warchief — Floor 1 boss. A hulking goblin draped in looted armor, more trophies
+/// than defense. His yellowed eyes track you like you're already dead. The warband answers
+/// his call even as his blood hits the stone.
+/// </summary>
+public class GoblinWarchief : DungeonBoss
+{
+    /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
+    [System.Text.Json.Serialization.JsonConstructor]
+    public GoblinWarchief() : base(null, null)
+    {
+        Name = "Goblin Warchief"; HP = MaxHP = 60; Attack = 10; Defense = 3; XPValue = 60;
+        FloorNumber = 1;
+        SpecialAbilityDescription = "Calls minion reinforcements at 50% HP.";
+    }
+    /// <summary>Creates a GoblinWarchief with optional data-driven stats.</summary>
+    public GoblinWarchief(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
+    {
+        Name = "Goblin Warchief"; HP = MaxHP = 60; Attack = 10; Defense = 3; XPValue = 60;
+        FloorNumber = 1;
+        SpecialAbilityDescription = "Calls minion reinforcements at 50% HP.";
+    }
+}
+
+/// <summary>
+/// Plague Hound Alpha — Floor 2 boss. A disease-bloated hound whose matted fur weeps
+/// infection with every shuddering breath. It doesn't hunt for hunger — it hunts to spread.
+/// When cornered and bleeding, it becomes something far worse.
+/// </summary>
+public class PlagueHoundAlpha : DungeonBoss
+{
+    /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
+    [System.Text.Json.Serialization.JsonConstructor]
+    public PlagueHoundAlpha() : base(null, null)
+    {
+        Name = "Plague Hound Alpha"; HP = MaxHP = 80; Attack = 13; Defense = 4; XPValue = 75;
+        AppliesPoisonOnHit = true;
+        FloorNumber = 2;
+        SpecialAbilityDescription = "Poisons every hit; enters a frenzy at 40% HP (+5 ATK).";
+    }
+    /// <summary>Creates a PlagueHoundAlpha with optional data-driven stats.</summary>
+    public PlagueHoundAlpha(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
+    {
+        Name = "Plague Hound Alpha"; HP = MaxHP = 80; Attack = 13; Defense = 4; XPValue = 75;
+        AppliesPoisonOnHit = true;
+        FloorNumber = 2;
+        SpecialAbilityDescription = "Poisons every hit; enters a frenzy at 40% HP (+5 ATK).";
+    }
+}
+
+/// <summary>
+/// Iron Sentinel — Floor 3 boss. An ancient automaton whose joints have fused solid from
+/// centuries of motionless vigil. It doesn't speak, it doesn't feel — it simply enforces.
+/// Its plating absorbs punishment that would shatter lesser things, and a single grip
+/// can leave a warrior unable to move.
+/// </summary>
+public class IronSentinel : DungeonBoss
+{
+    /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
+    [System.Text.Json.Serialization.JsonConstructor]
+    public IronSentinel() : base(null, null)
+    {
+        Name = "Iron Sentinel"; HP = MaxHP = 110; Attack = 14; Defense = 10; XPValue = 90;
+        FloorNumber = 3;
+        SpecialAbilityDescription = "50% damage reduction from plating; stuns the player at 60% HP.";
+    }
+    /// <summary>Creates an IronSentinel with optional data-driven stats.</summary>
+    public IronSentinel(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
+    {
+        Name = "Iron Sentinel"; HP = MaxHP = 110; Attack = 14; Defense = 10; XPValue = 90;
+        FloorNumber = 3;
+        SpecialAbilityDescription = "50% damage reduction from plating; stuns the player at 60% HP.";
+    }
+}
+
+/// <summary>
+/// Bone Archon — Floor 4 boss. A towering skeleton in the robes of a high priest, its
+/// eye sockets burning with cold violet flame. It has commanded the dead for so long it
+/// no longer distinguishes ally from enemy — only servants and future servants.
+/// </summary>
+public class BoneArchon : DungeonBoss
+{
+    /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
+    [System.Text.Json.Serialization.JsonConstructor]
+    public BoneArchon() : base(null, null)
+    {
+        Name = "Bone Archon"; HP = MaxHP = 130; Attack = 16; Defense = 6; XPValue = 110;
+        IsUndead = true;
+        FloorNumber = 4;
+        SpecialAbilityDescription = "Weakened on every 3rd hit received; raises a skeleton when it kills.";
+    }
+    /// <summary>Creates a BoneArchon with optional data-driven stats.</summary>
+    public BoneArchon(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
+    {
+        Name = "Bone Archon"; HP = MaxHP = 130; Attack = 16; Defense = 6; XPValue = 110;
+        IsUndead = true;
+        FloorNumber = 4;
+        SpecialAbilityDescription = "Weakened on every 3rd hit received; raises a skeleton when it kills.";
+    }
+}
+
+/// <summary>
+/// Crimson Vampire — Floor 5 boss. She moves like smoke and strikes like a blade thrown
+/// from shadow. Every wound she inflicts feeds her, and when her prey runs dry of power
+/// she draws on something darker still. She has not lost a hunt in three hundred years.
+/// </summary>
+public class CrimsonVampire : DungeonBoss
+{
+    /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
+    [System.Text.Json.Serialization.JsonConstructor]
+    public CrimsonVampire() : base(null, null)
+    {
+        Name = "Crimson Vampire"; HP = MaxHP = 150; Attack = 18; Defense = 7; XPValue = 130;
+        LifestealPercent = 0.30f;
+        FloorNumber = 5;
+        SpecialAbilityDescription = "30% life steal on every hit; drains player MP at 25% HP.";
+    }
+    /// <summary>Creates a CrimsonVampire with optional data-driven stats.</summary>
+    public CrimsonVampire(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
+    {
+        Name = "Crimson Vampire"; HP = MaxHP = 150; Attack = 18; Defense = 7; XPValue = 130;
+        LifestealPercent = 0.30f;
+        FloorNumber = 5;
+        SpecialAbilityDescription = "30% life steal on every hit; drains player MP at 25% HP.";
+    }
+}
+
+// ─── Legacy random-pool bosses (kept for compatibility) ──────────────────────
+
 /// <summary>The Lich King — a powerful undead mage boss.</summary>
 public class LichKing : DungeonBoss
 {

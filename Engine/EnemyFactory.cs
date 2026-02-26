@@ -88,25 +88,24 @@ public static class EnemyFactory
 
     /// <summary>
     /// Creates a <see cref="DungeonBoss"/> enemy appropriate for the given floor.
-    /// Floors 6, 7, and 8 always return their named floor bosses; floors 1–5 pick randomly.
+    /// Floors 1–5 each return their named floor boss; floors 6–8 return their dedicated end-bosses.
     /// </summary>
-    /// <param name="rng">Random-number generator used to pick among the floor 1–5 boss pool.</param>
+    /// <param name="rng">Reserved for future use (kept for API stability).</param>
     /// <param name="floor">The current dungeon floor (1–8). Defaults to 1.</param>
     /// <returns>A <see cref="DungeonBoss"/> instance ready for a boss-room encounter.</returns>
     public static Enemy CreateBoss(Random rng, int floor = 1)
     {
-        if (floor >= 8) return new InfernalDragon(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig);
-        if (floor >= 7) return new AbyssalLeviathan(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig);
-        if (floor >= 6) return new ArchlichSovereign(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig);
-
-        var pick = rng.Next(5);
-        return pick switch
+        return floor switch
         {
-            0 => new DungeonBoss(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
-            1 => new LichKing(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
-            2 => new StoneTitan(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
-            3 => new ShadowWraith(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
-            _ => new VampireBoss(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            1 => new GoblinWarchief(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            2 => new PlagueHoundAlpha(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            3 => new IronSentinel(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            4 => new BoneArchon(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            5 => new CrimsonVampire(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            6 => new ArchlichSovereign(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            7 => new AbyssalLeviathan(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            8 => new InfernalDragon(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            _ => new GoblinWarchief(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig), // fallback for floor < 1
         };
     }
 
