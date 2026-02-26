@@ -17,8 +17,10 @@ public class LootTable
     private static IReadOnlyList<Item>? _sharedTier1;
     private static IReadOnlyList<Item>? _sharedTier2;
     private static IReadOnlyList<Item>? _sharedTier3;
+    private static IReadOnlyList<Item>? _sharedEpic;
     private static IReadOnlyList<Item>? _sharedLegendary;
 
+    private static readonly IReadOnlyList<Item> FallbackEpic    = new List<Item>();
     private static readonly IReadOnlyList<Item> FallbackLegendary = new List<Item>();
 
     private static readonly IReadOnlyList<Item> FallbackTier1 = new List<Item>
@@ -48,12 +50,13 @@ public class LootTable
     /// Boss Key must already be excluded from the supplied lists.
     /// </summary>
     public static void SetTierPools(IReadOnlyList<Item> tier1, IReadOnlyList<Item> tier2, IReadOnlyList<Item> tier3,
-        IReadOnlyList<Item>? legendary = null)
+        IReadOnlyList<Item>? legendary = null, IReadOnlyList<Item>? epic = null)
     {
         _sharedTier1 = tier1;
         _sharedTier2 = tier2;
         _sharedTier3 = tier3;
         _sharedLegendary = legendary ?? Array.Empty<Item>();
+        _sharedEpic = epic ?? Array.Empty<Item>();
     }
 
     /// <summary>
@@ -69,6 +72,7 @@ public class LootTable
             ItemTier.Common    => _sharedTier1 ?? FallbackTier1,
             ItemTier.Uncommon  => _sharedTier2 ?? FallbackTier2,
             ItemTier.Rare      => _sharedTier3 ?? FallbackTier3,
+            ItemTier.Epic      => _sharedEpic ?? FallbackEpic,
             ItemTier.Legendary => _sharedLegendary ?? FallbackLegendary,
             _                  => _sharedTier2 ?? FallbackTier2
         };
@@ -90,6 +94,7 @@ public class LootTable
             ItemTier.Common    => _sharedTier1 ?? FallbackTier1,
             ItemTier.Uncommon  => _sharedTier2 ?? FallbackTier2,
             ItemTier.Rare      => _sharedTier3 ?? FallbackTier3,
+            ItemTier.Epic      => _sharedEpic ?? FallbackEpic,
             ItemTier.Legendary => _sharedLegendary ?? FallbackLegendary,
             _                  => _sharedTier2 ?? FallbackTier2
         };
@@ -158,6 +163,15 @@ public class LootTable
         if (dropped == null && isBossRoom && legendaryPool.Count > 0)
         {
             dropped = legendaryPool[_rng.Next(legendaryPool.Count)].Clone();
+        }
+
+        // Floors 5-8: Epic drop chance (8% on floors 5-6, 15% on floors 7-8)
+        var epicPool = _sharedEpic ?? FallbackEpic;
+        if (dropped == null && dungeoonFloor >= 5 && epicPool.Count > 0)
+        {
+            double epicChance = dungeoonFloor >= 7 ? 0.15 : 0.08;
+            if (_rng.NextDouble() < epicChance)
+                dropped = epicPool[_rng.Next(epicPool.Count)].Clone();
         }
 
         // Floors 6-8: 5% Legendary chance

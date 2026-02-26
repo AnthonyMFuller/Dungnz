@@ -42,7 +42,8 @@ public static class EnemyFactory
             ItemConfig.GetByTier(_itemConfig, ItemTier.Common),
             ItemConfig.GetByTier(_itemConfig, ItemTier.Uncommon),
             ItemConfig.GetByTier(_itemConfig, ItemTier.Rare),
-            ItemConfig.GetByTier(_itemConfig, ItemTier.Legendary)
+            ItemConfig.GetByTier(_itemConfig, ItemTier.Legendary),
+            ItemConfig.GetByTier(_itemConfig, ItemTier.Epic)
         );
     }
 
