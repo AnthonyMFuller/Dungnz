@@ -52,7 +52,7 @@ Choose class → Explore floor → Fight enemies → Loot rooms
     → Level up → Unlock skills/abilities → Descend → Defeat boss
 ```
 
-- **Win:** Reach the exit room and defeat the dungeon boss on **Floor 5**.
+- **Win:** Reach the exit room and defeat the dungeon boss. The dungeon spans **8 floors**, with new bosses on floors 6 (Archlich Sovereign), 7 (Abyssal Leviathan), and 8 (Infernal Dragon).
 - **Lose:** Your HP drops to 0 in combat.
 - Each floor is a freshly generated grid of interconnected rooms.
 - Every 2 levels you are offered a bonus trait: +5 Max HP, +2 Attack, or +2 Defense.
@@ -69,6 +69,9 @@ Choose one class at the start of each run. Bonuses are applied on top of base st
 | **Warrior** | +20 | +3 | +2 | −10 | +5% damage when HP < 50% |
 | **Mage** | −10 | — | −1 | +30 | Spells deal +20% damage |
 | **Rogue** | — | +2 | — | — | +10% dodge chance |
+| **Paladin** | +15 | +2 | +3 | — | Divine Shield & Holy Strike; bonus damage vs undead |
+| **Necromancer** | −5 | — | −2 | +20 | Raise Dead; summon skeleton minions from fallen enemies |
+| **Ranger** | — | +1 | — | +10 | Wolf Companion; trap synergy; Volley multi-attack |
 
 ---
 
@@ -138,6 +141,8 @@ Abilities cost mana and have a cooldown measured in turns. Unlocked automaticall
 | Regen | +4 HP | varies | Applied by shrines and items |
 | Fortified | +50% DEF | 2 turns | Applied by Defensive Stance |
 | Weakened | −50% ATK | varies | Applied by certain enemies |
+| Slow | −25% ATK | varies | Applied by certain enemies |
+| Burn | −8 HP | 3 turns | Applied by Infernal Dragon's Flame Breath |
 
 ---
 
@@ -183,10 +188,12 @@ Prestige data is saved to `%AppData%/Dungnz/prestige.json` and persists across a
 
 ### Regular enemies
 
+29 enemy types spread across 8 dungeon floors. Representative examples:
+
 | Enemy | HP | ATK | DEF | Notable |
 |-------|----|-----|-----|---------|
 | Goblin | 20 | 8 | 2 | Fast, weak |
-| Skeleton | 30 | 12 | 5 | Drops Rusty Sword |
+| Skeleton | 30 | 12 | 5 | Drops Rusty Sword; undead |
 | Troll | 60 | 10 | 8 | Drops Troll Hide armour |
 | Dark Knight | 45 | 18 | 12 | Drops Dark Blade + Knight's Armor |
 | Goblin Shaman | 25 | 10 | 4 | Can heal nearby enemies |
@@ -194,16 +201,22 @@ Prestige data is saved to `%AppData%/Dungnz/prestige.json` and persists across a
 | Wraith | 35 | 18 | 2 | 30% flat dodge chance |
 | Vampire Lord | 80 | 16 | 12 | 50% lifesteal on attacks |
 | Mimic | 40 | 14 | 8 | Disguised as a chest |
+| Chaos Knight | — | — | — | Elite floor 5–8 spawn |
+| Crypt Priest | — | — | — | Undead healer; floors 5–8 |
+| Frost Wyvern | — | — | — | Frost Breath; floors 6–8 |
 
 ### Boss variants (one randomly selected per run)
 
-| Boss | HP | ATK | DEF | Special |
-|------|----|-----|-----|---------|
-| Dungeon Boss | 100 | 22 | 15 | Enrages at ≤40% HP (+50% ATK) |
-| Lich King | 120 | 18 | 5 | Applies Poison on every hit |
-| Stone Titan | 200 | 22 | 15 | Extreme tank, no specials |
-| Shadow Wraith | 90 | 25 | 3 | 25% flat dodge chance |
-| Vampire Boss | 110 | 20 | 8 | 30% lifesteal on attacks |
+| Boss | Floor | HP | ATK | DEF | Special |
+|------|-------|----|-----|-----|---------|
+| Dungeon Boss | 5 | 100 | 22 | 15 | Enrages at ≤40% HP (+50% ATK) |
+| Lich King | 5 | 120 | 18 | 5 | Applies Poison on every hit; undead |
+| Stone Titan | 5 | 200 | 22 | 15 | Extreme tank |
+| Shadow Wraith | 5 | 90 | 25 | 3 | 25% flat dodge chance |
+| Vampire Boss | 5 | 110 | 20 | 8 | 30% lifesteal |
+| **Archlich Sovereign** | **6** | 180 | 28 | 14 | Phase 2: summons undead; drops LichsCrown |
+| **Abyssal Leviathan** | **7** | 220 | 32 | 12 | Aquatic horror; drops DragonScale |
+| **Infernal Dragon** | **8** | 250 | 36 | 16 | Flame Breath applies Burn; drops InfernalGreatsword |
 
 ---
 
@@ -212,6 +225,20 @@ Prestige data is saved to `%AppData%/Dungnz/prestige.json` and persists across a
 ### Room types
 
 Rooms have an environmental flavour that affects the description: **Standard**, **Dark**, **Mossy**, **Flooded**, **Scorched**, **Ancient**.
+
+### Special rooms (Phase 6)
+
+Three high-value special room types are generated in floors 5–8:
+
+| Room | Description |
+|------|-------------|
+| **Forgotten Shrine** | Ancient altar offering blessings or curses with rare rewards |
+| **Petrified Library** | Dusty repository with lore scrolls and crafting recipes |
+| **Contested Armory** | Abandoned weapon cache with contested elite loot |
+
+### Floor narration
+
+Unique atmospheric narration plays at key floor transitions (5→6, 6→7, 7→8), reflecting the deepening danger of the dungeon's lower levels.
 
 ### Hazards
 
@@ -237,6 +264,15 @@ One-use interactive altars found in some rooms (`use shrine`):
 ### Merchants
 
 Shop rooms contain a **Merchant** (`shop` command) selling consumables and gear including Health Potions (25g), Mana Potions (20g), Iron Sword, Leather Armor, and Elixir of Strength (80g).
+
+### Item tiers and affixes
+
+119 items are available across **five tiers**: Common, Uncommon, Rare, Epic, and **Legendary**.
+
+- **Legendaries** (14 items) carry unique passive effects — e.g. *Aegis of the Immortal* (survive at 1 HP once per combat), *Ironheart Plate* (reflect 25% damage), *Lifedrinker* (vampiric strike on hit).
+- **Uncommon+** items have a ~10% chance per affix slot to roll a **Prefix** or **Suffix**, adding bonus stats (e.g. "Keen Iron Sword", "Iron Sword of the Bear").
+- **Equipment sets** (Shadowstalker, Ironclad, Arcanist) grant cumulative bonuses for 2- and 3-piece combinations — checked automatically on equip/unequip.
+- Many items carry **Class Restrictions** (e.g. Warrior-only, Mage/Necromancer only).
 
 ### Crafting
 
@@ -355,7 +391,7 @@ Dungnz/
 
 ## Testing
 
-**267 tests** across **19 test files** in `Dungnz.Tests/`.
+**600+ tests** across **20+ test files** in `Dungnz.Tests/`.
 
 ```bash
 dotnet test Dungnz.Tests
@@ -369,5 +405,5 @@ Coverage includes: `CombatEngine`, `CommandParser`, `CraftingSystem`, `SkillTree
 
 - **XML docs required** on all public members — the project enforces this via existing doc comments.
 - **Update README.md** when changing any documented system (commands, enemies, abilities, skills, crafting, saves, achievements). The `readme-check` CI workflow will fail PRs that modify `Engine/`, `Systems/`, `Models/`, or `Data/` without a matching `README.md` change.
-- Run `dotnet test Dungnz.Tests` before opening a PR — all 267 tests must pass.
+- Run `dotnet test Dungnz.Tests` before opening a PR — all tests must pass.
 - Follow existing code style: one class per file, `PascalCase` types, `camelCase` locals.

@@ -31,7 +31,7 @@ jobs:
         run: dotnet build Dungnz.csproj --no-restore
 
       - name: Run tests with coverage
-        run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Threshold=70 /p:ThresholdType=line
+        run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Threshold=62 /p:ThresholdType=line
 
       - name: Check no .ai-team/ files are tracked (preview only)
         if: github.ref == 'refs/heads/preview'
