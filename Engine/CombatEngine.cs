@@ -19,6 +19,7 @@ public class CombatEngine : ICombatEngine
     private readonly AbilityManager _abilities;
     private readonly NarrationService _narration;
     private readonly InventoryManager _inventoryManager;
+    private readonly PassiveEffectProcessor _passives;
     private readonly List<CombatTurn> _turnLog = new();
     private RunStats _stats = new();
     private int _baseEliteAttack;
@@ -116,6 +117,33 @@ public class CombatEngine : ICombatEngine
         "💥 BACKSTAB! {0} never saw it coming — {1} damage!"
     };
 
+    private static readonly string[] _paladinHitMessages =
+    {
+        "You bring your holy weapon down upon {0} — {1} damage!",
+        "Justice is served — {0} takes {1} damage!",
+        "The Light guides your hand — {1} damage to {0}!",
+        "A righteous blow strikes {0} for {1} damage!",
+        "You smite {0} with holy fury — {1} damage!"
+    };
+
+    private static readonly string[] _necromancerHitMessages =
+    {
+        "Necrotic energy flows through your strike — {0} takes {1} damage!",
+        "You channel dark power into a blow — {1} damage to {0}!",
+        "Death magic crackles as you hit {0} for {1} damage!",
+        "Shadow and decay tear through {0} — {1} damage!",
+        "You strike with the power of the grave — {1} damage on {0}!"
+    };
+
+    private static readonly string[] _rangerHitMessages =
+    {
+        "A precise strike finds the gap — {0} takes {1} damage!",
+        "Hunter's instinct guides your aim — {1} damage to {0}!",
+        "You strike with practiced efficiency — {1} damage on {0}!",
+        "Years of tracking this prey pay off — {0} takes {1} damage!",
+        "Swift and sure — {0} takes {1} damage!"
+    };
+
     private static readonly string[] _enemyHitMessages =
     {
         "{0} strikes you for {1} damage!",
@@ -172,6 +200,7 @@ public class CombatEngine : ICombatEngine
         _abilities = abilities ?? new AbilityManager();
         _narration = narration ?? new NarrationService(_rng);
         _inventoryManager = inventoryManager ?? new InventoryManager(display);
+        _passives = new PassiveEffectProcessor(_display, _rng, _statusEffects);
     }
 
     /// <summary>
@@ -247,6 +276,22 @@ public class CombatEngine : ICombatEngine
         _shamanHealCooldown = 0;
         _abilities.ResetCooldowns(); // Fix #190: clear cooldowns from previous combat
 
+        // ── Passive effects: combat start ────────────────────────────────────
+        PassiveEffectProcessor.ResetCombatState(player);
+        _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnCombatStart, enemy, 0);
+
+        // Ring of Haste: reduce cooldowns on combat start
+        if (player.EquippedAccessory?.PassiveEffectId == "cooldown_reduction" ||
+            player.EquippedWeapon?.PassiveEffectId == "cooldown_reduction")
+            PassiveEffectProcessor.ApplyCooldownReduction(_abilities);
+
+        // PlagueBear: apply Poison to player at combat start
+        if (enemy.PoisonOnCombatStart)
+        {
+            _statusEffects.Apply(player, StatusEffect.Poison, 3);
+            _display.ShowCombatMessage($"The {enemy.Name} spreads plague — you are poisoned!");
+        }
+
         // Ambush: Mimic gets a free first strike before the player can act
         if (enemy.IsAmbush)
         {
@@ -263,6 +308,9 @@ public class CombatEngine : ICombatEngine
 
             _statusEffects.ProcessTurnStart(player);
             _statusEffects.ProcessTurnStart(enemy);
+
+            // ── Passive effects: turn start (belt_regen, warding_ring, etc.) ──
+            _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnTurnStart, enemy, 0);
 
             // Fix #210: player death has priority over enemy death in simultaneous-tick kills
             if (player.HP <= 0) return CombatResult.PlayerDied;
@@ -296,6 +344,7 @@ public class CombatEngine : ICombatEngine
             if (enemy.HP <= 0)
             {
                 ShowDeathNarration(enemy);
+                ApplyOnDeathEffects(player, enemy);
                 HandleLootAndXP(player, enemy);
                 return CombatResult.Won;
             }
@@ -338,6 +387,10 @@ public class CombatEngine : ICombatEngine
                     player.ActiveMinions.Clear();
                     player.ActiveTraps.Clear();
                     player.TrapTriggeredThisCombat = false;
+                    player.DivineHealUsedThisCombat = false;
+                    player.HunterMarkUsedThisCombat = false;
+                    player.DivineShieldTurnsRemaining = 0;
+                    player.LichsBargainActive = false;
                     return CombatResult.Fled;
                 }
                 else
@@ -359,6 +412,7 @@ public class CombatEngine : ICombatEngine
                     if (enemy.HP <= 0)
                     {
                         ShowDeathNarration(enemy);
+                        ApplyOnDeathEffects(player, enemy);
                         HandleLootAndXP(player, enemy);
                         return CombatResult.Won;
                     }
@@ -374,6 +428,7 @@ public class CombatEngine : ICombatEngine
                 if (enemy.HP <= 0)
                 {
                     ShowDeathNarration(enemy);
+                    ApplyOnDeathEffects(player, enemy);
                     HandleLootAndXP(player, enemy);
                     return CombatResult.Won;
                 }
@@ -391,6 +446,7 @@ public class CombatEngine : ICombatEngine
 
         // Enemy died from a DoT tick at the start of the turn (break from loop above)
         ShowDeathNarration(enemy);
+        ApplyOnDeathEffects(player, enemy);
         HandleLootAndXP(player, enemy);
         return CombatResult.Won;
     }
@@ -414,6 +470,11 @@ public class CombatEngine : ICombatEngine
             if (player.Class == PlayerClass.Mage && player.IsManaShieldActive)
             {
                 manaLine += " [SHIELD ACTIVE]";
+            }
+            
+            if (player.Class == PlayerClass.Paladin && player.DivineShieldTurnsRemaining > 0)
+            {
+                manaLine += $" [DIVINE SHIELD: {player.DivineShieldTurnsRemaining}T]";
             }
             
             _display.ShowMessage(manaLine);
@@ -508,6 +569,35 @@ public class CombatEngine : ICombatEngine
     
     private void PerformPlayerAttack(Player player, Enemy enemy)
     {
+        // AbyssalLeviathan submerge: player's attack is skipped
+        if (enemy.IsSubmerged)
+        {
+            _display.ShowCombatMessage("The Leviathan submerges — your attack meets only water!");
+            enemy.IsSubmerged = false;
+            return;
+        }
+
+        // ArchlichSovereign / DamageImmune: redirect hit to adds
+        if (enemy.DamageImmune && enemy.AddsAlive > 0)
+        {
+            _display.ShowCombatMessage("Your attack strikes one of the skeletal guardians!");
+            enemy.AddsAlive--;
+            if (enemy.AddsAlive == 0)
+            {
+                enemy.DamageImmune = false;
+                _display.ShowCombatMessage("The last guardian falls! The boss is vulnerable again!");
+            }
+            return;
+        }
+
+        // InfernalDragon flight phase: 40% miss chance
+        if (enemy.FlightPhaseActive && _rng.NextDouble() < 0.40)
+        {
+            _display.ShowCombatMessage("The dragon banks away — your attack misses!");
+            _turnLog.Add(new CombatTurn("You", "Attack", 0, false, true, null));
+            return;
+        }
+
         // Use flat dodge chance for enemies like Wraith, otherwise DEF-based
         bool dodged = enemy.FlatDodgeChance >= 0
             ? _rng.NextDouble() < enemy.FlatDodgeChance
@@ -523,10 +613,32 @@ public class CombatEngine : ICombatEngine
             };
             _display.ShowCombatMessage(_narration.Pick(missPool, enemy.Name));
             _turnLog.Add(new CombatTurn("You", "Attack", 0, false, true, null));
+
+            // BladeDancer: 50% counter on player dodge
+            if (enemy.OnDodgeCounterChance > 0 && _rng.NextDouble() < enemy.OnDodgeCounterChance)
+            {
+                _display.ShowCombatMessage($"The {enemy.Name} spins and counters your missed attack!");
+                var counterDmg = Math.Max(1, enemy.Attack - player.Defense);
+                player.TakeDamage(counterDmg);
+                _stats.DamageTaken += counterDmg;
+                _display.ShowCombatMessage(ColorizeDamage($"{enemy.Name} deals {counterDmg} counter damage!", counterDmg));
+            }
         }
         else
         {
             var playerDmg = Math.Max(1, player.Attack - enemy.Defense);
+
+            // SiegeOgre thick hide
+            if (enemy.ThickHideHitsRemaining > 0)
+            {
+                playerDmg = Math.Max(1, playerDmg - enemy.ThickHideDamageReduction);
+                enemy.ThickHideHitsRemaining--;
+                if (enemy.ThickHideHitsRemaining == 0)
+                    _display.ShowCombatMessage($"You break through the {enemy.Name}'s thick hide!");
+                else
+                    _display.ShowCombatMessage($"The {enemy.Name}'s thick hide absorbs some of the blow!");
+            }
+
             var isCrit = RollCrit();
             if (isCrit)
             {
@@ -552,13 +664,40 @@ public class CombatEngine : ICombatEngine
             // Last Stand damage boost — +50% damage
             if (player.LastStandTurns > 0)
                 playerDmg = Math.Max(1, (int)(playerDmg * 1.5f));
+            // MartyrResolve passive (Paladin) — ATK +20% when HP < 20%
+            if (player.Skills.IsUnlocked(Skill.MartyrResolve) && player.HP < player.MaxHP * 0.20f)
+                playerDmg = Math.Max(1, (int)(playerDmg * 1.20));
+            // ApexPredator passive (Ranger) — +20% when enemy HP < 40%
+            if (player.Skills.IsUnlocked(Skill.ApexPredator) && enemy.HP < enemy.MaxHP * 0.40f)
+                playerDmg = Math.Max(1, (int)(playerDmg * 1.20));
+            // Hunter's Mark passive (Ranger) — first attack +25%
+            if (player.Class == PlayerClass.Ranger && !player.HunterMarkUsedThisCombat)
+            {
+                player.HunterMarkUsedThisCombat = true;
+                playerDmg = Math.Max(1, (int)(playerDmg * 1.25));
+                _display.ShowCombatMessage("🎯 Hunter's Mark! First strike deals bonus damage!");
+            }
             
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
+
+            // ── Passive effects: on player hit ──────────────────────────────
+            if (enemy.HP > 0)
+                _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerHit, enemy, playerDmg);
+            else
+            {
+                // on-kill bonus damage from thunderstrike
+                int killBonus = _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnEnemyKilled, enemy, playerDmg);
+                if (killBonus > 0) _stats.DamageDealt += killBonus;
+            }
+
             var hitPool = player.Class switch {
                 PlayerClass.Warrior => _warriorHitMessages,
                 PlayerClass.Mage    => _mageHitMessages,
                 PlayerClass.Rogue   => _rogueHitMessages,
+                PlayerClass.Paladin => _paladinHitMessages,
+                PlayerClass.Necromancer => _necromancerHitMessages,
+                PlayerClass.Ranger  => _rangerHitMessages,
                 _                   => _playerHitMessages
             };
             var critPool = player.Class switch {
@@ -581,6 +720,15 @@ public class CombatEngine : ICombatEngine
                 _display.ShowColoredCombatMessage($"{enemy.Name} is bleeding!", ColorCodes.Red);
             }
             _turnLog.Add(new CombatTurn("You", "Attack", playerDmg, isCrit, false, statusApplied));
+
+            // IronGuard counter-strike: fires AFTER player hits, BEFORE status ticks
+            if (enemy.HP > 0 && enemy.CounterStrikeChance > 0 && _rng.NextDouble() < enemy.CounterStrikeChance)
+            {
+                var counterDmg = Math.Max(1, playerDmg / 2);
+                player.TakeDamage(counterDmg);
+                _stats.DamageTaken += counterDmg;
+                _display.ShowCombatMessage(ColorizeDamage($"⚔ The {enemy.Name} counters with a swift riposte — {counterDmg} damage!", counterDmg));
+            }
         }
     }
     
@@ -612,6 +760,56 @@ public class CombatEngine : ICombatEngine
             int regen = Math.Max(1, (int)(troll.MaxHP * 0.05));
             troll.HP = Math.Min(troll.MaxHP, troll.HP + regen);
             _display.ShowCombatMessage(ColorizeDamage($"The Troll regenerates {regen} HP!", regen, false, true));
+        }
+
+        // CarrionCrawler / generic regen-per-turn
+        if (enemy.RegenPerTurn > 0)
+        {
+            enemy.HP = Math.Min(enemy.MaxHP, enemy.HP + enemy.RegenPerTurn);
+            _display.ShowCombatMessage(ColorizeDamage($"The {enemy.Name} regenerates {enemy.RegenPerTurn} HP!", enemy.RegenPerTurn, false, true));
+        }
+
+        // CryptPriest self-heal every N turns
+        if (enemy.SelfHealEveryTurns > 0)
+        {
+            if (enemy.SelfHealCooldown > 0)
+                enemy.SelfHealCooldown--;
+            else
+            {
+                enemy.SelfHealCooldown = enemy.SelfHealEveryTurns;
+                enemy.HP = Math.Min(enemy.MaxHP, enemy.HP + enemy.SelfHealAmount);
+                _display.ShowCombatMessage(ColorizeDamage($"The {enemy.Name} channels divine energy, healing {enemy.SelfHealAmount} HP!", enemy.SelfHealAmount, false, true));
+            }
+        }
+
+        // ArchlichSovereign phase 2: summon adds when HP drops to 30%
+        if (enemy is ArchlichSovereign lich && !lich.DamageImmune && !lich.HasRevived && lich.HP <= lich.MaxHP * 0.30 && lich.AddsAlive == 0)
+        {
+            lich.AddsAlive = 2;
+            lich.DamageImmune = true;
+            _display.ShowCombatMessage("The Archlich summons skeletal guardians! Defeat them to reach the Archlich!");
+        }
+
+        // AbyssalLeviathan phase 2: submerge every 3rd turn
+        if (enemy is AbyssalLeviathan leviathan && leviathan.HP <= leviathan.MaxHP * 0.40)
+        {
+            leviathan.TurnCount++;
+            if (leviathan.TurnCount % 3 == 0)
+            {
+                leviathan.IsSubmerged = true;
+                _display.ShowCombatMessage("The Leviathan vanishes beneath the waves...");
+                // Re-emerge with Tidal Slam next turn (flag for enhanced attack handled below)
+            }
+        }
+
+        // InfernalDragon phase 2: activate flight at 50% HP
+        if (enemy is InfernalDragon dragon)
+        {
+            if (!dragon.FlightPhaseActive && dragon.HP <= dragon.MaxHP * 0.50)
+            {
+                dragon.FlightPhaseActive = true;
+                _display.ShowCombatMessage("⚠ The Infernal Dragon takes to the air — attacks have a 40% chance to miss!");
+            }
         }
 
         // Boss telegraphed charge: resolve previous charge or set new one
@@ -668,6 +866,17 @@ public class CombatEngine : ICombatEngine
             _display.ShowCombatMessage("The enemy's attack finds only shadows.");
             _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
         }
+        else if (!player.ShadowmeldUsedThisCombat && HasPassiveEffect(player, "first_attack_dodge"))
+        {
+            player.ShadowmeldUsedThisCombat = true;
+            _display.ShowColoredCombatMessage("🌑 Shadowmeld Cloak — the first attack melts into shadow!", ColorCodes.Gray);
+            _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
+        }
+        else if (player.WardingVeilActive && _rng.NextDouble() < 0.20)
+        {
+            _display.ShowCombatMessage("The warding veil deflects the blow — the attack passes harmlessly!");
+            _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
+        }
         else if (RollPlayerDodge(player))
         {
             _display.ShowCombatMessage(_narration.Pick(_playerDodgeMessages, enemy.Name));
@@ -676,35 +885,137 @@ public class CombatEngine : ICombatEngine
         else
         {
             var playerEffDef = player.Defense + _statusEffects.GetStatModifier(player, "Defense"); // Fix #197: +50% DEF from Fortified via stat modifier system
-            var enemyDmg = Math.Max(1, enemy.Attack - playerEffDef);
+
+            // FrostWyvern: every 3rd attack is Frost Breath (ignores DEF, applies Slow)
+            enemy.AttackCount++;
+            bool isFrostBreath = enemy.FrostBreathEvery > 0 && enemy.AttackCount % enemy.FrostBreathEvery == 0;
+            // InfernalDragon: Flame Breath every 2nd turn
+            bool isFlameBreath = false;
+            if (enemy.FlameBreathCooldown > 0) enemy.FlameBreathCooldown--;
+            if (enemy is InfernalDragon fd && fd.FlightPhaseActive)
+            {
+                if (fd.FlameBreathCooldown == 0)
+                {
+                    isFlameBreath = true;
+                    fd.FlameBreathCooldown = 2;
+                    _display.ShowCombatMessage($"🔥 The {enemy.Name} unleashes a torrent of Flame Breath!");
+                }
+            }
+            // AbyssalLeviathan re-emerge Tidal Slam
+            bool isTidalSlam = false;
+            if (enemy is AbyssalLeviathan lev && lev.TurnCount > 0 && lev.TurnCount % 3 == 0 && !lev.IsSubmerged)
+            {
+                isTidalSlam = true;
+                _display.ShowCombatMessage("⚡ The Leviathan erupts from the depths with a Tidal Slam!");
+            }
+
+            int enemyEffAtk = enemy.Attack + _statusEffects.GetStatModifier(enemy, "Attack");
+            // ManaLeech: +25% ATK if player mana = 0
+            if (enemy.ZeroManaAtkBonus > 0 && player.Mana == 0)
+                enemyEffAtk = (int)(enemyEffAtk * (1 + enemy.ZeroManaAtkBonus));
+            // GiantRat pack bonus: ATK already baked into Attack at construction (set in class ctor)
+
+            int enemyDmg;
+            if (isFrostBreath)
+            {
+                // Frost Breath ignores player DEF
+                enemyDmg = Math.Max(1, enemyEffAtk);
+                _display.ShowCombatMessage($"❄ The {enemy.Name} unleashes Frost Breath — DEF ignored!");
+                _statusEffects.Apply(player, StatusEffect.Slow, 2);
+            }
+            else if (isFlameBreath)
+            {
+                // Flame Breath: 120% ATK, ignores DEF, applies Burn
+                enemyDmg = Math.Max(1, (int)(enemyEffAtk * 1.2f));
+                _statusEffects.Apply(player, StatusEffect.Burn, 3);
+            }
+            else if (isTidalSlam)
+            {
+                // Tidal Slam: 150% ATK + Slow
+                enemyDmg = Math.Max(1, (int)(enemyEffAtk * 1.5f) - playerEffDef);
+                _statusEffects.Apply(player, StatusEffect.Slow, 2);
+            }
+            else
+            {
+                enemyDmg = Math.Max(1, enemyEffAtk - playerEffDef);
+            }
+
+            // ShieldBreaker: if player DEF > threshold, ignore 50% of DEF
+            if (enemy.ShieldBreakerDefThreshold > 0 && player.Defense > enemy.ShieldBreakerDefThreshold && !isFrostBreath && !isFlameBreath)
+            {
+                var ignoredDef = (int)(playerEffDef * 0.5f);
+                enemyDmg = Math.Max(1, enemyDmg + ignoredDef);
+                _display.ShowCombatMessage($"The {enemy.Name} finds weaknesses in your armor!");
+            }
+
+            // NightStalker first-attack multiplier
+            if (!enemy.FirstAttackUsed && enemy.FirstAttackMultiplier > 1f)
+            {
+                enemyDmg = (int)(enemyDmg * enemy.FirstAttackMultiplier);
+                enemy.FirstAttackUsed = true;
+                _display.ShowCombatMessage($"The {enemy.Name} strikes from the shadows for bonus damage!");
+            }
+
+            // DarkSorcerer: 25% chance to Weaken instead of attacking
+            if (enemy.WeakenOnAttackChance > 0 && _rng.NextDouble() < enemy.WeakenOnAttackChance)
+            {
+                _statusEffects.Apply(player, StatusEffect.Weakened, 2);
+                _display.ShowCombatMessage($"The {enemy.Name} gestures and you feel your strength drain away! (Weakened 2T)");
+                return;
+            }
+
+            // ShadowImp group damage reduction
+            if (enemy.GroupDamageReduction > 0 && _rng.NextDouble() < 0.33)
+            {
+                enemyDmg = Math.Max(1, enemyDmg - enemy.GroupDamageReduction);
+                _display.ShowCombatMessage($"The other imps distract you — {enemy.GroupDamageReduction} damage absorbed!");
+            }
+
+            // Replace the placeholder to keep the original variable name used below
+            var enemyDmgFinal = enemyDmg;
 
             // Apply charge multiplier (3x)
             if (wasCharged)
             {
-                enemyDmg *= 3;
+                enemyDmgFinal *= 3;
                 _display.ShowCombatMessage($"⚡ {enemy.Name} unleashes the charged attack!");
             }
 
-            var isCrit = RollCrit();
+            // ChaosKnight: flat 20% crit; otherwise use standard 15%
+            var isCrit = enemy.EnemyCritChance > 0
+                ? _rng.NextDouble() < enemy.EnemyCritChance
+                : RollCrit();
             if (isCrit)
             {
-                enemyDmg *= 2;
+                enemyDmgFinal *= 2;
                 _display.ShowCombatMessage(ColorCodes.Colorize("💥 Critical hit!", ColorCodes.BrightRed + ColorCodes.Bold));
             }
             // BattleHardened skill passive — 5% damage reduction (matches skill description)
             if (player.Skills.IsUnlocked(Skill.BattleHardened))
-                enemyDmg = Math.Max(1, (int)(enemyDmg * 0.95f));
+                enemyDmgFinal = Math.Max(1, (int)(enemyDmgFinal * 0.95f));
             // Iron Constitution passive — 5% damage reduction
             if (player.Skills.IsUnlocked(Skill.IronConstitution))
-                enemyDmg = Math.Max(1, (int)(enemyDmg * 0.95f));
+                enemyDmgFinal = Math.Max(1, (int)(enemyDmgFinal * 0.95f));
+            // AuraOfProtection passive (Paladin) — 5% damage reduction
+            if (player.Skills.IsUnlocked(Skill.AuraOfProtection))
+                enemyDmgFinal = Math.Max(1, (int)(enemyDmgFinal * 0.95f));
             // Last Stand damage reduction — 75% damage reduction
             if (player.LastStandTurns > 0)
-                enemyDmg = Math.Max(1, (int)(enemyDmg * 0.25f));
+                enemyDmgFinal = Math.Max(1, (int)(enemyDmgFinal * 0.25f));
+            
+            // Divine Shield absorption (Paladin)
+            if (player.DivineShieldTurnsRemaining > 0)
+            {
+                player.DivineShieldTurnsRemaining--;
+                _display.ShowCombatMessage($"Your Divine Shield absorbs the blow! ({player.DivineShieldTurnsRemaining} turns remaining)");
+                _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, isCrit, false, null));
+                return;
+            }
             
             // Mana Shield absorption
             if (player.IsManaShieldActive)
             {
-                var manaLost = (int)(enemyDmg * 1.5);
+                var manaLost = (int)(enemyDmgFinal * 1.5);
                 if (player.Mana >= manaLost)
                 {
                     player.Mana -= manaLost;
@@ -715,17 +1026,39 @@ public class CombatEngine : ICombatEngine
                 else
                 {
                     // Shield breaks, take remaining as HP damage
-                    var remainingDamage = enemyDmg - (player.Mana * 2 / 3); // reverse calculation
+                    var remainingDamage = enemyDmgFinal - (player.Mana * 2 / 3); // reverse calculation
                     player.Mana = 0;
                     player.IsManaShieldActive = false;
-                    enemyDmg = Math.Max(1, remainingDamage);
+                    enemyDmgFinal = Math.Max(1, remainingDamage);
                     _display.ShowCombatMessage("Your mana shield shatters!");
                 }
             }
             
-            player.TakeDamage(enemyDmg);
-            _stats.DamageTaken += enemyDmg;
-            _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmg), enemyDmg));
+            player.TakeDamage(enemyDmgFinal);
+            _stats.DamageTaken += enemyDmgFinal;
+            _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmgFinal), enemyDmgFinal));
+
+            // Paladin passive: Divine Favor - once per combat, auto-heal at 30% HP
+            if (player.Class == PlayerClass.Paladin && !player.DivineHealUsedThisCombat
+                && player.HP > 0 && player.HP <= player.MaxHP * 0.30f)
+            {
+                player.DivineHealUsedThisCombat = true;
+                var divineHeal = (int)(player.MaxHP * 0.10);
+                player.Heal(divineHeal);
+                _display.ShowCombatMessage($"✨ Divine Favor! You are healed for {divineHeal} HP!");
+            }
+
+            // ── Passive effects: on player take damage ──────────────────────
+            int reflectDamage = _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerTakeDamage, enemy, enemyDmgFinal);
+            if (reflectDamage > 0 && enemy.HP > 0)
+                enemy.HP -= reflectDamage;
+
+            // ── survive-at-one / phoenix-revive intercept ───────────────────
+            if (player.HP <= 0)
+            {
+                _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerWouldDie, enemy, 0);
+                // If HP was restored above 0 by aegis/phoenix, combat continues
+            }
 
             // TODO: Phase 4 — Check player.ShouldTriggerUndyingWill() and apply Regen status if needed
             // Requires tracking "once per combat" flag for UndyingWill passive
@@ -739,10 +1072,27 @@ public class CombatEngine : ICombatEngine
                 statusApplied = "Poison";
             }
 
+            // BloodHound: 40% chance to apply Bleed to player on hit
+            if (enemy.BleedOnHitChance > 0 && _rng.NextDouble() < enemy.BleedOnHitChance)
+            {
+                _statusEffects.Apply(player, StatusEffect.Bleed, 2);
+                statusApplied = "Bleed";
+                _display.ShowColoredCombatMessage("You are bleeding!", ColorCodes.Red);
+            }
+
+            // ManaLeech: drain player mana on hit
+            if (enemy.ManaDrainPerHit > 0)
+            {
+                int drained = Math.Min(player.Mana, enemy.ManaDrainPerHit);
+                player.Mana -= drained;
+                if (drained > 0)
+                    _display.ShowCombatMessage($"The {enemy.Name} drains {drained} mana from you!");
+            }
+
             // Lifesteal (e.g. Vampire Lord)
             if (enemy.LifestealPercent > 0)
             {
-                var heal = (int)(enemyDmg * enemy.LifestealPercent);
+                var heal = (int)(enemyDmgFinal * enemy.LifestealPercent);
                 if (heal > 0)
                 {
                     _display.ShowCombatMessage($"{enemy.Name} channels stolen life force, growing stronger!"); // Fix #206
@@ -751,7 +1101,7 @@ public class CombatEngine : ICombatEngine
                 }
             }
 
-            _turnLog.Add(new CombatTurn(enemy.Name, "Attack", enemyDmg, isCrit, false, statusApplied));
+            _turnLog.Add(new CombatTurn(enemy.Name, "Attack", enemyDmgFinal, isCrit, false, statusApplied));
         }
     }
     
@@ -762,7 +1112,8 @@ public class CombatEngine : ICombatEngine
             var dmg = Math.Max(1, minion.ATK - enemy.Defense);
             enemy.HP -= dmg;
             _stats.DamageDealt += dmg;
-            _display.ShowCombatMessage(ColorizeDamage($"{minion.AttackFlavorText} ({dmg} damage)", dmg));
+            var minionMsg = minion.AttackFlavorText.Replace("{dmg}", dmg.ToString());
+            _display.ShowCombatMessage(ColorizeDamage($"{minionMsg}", dmg));
             if (enemy.HP <= 0) break;
         }
         player.ActiveMinions.RemoveAll(m => m.HP <= 0);
@@ -770,26 +1121,48 @@ public class CombatEngine : ICombatEngine
 
     private void PerformTrapTriggerPhase(Player player, Enemy enemy)
     {
-        var trap = player.ActiveTraps.FirstOrDefault(t => !t.Triggered);
+        var trap = player.ActiveTraps.FirstOrDefault(t => t.TriggerCount < t.MaxTriggers);
         if (trap == null) return;
 
-        trap.Triggered = true;
+        trap.TriggerCount++;
         player.TrapTriggeredThisCombat = true;
         var dmg = Math.Max(1, (int)(player.Attack * trap.DamagePercent));
         enemy.HP -= dmg;
         _stats.DamageDealt += dmg;
-        _display.ShowCombatMessage(ColorizeDamage($"{trap.FlavorText} ({dmg} damage)", dmg));
+        var flavorMsg = trap.FlavorText.Replace("{dmg}", dmg.ToString());
+        _display.ShowCombatMessage(ColorizeDamage(flavorMsg, dmg));
 
         if (trap.AppliedStatus.HasValue && enemy.HP > 0)
         {
             _statusEffects.Apply(enemy, trap.AppliedStatus.Value, trap.StatusDuration);
             _display.ShowColoredCombatMessage($"{enemy.Name} is affected by {trap.AppliedStatus.Value}!", ColorCodes.Green);
         }
+        
+        // Snare trap: extra stun on trigger
+        if (trap.Name == "Snare Trap" && enemy.HP > 0)
+        {
+            _statusEffects.Apply(enemy, StatusEffect.Stun, 1);
+            _display.ShowColoredCombatMessage($"{enemy.Name} is caught by the snare!", ColorCodes.Green);
+        }
+        
+        // Remove trap if exhausted
+        if (trap.TriggerCount >= trap.MaxTriggers)
+            trap.Triggered = true;
+        
+        // Clean up exhausted traps
+        player.ActiveTraps.RemoveAll(t => t.Triggered || t.TriggerCount >= t.MaxTriggers);
     }
 
     private void HandleLootAndXP(Player player, Enemy enemy)
     {
         player.LastKilledEnemyHp = enemy.MaxHP;
+
+        // Soul Harvest (Necromancer passive) — gain 2 max mana on each enemy kill
+        if (player.Class == PlayerClass.Necromancer)
+        {
+            player.MaxMana += 2;
+            player.Mana = Math.Min(player.Mana + 2, player.MaxMana);
+        }
 
         if (enemy.LootTable != null)
         {
@@ -834,9 +1207,15 @@ public class CombatEngine : ICombatEngine
         player.ResetComboPoints();
         player.LastStandTurns = 0;
         player.EvadeNextAttack = false;
+        player.WardingVeilActive = false;
         player.ActiveMinions.Clear();
         player.ActiveTraps.Clear();
         player.TrapTriggeredThisCombat = false;
+        player.DivineHealUsedThisCombat = false;
+        player.HunterMarkUsedThisCombat = false;
+        player.DivineShieldTurnsRemaining = 0;
+        player.LichsBargainActive = false;
+        PassiveEffectProcessor.ResetCombatState(player);
     }
     
     private void CheckLevelUp(Player player)
@@ -871,6 +1250,40 @@ public class CombatEngine : ICombatEngine
         }
     }
     
+    /// <summary>
+    /// Checks boss revive conditions and on-death effects. Returns true if enemy revived (combat continues).
+    /// </summary>
+    private bool CheckOnDeathEffects(Player player, Enemy enemy, Random rng)
+    {
+        // ArchlichSovereign revive: once per combat at 0 HP after adds were summoned
+        if (enemy is ArchlichSovereign lich && !lich.HasRevived && lich.AddsAlive >= 0 && lich.TurnCount >= 0)
+        {
+            lich.HasRevived = true;
+            lich.HP = (int)(lich.MaxHP * 0.20);
+            lich.DamageImmune = false;
+            lich.AddsAlive = 0;
+            _display.ShowCombatMessage("⚠ The Archlich reforms from sheer necromantic will — it rises at 20% HP!");
+            return true; // enemy revived
+        }
+        return false;
+    }
+
+    /// <summary>Applies on-death effects to the player (e.g. CursedZombie Weakened).</summary>
+    private void ApplyOnDeathEffects(Player player, Enemy enemy)
+    {
+        if (enemy.OnDeathEffect.HasValue)
+        {
+            _statusEffects.Apply(player, enemy.OnDeathEffect.Value, 3);
+            _display.ShowCombatMessage($"The dying {enemy.Name} curses you — {enemy.OnDeathEffect.Value} applied!");
+        }
+        // PlagueBear: 40% chance to reapply Poison on death
+        if (enemy.PoisonOnDeathChance > 0 && _rng.NextDouble() < enemy.PoisonOnDeathChance)
+        {
+            _statusEffects.Apply(player, StatusEffect.Poison, 3);
+            _display.ShowCombatMessage($"The {enemy.Name}'s corpse releases a final cloud of plague!");
+        }
+    }
+
     private void ShowDeathNarration(Enemy enemy)
     {
         if (enemy is DungeonBoss)
@@ -912,6 +1325,12 @@ public class CombatEngine : ICombatEngine
     {
         return _rng.NextDouble() < 0.15;
     }
+
+    /// <summary>Returns true when any of the player's equipped items has the given passive effect id.</summary>
+    private static bool HasPassiveEffect(Player player, string effectId)
+        => player.EquippedWeapon?.PassiveEffectId == effectId
+        || player.EquippedArmor?.PassiveEffectId == effectId
+        || player.EquippedAccessory?.PassiveEffectId == effectId;
 }
 
 /// <summary>

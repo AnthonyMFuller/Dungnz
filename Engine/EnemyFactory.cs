@@ -41,7 +41,8 @@ public static class EnemyFactory
         LootTable.SetTierPools(
             ItemConfig.GetByTier(_itemConfig, ItemTier.Common),
             ItemConfig.GetByTier(_itemConfig, ItemTier.Uncommon),
-            ItemConfig.GetByTier(_itemConfig, ItemTier.Rare)
+            ItemConfig.GetByTier(_itemConfig, ItemTier.Rare),
+            ItemConfig.GetByTier(_itemConfig, ItemTier.Legendary)
         );
     }
 
@@ -86,14 +87,18 @@ public static class EnemyFactory
     }
 
     /// <summary>
-    /// Creates a <see cref="DungeonBoss"/> enemy using the configured base stats.
-    /// The <paramref name="rng"/> parameter is accepted for API consistency but is
-    /// not currently used (the boss type is fixed, not randomised).
+    /// Creates a <see cref="DungeonBoss"/> enemy appropriate for the given floor.
+    /// Floors 6, 7, and 8 always return their named floor bosses; floors 1–5 pick randomly.
     /// </summary>
-    /// <param name="rng">Random-number generator (reserved for future use).</param>
+    /// <param name="rng">Random-number generator used to pick among the floor 1–5 boss pool.</param>
+    /// <param name="floor">The current dungeon floor (1–8). Defaults to 1.</param>
     /// <returns>A <see cref="DungeonBoss"/> instance ready for a boss-room encounter.</returns>
-    public static Enemy CreateBoss(Random rng)
+    public static Enemy CreateBoss(Random rng, int floor = 1)
     {
+        if (floor >= 8) return new InfernalDragon(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig);
+        if (floor >= 7) return new AbyssalLeviathan(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig);
+        if (floor >= 6) return new ArchlichSovereign(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig);
+
         var pick = rng.Next(5);
         return pick switch
         {
@@ -154,6 +159,19 @@ public static class EnemyFactory
             "nightstalker" => _enemyConfig?.GetValueOrDefault("NightStalker"),
             "frostwyvern" => _enemyConfig?.GetValueOrDefault("FrostWyvern"),
             "chaosknight" => _enemyConfig?.GetValueOrDefault("ChaosKnight"),
+            "shadowimp" => _enemyConfig?.GetValueOrDefault("ShadowImp"),
+            "carrioncrawler" => _enemyConfig?.GetValueOrDefault("CarrionCrawler"),
+            "darksorcerer" => _enemyConfig?.GetValueOrDefault("DarkSorcerer"),
+            "bonearcher" => _enemyConfig?.GetValueOrDefault("BoneArcher"),
+            "cryptpriest" => _enemyConfig?.GetValueOrDefault("CryptPriest"),
+            "plaguebear" => _enemyConfig?.GetValueOrDefault("PlagueBear"),
+            "siegeogre" => _enemyConfig?.GetValueOrDefault("SiegeOgre"),
+            "bladedancer" => _enemyConfig?.GetValueOrDefault("BladeDancer"),
+            "manaleech" => _enemyConfig?.GetValueOrDefault("ManaLeech"),
+            "shieldbreaker" => _enemyConfig?.GetValueOrDefault("ShieldBreaker"),
+            "archlichsovereign" => _enemyConfig?.GetValueOrDefault("ArchlichSovereign"),
+            "abyssalleviathan" => _enemyConfig?.GetValueOrDefault("AbyssalLeviathan"),
+            "infernaldragon" => _enemyConfig?.GetValueOrDefault("InfernalDragon"),
             _ => throw new ArgumentException($"Unknown enemy type: {enemyType}", nameof(enemyType))
         };
 
@@ -184,13 +202,23 @@ public static class EnemyFactory
             "wraith" => new Wraith(scaledStats, _itemConfig),
             "vampirelord" => new VampireLord(scaledStats, _itemConfig),
             "mimic" => new Mimic(scaledStats, _itemConfig),
-            "giantrat" => new GenericEnemy(scaledStats, _itemConfig),
-            "cursedzombie" => new GenericEnemy(scaledStats, _itemConfig),
-            "bloodhound" => new GenericEnemy(scaledStats, _itemConfig),
-            "ironguard" => new GenericEnemy(scaledStats, _itemConfig),
-            "nightstalker" => new GenericEnemy(scaledStats, _itemConfig),
-            "frostwyvern" => new GenericEnemy(scaledStats, _itemConfig),
-            "chaosknight" => new GenericEnemy(scaledStats, _itemConfig),
+            "giantrat" => new GiantRat(scaledStats, _itemConfig),
+            "cursedzombie" => new CursedZombie(scaledStats, _itemConfig),
+            "bloodhound" => new BloodHound(scaledStats, _itemConfig),
+            "ironguard" => new IronGuard(scaledStats, _itemConfig),
+            "nightstalker" => new NightStalker(scaledStats, _itemConfig),
+            "frostwyvern" => new FrostWyvern(scaledStats, _itemConfig),
+            "chaosknight" => new ChaosKnight(scaledStats, _itemConfig),
+            "shadowimp" => new ShadowImp(scaledStats, _itemConfig),
+            "carrioncrawler" => new CarrionCrawler(scaledStats, _itemConfig),
+            "darksorcerer" => new DarkSorcerer(scaledStats, _itemConfig),
+            "bonearcher" => new BoneArcher(scaledStats, _itemConfig),
+            "cryptpriest" => new CryptPriest(scaledStats, _itemConfig),
+            "plaguebear" => new PlagueBear(scaledStats, _itemConfig),
+            "siegeogre" => new SiegeOgre(scaledStats, _itemConfig),
+            "bladedancer" => new BladeDancer(scaledStats, _itemConfig),
+            "manaleech" => new ManaLeech(scaledStats, _itemConfig),
+            "shieldbreaker" => new ShieldBreaker(scaledStats, _itemConfig),
             _ => throw new ArgumentException($"Unknown enemy type: {enemyType}", nameof(enemyType))
         };
     }

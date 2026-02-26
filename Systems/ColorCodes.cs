@@ -185,12 +185,15 @@ public static class ColorCodes
     {
         return type switch
         {
-            RoomType.Dark     => Gray,
-            RoomType.Mossy    => Green,
-            RoomType.Flooded  => Blue,
-            RoomType.Scorched => Yellow,
-            RoomType.Ancient  => Magenta,
-            _                 => White
+            RoomType.Dark           => Gray,
+            RoomType.Mossy          => Green,
+            RoomType.Flooded        => Blue,
+            RoomType.Scorched       => Yellow,
+            RoomType.Ancient        => Magenta,
+            RoomType.ForgottenShrine  => Cyan,
+            RoomType.PetrifiedLibrary => Cyan,
+            RoomType.ContestedArmory  => Yellow,
+            _                       => White
         };
     }
 

@@ -1,0 +1,26 @@
+{
+  "prefixes": [
+    { "Id": "serrated", "Name": "Serrated", "AttackBonus": 2, "OnHitStatus": "Bleed", "OnHitChance": 0.15 },
+    { "Id": "keen", "Name": "Keen", "AttackBonus": 4 },
+    { "Id": "blessed", "Name": "Blessed", "HolyDamageVsUndead": 0.2 },
+    { "Id": "runed", "Name": "Runed", "ManaBonus": 10 },
+    { "Id": "fortified", "Name": "Fortified", "DefenseBonus": 3 },
+    { "Id": "vicious", "Name": "Vicious", "CritChanceBonus": 0.1 },
+    { "Id": "swift", "Name": "Swift", "DodgeChanceBonus": 0.08 },
+    { "Id": "cursed", "Name": "Cursed", "EnemyDefReduction": 3 },
+    { "Id": "ancient", "Name": "Ancient", "AttackBonus": 2, "DefenseBonus": 2, "MaxHPBonus": 5 },
+    { "Id": "masterwork", "Name": "Masterwork", "AttackBonus": 3, "DefenseBonus": 3 }
+  ],
+  "suffixes": [
+    { "Id": "of_the_bear", "Name": "of the Bear", "MaxHPBonus": 15 },
+    { "Id": "of_the_vampire", "Name": "of the Vampire", "HPOnHit": 1 },
+    { "Id": "of_warding", "Name": "of Warding", "BlockChanceBonus": 0.1 },
+    { "Id": "of_the_mage", "Name": "of the Mage", "ManaBonus": 15 },
+    { "Id": "of_precision", "Name": "of Precision", "CritChanceBonus": 0.12 },
+    { "Id": "of_swiftness", "Name": "of Swiftness", "DodgeChanceBonus": 0.1 },
+    { "Id": "of_the_mountain", "Name": "of the Mountain", "DefenseBonus": 5 },
+    { "Id": "of_ruin", "Name": "of Ruin", "EnemyDefReduction": 4 },
+    { "Id": "of_the_phoenix", "Name": "of the Phoenix", "ReviveCooldownBonus": true },
+    { "Id": "of_storms", "Name": "of Storms", "PeriodicDmgBonus": 3 }
+  ]
+}

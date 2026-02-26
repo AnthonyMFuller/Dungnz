@@ -23,4 +23,10 @@ public class Trap
 
     /// <summary>Gets or sets whether this trap has already fired during the current combat.</summary>
     public bool Triggered { get; set; } = false;
+
+    /// <summary>Gets or sets the maximum number of times this trap can trigger (default 1). TrapMastery passive sets this to 2.</summary>
+    public int MaxTriggers { get; set; } = 1;
+
+    /// <summary>Gets or sets the number of times this trap has been triggered.</summary>
+    public int TriggerCount { get; set; } = 0;
 }

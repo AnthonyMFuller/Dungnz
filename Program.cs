@@ -15,6 +15,7 @@ display.ShowMessage($"Run #{prestige.TotalRuns + 1} — Seed: {actualSeed} (shar
 
 EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
 CraftingSystem.Load("Data/crafting-recipes.json");
+AffixRegistry.Load("Data/item-affixes.json");
 var allItems = ItemConfig.Load("Data/item-stats.json").Select(ItemConfig.CreateItem).ToList();
 var generator = new DungeonGenerator(actualSeed, allItems);
 var (startRoom, _) = generator.Generate(difficulty: difficultySettings);

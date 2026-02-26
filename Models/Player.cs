@@ -27,4 +27,54 @@ public partial class Player
 
     /// <summary>Gets or sets whether a trap has already triggered during the current combat.</summary>
     public bool TrapTriggeredThisCombat { get; set; } = false;
+
+    /// <summary>
+    /// Gets or sets a temporary attack bonus applied for the rest of the current floor
+    /// (Holy Strength blessing from a Forgotten Shrine). Reset to 0 on floor descent.
+    /// </summary>
+    public int TempAttackBonus { get; set; } = 0;
+
+    /// <summary>
+    /// When <see langword="true"/>, the next shrine visit automatically heals 30% MaxHP
+    /// (Sacred Ground blessing from a Forgotten Shrine). Cleared after triggering.
+    /// </summary>
+    public bool SacredGroundActive { get; set; } = false;
+
+    /// <summary>
+    /// When <see langword="true"/>, enemy attacks have a 20% miss chance for the current
+    /// combat (Warding Veil blessing from a Forgotten Shrine). Cleared at combat end.
+    /// </summary>
+    public bool WardingVeilActive { get; set; } = false;
+
+    /// <summary>Paladin: number of turns Divine Shield is still active (0 = inactive).</summary>
+    public int DivineShieldTurnsRemaining { get; set; } = 0;
+
+    /// <summary>Paladin: once-per-combat auto-heal at 30% HP has been used.</summary>
+    public bool DivineHealUsedThisCombat { get; set; } = false;
+
+    /// <summary>Ranger: once-per-combat Hunter's Mark (+25% first attack) has been used.</summary>
+    public bool HunterMarkUsedThisCombat { get; set; } = false;
+
+    /// <summary>Necromancer: LichsBargain passive is active (0-cost abilities for 1 turn).</summary>
+    public bool LichsBargainActive { get; set; } = false;
+
+    // ── Passive effect per-combat/per-run flags ─────────────────────────────
+
+    /// <summary>Tracks whether the Aegis of the Immortal survive-at-one passive has fired this combat.</summary>
+    public bool AegisUsedThisCombat { get; set; } = false;
+
+    /// <summary>Tracks whether the Shadowmeld Cloak first-attack-dodge passive has fired this combat.</summary>
+    public bool ShadowmeldUsedThisCombat { get; set; } = false;
+
+    /// <summary>Tracks whether the Amulet of the Phoenix revive passive has fired this dungeon run.</summary>
+    public bool PhoenixUsedThisRun { get; set; } = false;
+
+    /// <summary>Tracks whether the bonus flee granted by Boots of the Windrunner has been used this combat.</summary>
+    public bool BonusFleeUsed { get; set; } = false;
+
+    /// <summary>Number of extra free flee attempts granted by passive effects this combat.</summary>
+    public int ExtraFleeCount { get; set; } = 0;
+
+    /// <summary>Counter used by the Shadowstalker 3-piece set bonus — auto-crit on every 3rd attack.</summary>
+    public int ShadowDanceCounter { get; set; } = 0;
 }

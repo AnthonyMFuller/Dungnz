@@ -39,6 +39,9 @@ public class ConsoleDisplayService : IDisplayService
             RoomType.Flooded => ("💧 Ankle-deep water pools here. ", Systems.ColorCodes.Yellow),
             RoomType.Mossy => ("🌿 Damp moss covers the walls. ", Systems.ColorCodes.Green),
             RoomType.Ancient => ("🏛 Ancient runes line the walls. ", Systems.ColorCodes.Cyan),
+            RoomType.ForgottenShrine => ("✨ Holy light radiates from a forgotten shrine. ", Systems.ColorCodes.Cyan),
+            RoomType.PetrifiedLibrary => ("📚 Petrified bookshelves line these ancient walls. ", Systems.ColorCodes.Cyan),
+            RoomType.ContestedArmory => ("⚔ Weapon racks gleam dangerously in the dark. ", Systems.ColorCodes.Yellow),
             _ => (string.Empty, Systems.ColorCodes.Reset)
         };
         
@@ -97,6 +100,18 @@ public class ConsoleDisplayService : IDisplayService
             var shrineAtmosphere = Systems.ShrineNarration.Presence[Random.Shared.Next(Systems.ShrineNarration.Presence.Length)];
             Console.WriteLine($"{Systems.ColorCodes.Cyan}{shrineAtmosphere}{Systems.ColorCodes.Reset}");
             Console.WriteLine($"{Systems.ColorCodes.Cyan}✨ A shrine glimmers here. (USE SHRINE){Systems.ColorCodes.Reset}");
+        }
+        if (room.Type == RoomType.ForgottenShrine && !room.SpecialRoomUsed)
+        {
+            Console.WriteLine($"{Systems.ColorCodes.Cyan}✨ A forgotten shrine stands here, radiating holy energy. (USE SHRINE){Systems.ColorCodes.Reset}");
+        }
+        if (room.Type == RoomType.PetrifiedLibrary && !room.SpecialRoomUsed)
+        {
+            Console.WriteLine($"{Systems.ColorCodes.Cyan}📖 Ancient tomes line the walls. Something catches the light as you enter...{Systems.ColorCodes.Reset}");
+        }
+        if (room.Type == RoomType.ContestedArmory && !room.SpecialRoomUsed)
+        {
+            Console.WriteLine($"{Systems.ColorCodes.Yellow}⚠ Trapped weapons gleam in the dark. (USE ARMORY to approach){Systems.ColorCodes.Reset}");
         }
         if (room.Merchant != null)
         {
@@ -541,7 +556,18 @@ public class ConsoleDisplayService : IDisplayService
     /// </summary>
     private static string ColorizeItemName(Item item)
     {
-        return Systems.ColorCodes.ColorizeItemName(TruncateName(item.Name), item.Tier);
+        var fullName = BuildFullItemName(item);
+        return Systems.ColorCodes.ColorizeItemName(TruncateName(fullName), item.Tier);
+    }
+
+    /// <summary>Builds the full display name of an item by combining Prefix, base Name, and Suffix.</summary>
+    private static string BuildFullItemName(Item item)
+    {
+        var parts = new System.Collections.Generic.List<string>();
+        if (!string.IsNullOrWhiteSpace(item.Prefix)) parts.Add(item.Prefix.Trim());
+        parts.Add(item.Name);
+        if (!string.IsNullOrWhiteSpace(item.Suffix)) parts.Add(item.Suffix.Trim());
+        return string.Join(" ", parts);
     }
 
     /// <summary>
@@ -764,8 +790,8 @@ public class ConsoleDisplayService : IDisplayService
         Console.Write($"- Corridor (E/W)    ");
         Console.WriteLine($"| Corridor (N/S)");
         Console.Write("  Room types: ");
-        string[] typeNames  = { "Standard", "Dark",     "Mossy",   "Flooded", "Scorched", "Ancient" };
-        RoomType[] types    = { RoomType.Standard, RoomType.Dark, RoomType.Mossy, RoomType.Flooded, RoomType.Scorched, RoomType.Ancient };
+        string[] typeNames  = { "Standard", "Dark",     "Mossy",   "Flooded", "Scorched", "Ancient", "Shrine", "Library", "Armory" };
+        RoomType[] types    = { RoomType.Standard, RoomType.Dark, RoomType.Mossy, RoomType.Flooded, RoomType.Scorched, RoomType.Ancient, RoomType.ForgottenShrine, RoomType.PetrifiedLibrary, RoomType.ContestedArmory };
         for (int i = 0; i < typeNames.Length; i++)
         {
             string c = Systems.ColorCodes.GetRoomTypeColor(types[i]);

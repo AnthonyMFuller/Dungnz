@@ -38,6 +38,24 @@ public static class BossNarration
             "A figure sits at the far end of the chamber, utterly still.",
             "It has been waiting for you. Perhaps for centuries. It smiles, and its teeth are wrong.",
             "'At last,' the Vampire Lord says, 'something worth the evening.'"
+        },
+        ["Archlich Sovereign"] = new[]
+        {
+            "The air turns to ash. From the shadows coalesces a figure of impossible age — bone wrapped in void, crowned with the weight of a thousand stolen years.",
+            "The Archlich Sovereign does not speak. It simply raises one skeletal hand, and the dead begin to stir.",
+            "'You have come far, morsel. Further than most. But this is where all journeys end.'"
+        },
+        ["Abyssal Leviathan"] = new[]
+        {
+            "The chamber floods in seconds. From the black water below erupts something vast and wrong — scales the color of deep ocean, eyes like collapsed stars, a body that shouldn't fit in the space it occupies.",
+            "The Abyssal Leviathan's roar shakes the bones of the world.",
+            "You realize, suddenly, that the water didn't flood the room. The room IS the creature."
+        },
+        ["Infernal Dragon"] = new[]
+        {
+            "The Final Sanctum ignites. The creature that drops from the ceiling is made of fire given hunger, of hatred given wings.",
+            "The Infernal Dragon exhales once, and the temperature doubles.",
+            "It looks at you the way a furnace looks at kindling. It has been waiting. Not for a hero — for fuel."
         }
     };
 
@@ -47,7 +65,10 @@ public static class BossNarration
         ["Lich King"] = "The Lich King releases a terrible shriek as his phylactery shatters. The necromantic energies binding him dissolve into ash. The cold lifts.",
         ["Stone Titan"] = "The Stone Titan fractures from within, cracks of golden light racing across its body. It shatters into gravel with a sound like a collapsing cliff face.",
         ["Shadow Wraith"] = "The Shadow Wraith screams a sound that exists only inside your skull. Then — nothing. The torches relight. Whatever it was, it's gone.",
-        ["Vampire Lord"] = "The Vampire Lord staggers, clutching the wound you've dealt. A look of genuine surprise crosses its ancient face. It crumbles to dust before it hits the floor."
+        ["Vampire Lord"] = "The Vampire Lord staggers, clutching the wound you've dealt. A look of genuine surprise crosses its ancient face. It crumbles to dust before it hits the floor.",
+        ["Archlich Sovereign"] = "The Archlich Sovereign releases a keening shriek as its phylactery fractures. The void that sustained it unravels — threads of stolen centuries dissolving into the dark.",
+        ["Abyssal Leviathan"] = "The Leviathan convulses, its vast body thrashing the chamber. The water recedes as the creature's will fails. The room is just a room again. Just wet stone and silence.",
+        ["Infernal Dragon"] = "The Infernal Dragon lets out one final, hollow roar — then the fire goes out. In the sudden dark and cold, the silence is absolute. You've done it. You've reached the end."
     };
 
     private static readonly string[] _defaultIntro = { "The ground shakes.", "Something enormous stirs.", "A dungeon boss emerges!" };

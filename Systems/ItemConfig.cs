@@ -56,6 +56,15 @@ public record ItemStats
 
     /// <summary>The gold the player receives when selling this item to a merchant.</summary>
     public int SellPrice { get; init; } = 0;
+
+    /// <summary>Optional array of player class names that may equip this item (e.g. ["Warrior"] or ["Mage","Necromancer"]).</summary>
+    public string[]? ClassRestriction { get; init; }
+
+    /// <summary>Optional identifier for a passive effect granted while this item is equipped (e.g. "vampiric_strike").</summary>
+    public string? PassiveEffectId { get; init; }
+
+    /// <summary>Optional set identifier linking this item to a named equipment set (e.g. "shadowstalker").</summary>
+    public string? SetId { get; init; }
 }
 
 /// <summary>
@@ -193,7 +202,10 @@ public static class ItemConfig
             ManaRestore = stats.ManaRestore,
             Weight = stats.Weight,
             MerchantExclusive = stats.MerchantExclusive,
-            SellPrice = stats.SellPrice
+            SellPrice = stats.SellPrice,
+            ClassRestriction = stats.ClassRestriction,
+            PassiveEffectId = stats.PassiveEffectId,
+            SetId = stats.SetId
         };
     }
 }

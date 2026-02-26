@@ -6,10 +6,10 @@ namespace Dungnz.Systems;
 /// </summary>
 public static class RoomDescriptions
 {
-    /// <summary>Returns the description pool for the given floor (1–5).</summary>
-    /// <param name="floor">The dungeon floor number (1 = Goblin Caves … 5 = Dragon's Lair).</param>
+    /// <summary>Returns the description pool for the given floor (1–8).</summary>
+    /// <param name="floor">The dungeon floor number (1 = Goblin Caves … 8 = Final Sanctum).</param>
     /// <returns>
-    /// An array of 12 room description strings appropriate for the floor's theme.
+    /// An array of room description strings appropriate for the floor's theme.
     /// Falls back to <see cref="GoblinCaves"/> for any unrecognised floor number.
     /// </returns>
     public static string[] ForFloor(int floor) => floor switch
@@ -19,6 +19,9 @@ public static class RoomDescriptions
         3 => TrollWarrens,
         4 => ShadowRealm,
         5 => DragonsLair,
+        6 => VoidAntechamber,
+        7 => BonePalace,
+        8 => FinalSanctum,
         _ => GoblinCaves
     };
 
@@ -36,7 +39,12 @@ public static class RoomDescriptions
         "Broken clay pots and scattered grain suggest a ransacked larder. Goblins eat well, if not cleanly.",
         "Rough-hewn supports of splintered timber hold the ceiling up — barely. Mud drips between the cracks.",
         "A child-sized tunnel opens low in the far wall. Whatever uses it, you'd rather not meet.",
-        "Rows of sharpened stakes line a shallow pit just inside the doorway. Someone was expecting visitors."
+        "Rows of sharpened stakes line a shallow pit just inside the doorway. Someone was expecting visitors.",
+        // WI-E2 additions — The Forgotten Garrison
+        "Rusted armor hangs from broken racks. The phantom of a soldier's last march echoes in the dust.",
+        "Faded banners of a fallen kingdom drape the walls. Whatever they once fought for has been forgotten.",
+        "The barracks reek of old iron and stale fear. Boot-shaped depressions in the dust mark where men once stood watch.",
+        "A shattered war drum lies in the corner. Someone — or something — tried to call for help here, once."
     };
 
     /// <summary>Floor 2 — ancient stone catacombs heavy with undead and cold silence.</summary>
@@ -53,7 +61,12 @@ public static class RoomDescriptions
         "A scattering of grave goods — tarnished rings, cracked pottery, a rusted dagger — lies before a sealed niche.",
         "Ice rimes the lower walls despite no apparent source of cold. Your breath fogs with every step.",
         "Empty eye sockets on a dozen skulls all point toward the northern passage. Coincidence is unlikely.",
-        "A chime sounds softly somewhere above. The echo takes far too long to fade."
+        "A chime sounds softly somewhere above. The echo takes far too long to fade.",
+        // WI-E2 additions — The Bone Catacombs
+        "Ossuaries line the walls, packed with the pious dead. They weren't pious enough.",
+        "The ceiling drips. Each drop echoes like a heartbeat in this cathedral of bones.",
+        "Burial niches have been torn open from the inside. Whatever they buried here didn't stay buried.",
+        "Candles that should have burned out centuries ago still flicker in the dark. They illuminate nothing good."
     };
 
     /// <summary>Floor 3 — fetid, bestial warrens carved by creatures of immense strength.</summary>
@@ -70,7 +83,12 @@ public static class RoomDescriptions
         "The stench of wet fur and old blood is almost physical. You breathe through your mouth.",
         "Massive leg bones have been stacked into a rough cairn. A trophy display, perhaps, or a warning.",
         "A low growl resonates through the walls even now. Distance and stone make it no less alarming.",
-        "Troll-sized handprints in dark rust cover the ceiling. You don't want to imagine the context."
+        "Troll-sized handprints in dark rust cover the ceiling. You don't want to imagine the context.",
+        // WI-E2 additions — The Fungal Chasm
+        "Bioluminescent spores drift on air currents that shouldn't exist this deep underground.",
+        "The mycelium network underfoot pulses faintly. You get the sense something vast and patient is thinking.",
+        "Alien flowers bloom from the skulls of creatures you can't identify. They're beautiful. You don't trust them.",
+        "The air tastes like copper and cloves. Your head swims slightly. You press on."
     };
 
     /// <summary>Floor 4 — a surreal realm where geometry fails and shadows have their own agenda.</summary>
@@ -87,7 +105,12 @@ public static class RoomDescriptions
         "A doorway leads to the room you just came from, but the room looks subtly different now.",
         "The ceiling and floor are identical. For a disorienting moment you cannot tell which way is up.",
         "Something like laughter echoes from every direction simultaneously, then stops at once.",
-        "Time feels wrong in this room. You may have been standing here for seconds or hours."
+        "Time feels wrong in this room. You may have been standing here for seconds or hours.",
+        // WI-E2 additions — The Drowned Halls
+        "Waterlogged scripture floats past your ankles. Whatever god was worshipped here, it drowned with the temple.",
+        "Statues of forgotten deities stand knee-deep in black water. Their faces have been methodically removed.",
+        "The current is gentle but insistent, as if the dungeon itself wants you to leave.",
+        "A submerged altar glows faintly. The offering bowl still holds coins from a civilization that no longer exists."
     };
 
     /// <summary>Floor 5 — the scorched, gold-laden lair of an ancient and terrible dragon.</summary>
@@ -104,6 +127,38 @@ public static class RoomDescriptions
         "A hoard of half-melted treasure slumps against the far wall, coins and crowns fused into a single mass.",
         "The bones of something as large as a horse have been snapped cleanly in two. A territorial dispute, perhaps.",
         "Heat shimmer makes the corridor ahead ripple as though submerged. Your eyes ache from the brightness.",
-        "Sulphur hangs thick in the air. Every breath tastes of brimstone and old fire."
+        "Sulphur hangs thick in the air. Every breath tastes of brimstone and old fire.",
+        // WI-E2 additions — The Forge of the Damned
+        "The heat here is wrong — not natural, not fire. Something fundamental about this place burns.",
+        "Weapon racks hold blades that were forged and never meant to be used by living hands.",
+        "The anvil at the center of the room is cracked down the middle. Whatever was made on it broke the anvil.",
+        "Slag and ash carpet the floor. You can hear the echo of hammers that stopped striking before you were born."
+    };
+
+    /// <summary>Floor 6 — the Void Antechamber, where geometry and reality grow unreliable.</summary>
+    public static readonly string[] VoidAntechamber =
+    {
+        "The geometry here is wrong. Rooms connect to themselves. You've learned not to think about it.",
+        "Your shadow falls in three directions simultaneously. None of them are yours.",
+        "The walls breathe. Slowly. You're not sure if the dungeon is alive, or if you're already dead.",
+        "Reality is thin here. Through the cracks, you see something looking back."
+    };
+
+    /// <summary>Floor 7 — the Bone Palace, built from the remains of the unimaginably large dead.</summary>
+    public static readonly string[] BonePalace =
+    {
+        "Titanic femurs form the vaulted ceiling. Whatever died to build this palace, it wasn't human.",
+        "The throne room of a necromancer king. Every surface is etched with names of the dead. Thousands of them.",
+        "Chandeliers of compacted skulls hang overhead, lit by cold fire that casts no warmth.",
+        "You step over the threshold and feel the weight of ten thousand souls press against your chest."
+    };
+
+    /// <summary>Floor 8 — the Final Sanctum, the oldest and most terrible part of the dungeon.</summary>
+    public static readonly string[] FinalSanctum =
+    {
+        "The dungeon breathes around you. It knows you're here. It has always known.",
+        "This is the heart. The walls are not stone — they're compressed darkness, given form by something ancient and hungry.",
+        "There is no echo here. Sound dies the moment it leaves your lips. Even your footsteps are silent.",
+        "You've come to the end. The air tastes like finality. Whatever waits ahead has been waiting for you specifically."
     };
 }

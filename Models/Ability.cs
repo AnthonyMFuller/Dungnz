@@ -106,5 +106,41 @@ public enum AbilityType
     /// <summary>Rogue ability: Rapid succession of attacks generating combo points.</summary>
     Flurry,
     /// <summary>Rogue ability: Execute enemy, dealing massive damage based on combo points.</summary>
-    Assassinate
+    Assassinate,
+
+    // Paladin abilities
+    /// <summary>Paladin ability: Holy strike dealing bonus damage vs undead.</summary>
+    HolyStrike,
+    /// <summary>Paladin ability: Lay on Hands - powerful self-heal.</summary>
+    LayOnHands,
+    /// <summary>Paladin ability: Divine Shield - absorbs damage for 2 turns.</summary>
+    DivineShield,
+    /// <summary>Paladin ability: Consecrate - AoE holy damage + bleed + stun vs undead.</summary>
+    Consecrate,
+    /// <summary>Paladin ability: Judgment - massive damage scaling with missing HP; executes weak non-bosses.</summary>
+    Judgment,
+
+    // Necromancer abilities
+    /// <summary>Necromancer ability: Death Bolt - shadow damage, bonus vs poisoned/bleeding targets.</summary>
+    DeathBolt,
+    /// <summary>Necromancer ability: Curse - weaken enemy for 3 turns.</summary>
+    Curse,
+    /// <summary>Necromancer ability: Raise Dead - summon a skeleton minion from last killed enemy.</summary>
+    RaiseDead,
+    /// <summary>Necromancer ability: Life Drain - damage and heal for full amount dealt.</summary>
+    LifeDrain,
+    /// <summary>Necromancer ability: Corpse Explosion - sacrifice minions for massive AOE damage.</summary>
+    CorpseExplosion,
+
+    // Ranger abilities
+    /// <summary>Ranger ability: Precise Shot - bonus damage vs enemies with any status effect.</summary>
+    PreciseShot,
+    /// <summary>Ranger ability: Lay Trap (Poison) - place a poison trap.</summary>
+    LayTrapPoison,
+    /// <summary>Ranger ability: Summon Companion - summon or replace wolf companion.</summary>
+    SummonCompanion,
+    /// <summary>Ranger ability: Lay Trap (Snare) - place a slowing snare trap.</summary>
+    LayTrapSnare,
+    /// <summary>Ranger ability: Volley - multi-attack; bonus if wolf companion or trap triggered.</summary>
+    Volley
 }
