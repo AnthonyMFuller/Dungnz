@@ -1259,7 +1259,8 @@
             "Weight": 2,
             "SellPrice": 40,
             "DodgeBonus": 0.05,
-            "SetId": "shadowstalker"
+            "SetId": "shadowstalker",
+            "Slot": "Head"
         },
         {
             "Name": "Shadowstalker Garb",
@@ -1306,7 +1307,7 @@
             "Id": "ironclad-helm",
             "Weight": 6,
             "SellPrice": 40,
-            "SetId": "ironclad"
+            "SetId": null
         },
         {
             "Name": "Ironclad Chestplate",
@@ -1322,7 +1323,7 @@
             "Id": "ironclad-chestplate",
             "Weight": 15,
             "SellPrice": 45,
-            "SetId": "ironclad"
+            "SetId": null
         },
         {
             "Name": "Ironclad Gauntlets",
@@ -1337,7 +1338,7 @@
             "Id": "ironclad-gauntlets",
             "Weight": 7,
             "SellPrice": 40,
-            "SetId": "ironclad"
+            "SetId": null
         },
         {
             "Name": "Arcanist's Crown",
@@ -1353,7 +1354,8 @@
             "Weight": 2,
             "SellPrice": 40,
             "MaxManaBonus": 20,
-            "SetId": "arcanist"
+            "SetId": "arcanist",
+            "Slot": "Head"
         },
         {
             "Name": "Arcanist's Robes",
@@ -2957,6 +2959,22 @@
                 "Warrior",
                 "Paladin"
             ]
+        },
+        {
+            "Name": "Sentinel Coif",
+            "Type": "Armor",
+            "HealAmount": 0,
+            "AttackBonus": 0,
+            "DefenseBonus": 18,
+            "StatModifier": 0,
+            "IsEquippable": true,
+            "Slot": "Head",
+            "Tier": "Epic",
+            "SetId": "sentinel-set",
+            "Description": "A full-face coif of layered chain and plate, worn by the Sentinel order's most decorated veterans. Functional. Dour. Undefeated.",
+            "Id": "sentinel-coif",
+            "Weight": 6,
+            "SellPrice": 150
         }
     ]
 }
