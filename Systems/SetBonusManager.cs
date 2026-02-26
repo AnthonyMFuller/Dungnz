@@ -32,9 +32,13 @@ public record SetBonus
     public bool GrantsUnyielding { get; init; }
     /// <summary>When true, the Arcane Surge mechanic is active — +40% spell damage when mana &gt; 80%.</summary>
     public bool GrantsArcaneSurge { get; init; }
+    /// <summary>Ironclad 4-piece: fraction of incoming damage reflected back to the attacker (e.g. 0.1 = 10%).</summary>
     public float DamageReflectPercent { get; init; }
+    /// <summary>Shadowstep 4-piece: guaranteed Bleed application on every hit.</summary>
     public bool SetBonusAppliesBleed { get; init; }
+    /// <summary>Arcane Ascendant 4-piece: flat mana discount applied to all ability costs.</summary>
     public int ManaDiscount { get; init; }
+    /// <summary>Sentinel 4-piece: player cannot be stunned.</summary>
     public bool GrantsStunImmunity { get; init; }
 }
 
