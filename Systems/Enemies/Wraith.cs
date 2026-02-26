@@ -34,6 +34,7 @@ public class Wraith : Enemy
             Attack = stats.Attack;
             Defense = stats.Defense;
             XPValue = stats.XPValue;
+            IsUndead = stats.IsUndead;
             LootTable = new LootTable(minGold: stats.MinGold, maxGold: stats.MaxGold);
             AsciiArt = stats.AsciiArt;
         }
@@ -44,6 +45,7 @@ public class Wraith : Enemy
             Attack = 18;
             Defense = 2;
             XPValue = 35;
+            IsUndead = true;
             LootTable = new LootTable(minGold: 8, maxGold: 20);
         }
         if (itemConfig != null)

@@ -32,6 +32,9 @@ public record EnemyStats
 
     /// <summary>Optional ASCII art lines displayed before combat. Empty array means no art.</summary>
     public string[] AsciiArt { get; init; } = Array.Empty<string>();
+
+    /// <summary>When <c>true</c>, this enemy is of an undead creature type (e.g. Skeleton, Zombie, Lich).</summary>
+    public bool IsUndead { get; init; }
 }
 
 /// <summary>
