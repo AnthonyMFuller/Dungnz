@@ -12,9 +12,12 @@ public enum ItemTier
     /// <summary>Green — Tier 2 items found at levels 4–6. May include special on-hit or passive mechanics.</summary>
     Uncommon,
 
-    /// <summary>BrightCyan — Tier 3 items found at level 7+. Unique effects; the best gear in the dungeon.</summary>
+    /// <summary>BrightCyan — Tier 3 items found at level 7+. Unique effects; strong dungeon gear.</summary>
     Rare,
 
-    /// <summary>Yellow — Tier 4 legendary items. Exceptionally powerful, class-restricted or set-bound.</summary>
+    /// <summary>Magenta — Tier 4 epic items. Powerful set pieces and class-specific endgame gear.</summary>
+    Epic,
+
+    /// <summary>Yellow — Tier 5 legendary items. Exceptionally powerful, often with unique passive effects.</summary>
     Legendary
 }
