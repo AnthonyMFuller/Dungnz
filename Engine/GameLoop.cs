@@ -938,7 +938,7 @@ public class GameLoop
     private void GiveArmoryLoot(bool uncommon)
     {
         var tier = uncommon ? Models.ItemTier.Uncommon : Models.ItemTier.Rare;
-        var loot = Models.LootTable.RollTier(tier);
+        var loot = Models.LootTable.RollArmorTier(tier);
         if (loot != null)
         {
             _player.Inventory.Add(loot);

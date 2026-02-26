@@ -77,6 +77,30 @@ public class LootTable
     }
 
     /// <summary>
+    /// Picks a random <see cref="ItemType.Armor"/> item of the specified tier from the shared
+    /// tier pools. Falls back to any item in the tier when no armor items are available.
+    /// Returns <see langword="null"/> if the tier pool is entirely empty.
+    /// </summary>
+    /// <param name="tier">The desired item tier.</param>
+    /// <returns>A randomly selected armor item (or any item if no armor exists in that tier), or <see langword="null"/>.</returns>
+    public static Item? RollArmorTier(ItemTier tier)
+    {
+        IReadOnlyList<Item>? fullPool = tier switch
+        {
+            ItemTier.Common    => _sharedTier1 ?? FallbackTier1,
+            ItemTier.Uncommon  => _sharedTier2 ?? FallbackTier2,
+            ItemTier.Rare      => _sharedTier3 ?? FallbackTier3,
+            ItemTier.Legendary => _sharedLegendary ?? FallbackLegendary,
+            _                  => _sharedTier2 ?? FallbackTier2
+        };
+        if (fullPool.Count == 0) return null;
+
+        var armorPool = fullPool.Where(i => i.Type == ItemType.Armor).ToList();
+        var pool = armorPool.Count > 0 ? (IList<Item>)armorPool : (IList<Item>)fullPool.ToList();
+        return pool[Random.Shared.Next(pool.Count)].Clone();
+    }
+
+    /// <summary>
     /// Initialises a new <see cref="LootTable"/> with an optional random-number generator and
     /// a gold drop range.
     /// </summary>
