@@ -186,6 +186,23 @@ public class EquipmentManager
         ShowArmorSlot(player.EquippedBack,       "🧥 Back:     ", inner);
         ShowArmorSlot(player.EquippedOffHand,    "⛨  Off-Hand: ", inner);
 
+        _display.ShowMessage(sep);
+
+        // --- Set bonus status ---
+        var setDesc = SetBonusManager.GetActiveBonusDescription(player);
+        if (string.IsNullOrEmpty(setDesc))
+        {
+            _display.ShowMessage($"║ {PadRightVisible($"SET BONUSES: {ColorCodes.Gray}None active{ColorCodes.Reset}", inner - 1)}║");
+        }
+        else
+        {
+            foreach (var line in setDesc.Split('\n'))
+            {
+                var bonusLine = $"SET BONUSES: {ColorCodes.Yellow}{line}{ColorCodes.Reset}";
+                _display.ShowMessage($"║ {PadRightVisible(bonusLine, inner - 1)}║");
+            }
+        }
+
         _display.ShowMessage($"╚{border}╝");
     }
 
