@@ -63,6 +63,7 @@ public static class MerchantInventoryConfig
         ItemTier.Common    => 15 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 5,
         ItemTier.Uncommon  => 40 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 6,
         ItemTier.Rare      => 80 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 8,
+        ItemTier.Legendary => 400 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 15,
         _                  => 20
     };
 
@@ -81,7 +82,7 @@ public static class MerchantInventoryConfig
         var data = LoadData();
         if (data == null) return new List<MerchantItem>();
 
-        var clampedFloor = Math.Clamp(floor, 1, 5);
+        var clampedFloor = Math.Clamp(floor, 1, 8);
         var config = data.Floors.Find(f => f.Floor == clampedFloor)
                      ?? data.Floors.Find(f => f.Floor == 1);
 

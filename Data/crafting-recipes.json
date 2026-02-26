@@ -4,7 +4,11 @@
       "id": "health-elixir",
       "name": "Health Elixir",
       "ingredients": [
-        { "itemId": "health-potion", "displayName": "Health Potion", "count": 2 }
+        {
+          "itemId": "health-potion",
+          "displayName": "Health Potion",
+          "count": 2
+        }
       ],
       "goldCost": 0,
       "description": "Two potions rendered down into something stronger. The colour is wrong, but the effect is not.",
@@ -24,7 +28,11 @@
       "id": "reinforced-sword",
       "name": "Reinforced Sword",
       "ingredients": [
-        { "itemId": "iron-sword", "displayName": "Iron Sword", "count": 1 }
+        {
+          "itemId": "iron-sword",
+          "displayName": "Iron Sword",
+          "count": 1
+        }
       ],
       "goldCost": 30,
       "description": "The iron has been retempered and the edge reground. It bites deeper now.",
@@ -44,7 +52,11 @@
       "id": "reinforced-armor",
       "name": "Reinforced Armor",
       "ingredients": [
-        { "itemId": "leather-armor", "displayName": "Leather Armor", "count": 1 }
+        {
+          "itemId": "leather-armor",
+          "displayName": "Leather Armor",
+          "count": 1
+        }
       ],
       "goldCost": 25,
       "description": "Extra plates riveted over the weak points. Heavier, but considerably harder to kill through.",
@@ -64,7 +76,11 @@
       "id": "antidote-strong",
       "name": "Strong Antidote",
       "ingredients": [
-        { "itemId": "antidote", "displayName": "Antidote", "count": 2 }
+        {
+          "itemId": "antidote",
+          "displayName": "Antidote",
+          "count": 2
+        }
       ],
       "goldCost": 0,
       "description": "Two antidotes distilled into a concentrated cure. Ends poison entirely and restores a little vitality.",
@@ -84,8 +100,16 @@
       "id": "elixir-of-strength",
       "name": "Elixir of Strength",
       "ingredients": [
-        { "itemId": "scroll-of-power", "displayName": "Scroll of Power", "count": 1 },
-        { "itemId": "regeneration-tonic", "displayName": "Regeneration Tonic", "count": 1 }
+        {
+          "itemId": "scroll-of-power",
+          "displayName": "Scroll of Power",
+          "count": 1
+        },
+        {
+          "itemId": "regeneration-tonic",
+          "displayName": "Regeneration Tonic",
+          "count": 1
+        }
       ],
       "goldCost": 50,
       "description": "Ancient runes fused with a restorative tonic. The result is something that permanently sharpens the arm.",
@@ -105,8 +129,16 @@
       "id": "chain-vest",
       "name": "Chain Vest",
       "ingredients": [
-        { "itemId": "chainmail", "displayName": "Chainmail", "count": 1 },
-        { "itemId": "iron-helm", "displayName": "Iron Helm", "count": 1 }
+        {
+          "itemId": "chainmail",
+          "displayName": "Chainmail",
+          "count": 1
+        },
+        {
+          "itemId": "iron-helm",
+          "displayName": "Iron Helm",
+          "count": 1
+        }
       ],
       "goldCost": 40,
       "description": "Chainmail reinforced with a helm's iron plates at the shoulders and chest. Protection with room to breathe.",
@@ -126,8 +158,16 @@
       "id": "poison-blade",
       "name": "Poison Blade",
       "ingredients": [
-        { "itemId": "iron-sword", "displayName": "Iron Sword", "count": 1 },
-        { "itemId": "antidote", "displayName": "Antidote", "count": 1 }
+        {
+          "itemId": "iron-sword",
+          "displayName": "Iron Sword",
+          "count": 1
+        },
+        {
+          "itemId": "antidote",
+          "displayName": "Antidote",
+          "count": 1
+        }
       ],
       "goldCost": 35,
       "description": "The antidote's toxin-base was drawn off and applied to the blade. It knows exactly where it hurts.",
@@ -147,8 +187,16 @@
       "id": "restoration-draught",
       "name": "Restoration Draught",
       "ingredients": [
-        { "itemId": "large-health-potion", "displayName": "Large Health Potion", "count": 1 },
-        { "itemId": "mana-draught", "displayName": "Mana Draught", "count": 1 }
+        {
+          "itemId": "large-health-potion",
+          "displayName": "Large Health Potion",
+          "count": 1
+        },
+        {
+          "itemId": "mana-draught",
+          "displayName": "Mana Draught",
+          "count": 1
+        }
       ],
       "goldCost": 20,
       "description": "Healing and mana combined into one unstable compound. Unpleasant to drink. Very good for you.",
@@ -168,7 +216,11 @@
       "id": "reinforced-helm",
       "name": "Reinforced Helm",
       "ingredients": [
-        { "itemId": "iron-helm", "displayName": "Iron Helm", "count": 1 }
+        {
+          "itemId": "iron-helm",
+          "displayName": "Iron Helm",
+          "count": 1
+        }
       ],
       "goldCost": 20,
       "description": "The rivets replaced, the padding relined, the cheek guards straightened. A proper helmet at last.",
@@ -188,8 +240,16 @@
       "id": "battle-tonic",
       "name": "Battle Tonic",
       "ingredients": [
-        { "itemId": "regeneration-tonic", "displayName": "Regeneration Tonic", "count": 1 },
-        { "itemId": "scroll-of-power", "displayName": "Scroll of Power", "count": 1 }
+        {
+          "itemId": "regeneration-tonic",
+          "displayName": "Regeneration Tonic",
+          "count": 1
+        },
+        {
+          "itemId": "scroll-of-power",
+          "displayName": "Scroll of Power",
+          "count": 1
+        }
       ],
       "goldCost": 0,
       "description": "A restorative base charged with raw arcane force. Heals and temporarily sharpens combat instincts.",
@@ -203,6 +263,431 @@
         "defenseBonus": 0,
         "isEquippable": false,
         "description": "A restorative base charged with raw arcane force. Heals and temporarily sharpens combat instincts."
+      }
+    },
+    {
+      "id": "goblin-stew",
+      "name": "Goblin Stew",
+      "ingredients": [
+        {
+          "itemId": "goblin-ear",
+          "displayName": "Goblin Ear",
+          "count": 1
+        },
+        {
+          "itemId": "health-potion",
+          "displayName": "Health Potion",
+          "count": 1
+        }
+      ],
+      "goldCost": 0,
+      "description": "A foul brew of goblin ear and potion reagents. Tastes terrible. Heals considerably.",
+      "result": {
+        "itemId": "goblin-stew",
+        "name": "Goblin Stew",
+        "type": "Consumable",
+        "tier": "Uncommon",
+        "healAmount": 55,
+        "attackBonus": 0,
+        "defenseBonus": 0,
+        "isEquippable": false,
+        "description": "A foul brew of goblin ear and potion reagents. Tastes terrible. Heals considerably."
+      }
+    },
+    {
+      "id": "bone-powder-tonic",
+      "name": "Bone Powder Tonic",
+      "ingredients": [
+        {
+          "itemId": "skeleton-dust",
+          "displayName": "Skeleton Dust",
+          "count": 2
+        }
+      ],
+      "goldCost": 0,
+      "description": "Powdered bone dissolved in water. Surprisingly effective at purging toxins.",
+      "result": {
+        "itemId": "cleansing-salve",
+        "name": "Cleansing Salve",
+        "type": "Consumable",
+        "tier": "Uncommon",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 0,
+        "isEquippable": false,
+        "description": "A thick paste that draws poison and stops bleeding. Stings badly. Works."
+      }
+    },
+    {
+      "id": "trolls-endurance-brew",
+      "name": "Troll's Endurance Brew",
+      "ingredients": [
+        {
+          "itemId": "troll-blood",
+          "displayName": "Troll Blood",
+          "count": 1
+        }
+      ],
+      "goldCost": 5,
+      "description": "Troll blood rendered into a potent hardening tonic.",
+      "result": {
+        "itemId": "stone-skin-elixir",
+        "name": "Stone Skin Elixir",
+        "type": "Consumable",
+        "tier": "Uncommon",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 0,
+        "isEquippable": false,
+        "description": "+40% DEF for 3 turns. Your skin hardens to granite. Blows that would stagger you feel distant."
+      }
+    },
+    {
+      "id": "wraith-cloak",
+      "name": "Wraith Cloak",
+      "ingredients": [
+        {
+          "itemId": "wraith-essence",
+          "displayName": "Wraith Essence",
+          "count": 1
+        },
+        {
+          "itemId": "fur-cloak",
+          "displayName": "Fur Cloak",
+          "count": 1
+        }
+      ],
+      "goldCost": 10,
+      "description": "Wraith essence bound into leather \u2014 the result slips past blades like shadow.",
+      "result": {
+        "itemId": "shadowstep-leathers",
+        "name": "Shadowstep Leathers",
+        "type": "Armor",
+        "tier": "Rare",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 10,
+        "isEquippable": true,
+        "description": "+10 DEF, +12% dodge. Supple leather armour stitched with shadow-thread for near-silent movement."
+      }
+    },
+    {
+      "id": "dragon-scale-armor-craft",
+      "name": "Dragon Scale Armor",
+      "ingredients": [
+        {
+          "itemId": "dragon-scale",
+          "displayName": "Dragon Scale",
+          "count": 1
+        },
+        {
+          "itemId": "mithril-plate",
+          "displayName": "Mithril Plate",
+          "count": 1
+        }
+      ],
+      "goldCost": 50,
+      "description": "Draconic scales fused onto mithril plate. The resulting armour is near-indestructible.",
+      "result": {
+        "itemId": "dragon-scale-armor-crafted",
+        "name": "Dragon Scale Armor",
+        "type": "Armor",
+        "tier": "Legendary",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 28,
+        "isEquippable": true,
+        "description": "Mithril plate fused with draconic scales. Legendary defense and draconic resilience."
+      }
+    },
+    {
+      "id": "sharpen-stone",
+      "name": "Sharpen Stone",
+      "ingredients": [
+        {
+          "itemId": "iron-sword",
+          "displayName": "Iron Sword",
+          "count": 1
+        },
+        {
+          "itemId": "goblin-ear",
+          "displayName": "Goblin Ear",
+          "count": 1
+        }
+      ],
+      "goldCost": 0,
+      "description": "The blade is carefully ground on the ear's rough skin. It comes away keener.",
+      "result": {
+        "itemId": "sharpened-iron-sword",
+        "name": "Sharpened Iron Sword",
+        "type": "Weapon",
+        "tier": "Uncommon",
+        "healAmount": 0,
+        "attackBonus": 7,
+        "defenseBonus": 0,
+        "isEquippable": true,
+        "description": "A carefully sharpened iron blade. The edge has been significantly improved."
+      }
+    },
+    {
+      "id": "fortify-armor",
+      "name": "Fortify Armor",
+      "ingredients": [
+        {
+          "itemId": "leather-armor",
+          "displayName": "Leather Armor",
+          "count": 1
+        },
+        {
+          "itemId": "skeleton-dust",
+          "displayName": "Skeleton Dust",
+          "count": 1
+        }
+      ],
+      "goldCost": 0,
+      "description": "Bone dust packed into the leather's grain reinforces it against blows.",
+      "result": {
+        "itemId": "fortified-leather-armor",
+        "name": "Fortified Leather Armor",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 5,
+        "isEquippable": true,
+        "description": "Leather packed with bone dust for improved protection."
+      }
+    },
+    {
+      "id": "enchant-weapon",
+      "name": "Enchant Weapon",
+      "ingredients": [
+        {
+          "itemId": "silver-rapier",
+          "displayName": "Silver Rapier",
+          "count": 1
+        },
+        {
+          "itemId": "wraith-essence",
+          "displayName": "Wraith Essence",
+          "count": 1
+        }
+      ],
+      "goldCost": 20,
+      "description": "Wraith essence bound into the blade enchants it with spectral force.",
+      "result": {
+        "itemId": "enchanted-silver-rapier",
+        "name": "Enchanted Silver Rapier",
+        "type": "Weapon",
+        "tier": "Rare",
+        "healAmount": 0,
+        "attackBonus": 13,
+        "defenseBonus": 0,
+        "isEquippable": true,
+        "description": "A silver rapier imbued with wraith essence. Strikes with ghostly precision."
+      }
+    },
+    {
+      "id": "mithril-infusion",
+      "name": "Mithril Infusion",
+      "ingredients": [
+        {
+          "itemId": "chainmail",
+          "displayName": "Chainmail",
+          "count": 1
+        },
+        {
+          "itemId": "troll-blood",
+          "displayName": "Troll Blood",
+          "count": 1
+        }
+      ],
+      "goldCost": 20,
+      "description": "Troll blood tempers the chainmail links, making each ring harder and more resilient.",
+      "result": {
+        "itemId": "mithril-reinforced-chainmail",
+        "name": "Mithril Reinforced Chainmail",
+        "type": "Armor",
+        "tier": "Rare",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 12,
+        "isEquippable": true,
+        "description": "Chainmail tempered with troll blood. Heavier, but far harder to pierce."
+      }
+    },
+    {
+      "id": "forge-the-deathbringer",
+      "name": "Forge the Deathbringer",
+      "ingredients": [
+        {
+          "itemId": "dragon-scale",
+          "displayName": "Dragon Scale",
+          "count": 2
+        },
+        {
+          "itemId": "dragon-fang",
+          "displayName": "Dragon Fang",
+          "count": 1
+        }
+      ],
+      "goldCost": 100,
+      "description": "Dragon scales smelted around a draconic fang. The result is a greatsword that hungers.",
+      "result": {
+        "itemId": "infernal-greatsword",
+        "name": "Infernal Greatsword",
+        "type": "Weapon",
+        "tier": "Legendary",
+        "healAmount": 0,
+        "attackBonus": 24,
+        "defenseBonus": 0,
+        "isEquippable": true,
+        "description": "A greatsword forged from dragon parts. Each swing tears the air like a thunderclap."
+      }
+    },
+    {
+      "id": "bind-the-lich",
+      "name": "Bind the Lich",
+      "ingredients": [
+        {
+          "itemId": "wyvern-fang",
+          "displayName": "Wyvern Fang",
+          "count": 1
+        },
+        {
+          "itemId": "soul-gem",
+          "displayName": "Soul Gem",
+          "count": 1
+        }
+      ],
+      "goldCost": 80,
+      "description": "A soul gem and wyvern fang bound together into a conduit of necromantic power.",
+      "result": {
+        "itemId": "staff-of-domination",
+        "name": "Staff of Domination",
+        "type": "Weapon",
+        "tier": "Legendary",
+        "healAmount": 0,
+        "attackBonus": 20,
+        "defenseBonus": 0,
+        "isEquippable": true,
+        "description": "A staff bound with a lich's soul. Commands the dead and obliterates the living."
+      }
+    },
+    {
+      "id": "phoenix-rebirth",
+      "name": "Phoenix Rebirth",
+      "ingredients": [
+        {
+          "itemId": "wraith-essence",
+          "displayName": "Wraith Essence",
+          "count": 3
+        },
+        {
+          "itemId": "pendant-of-resistance",
+          "displayName": "Pendant of Resistance",
+          "count": 1
+        }
+      ],
+      "goldCost": 75,
+      "description": "Three vials of wraith essence fused with a powerful pendant ignite a phoenix spark.",
+      "result": {
+        "itemId": "amulet-of-phoenix",
+        "name": "Amulet of the Phoenix",
+        "type": "Accessory",
+        "tier": "Legendary",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 0,
+        "isEquippable": true,
+        "description": "Holds the spark of the undying bird. Once per run, it pulls the wearer back from death's edge."
+      }
+    },
+    {
+      "id": "shadowstalker-craft",
+      "name": "Shadowstalker Craft",
+      "ingredients": [
+        {
+          "itemId": "blood-vial",
+          "displayName": "Blood Vial",
+          "count": 1
+        },
+        {
+          "itemId": "scale-mail",
+          "displayName": "Scale Mail",
+          "count": 1
+        }
+      ],
+      "goldCost": 30,
+      "description": "Blood and shadow-treated scales combined to produce the Shadowstalker's signature garb.",
+      "result": {
+        "itemId": "shadowstalker-garb",
+        "name": "Shadowstalker Garb",
+        "type": "Armor",
+        "tier": "Rare",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 10,
+        "isEquippable": true,
+        "description": "+10 DEF, +7% dodge. Body armour crafted for silence and speed above all else."
+      }
+    },
+    {
+      "id": "ironclad-forge",
+      "name": "Ironclad Forge",
+      "ingredients": [
+        {
+          "itemId": "troll-blood",
+          "displayName": "Troll Blood",
+          "count": 2
+        },
+        {
+          "itemId": "mithril-plate",
+          "displayName": "Mithril Plate",
+          "count": 1
+        }
+      ],
+      "goldCost": 40,
+      "description": "Troll blood tempers mithril into the signature Ironclad breastplate.",
+      "result": {
+        "itemId": "ironclad-chestplate",
+        "name": "Ironclad Chestplate",
+        "type": "Armor",
+        "tier": "Rare",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 16,
+        "isEquippable": true,
+        "description": "+16 DEF, +15 max HP. The centerpiece of the Ironclad set; a slab of walking fortress."
+      }
+    },
+    {
+      "id": "arcanist-bind",
+      "name": "Arcanist Bind",
+      "ingredients": [
+        {
+          "itemId": "wraith-essence",
+          "displayName": "Wraith Essence",
+          "count": 2
+        },
+        {
+          "itemId": "arcane-staff",
+          "displayName": "Arcane Staff",
+          "count": 1
+        }
+      ],
+      "goldCost": 35,
+      "description": "Two vials of wraith essence bind ancient arcane knowledge into a tome-like weapon.",
+      "result": {
+        "itemId": "arcanists-tome",
+        "name": "Arcanist's Tome",
+        "type": "Weapon",
+        "tier": "Rare",
+        "healAmount": 0,
+        "attackBonus": 8,
+        "defenseBonus": 0,
+        "isEquippable": true,
+        "description": "+8 ATK, +20 max mana. A living tome whose spells strike with physical force."
       }
     }
   ]

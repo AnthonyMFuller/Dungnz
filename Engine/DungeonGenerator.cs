@@ -112,7 +112,7 @@ public class DungeonGenerator
         exitRoom.Description = "A grand chamber with ornate pillars and a massive stone door leading to freedom.";
 
         // Place boss in exit room
-        exitRoom.Enemy = EnemyFactory.CreateBoss(_rng);
+        exitRoom.Enemy = EnemyFactory.CreateBoss(_rng, floor);
 
         // Place enemies in ~60% of non-start, non-exit rooms using floor-appropriate spawn pools
         for (int y = 0; y < height; y++)
@@ -170,6 +170,25 @@ public class DungeonGenerator
                     room.HasShrine = true;
             }
         }
+
+        // Place special rooms (one per type where floor range allows)
+        var eligibleRooms = new List<Room>();
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+            {
+                var r = grid[y, x];
+                if (r != startRoom && r != exitRoom && r.Type != RoomType.ForgottenShrine
+                    && r.Type != RoomType.PetrifiedLibrary && r.Type != RoomType.ContestedArmory)
+                    eligibleRooms.Add(r);
+            }
+        eligibleRooms = eligibleRooms.OrderBy(_ => _rng.Next()).ToList();
+        int specialIdx = 0;
+        if (floor >= 2 && specialIdx < eligibleRooms.Count)
+            eligibleRooms[specialIdx++].Type = RoomType.ForgottenShrine;
+        if (floor >= 3 && specialIdx < eligibleRooms.Count)
+            eligibleRooms[specialIdx++].Type = RoomType.PetrifiedLibrary;
+        if (floor >= 4 && specialIdx < eligibleRooms.Count)
+            eligibleRooms[specialIdx].Type = RoomType.ContestedArmory;
 
         // Verify path exists using BFS
         if (!PathExists(startRoom, exitRoom))

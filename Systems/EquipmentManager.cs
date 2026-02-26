@@ -76,6 +76,20 @@ public class EquipmentManager
             _display.ShowEquipmentComparison(player, currentlyEquipped, item);
             
             player.EquipItem(item);
+            SetBonusManager.ApplySetBonuses(player);
+
+            // Ring of Haste: apply cooldown reduction at equip time
+            if (item.PassiveEffectId == "cooldown_reduction")
+            {
+                // AbilityManager is not injected here; reduction fires at next combat start via CombatEngine
+                _display.ShowMessage("⚡ Ring of Haste — cooldowns will be reduced at the start of your next combat.");
+            }
+
+            // Display active set bonus if any
+            var setDesc = SetBonusManager.GetActiveBonusDescription(player);
+            if (!string.IsNullOrEmpty(setDesc))
+                _display.ShowColoredMessage($"✦ Set bonus active: {setDesc}", ColorCodes.Yellow);
+
             _display.ShowMessage($"✓ Equipped {item.Name}");
             _display.ShowMessage(ItemInteractionNarration.Equip(item));
             if (!string.IsNullOrEmpty(item.Description))
@@ -99,6 +113,7 @@ public class EquipmentManager
         try
         {
             var item = player.UnequipItem(slotName);
+            SetBonusManager.ApplySetBonuses(player);
             _display.ShowMessage($"You unequip {item!.Name} and return it to your inventory.");
         }
         catch (InvalidOperationException ex)

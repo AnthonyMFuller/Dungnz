@@ -25,18 +25,16 @@ public class Phase6BClassTests
 
     private static Player MakePlayer(PlayerClass playerClass, int level = 1, int hp = 100, int maxHp = 100, int atk = 10, int def = 5, int mana = 100, int maxMana = 100)
     {
-        var player = new Player
-        {
-            Name = "TestHero",
-            Class = playerClass,
-            HP = hp,
-            MaxHP = maxHp,
-            Attack = atk,
-            Defense = def,
-            Mana = mana,
-            MaxMana = maxMana
-        };
+        var player = new Player { Name = "TestHero", Class = playerClass };
+        // Level up FIRST so level-up stat gains don't override our explicit values
         for (int i = 1; i < level; i++) player.LevelUp();
+        // Now stamp the exact stats the test needs
+        player.MaxHP = maxHp;
+        player.HP = hp;
+        player.Attack = atk;
+        player.Defense = def;
+        player.MaxMana = maxMana;
+        player.Mana = mana;
         return player;
     }
 

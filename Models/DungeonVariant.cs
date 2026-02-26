@@ -36,6 +36,15 @@ public class DungeonVariant
         5 => new() { Name = "Dragon's Lair",
             EntryMessage = "Scorched stone and treasure glints in this fearsome lair.",
             ExitMessage = "You conquered the Dragon's Lair!" },
+        6 => new() { Name = "Void Antechamber",
+            EntryMessage = "Reality frays at the edges here. Something watches from the cracks.",
+            ExitMessage = "You tear free from the void." },
+        7 => new() { Name = "Bone Palace",
+            EntryMessage = "The palace of a dead king built from the bones of his enemies. You are in his house.",
+            ExitMessage = "You leave the palace of the dead behind." },
+        8 => new() { Name = "Final Sanctum",
+            EntryMessage = "This is the end. The dungeon's heart. The oldest darkness.",
+            ExitMessage = "" },
         _ => new() { Name = $"Floor {floor}", EntryMessage = "You descend into unknown depths.", ExitMessage = "" }
     };
 }

@@ -29,6 +29,24 @@
       "guaranteed": ["health-potion", "phoenix-feather"],
       "pool": ["health-potion", "large-health-potion", "mithril-plate", "dragon-scale-armor", "starfall-blade", "shadow-blade", "arcane-robe", "ring-of-vitality", "amulet-of-the-sage"],
       "stockCount": 5
+    },
+    {
+      "floor": 6,
+      "guaranteed": ["dragonheart-elixir"],
+      "pool": ["warriors-sigil", "rogues-talisman", "cloak-of-the-magi", "berserk-tonic", "stone-skin-elixir", "health-potion", "large-health-potion", "phoenix-feather", "mithril-plate", "starfall-blade", "shadow-blade", "dragon-scale-armor"],
+      "stockCount": 6
+    },
+    {
+      "floor": 7,
+      "guaranteed": ["bone-flute", "panacea"],
+      "pool": ["gauntlets-of-might", "belt-of-regeneration", "elixir-of-swiftness", "crown-of-ascension", "health-potion", "large-health-potion", "phoenix-feather", "obsidian-plate", "starfall-blade"],
+      "stockCount": 6
+    },
+    {
+      "floor": 8,
+      "guaranteed": ["crown-of-ascension", "health-potion", "large-health-potion", "phoenix-feather"],
+      "pool": ["panacea", "dragonheart-elixir", "bone-flute", "berserk-tonic", "stone-skin-elixir", "elixir-of-swiftness", "obsidian-plate", "mithril-plate", "dragon-scale-armor", "starfall-blade", "shadow-blade", "arcane-staff"],
+      "stockCount": 8
     }
   ]
 }

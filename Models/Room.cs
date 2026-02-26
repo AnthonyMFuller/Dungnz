@@ -14,7 +14,16 @@ public enum RoomType
     /// <summary>Represents a scorched room blackened by fire or magic.</summary>
     Scorched,
     /// <summary>Represents an ancient room lined with old stonework and relics.</summary>
-    Ancient
+    Ancient,
+
+    /// <summary>A forgotten shrine radiating holy energy — offers blessings to the player.</summary>
+    ForgottenShrine,
+
+    /// <summary>A petrified library containing ancient tomes and scrolls.</summary>
+    PetrifiedLibrary,
+
+    /// <summary>A contested armory with trapped weapons — risky but potentially rewarding.</summary>
+    ContestedArmory
 }
 
 /// <summary>Describes environmental hazards that can damage the player on entry.</summary>
@@ -98,6 +107,12 @@ public class Room
 
     /// <summary>Gets or sets the environmental hazard in this room that damages the player on entry.</summary>
     public HazardType Hazard { get; set; } = HazardType.None;
+
+    /// <summary>
+    /// Gets or sets whether the special room interaction (ForgottenShrine blessing,
+    /// PetrifiedLibrary tome, or ContestedArmory loot) has already been triggered.
+    /// </summary>
+    public bool SpecialRoomUsed { get; set; }
 
     /// <summary>Gets or sets the narrative state of this room: Fresh on first entry, Cleared after its enemy is defeated, Revisited on subsequent entries.</summary>
     public RoomState State { get; set; } = RoomState.Fresh;

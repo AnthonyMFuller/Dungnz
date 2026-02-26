@@ -38,6 +38,29 @@ public static class FloorTransitionNarration
         "Floor 5. There is no floor after this one."
     };
 
+    /// <summary>Descent into Floor 6: the Void Antechamber.</summary>
+    public static readonly string[] ToFloor6 =
+    {
+        "You descend past the last warmth. The Forge's heat fades behind you, replaced by something worse: silence.",
+        "The stairs here were carved by hands that had stopped caring about the living.",
+        "You step through and the air changes — reality becomes negotiable."
+    };
+
+    /// <summary>Descent into Floor 7: the Bone Palace.</summary>
+    public static readonly string[] ToFloor7 =
+    {
+        "The void thins into architecture. Bone architecture — massive, deliberate, obscene in its craftsmanship.",
+        "Whoever built this palace spent lifetimes on it. They had help. The help was not willing."
+    };
+
+    /// <summary>Descent into Floor 8: the Final Sanctum.</summary>
+    public static readonly string[] ToFloor8 =
+    {
+        "The final staircase doesn't descend. It falls.",
+        "The air screams around you as you drop into the heart of it — the oldest part of the dungeon, where whatever spawned all of this still breathes.",
+        "You can hear it. You can feel it. You still descend."
+    };
+
     /// <summary>Returns the transition sequence for the given target floor, or an empty array if no sequence exists.</summary>
     public static string[] GetSequence(int targetFloor) => targetFloor switch
     {
@@ -45,6 +68,9 @@ public static class FloorTransitionNarration
         3 => ToFloor3,
         4 => ToFloor4,
         5 => ToFloor5,
+        6 => ToFloor6,
+        7 => ToFloor7,
+        8 => ToFloor8,
         _ => Array.Empty<string>()
     };
 }
