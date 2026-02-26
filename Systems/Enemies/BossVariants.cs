@@ -120,14 +120,14 @@ public class InfernalDragon : DungeonBoss
 {
     /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
     [System.Text.Json.Serialization.JsonConstructor]
-    public InfernalDragon() : base(null, null) { Name = "Infernal Dragon"; HP = MaxHP = 250; Attack = 36; Defense = 16; XPValue = 220; FlameBreathCooldown = 1; }
+    public InfernalDragon() : base(null, null) { Name = "Infernal Dragon"; HP = MaxHP = 250; Attack = 36; Defense = 16; XPValue = 220; FlameBreathCooldown = 2; }
 
     /// <summary>Creates an InfernalDragon with optional data-driven stats.</summary>
     public InfernalDragon(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
     {
         Name = "Infernal Dragon";
         HP = MaxHP = 250; Attack = 36; Defense = 16; XPValue = 220;
-        FlameBreathCooldown = 1;
+        FlameBreathCooldown = 2; // first breath fires on turn 2 (decrement-first)
         AddLoot(itemConfig);
     }
 
