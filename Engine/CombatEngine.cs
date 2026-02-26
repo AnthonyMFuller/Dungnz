@@ -269,6 +269,9 @@ public class CombatEngine : ICombatEngine
         else
         {
             _display.ShowCombat(_narration.Pick(EnemyNarration.GetIntros(enemy.Name), enemy.Name));
+            // Ambient combat-start flavor (undead or generic)
+            var startPool = enemy.IsUndead ? CombatNarration.StartUndead : CombatNarration.StartGeneric;
+            _display.ShowCombat(_narration.Pick(startPool));
         }
         _turnLog.Clear();
         _baseEliteAttack = enemy.Attack;
@@ -707,9 +710,25 @@ public class CombatEngine : ICombatEngine
                 _                   => _critMessages
             };
             if (isCrit)
+            {
                 _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(critPool, enemy.Name, playerDmg), playerDmg, true));
+                _display.ShowCombatMessage(_narration.Pick(CombatNarration.CritFlavor));
+            }
             else
                 _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(hitPool, enemy.Name, playerDmg), playerDmg));
+
+            // Killing-blow atmospheric flavor
+            if (enemy.HP <= 0)
+            {
+                var killPool = player.Class switch
+                {
+                    PlayerClass.Warrior or PlayerClass.Paladin  => CombatNarration.KillMelee,
+                    PlayerClass.Ranger                          => CombatNarration.KillRanged,
+                    PlayerClass.Mage or PlayerClass.Necromancer => CombatNarration.KillMagic,
+                    _                                           => CombatNarration.KillGeneric
+                };
+                _display.ShowCombatMessage(_narration.Pick(killPool));
+            }
 
             string? statusApplied = null;
             // Bug #110: bleed-on-hit from equipped weapon (10% chance, 3 turns)
@@ -823,7 +842,7 @@ public class CombatEngine : ICombatEngine
             else if (_rng.Next(100) < 30)
             {
                 boss.IsCharging = true;
-                _display.ShowCombatMessage($"⚠ {enemy.Name} is charging a powerful attack! Prepare to defend!");
+                _display.ShowCombatMessage("⚠ " + _narration.Pick(CombatNarration.EnemySpecialAttack, enemy.Name, "a powerful attack"));
                 return; // warn turn — no damage this turn
             }
         }
@@ -1037,6 +1056,10 @@ public class CombatEngine : ICombatEngine
             player.TakeDamage(enemyDmgFinal);
             _stats.DamageTaken += enemyDmgFinal;
             _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmgFinal), enemyDmgFinal));
+
+            // Near-death atmospheric flavor (HP < 25%, ~50% chance to avoid spam)
+            if (player.HP > 0 && player.HP < player.MaxHP * 0.25f && _rng.NextDouble() < 0.5)
+                _display.ShowCombatMessage(_narration.Pick(CombatNarration.NearDeath));
 
             // Paladin passive: Divine Favor - once per combat, auto-heal at 30% HP
             if (player.Class == PlayerClass.Paladin && !player.DivineHealUsedThisCombat

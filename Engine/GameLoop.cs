@@ -764,7 +764,7 @@ public class GameLoop
                 _player.Heal(_player.MaxHP);
                 _display.ShowMessage($"The shrine heals you fully! HP: {_player.HP}/{_player.MaxHP}");
                 _currentRoom.ShrineUsed = true;
-                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.UseShrine));
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantHeal));
                 break;
             case "B":
                 if (_player.Gold < 50) { _display.ShowError("Not enough gold (need 50g)."); return; }
@@ -773,7 +773,7 @@ public class GameLoop
                 _player.ModifyDefense(2);
                 _display.ShowMessage("The shrine blesses you! +2 ATK/DEF.");
                 _currentRoom.ShrineUsed = true;
-                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.UseShrine));
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantPower));
                 break;
             case "F":
                 if (_player.Gold < 75) { _display.ShowError("Not enough gold (need 75g)."); return; }
@@ -781,7 +781,7 @@ public class GameLoop
                 _player.FortifyMaxHP(10);
                 _display.ShowMessage($"The shrine fortifies you! MaxHP permanently +10. ({_player.MaxHP} MaxHP)");
                 _currentRoom.ShrineUsed = true;
-                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.UseShrine));
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantProtection));
                 break;
             case "M":
                 if (_player.Gold < 75) { _display.ShowError("Not enough gold (need 75g)."); return; }
@@ -789,10 +789,11 @@ public class GameLoop
                 _player.FortifyMaxMana(10);
                 _display.ShowMessage($"The shrine expands your mind! MaxMana permanently +10. ({_player.MaxMana} MaxMana)");
                 _currentRoom.ShrineUsed = true;
-                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.UseShrine));
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantWisdom));
                 break;
             case "L":
                 _display.ShowMessage("You leave the shrine.");
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantNothing));
                 break;
             default:
                 _display.ShowError("Invalid choice.");
@@ -983,6 +984,7 @@ public class GameLoop
 
         var merchant = _currentRoom.Merchant;
         _display.ShowMessage($"=== MERCHANT SHOP ({merchant.Name}) ===");
+        _display.ShowMessage(Systems.MerchantNarration.GetFloorGreeting(_currentFloor));
         _display.ShowShop(merchant.Stock.Select(mi => (mi.Item, mi.Price)), _player.Gold);
         _display.ShowColoredMessage("  💰 Type SELL to sell items to the merchant.", Systems.ColorCodes.Gray);
         _display.ShowCommandPrompt();
@@ -1000,7 +1002,7 @@ public class GameLoop
             var selected = merchant.Stock[choice - 1];
             if (_player.Gold < selected.Price)
             {
-                _display.ShowMessage("Not enough gold.");
+                _display.ShowMessage(Systems.MerchantNarration.GetCantAfford());
             }
             else
             {
@@ -1008,7 +1010,7 @@ public class GameLoop
                 if (!_inventoryManager.TryAddItem(_player, selected.Item))
                 {
                     _player.AddGold(selected.Price); // refund — inventory was full or too heavy
-                    _display.ShowMessage("Your inventory is full. You can't carry that item.");
+                    _display.ShowMessage(Systems.MerchantNarration.GetInventoryFull());
                 }
                 else
                 {
@@ -1072,7 +1074,10 @@ public class GameLoop
         _player.Inventory.Remove(item);
         _player.AddGold(price);
         _display.ShowMessage($"You sold {item.Name} for {price}g. Gold remaining: {_player.Gold}g");
-        _display.ShowMessage(MerchantNarration.GetAfterSale());
+        if (item.Tier == Models.ItemTier.Legendary)
+            _display.ShowMessage(Systems.MerchantNarration.GetLegendarySold());
+        else
+            _display.ShowMessage(MerchantNarration.GetAfterSale());
     }
 
     private void HandleSkills()
