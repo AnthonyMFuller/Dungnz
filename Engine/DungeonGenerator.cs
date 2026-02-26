@@ -190,6 +190,29 @@ public class DungeonGenerator
         if (floor >= 4 && specialIdx < eligibleRooms.Count)
             eligibleRooms[specialIdx].Type = RoomType.ContestedArmory;
 
+        // Assign context-aware descriptions now that all room contents are set
+        for (int y = 0; y < height; y++)
+        {
+            for (int x = 0; x < width; x++)
+            {
+                var room = grid[y, x];
+                if (room == exitRoom) continue;
+
+                var ctx = room switch
+                {
+                    { Enemy: not null }    => RoomContext.Enemy,
+                    { Merchant: not null } => RoomContext.Merchant,
+                    { HasShrine: true }    => RoomContext.Shrine,
+                    { Type: RoomType.ForgottenShrine
+                         or RoomType.PetrifiedLibrary
+                         or RoomType.ContestedArmory } => RoomContext.Special,
+                    _                      => RoomContext.Empty,
+                };
+                var pool = RoomDescriptions.ForFloorAndContext(floor, ctx);
+                room.Description = pool[_rng.Next(pool.Length)];
+            }
+        }
+
         // Verify path exists using BFS
         if (!PathExists(startRoom, exitRoom))
         {
