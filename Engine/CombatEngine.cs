@@ -1062,7 +1062,7 @@ public class CombatEngine : ICombatEngine
                 if (reflected > 0 && enemy.HP > 0)
                 {
                     enemy.HP -= reflected;
-                    _display.ShowColoredCombatMessage($"[Ironclad] Reflected {reflected} damage!", ColorCodes.BrightCyan);
+                    _display.ShowColoredCombatMessage($"[Ironclad] {reflected} damage reflected back!", ColorCodes.BrightCyan);
                 }
             }
 
