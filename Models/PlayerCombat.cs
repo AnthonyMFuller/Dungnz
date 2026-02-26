@@ -95,7 +95,9 @@ public partial class Player
     /// back into the player's inventory.
     /// </summary>
     /// <param name="slotName">
-    /// The case-insensitive slot to unequip: <c>"weapon"</c>, <c>"armor"</c>, or <c>"accessory"</c>.
+    /// The case-insensitive slot to unequip. Accepts <c>"weapon"</c>, <c>"accessory"</c>,
+    /// and any armor slot: <c>"head"</c>, <c>"shoulders"</c>, <c>"chest"</c> (alias <c>"armor"</c>),
+    /// <c>"hands"</c>, <c>"legs"</c>, <c>"feet"</c>, <c>"back"</c>, <c>"offhand"</c>.
     /// </param>
     /// <returns>The item that was removed from the slot and returned to inventory.</returns>
     /// <exception cref="InvalidOperationException">Thrown when the specified slot is empty.</exception>
@@ -114,11 +116,64 @@ public partial class Player
                 EquippedWeapon = null;
                 break;
 
+            // "armor" kept as legacy alias for chest
             case "armor":
-                if (EquippedArmor == null)
-                    throw new InvalidOperationException("No armor equipped.");
-                item = EquippedArmor;
-                EquippedArmor = null;
+            case "chest":
+                if (EquippedChest == null)
+                    throw new InvalidOperationException("No chest armor equipped.");
+                item = EquippedChest;
+                EquippedChest = null;
+                break;
+
+            case "head":
+                if (EquippedHead == null)
+                    throw new InvalidOperationException("No head armor equipped.");
+                item = EquippedHead;
+                EquippedHead = null;
+                break;
+
+            case "shoulders":
+                if (EquippedShoulders == null)
+                    throw new InvalidOperationException("No shoulder armor equipped.");
+                item = EquippedShoulders;
+                EquippedShoulders = null;
+                break;
+
+            case "hands":
+                if (EquippedHands == null)
+                    throw new InvalidOperationException("No hand armor equipped.");
+                item = EquippedHands;
+                EquippedHands = null;
+                break;
+
+            case "legs":
+                if (EquippedLegs == null)
+                    throw new InvalidOperationException("No leg armor equipped.");
+                item = EquippedLegs;
+                EquippedLegs = null;
+                break;
+
+            case "feet":
+                if (EquippedFeet == null)
+                    throw new InvalidOperationException("No foot armor equipped.");
+                item = EquippedFeet;
+                EquippedFeet = null;
+                break;
+
+            case "back":
+                if (EquippedBack == null)
+                    throw new InvalidOperationException("No back armor equipped.");
+                item = EquippedBack;
+                EquippedBack = null;
+                break;
+
+            case "offhand":
+            case "off-hand":
+            case "off_hand":
+                if (EquippedOffHand == null)
+                    throw new InvalidOperationException("No off-hand item equipped.");
+                item = EquippedOffHand;
+                EquippedOffHand = null;
                 break;
 
             case "accessory":
@@ -129,7 +184,9 @@ public partial class Player
                 break;
 
             default:
-                throw new ArgumentException($"Invalid slot name: {slotName}. Use 'weapon', 'armor', or 'accessory'.", nameof(slotName));
+                throw new ArgumentException(
+                    $"Invalid slot name: {slotName}. Use weapon, accessory, or an armor slot: head, shoulders, chest, hands, legs, feet, back, offhand.",
+                    nameof(slotName));
         }
 
         RemoveStatBonuses(item);
@@ -197,11 +254,11 @@ public partial class Player
     private void RecalculateDerivedBonuses()
     {
         DodgeBonus = (EquippedWeapon?.DodgeBonus ?? 0f)
-                   + (EquippedArmor?.DodgeBonus ?? 0f)
-                   + (EquippedAccessory?.DodgeBonus ?? 0f);
+                   + (EquippedAccessory?.DodgeBonus ?? 0f)
+                   + AllEquippedArmor.Sum(a => a.DodgeBonus);
 
         PoisonImmune = (EquippedWeapon?.PoisonImmunity ?? false)
-                    || (EquippedArmor?.PoisonImmunity ?? false)
-                    || (EquippedAccessory?.PoisonImmunity ?? false);
+                    || (EquippedAccessory?.PoisonImmunity ?? false)
+                    || AllEquippedArmor.Any(a => a.PoisonImmunity);
     }
 }

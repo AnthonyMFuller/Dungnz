@@ -57,7 +57,7 @@ public class EquipmentManager
         var currentlyEquipped = item.Type switch
         {
             ItemType.Weapon    => player.EquippedWeapon,
-            ItemType.Armor     => player.EquippedArmor,
+            ItemType.Armor     => player.GetArmorSlot(item.Slot == ArmorSlot.None ? ArmorSlot.Chest : item.Slot),
             ItemType.Accessory => player.EquippedAccessory,
             _                  => null
         };
@@ -106,7 +106,7 @@ public class EquipmentManager
     {
         if (string.IsNullOrWhiteSpace(slotName))
         {
-            _display.ShowError("Unequip what? Specify WEAPON, ARMOR, or ACCESSORY.");
+            _display.ShowError("Unequip what? Specify WEAPON, ACCESSORY, or an armor slot: HEAD, SHOULDERS, CHEST, HANDS, LEGS, FEET, BACK, OFFHAND.");
             return;
         }
 
@@ -126,72 +126,96 @@ public class EquipmentManager
         }
     }
 
-    /// <summary>Displays the player's currently equipped weapon, armor, and accessory.</summary>
+    /// <summary>Displays the player's currently equipped items in a structured 8-slot layout.</summary>
     public void ShowEquipment(Player player)
     {
-        _display.ShowMessage("=== EQUIPMENT ===");
+        const string border  = "══════════════════════════════════════════";
+        const string sep     = "╠══════════════════════════════════════════╣";
+        const int    inner   = 42; // visible characters inside the ║ … ║ walls
 
+        _display.ShowMessage($"╔{border}╗");
+        _display.ShowMessage($"║{"              EQUIPMENT                   ".PadRight(inner)}║");
+        _display.ShowMessage(sep);
+
+        // --- Weapon ---
         if (player.EquippedWeapon != null)
         {
-            var w = player.EquippedWeapon;
-            var icon = ItemTypeIcon(w.Type);
-            var atkVal = $"{Systems.ColorCodes.BrightRed}+{w.AttackBonus}{Systems.ColorCodes.Reset}";
-            var extras = new System.Collections.Generic.List<string>();
-            if (w.DodgeBonus > 0) extras.Add($"+{w.DodgeBonus:P0} dodge");
-            if (w.PoisonImmunity) extras.Add("poison immune");
-            if (w.MaxManaBonus > 0) extras.Add($"+{w.MaxManaBonus} max mana");
-            var extrasStr = extras.Count > 0 ? $", {string.Join(", ", extras)}" : "";
-            _display.ShowMessage($"Weapon: {icon} {ColorizeItemName(w)} (Attack {atkVal}{extrasStr})");
+            var w       = player.EquippedWeapon;
+            var atkVal  = $"{ColorCodes.BrightRed}+{w.AttackBonus}{ColorCodes.Reset}";
+            var extras  = new System.Collections.Generic.List<string>();
+            if (w.DodgeBonus   > 0) extras.Add($"+{w.DodgeBonus:P0} dodge");
+            if (w.PoisonImmunity)   extras.Add("poison immune");
+            if (w.MaxManaBonus > 0) extras.Add($"+{w.MaxManaBonus} mana");
+            var extStr  = extras.Count > 0 ? $", {string.Join(", ", extras)}" : "";
+            var content = $"⚔  Weapon:    {ColorizeItemName(w)} (ATK {atkVal}{extStr})";
+            _display.ShowMessage($"║ {PadRightVisible(content, inner - 1)}║");
         }
         else
         {
-            _display.ShowMessage("Weapon: (empty)");
+            _display.ShowMessage($"║ ⚔  Weapon:    {ColorCodes.Gray}[Empty]{ColorCodes.Reset}{"".PadRight(inner - 21)}║");
         }
 
-        if (player.EquippedArmor != null)
-        {
-            var a = player.EquippedArmor;
-            var icon = ItemTypeIcon(a.Type);
-            var defVal = $"{Systems.ColorCodes.Cyan}+{a.DefenseBonus}{Systems.ColorCodes.Reset}";
-            var extras = new System.Collections.Generic.List<string>();
-            if (a.DodgeBonus > 0) extras.Add($"+{a.DodgeBonus:P0} dodge");
-            if (a.PoisonImmunity) extras.Add("poison immune");
-            if (a.MaxManaBonus > 0) extras.Add($"+{a.MaxManaBonus} max mana");
-            var extrasStr = extras.Count > 0 ? $", {string.Join(", ", extras)}" : "";
-            _display.ShowMessage($"Armor:  {icon} {ColorizeItemName(a)} (Defense {defVal}{extrasStr})");
-        }
-        else
-        {
-            _display.ShowMessage("Armor:  (empty)");
-        }
-
+        // --- Accessory ---
         if (player.EquippedAccessory != null)
         {
-            var acc = player.EquippedAccessory;
-            var icon = ItemTypeIcon(acc.Type);
-            var stats = new System.Collections.Generic.List<string>();
-            if (acc.AttackBonus != 0)  stats.Add($"Attack {Systems.ColorCodes.BrightRed}+{acc.AttackBonus}{Systems.ColorCodes.Reset}");
-            if (acc.DefenseBonus != 0) stats.Add($"Defense {Systems.ColorCodes.Cyan}+{acc.DefenseBonus}{Systems.ColorCodes.Reset}");
+            var acc    = player.EquippedAccessory;
+            var stats  = new System.Collections.Generic.List<string>();
+            if (acc.AttackBonus  != 0) stats.Add($"ATK {ColorCodes.BrightRed}+{acc.AttackBonus}{ColorCodes.Reset}");
+            if (acc.DefenseBonus != 0) stats.Add($"DEF {ColorCodes.Cyan}+{acc.DefenseBonus}{ColorCodes.Reset}");
             if (acc.StatModifier != 0) stats.Add($"HP +{acc.StatModifier}");
-            if (acc.DodgeBonus > 0)    stats.Add($"+{acc.DodgeBonus:P0} dodge");
-            if (acc.PoisonImmunity)    stats.Add("poison immune");
-            if (acc.MaxManaBonus > 0)  stats.Add($"+{acc.MaxManaBonus} max mana");
-            _display.ShowMessage($"Access: {icon} {ColorizeItemName(acc)} ({string.Join(", ", stats)})");
+            if (acc.DodgeBonus   > 0)  stats.Add($"+{acc.DodgeBonus:P0} dodge");
+            if (acc.MaxManaBonus > 0)  stats.Add($"+{acc.MaxManaBonus} mana");
+            var statStr = stats.Count > 0 ? $" ({string.Join(", ", stats)})" : "";
+            var content = $"💍 Accessory: {ColorizeItemName(acc)}{statStr}";
+            _display.ShowMessage($"║ {PadRightVisible(content, inner - 1)}║");
         }
         else
         {
-            _display.ShowMessage("Access: (empty)");
+            _display.ShowMessage($"║ 💍 Accessory: {ColorCodes.Gray}[Empty]{ColorCodes.Reset}{"".PadRight(inner - 22)}║");
+        }
+
+        _display.ShowMessage(sep);
+
+        // --- 8 armor slots ---
+        ShowArmorSlot(player.EquippedHead,      "🪖 Head:     ", inner);
+        ShowArmorSlot(player.EquippedShoulders,  "🥋 Shoulders:", inner);
+        ShowArmorSlot(player.EquippedChest,      "🛡 Chest:    ", inner);
+        ShowArmorSlot(player.EquippedHands,      "🧤 Hands:    ", inner);
+        ShowArmorSlot(player.EquippedLegs,       "👖 Legs:     ", inner);
+        ShowArmorSlot(player.EquippedFeet,       "👟 Feet:     ", inner);
+        ShowArmorSlot(player.EquippedBack,       "🧥 Back:     ", inner);
+        ShowArmorSlot(player.EquippedOffHand,    "⛨  Off-Hand: ", inner);
+
+        _display.ShowMessage($"╚{border}╝");
+    }
+
+    private void ShowArmorSlot(Item? item, string label, int inner)
+    {
+        if (item != null)
+        {
+            var defVal  = $"{ColorCodes.Cyan}+{item.DefenseBonus}{ColorCodes.Reset}";
+            var extras  = new System.Collections.Generic.List<string>();
+            if (item.DodgeBonus   > 0) extras.Add($"+{item.DodgeBonus:P0} dodge");
+            if (item.PoisonImmunity)   extras.Add("poison immune");
+            if (item.MaxManaBonus > 0) extras.Add($"+{item.MaxManaBonus} mana");
+            var extStr  = extras.Count > 0 ? $", {string.Join(", ", extras)}" : "";
+            var content = $"{label} {ColorizeItemName(item)} (DEF {defVal}{extStr})";
+            _display.ShowMessage($"║ {PadRightVisible(content, inner - 1)}║");
+        }
+        else
+        {
+            var emptyLine = $"{label} {ColorCodes.Gray}[Empty]{ColorCodes.Reset}";
+            _display.ShowMessage($"║ {PadRightVisible(emptyLine, inner - 1)}║");
         }
     }
 
-    private static string ItemTypeIcon(ItemType type) => type switch
+    /// <summary>Pads <paramref name="text"/> to <paramref name="width"/> visible characters, ignoring ANSI escape codes.</summary>
+    private static string PadRightVisible(string text, int width)
     {
-        ItemType.Weapon     => "⚔",
-        ItemType.Armor      => "🛡",
-        ItemType.Consumable => "🧪",
-        ItemType.Accessory  => "💍",
-        _                   => "•"
-    };
+        var visible = ColorCodes.StripAnsiCodes(text).Length;
+        var padding = Math.Max(0, width - visible);
+        return text + new string(' ', padding);
+    }
 
     private static string ColorizeItemName(Item item)
     {
