@@ -1039,8 +1039,8 @@ public class ConsoleDisplayService : IDisplayService
         var classes = new[] {
             (def: PlayerClassDefinition.Warrior,    icon: "⚔",  number: 1, iconWidth: 1),
             (def: PlayerClassDefinition.Mage,       icon: "🔮", number: 2, iconWidth: 2),
-            (def: PlayerClassDefinition.Rogue,       icon: "🗡",  number: 3, iconWidth: 1),
-            (def: PlayerClassDefinition.Paladin,    icon: "🛡",  number: 4, iconWidth: 1),
+            (def: PlayerClassDefinition.Rogue,       icon: "🗡",  number: 3, iconWidth: 2),
+            (def: PlayerClassDefinition.Paladin,    icon: "🛡",  number: 4, iconWidth: 2),
             (def: PlayerClassDefinition.Necromancer,icon: "💀", number: 5, iconWidth: 2),
             (def: PlayerClassDefinition.Ranger,     icon: "🏹", number: 6, iconWidth: 2)
         };
@@ -1053,6 +1053,12 @@ public class ConsoleDisplayService : IDisplayService
             int effectiveDefense = baseDefense + def.BonusDefense;
             int effectiveMana = baseMana + def.BonusMaxMana;
 
+            // Stat colors
+            string hpColor   = Systems.ColorCodes.HealthColor(effectiveHP, 120);
+            string atkColor  = Systems.ColorCodes.BrightRed;
+            string defColor  = Systems.ColorCodes.Cyan;
+            string manaColor = Systems.ColorCodes.Blue;
+
             // Calculate prestige-boosted stats if applicable
             string hpDisplay, atkDisplay, defDisplay;
             if (prestige != null && prestige.PrestigeLevel > 0)
@@ -1062,27 +1068,27 @@ public class ConsoleDisplayService : IDisplayService
                 int prestigeDef = effectiveDefense + prestige.BonusStartDefense;
 
                 hpDisplay = prestige.BonusStartHP > 0 
-                    ? $"{effectiveHP} → {yellow}{prestigeHP}{reset} (+{prestige.BonusStartHP} prestige)"
-                    : effectiveHP.ToString();
+                    ? $"{hpColor}{effectiveHP}{reset} → {yellow}{prestigeHP}{reset} (+{prestige.BonusStartHP} prestige)"
+                    : $"{hpColor}{effectiveHP}{reset}";
                 atkDisplay = prestige.BonusStartAttack > 0
-                    ? $"{effectiveAttack} → {yellow}{prestigeAtk}{reset} (+{prestige.BonusStartAttack} prestige)"
-                    : effectiveAttack.ToString();
+                    ? $"{atkColor}{effectiveAttack}{reset} → {yellow}{prestigeAtk}{reset} (+{prestige.BonusStartAttack} prestige)"
+                    : $"{atkColor}{effectiveAttack}{reset}";
                 defDisplay = prestige.BonusStartDefense > 0
-                    ? $"{effectiveDefense} → {yellow}{prestigeDef}{reset} (+{prestige.BonusStartDefense} prestige)"
-                    : effectiveDefense.ToString();
+                    ? $"{defColor}{effectiveDefense}{reset} → {yellow}{prestigeDef}{reset} (+{prestige.BonusStartDefense} prestige)"
+                    : $"{defColor}{effectiveDefense}{reset}";
             }
             else
             {
-                hpDisplay = effectiveHP.ToString();
-                atkDisplay = effectiveAttack.ToString();
-                defDisplay = effectiveDefense.ToString();
+                hpDisplay  = $"{hpColor}{effectiveHP}{reset}";
+                atkDisplay = $"{atkColor}{effectiveAttack}{reset}";
+                defDisplay = $"{defColor}{effectiveDefense}{reset}";
             }
 
-            // Stat bars
-            string hpBar = StatBar(effectiveHP, 120);
-            string atkBar = StatBar(effectiveAttack, 13);
-            string defBar = StatBar(effectiveDefense, 7);
-            string manaBar = StatBar(effectiveMana, 60);
+            // Stat bars (colored)
+            string hpBar   = StatBar(effectiveHP,     120, fillColor: hpColor,   resetColor: reset);
+            string atkBar  = StatBar(effectiveAttack,  13, fillColor: atkColor,  resetColor: reset);
+            string defBar  = StatBar(effectiveDefense,  7, fillColor: defColor,  resetColor: reset);
+            string manaBar = StatBar(effectiveMana,    60, fillColor: manaColor, resetColor: reset);
 
             const int boxInner = 48;
             Console.WriteLine($"{cyan}┌────────────────────────────────────────────────┐{reset}");
@@ -1104,7 +1110,9 @@ public class ConsoleDisplayService : IDisplayService
             var defVisibleLen = Systems.ColorCodes.StripAnsiCodes(defLine).Length;
             Console.WriteLine($"{cyan}│{reset}{defLine}{new string(' ', Math.Max(0, boxInner - defVisibleLen))}{cyan}│{reset}");
             
-            Console.WriteLine($"{cyan}│{reset} Mana:    {manaBar}  {effectiveMana,-25} {cyan}│{reset}");
+            var manaLine = $" Mana:    {manaBar}  {manaColor}{effectiveMana}{reset}";
+            var manaVisibleLen = Systems.ColorCodes.StripAnsiCodes(manaLine).Length;
+            Console.WriteLine($"{cyan}│{reset}{manaLine}{new string(' ', Math.Max(0, boxInner - manaVisibleLen))}{cyan}│{reset}");
             Console.WriteLine($"{cyan}│{reset} Trait: {def.TraitDescription,-39} {cyan}│{reset}");
             Console.WriteLine($"{cyan}│{reset} {gray}\"{def.Description}\"{reset}{new string(' ', Math.Max(0, 45 - def.Description.Length))}{cyan}│{reset}");
             Console.WriteLine($"{cyan}└────────────────────────────────────────────────┘{reset}");
@@ -1132,12 +1140,12 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <summary>
-    /// Creates an ASCII stat bar visualization.
+    /// Creates an ASCII stat bar visualization with optional ANSI fill color.
     /// </summary>
-    private static string StatBar(int value, int max, int width = 10)
+    private static string StatBar(int value, int max, int width = 10, string fillColor = "", string resetColor = "")
     {
         var filled = Math.Clamp((int)Math.Round((double)value / max * width), 0, width);
-        return new string('█', filled) + new string('░', width - filled);
+        return $"{fillColor}{new string('█', filled)}{resetColor}{new string('░', width - filled)}";
     }
 
     /// <summary>Stub implementation — displays combat start banner.</summary>
