@@ -32,6 +32,10 @@ public record SetBonus
     public bool GrantsUnyielding { get; init; }
     /// <summary>When true, the Arcane Surge mechanic is active — +40% spell damage when mana &gt; 80%.</summary>
     public bool GrantsArcaneSurge { get; init; }
+    public float DamageReflectPercent { get; init; }
+    public bool SetBonusAppliesBleed { get; init; }
+    public int ManaDiscount { get; init; }
+    public bool GrantsStunImmunity { get; init; }
 }
 
 /// <summary>
@@ -86,6 +90,32 @@ public static class SetBonusManager
             Description = "Arcanist 3-piece: Arcane Surge — when mana > 80% max: +40% spell damage",
             GrantsArcaneSurge = true
         },
+
+        // ── 4-piece set bonuses ───────────────────────────────────────────────
+        new SetBonus
+        {
+            SetId = "ironclad", PiecesRequired = 4,
+            Description = "Ironclad 4-piece: Reflect — 10% of incoming damage reflected back",
+            DamageReflectPercent = 0.10f
+        },
+        new SetBonus
+        {
+            SetId = "shadowstalker", PiecesRequired = 4,
+            Description = "Shadowstep 4-piece: every hit guarantees Bleed on the target",
+            SetBonusAppliesBleed = true
+        },
+        new SetBonus
+        {
+            SetId = "arcanist", PiecesRequired = 4,
+            Description = "Arcane Ascendant 4-piece: -1 mana cost on all abilities",
+            ManaDiscount = 1
+        },
+        new SetBonus
+        {
+            SetId = "sentinel", PiecesRequired = 4,
+            Description = "Sentinel 4-piece: Stun immunity",
+            GrantsStunImmunity = true
+        },
     };
 
     /// <summary>
@@ -95,8 +125,15 @@ public static class SetBonusManager
     public static int GetEquippedSetPieces(Player player, string setId)
     {
         int count = 0;
-        if (player.EquippedWeapon?.SetId == setId)   count++;
-        if (player.EquippedChest?.SetId == setId)    count++;
+        if (player.EquippedWeapon?.SetId    == setId) count++;
+        if (player.EquippedHead?.SetId      == setId) count++;
+        if (player.EquippedShoulders?.SetId == setId) count++;
+        if (player.EquippedChest?.SetId     == setId) count++;
+        if (player.EquippedHands?.SetId     == setId) count++;
+        if (player.EquippedLegs?.SetId      == setId) count++;
+        if (player.EquippedFeet?.SetId      == setId) count++;
+        if (player.EquippedBack?.SetId      == setId) count++;
+        if (player.EquippedOffHand?.SetId   == setId) count++;
         if (player.EquippedAccessory?.SetId == setId) count++;
         return count;
     }
@@ -160,6 +197,12 @@ public static class SetBonusManager
         _ = totalHP;
         _ = totalMana;
         _ = totalDodge;
+
+        // Wire 4-piece set bonus flags onto the player so combat systems can read them.
+        player.DamageReflectPercent = active.Sum(b => b.DamageReflectPercent);
+        player.SetBonusAppliesBleed = active.Any(b => b.SetBonusAppliesBleed);
+        player.ManaDiscount         = active.Sum(b => b.ManaDiscount);
+        player.IsStunImmune         = active.Any(b => b.GrantsStunImmunity);
     }
 
     /// <summary>Returns true when the Arcane Surge set bonus is active and the player's mana is above 80%.</summary>

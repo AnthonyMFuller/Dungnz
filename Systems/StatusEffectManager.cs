@@ -43,6 +43,13 @@ public class StatusEffectManager
             return;
         }
 
+        // Sentinel 4-pc set bonus: player stun immunity
+        if (target is Player p && p.IsStunImmune && effect == StatusEffect.Stun)
+        {
+            _display.ShowColoredMessage("[Sentinel] Stun resisted!", ColorCodes.BrightCyan);
+            return;
+        }
+
         if (!_activeEffects.ContainsKey(target)) _activeEffects[target] = new List<ActiveEffect>();
         var existing = _activeEffects[target].FirstOrDefault(e => e.Effect == effect);
         if (existing != null) existing.RemainingTurns = Math.Max(existing.RemainingTurns, duration);
