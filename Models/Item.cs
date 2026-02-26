@@ -102,6 +102,38 @@ public class Item
     public int SellPrice { get; set; }
 
     /// <summary>
+    /// Gets or sets an optional name prefix for this item (e.g. "Glowing", "Ancient").
+    /// Purely cosmetic; not used by game mechanics.
+    /// </summary>
+    public string? Prefix { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional name suffix for this item (e.g. "of Flames", "of the Bear").
+    /// Purely cosmetic; not used by game mechanics.
+    /// </summary>
+    public string? Suffix { get; set; }
+
+    /// <summary>
+    /// Gets or sets an optional set identifier linking this item to a named equipment set
+    /// (e.g. "shadowbane_set"). <see langword="null"/> when the item does not belong to a set.
+    /// </summary>
+    public string? SetId { get; set; }
+
+    /// <summary>
+    /// Gets or sets the list of player class names that may equip this item
+    /// (e.g. <c>["Warrior"]</c> or <c>["Mage", "Paladin"]</c>).
+    /// When <see langword="null"/> or empty, any class may equip the item.
+    /// </summary>
+    public string[]? ClassRestriction { get; set; }
+
+    /// <summary>
+    /// Gets or sets an identifier for a passive effect granted while this item is equipped
+    /// (e.g. <c>"vampiric_strike"</c>, <c>"survive_at_one"</c>).
+    /// <see langword="null"/> when no passive effect applies.
+    /// </summary>
+    public string? PassiveEffectId { get; set; }
+
+    /// <summary>
     /// Creates a shallow copy of this item with all properties duplicated. Used when adding
     /// crafted items to inventory to avoid sharing references.
     /// </summary>

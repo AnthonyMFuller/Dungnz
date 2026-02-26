@@ -7,7 +7,7 @@ public class LichKing : DungeonBoss
 {
     /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
     [System.Text.Json.Serialization.JsonConstructor]
-    public LichKing() : base(null, null) { Name = "Lich King"; HP = MaxHP = 120; Attack = 18; Defense = 5; XPValue = 100; AppliesPoisonOnHit = true; }
+    public LichKing() : base(null, null) { Name = "Lich King"; HP = MaxHP = 120; Attack = 18; Defense = 5; XPValue = 100; AppliesPoisonOnHit = true; IsUndead = true; }
 
     /// <summary>Creates a LichKing with optional data-driven stats.</summary>
     public LichKing(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
@@ -15,6 +15,7 @@ public class LichKing : DungeonBoss
         Name = "Lich King";
         HP = MaxHP = 120; Attack = 18; Defense = 5; XPValue = 100;
         AppliesPoisonOnHit = true;
+        IsUndead = true;
     }
 }
 /// <summary>The Stone Titan — a massive golem boss.</summary>

@@ -13,5 +13,8 @@ public enum ItemTier
     Uncommon,
 
     /// <summary>BrightCyan — Tier 3 items found at level 7+. Unique effects; the best gear in the dungeon.</summary>
-    Rare
+    Rare,
+
+    /// <summary>Yellow — Tier 4 legendary items. Exceptionally powerful, class-restricted or set-bound.</summary>
+    Legendary
 }

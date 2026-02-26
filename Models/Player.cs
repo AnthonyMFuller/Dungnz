@@ -15,4 +15,16 @@ public partial class Player
     /// persistence and is managed directly by <see cref="Dungnz.Systems.StatusEffectManager"/>.
     /// </summary>
     public List<ActiveEffect> ActiveEffects { get; } = new();
+
+    /// <summary>Gets the list of minions currently summoned to fight alongside the player.</summary>
+    public List<Minion> ActiveMinions { get; set; } = new();
+
+    /// <summary>Tracks the MaxHP of the last enemy killed, used by Necromancer Raise Dead.</summary>
+    public int LastKilledEnemyHp { get; set; }
+
+    /// <summary>Gets the list of traps the player has placed that have not yet triggered.</summary>
+    public List<Trap> ActiveTraps { get; set; } = new();
+
+    /// <summary>Gets or sets whether a trap has already triggered during the current combat.</summary>
+    public bool TrapTriggeredThisCombat { get; set; } = false;
 }

@@ -84,6 +84,12 @@ public abstract class Enemy
     public bool IsElite { get; set; }  // boosted stats, guaranteed tier-2 drop
 
     /// <summary>
+    /// Gets or sets whether this enemy is of an undead creature type (e.g. Skeleton, Zombie, Lich).
+    /// Used by abilities, items, and effects that interact specifically with undead.
+    /// </summary>
+    public bool IsUndead { get; set; }
+
+    /// <summary>
     /// Gets the ASCII art lines for this enemy, displayed before combat if non-empty.
     /// An empty array means no art is shown.
     /// </summary>

@@ -147,6 +147,13 @@ public static class EnemyFactory
             "wraith" => _enemyConfig?.GetValueOrDefault("Wraith"),
             "vampirelord" => _enemyConfig?.GetValueOrDefault("VampireLord"),
             "mimic" => _enemyConfig?.GetValueOrDefault("Mimic"),
+            "giantrat" => _enemyConfig?.GetValueOrDefault("GiantRat"),
+            "cursedzombie" => _enemyConfig?.GetValueOrDefault("CursedZombie"),
+            "bloodhound" => _enemyConfig?.GetValueOrDefault("BloodHound"),
+            "ironguard" => _enemyConfig?.GetValueOrDefault("IronGuard"),
+            "nightstalker" => _enemyConfig?.GetValueOrDefault("NightStalker"),
+            "frostwyvern" => _enemyConfig?.GetValueOrDefault("FrostWyvern"),
+            "chaosknight" => _enemyConfig?.GetValueOrDefault("ChaosKnight"),
             _ => throw new ArgumentException($"Unknown enemy type: {enemyType}", nameof(enemyType))
         };
 
@@ -177,6 +184,13 @@ public static class EnemyFactory
             "wraith" => new Wraith(scaledStats, _itemConfig),
             "vampirelord" => new VampireLord(scaledStats, _itemConfig),
             "mimic" => new Mimic(scaledStats, _itemConfig),
+            "giantrat" => new GenericEnemy(scaledStats, _itemConfig),
+            "cursedzombie" => new GenericEnemy(scaledStats, _itemConfig),
+            "bloodhound" => new GenericEnemy(scaledStats, _itemConfig),
+            "ironguard" => new GenericEnemy(scaledStats, _itemConfig),
+            "nightstalker" => new GenericEnemy(scaledStats, _itemConfig),
+            "frostwyvern" => new GenericEnemy(scaledStats, _itemConfig),
+            "chaosknight" => new GenericEnemy(scaledStats, _itemConfig),
             _ => throw new ArgumentException($"Unknown enemy type: {enemyType}", nameof(enemyType))
         };
     }

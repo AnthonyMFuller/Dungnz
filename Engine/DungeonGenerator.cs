@@ -114,8 +114,7 @@ public class DungeonGenerator
         // Place boss in exit room
         exitRoom.Enemy = EnemyFactory.CreateBoss(_rng);
 
-        // Place enemies in ~60% of non-start, non-exit rooms
-        var enemyTypes = new[] { "goblin", "skeleton", "troll", "darkknight", "goblinshaman", "stonegolem", "wraith", "vampirelord", "mimic" };
+        // Place enemies in ~60% of non-start, non-exit rooms using floor-appropriate spawn pools
         for (int y = 0; y < height; y++)
         {
             for (int x = 0; x < width; x++)
@@ -127,8 +126,18 @@ public class DungeonGenerator
 
                 if (_rng.NextDouble() < 0.6)
                 {
-                    var enemyType = enemyTypes[_rng.Next(enemyTypes.Length)];
+                    var enemyType = FloorSpawnPools.GetRandomEnemyForFloor(floor, _rng);
                     room.Enemy = EnemyFactory.CreateScaled(enemyType, playerLevel, effectiveMult);
+
+                    // Apply elite boost on floors 4+ (5% chance; 10% on floor 8)
+                    int eliteThreshold = FloorSpawnPools.GetEliteChanceForFloor(floor);
+                    if (eliteThreshold > 0 && _rng.Next(100) < eliteThreshold)
+                    {
+                        room.Enemy.HP = room.Enemy.MaxHP = (int)(room.Enemy.MaxHP * 1.5);
+                        room.Enemy.Attack = (int)(room.Enemy.Attack * 1.25);
+                        room.Enemy.Name = $"Elite {room.Enemy.Name}";
+                        room.Enemy.IsElite = true;
+                    }
                 }
 
                 if (_rng.Next(100) < 20) room.Merchant = Merchant.CreateRandom(_rng, floor, _allItems);

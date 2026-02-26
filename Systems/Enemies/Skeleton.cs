@@ -35,6 +35,7 @@ public class Skeleton : Enemy
             Attack = stats.Attack;
             Defense = stats.Defense;
             XPValue = stats.XPValue;
+            IsUndead = stats.IsUndead;
             LootTable = new LootTable(minGold: stats.MinGold, maxGold: stats.MaxGold);
             AsciiArt = stats.AsciiArt;
         }
@@ -46,6 +47,7 @@ public class Skeleton : Enemy
             Attack = 12;
             Defense = 5;
             XPValue = 25;
+            IsUndead = true;
             LootTable = new LootTable(minGold: 5, maxGold: 15);
         }
         

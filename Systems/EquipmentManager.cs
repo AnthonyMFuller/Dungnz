@@ -44,6 +44,14 @@ public class EquipmentManager
             return;
         }
 
+        if (item.ClassRestriction != null && item.ClassRestriction.Length > 0
+            && !item.ClassRestriction.Contains(player.Class.ToString(), StringComparer.OrdinalIgnoreCase))
+        {
+            var allowed = string.Join(", ", item.ClassRestriction);
+            _display.ShowError($"Only {allowed} can equip the {item.Name}.");
+            return;
+        }
+
         // Weight check: equipping swaps new item into equipped slot and old item back into
         // inventory. If the old item is heavier than the new one, inventory weight increases.
         var currentlyEquipped = item.Type switch
