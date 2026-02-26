@@ -62,6 +62,9 @@ public record RecipeResult
     /// <summary>Gets whether this item can be placed in an equipment slot.</summary>
     public bool IsEquippable { get; init; } = false;
 
+    /// <summary>Gets the armor slot this item occupies when equipped (e.g. "Head", "Legs"). Empty string means Chest/default.</summary>
+    public string Slot { get; init; } = string.Empty;
+
     /// <summary>Gets the flavour or mechanical description shown in inventory.</summary>
     public string Description { get; init; } = string.Empty;
 
@@ -74,6 +77,7 @@ public record RecipeResult
         AttackBonus = AttackBonus,
         DefenseBonus = DefenseBonus,
         IsEquippable = IsEquippable,
+        Slot = Enum.TryParse<ArmorSlot>(Slot, ignoreCase: true, out var s) ? s : ArmorSlot.None,
         Description = Description,
         Tier = Enum.TryParse<ItemTier>(Tier, ignoreCase: true, out var tier) ? tier : ItemTier.Common
     };
