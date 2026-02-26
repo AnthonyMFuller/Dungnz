@@ -689,6 +689,356 @@
         "isEquippable": true,
         "description": "+8 ATK, +20 max mana. A living tome whose spells strike with physical force."
       }
+    },
+    {
+      "id": "scouts-hood-craft",
+      "name": "Scout's Hood",
+      "ingredients": [
+        {
+          "itemId": "leather-skullcap",
+          "displayName": "Leather Skullcap",
+          "count": 1
+        }
+      ],
+      "goldCost": 10,
+      "description": "The skullcap stripped of its straps and relined with softer hide. Better protection, quieter movement.",
+      "result": {
+        "itemId": "scouts-hood",
+        "name": "Scout's Hood",
+        "type": "Armor",
+        "tier": "Common",
+        "slot": "Head",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 3,
+        "isEquippable": true,
+        "description": "A fitted hood of cured hide. Leaves the eyes clear and keeps the ears unobstructed."
+      }
+    },
+    {
+      "id": "warlords-visor-craft",
+      "name": "Warlord's Visor",
+      "ingredients": [
+        {
+          "itemId": "iron-greathelm",
+          "displayName": "Iron Greathelm",
+          "count": 1
+        }
+      ],
+      "goldCost": 20,
+      "description": "The greathelm's brow-plate is hammered into a war visor — reduced coverage, sharper sightlines.",
+      "result": {
+        "itemId": "warlords-visor",
+        "name": "Warlord's Visor",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "slot": "Head",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 9,
+        "isEquippable": true,
+        "description": "+9 DEF. An open-faced iron visor favoured by officers who need to be seen and feared."
+      }
+    },
+    {
+      "id": "chain-shoulders-craft",
+      "name": "Chain Shoulders",
+      "ingredients": [
+        {
+          "itemId": "padded-shoulders",
+          "displayName": "Padded Shoulders",
+          "count": 1
+        }
+      ],
+      "goldCost": 25,
+      "description": "The padding is preserved but ringed with salvaged chainmail for serious shoulder protection.",
+      "result": {
+        "itemId": "chain-shoulders",
+        "name": "Chain Shoulders",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "slot": "Shoulders",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 7,
+        "isEquippable": true,
+        "description": "+7 DEF. Padded shoulders reinforced with interlocked rings. Absorbs glancing blows cleanly."
+      }
+    },
+    {
+      "id": "steel-pauldrons-craft",
+      "name": "Steel Pauldrons",
+      "ingredients": [
+        {
+          "itemId": "chainmail",
+          "displayName": "Chainmail",
+          "count": 1
+        }
+      ],
+      "goldCost": 30,
+      "description": "Sections of chainmail are heated, shaped, and riveted into broad shoulder guards.",
+      "result": {
+        "itemId": "steel-pauldrons",
+        "name": "Steel Pauldrons",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "slot": "Shoulders",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 9,
+        "isEquippable": true,
+        "description": "+9 DEF. Heavy iron pauldrons formed from repurposed chainmail. Excellent coverage."
+      }
+    },
+    {
+      "id": "chain-leggings-craft",
+      "name": "Chain Leggings",
+      "ingredients": [
+        {
+          "itemId": "canvas-leggings",
+          "displayName": "Canvas Leggings",
+          "count": 1
+        }
+      ],
+      "goldCost": 20,
+      "description": "Iron rings stitched over the canvas provide protection without sacrificing mobility.",
+      "result": {
+        "itemId": "chain-leggings",
+        "name": "Chain Leggings",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "slot": "Legs",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 8,
+        "isEquippable": true,
+        "description": "+8 DEF. Chain-reinforced leggings. Heavy enough to matter, flexible enough to fight in."
+      }
+    },
+    {
+      "id": "steel-legguards-craft",
+      "name": "Steel Legguards",
+      "ingredients": [
+        {
+          "itemId": "chainmail",
+          "displayName": "Chainmail",
+          "count": 1
+        }
+      ],
+      "goldCost": 30,
+      "description": "Chainmail panels shaped around the thigh and shin into proper leg armour.",
+      "result": {
+        "itemId": "steel-legguards",
+        "name": "Steel Legguards",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "slot": "Legs",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 10,
+        "isEquippable": true,
+        "description": "+10 DEF. Shaped steel plates covering the legs. A serious upgrade for those who expect to be hit."
+      }
+    },
+    {
+      "id": "reinforced-boots-craft",
+      "name": "Reinforced Boots",
+      "ingredients": [
+        {
+          "itemId": "worn-boots",
+          "displayName": "Worn Boots",
+          "count": 1
+        }
+      ],
+      "goldCost": 15,
+      "description": "The soles resoled, the toe-caps relined with hammered iron. These boots will outlast their owner.",
+      "result": {
+        "itemId": "reinforced-boots",
+        "name": "Reinforced Boots",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "slot": "Feet",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 7,
+        "isEquippable": true,
+        "description": "+7 DEF. Worn leather resoled and iron-capped. Considerably harder to cut through."
+      }
+    },
+    {
+      "id": "steel-sabatons-craft",
+      "name": "Steel Sabatons",
+      "ingredients": [
+        {
+          "itemId": "scale-mail",
+          "displayName": "Scale Mail",
+          "count": 1
+        }
+      ],
+      "goldCost": 35,
+      "description": "Scales stripped from the coat and articulated over a boot frame — full foot protection.",
+      "result": {
+        "itemId": "steel-sabatons",
+        "name": "Steel Sabatons",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "slot": "Feet",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 9,
+        "isEquippable": true,
+        "description": "+9 DEF. Articulated scale-plate sabatons. Protects the feet without locking the ankle."
+      }
+    },
+    {
+      "id": "chain-gloves-craft",
+      "name": "Chain Gloves",
+      "ingredients": [
+        {
+          "itemId": "rough-gloves",
+          "displayName": "Rough Gloves",
+          "count": 1
+        }
+      ],
+      "goldCost": 15,
+      "description": "Mail rings sewn over the knuckles and back of the hand. Punches harder. Hurts less when receiving.",
+      "result": {
+        "itemId": "chain-gloves",
+        "name": "Chain Gloves",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "slot": "Hands",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 7,
+        "isEquippable": true,
+        "description": "+7 DEF. Rough gloves reinforced with mail rings. Simple, effective hand protection."
+      }
+    },
+    {
+      "id": "iron-gauntlets-craft",
+      "name": "Iron Gauntlets",
+      "ingredients": [
+        {
+          "itemId": "chainmail",
+          "displayName": "Chainmail",
+          "count": 1
+        }
+      ],
+      "goldCost": 25,
+      "description": "Chainmail sections beaten and shaped over a mould into proper plated gauntlets.",
+      "result": {
+        "itemId": "iron-gauntlets",
+        "name": "Iron Gauntlets",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "slot": "Hands",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 8,
+        "isEquippable": true,
+        "description": "+8 DEF. Heavy iron gauntlets forged from repurposed chainmail. Solid protection for the hands."
+      }
+    },
+    {
+      "id": "hunters-cloak-craft",
+      "name": "Hunter's Cloak",
+      "ingredients": [
+        {
+          "itemId": "fur-cloak",
+          "displayName": "Fur Cloak",
+          "count": 1
+        }
+      ],
+      "goldCost": 20,
+      "description": "The fur treated, cut, and restitched into a low-profile hunting garment. Hard to spot. Harder to hit.",
+      "result": {
+        "itemId": "hunters-cloak",
+        "name": "Hunter's Cloak",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "slot": "Back",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 8,
+        "isEquippable": true,
+        "description": "+8 DEF. A muted, close-fitting hunting cloak. Breaks up the silhouette. Breathes in the cold."
+      }
+    },
+    {
+      "id": "ascendant-shroud-craft",
+      "name": "Ascendant Shroud",
+      "ingredients": [
+        {
+          "itemId": "cloak-of-the-magi",
+          "displayName": "Cloak of the Magi",
+          "count": 1
+        }
+      ],
+      "goldCost": 50,
+      "description": "The Magi cloak's weave is unpicked and rewoven with arcane thread into something that hums with power.",
+      "result": {
+        "itemId": "ascendant-shroud",
+        "name": "Ascendant Shroud",
+        "type": "Armor",
+        "tier": "Rare",
+        "slot": "Back",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 12,
+        "isEquippable": true,
+        "description": "+12 DEF. A cloak rewoven with ascendant-grade arcane thread. Power bleeds from the hem."
+      }
+    },
+    {
+      "id": "heater-shield-craft",
+      "name": "Heater Shield",
+      "ingredients": [
+        {
+          "itemId": "wooden-shield",
+          "displayName": "Wooden Shield",
+          "count": 1
+        }
+      ],
+      "goldCost": 30,
+      "description": "The wooden core is shaped and banded with iron into a proper heater. Light enough to move with.",
+      "result": {
+        "itemId": "heater-shield",
+        "name": "Heater Shield",
+        "type": "Armor",
+        "tier": "Uncommon",
+        "slot": "OffHand",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 8,
+        "isEquippable": true,
+        "description": "+8 DEF. An iron-banded heater shield. Classic shape for a reason — it works."
+      }
+    },
+    {
+      "id": "tower-shield-craft",
+      "name": "Tower Shield",
+      "ingredients": [
+        {
+          "itemId": "iron-buckler",
+          "displayName": "Iron Buckler",
+          "count": 1
+        }
+      ],
+      "goldCost": 45,
+      "description": "The buckler is reforged, its metal drawn into a full tower shield. Walls on your arm.",
+      "result": {
+        "itemId": "tower-shield",
+        "name": "Tower Shield",
+        "type": "Armor",
+        "tier": "Rare",
+        "slot": "OffHand",
+        "healAmount": 0,
+        "attackBonus": 0,
+        "defenseBonus": 14,
+        "isEquippable": true,
+        "description": "+14 DEF. A full-height tower shield reforged from an iron buckler. Covers more. Costs more."
+      }
     }
   ]
 }
