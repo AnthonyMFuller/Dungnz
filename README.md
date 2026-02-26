@@ -124,12 +124,65 @@ damage = Math.Max(1, attacker.Attack - defender.Defense)
 
 Abilities cost mana and have a cooldown measured in turns. Unlocked automatically on reaching the required level.
 
-| Ability | Mana | Cooldown | Unlocked | Effect |
-|---------|------|----------|----------|--------|
-| Power Strike | 10 | 2 turns | Level 1 | Deal 2× normal damage |
-| Defensive Stance | 8 | 3 turns | Level 3 | +50% DEF for 2 turns (Fortified) |
-| Poison Dart | 12 | 4 turns | Level 5 | Apply Poison to enemy |
-| Second Wind | 15 | 5 turns | Level 7 | Heal 30% of Max HP |
+**Warrior**
+
+| Ability | Mana | CD | Unlocked | Effect |
+|---------|------|----|----------|--------|
+| Shield Bash | 8 | 2 | Level 1 | Strike with shield, stunning the enemy |
+| Battle Cry | 10 | 4 | Level 2 | Rally, boosting attack power |
+| Fortify | 12 | 3 | Level 3 | Reduce incoming damage |
+| Reckless Blow | 15 | 3 | Level 5 | Massive damage, reduces DEF temporarily |
+| Last Stand | 20 | 6 | Level 7 | Desperate damage surge at low HP |
+
+**Mage**
+
+| Ability | Mana | CD | Unlocked | Effect |
+|---------|------|----|----------|--------|
+| Arcane Bolt | 8 | 0 | Level 1 | Magical damage |
+| Frost Nova | 14 | 3 | Level 2 | Slow enemy for 2 turns |
+| Mana Shield | 0 | 5 | Level 4 | Absorb damage with mana |
+| Arcane Sacrifice | 0 | 3 | Level 5 | Sacrifice HP to restore mana |
+| Meteor | 35 | 5 | Level 7 | Devastating magical strike |
+
+**Rogue**
+
+| Ability | Mana | CD | Unlocked | Effect |
+|---------|------|----|----------|--------|
+| Quick Strike | 5 | 0 | Level 1 | Fast attack, combo-ready |
+| Backstab | 10 | 2 | Level 2 | Bonus damage from behind |
+| Evade | 12 | 4 | Level 3 | Dodge next enemy attack |
+| Flurry | 15 | 3 | Level 5 | Rapid succession of attacks |
+| Assassinate | 25 | 6 | Level 7 | Execute with massive damage |
+
+**Paladin**
+
+| Ability | Mana | CD | Unlocked | Effect |
+|---------|------|----|----------|--------|
+| Holy Strike | 8 | 0 | Level 1 | 150% damage vs undead |
+| Lay on Hands | 15 | 4 | Level 2 | Heal 40% Max HP (50% when HP < 25%) |
+| Divine Shield | 12 | 3 | Level 3 | Absorb all damage for 2 turns |
+| Consecrate | 18 | 3 | Level 5 | Holy damage + Bleed; Stun vs undead |
+| Judgment | 25 | 5 | Level 7 | Damage scales with missing HP; execute at ≤20% |
+
+**Necromancer**
+
+| Ability | Mana | CD | Unlocked | Effect |
+|---------|------|----|----------|--------|
+| Death Bolt | 8 | 0 | Level 1 | 120% vs poisoned/bleeding targets |
+| Curse | 10 | 2 | Level 2 | Weaken enemy: −25% damage for 3 turns |
+| Raise Dead | 25 | 4 | Level 3 | Raise a skeleton from the last slain enemy |
+| Life Drain | 15 | 2 | Level 5 | Deal damage and heal for the full amount |
+| Corpse Explosion | 30 | 5 | Level 7 | Sacrifice all minions for massive damage |
+
+**Ranger**
+
+| Ability | Mana | CD | Unlocked | Effect |
+|---------|------|----|----------|--------|
+| Precise Shot | 6 | 0 | Level 1 | 130% vs enemies with a status effect |
+| Lay Trap (Poison) | 10 | 3 | Level 2 | Poison trap triggers before next enemy attack |
+| Summon Companion | 15 | 5 | Level 3 | Summon a wolf companion |
+| Lay Trap (Snare) | 12 | 3 | Level 5 | Snare trap slows and stuns |
+| Volley | 25 | 4 | Level 7 | Multi-attack; +30% with wolf or active trap |
 
 ### Status effects
 
@@ -263,7 +316,7 @@ One-use interactive altars found in some rooms (`use shrine`):
 
 ### Merchants
 
-Shop rooms contain a **Merchant** (`shop` command) selling consumables and gear including Health Potions (25g), Mana Potions (20g), Iron Sword, Leather Armor, and Elixir of Strength (80g).
+Shop rooms contain a **Merchant** (`shop` command). Floor 1–5 stock staples (Health Potions, Mana Potions, Iron Sword, Leather Armor, Elixir of Strength). Floors 6–8 carry a rotating high-tier inventory including Legendary accessories, floor-exclusive weapons and armor, and guaranteed key consumables (`dragonheart-elixir` on floor 6, `bone-flute` and `panacea` on floor 7, and `crown-of-ascension` on floor 8).
 
 ### Item tiers and affixes
 
@@ -365,23 +418,33 @@ Dungnz/
 │   └── EnemyFactory.cs          # Spawns regular enemies or boss variants by floor
 ├── Models/                      # Pure data: Player, Room, Enemy, Item, enums, events
 ├── Data/
-│   ├── enemy-stats.json         # Override stats for enemies (used by EnemyFactory)
-│   └── item-stats.json          # Override stats for loot items
+│   ├── enemy-stats.json         # Stats and ASCII art for all 29+ enemy types
+│   ├── item-stats.json          # 119 items: stats, tiers, passiveEffectId, setId, classRestriction
+│   ├── item-affixes.json        # 10 prefixes + 10 suffixes for Uncommon+ affix rolls
+│   ├── crafting-recipes.json    # 15+ crafting recipes with ingredient + gold costs
+│   └── merchant-inventory.json  # Per-floor merchant stock (floors 1–8)
 ├── Display/
 │   ├── IDisplayService.cs       # Output abstraction (all console writes go through here)
 │   └── DisplayService.cs        # Concrete ANSI console implementation
 └── Systems/
     ├── AbilityManager.cs        # Ability registry, cooldown tracking, ability execution
     ├── AchievementSystem.cs     # Run-end achievement evaluation and persistence
+    ├── AffixRegistry.cs         # Affix definitions + roll logic (10% on Uncommon+)
     ├── AmbientEvents.cs         # Random flavour events on room entry
     ├── BossNarration.cs         # Boss-specific combat flavour text
     ├── ColorCodes.cs            # ANSI colour constants and helper methods
     ├── CraftingSystem.cs        # Recipe catalogue and TryCraft logic
     ├── EquipmentManager.cs      # Equip/unequip with stat delta application (colour-coded deltas)
+    ├── FloorSpawnPools.cs       # Per-floor enemy spawn tables (60/30/10 distribution)
+    ├── FloorTransitionNarration.cs # Atmospheric text for floor 5→6, 6→7, 7→8 transitions
     ├── InventoryManager.cs      # Take, use, and item dispatch
+    ├── MerchantInventoryConfig.cs  # Loads and queries merchant-inventory.json
     ├── NarrationService.cs      # General combat and exploration flavour text
+    ├── PassiveEffectProcessor.cs   # Legendary passive effect handlers (vampiric, reflect, phoenix…)
     ├── PrestigeSystem.cs        # Cross-run win tracking and prestige bonuses
+    ├── RoomDescriptions.cs      # Floor-themed room description pools (8 floors × 4 each)
     ├── SaveSystem.cs            # Full game-state serialisation/deserialisation
+    ├── SetBonusManager.cs       # 3 equipment sets with 2- and 3-piece bonus detection
     ├── SkillTree.cs             # Passive skill unlock and bonus application
     ├── StatusEffectManager.cs   # Per-turn effect ticking and stat modifiers
     └── Enemies/                 # One class per enemy type + BossVariants.cs
