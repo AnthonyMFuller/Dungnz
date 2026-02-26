@@ -65,6 +65,9 @@ public record ItemStats
 
     /// <summary>Optional set identifier linking this item to a named equipment set (e.g. "shadowstalker").</summary>
     public string? SetId { get; init; }
+
+    /// <summary>The armor slot this item occupies when equipped. Defaults to <c>"None"</c> for non-armor items.</summary>
+    public string Slot { get; init; } = "None";
 }
 
 /// <summary>
@@ -205,7 +208,8 @@ public static class ItemConfig
             SellPrice = stats.SellPrice,
             ClassRestriction = stats.ClassRestriction,
             PassiveEffectId = stats.PassiveEffectId,
-            SetId = stats.SetId
+            SetId = stats.SetId,
+            Slot = Enum.TryParse<ArmorSlot>(stats.Slot, ignoreCase: true, out var slot) ? slot : ArmorSlot.None,
         };
     }
 }

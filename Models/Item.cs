@@ -72,6 +72,12 @@ public class Item
     public bool IsEquippable { get; set; }
 
     /// <summary>
+    /// The armor slot this item occupies when equipped.
+    /// <see cref="ArmorSlot.None"/> for weapons, accessories, consumables, and gold.
+    /// </summary>
+    public ArmorSlot Slot { get; set; } = ArmorSlot.None;
+
+    /// <summary>
     /// Gets or sets the amount of mana restored to the player when this consumable item is used.
     /// Distinct from <see cref="MaxManaBonus"/>, which permanently raises the player's mana cap.
     /// </summary>
