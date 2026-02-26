@@ -203,12 +203,17 @@ public class DungeonGenerator
 
     private Item CreateRandomItem(int floor)
     {
-        var tier = floor switch
+        ItemTier tier;
+        if (floor <= 2)
+            tier = ItemTier.Common;
+        else if (floor <= 4)
+            tier = ItemTier.Uncommon;
+        else
         {
-            <= 2 => ItemTier.Common,
-            <= 4 => ItemTier.Uncommon,
-            _    => ItemTier.Rare
-        };
+            // Floors 5-6: 8% Epic chance; floors 7-8: 15% Epic chance; otherwise Rare
+            double epicChance = floor >= 7 ? 0.15 : 0.08;
+            tier = _rng.NextDouble() < epicChance ? ItemTier.Epic : ItemTier.Rare;
+        }
 
         if (_allItems.Count > 0)
         {
