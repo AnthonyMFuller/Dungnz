@@ -159,6 +159,7 @@ public static class ColorCodes
         {
             ItemTier.Uncommon  => Green,
             ItemTier.Rare      => BrightCyan,
+            ItemTier.Epic      => Magenta,
             ItemTier.Legendary => Yellow,
             _                  => BrightWhite
         };

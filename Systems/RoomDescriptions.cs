@@ -182,8 +182,8 @@ public static class RoomDescriptions
     // Context-aware description pools (Phase 8-E1)
     // Band 1 = F1-2  (Shallow Dungeon)
     // Band 2 = F3-4  (Armory / Barracks)
-    // Band 3 = F5-6  (Undead / Lich Domain)
-    // Band 4 = F7-8  (Volcanic / Abyssal)
+    // Band 3 = F5-6  (Volcanic / Fire)
+    // Band 4 = F7-8  (Undead / Lich Domain)
     // -----------------------------------------------------------------------
 
     /// <summary>Band 1 -- empty room: damp stone, torchlight, quiet.</summary>
@@ -392,16 +392,16 @@ public static class RoomDescriptions
             (3 or 4, RoomContext.Merchant) => ArmoryMerchant,
             (3 or 4, RoomContext.Shrine)   => ArmoryShrine,
             (3 or 4, RoomContext.Special)  => ArmorySpecial,
-            (5 or 6, RoomContext.Empty)    => UndeadEmpty,
-            (5 or 6, RoomContext.Enemy)    => UndeadEnemy,
-            (5 or 6, RoomContext.Merchant) => UndeadMerchant,
-            (5 or 6, RoomContext.Shrine)   => UndeadShrine,
-            (5 or 6, RoomContext.Special)  => UndeadSpecial,
-            (7 or 8, RoomContext.Empty)    => VolcanicEmpty,
-            (7 or 8, RoomContext.Enemy)    => VolcanicEnemy,
-            (7 or 8, RoomContext.Merchant) => VolcanicMerchant,
-            (7 or 8, RoomContext.Shrine)   => VolcanicShrine,
-            (7 or 8, RoomContext.Special)  => VolcanicSpecial,
+            (5 or 6, RoomContext.Empty)    => VolcanicEmpty,
+            (5 or 6, RoomContext.Enemy)    => VolcanicEnemy,
+            (5 or 6, RoomContext.Merchant) => VolcanicMerchant,
+            (5 or 6, RoomContext.Shrine)   => VolcanicShrine,
+            (5 or 6, RoomContext.Special)  => VolcanicSpecial,
+            (7 or 8, RoomContext.Empty)    => UndeadEmpty,
+            (7 or 8, RoomContext.Enemy)    => UndeadEnemy,
+            (7 or 8, RoomContext.Merchant) => UndeadMerchant,
+            (7 or 8, RoomContext.Shrine)   => UndeadShrine,
+            (7 or 8, RoomContext.Special)  => UndeadSpecial,
             _ => ForFloor(floor),
         };
     }
