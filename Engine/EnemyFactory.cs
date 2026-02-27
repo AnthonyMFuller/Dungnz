@@ -71,7 +71,7 @@ public static class EnemyFactory
             5 => new StoneGolem(_enemyConfig?.GetValueOrDefault("StoneGolem"), _itemConfig),
             6 => new Wraith(_enemyConfig?.GetValueOrDefault("Wraith"), _itemConfig),
             7 => new VampireLord(_enemyConfig?.GetValueOrDefault("VampireLord"), _itemConfig),
-            _ => new Mimic(_enemyConfig?.GetValueOrDefault("Mimic"), _itemConfig)
+            _ => new Mimic(_enemyConfig?.GetValueOrDefault("Mimic"), _itemConfig, rng)
         };
 
         // 5% chance to spawn as Elite variant
@@ -98,15 +98,15 @@ public static class EnemyFactory
     {
         return floor switch
         {
-            1 => new GoblinWarchief(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
-            2 => new PlagueHoundAlpha(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
-            3 => new IronSentinel(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
-            4 => new BoneArchon(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
-            5 => new CrimsonVampire(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            1 => new GoblinWarchief(_enemyConfig?.GetValueOrDefault("GoblinWarchief"), _itemConfig),
+            2 => new PlagueHoundAlpha(_enemyConfig?.GetValueOrDefault("PlagueHoundAlpha"), _itemConfig),
+            3 => new IronSentinel(_enemyConfig?.GetValueOrDefault("IronSentinel"), _itemConfig),
+            4 => new BoneArchon(_enemyConfig?.GetValueOrDefault("BoneArchon"), _itemConfig),
+            5 => new CrimsonVampire(_enemyConfig?.GetValueOrDefault("CrimsonVampire"), _itemConfig),
             6 => new ArchlichSovereign(_enemyConfig?.GetValueOrDefault("ArchlichSovereign"), _itemConfig),
             7 => new AbyssalLeviathan(_enemyConfig?.GetValueOrDefault("AbyssalLeviathan"), _itemConfig),
             8 => new InfernalDragon(_enemyConfig?.GetValueOrDefault("InfernalDragon"), _itemConfig),
-            _ => new GoblinWarchief(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig), // fallback for floor < 1
+            _ => new GoblinWarchief(_enemyConfig?.GetValueOrDefault("GoblinWarchief"), _itemConfig), // fallback for floor < 1
         };
     }
 

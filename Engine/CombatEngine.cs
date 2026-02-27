@@ -778,6 +778,10 @@ public class CombatEngine : ICombatEngine
                 _display.ShowCombatMessage("[Shadow Strike] From the shadows — double damage!");
             }
             
+            // IronSentinel: 50% damage reduction from plating
+            if (enemy is IronSentinel sentinel)
+                playerDmg = Math.Max(1, (int)(playerDmg * (1.0 - sentinel.ProtectionDR)));
+
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
 
@@ -944,12 +948,21 @@ public class CombatEngine : ICombatEngine
             }
         }
 
+        // BoneArchon: raise a skeleton when HP drops to 50% and no adds are alive
+        if (enemy is BoneArchon bossArchon && bossArchon.HP <= bossArchon.MaxHP * 0.50 && bossArchon.AddsAlive < 1)
+        {
+            bossArchon.AddsAlive = 1;
+            _display.ShowCombatMessage("The Bone Archon raises a skeleton from the fallen!");
+        }
+
         // InfernalDragon phase 2: activate flight at 50% HP
+        bool flightJustActivated = false;
         if (enemy is InfernalDragon dragon)
         {
             if (!dragon.FlightPhaseActive && dragon.HP <= dragon.MaxHP * 0.50)
             {
                 dragon.FlightPhaseActive = true;
+                flightJustActivated = true;
                 _display.ShowCombat(BossNarration.GetPhase(enemy.Name));
                 _display.ShowCombatMessage("⚠ The Infernal Dragon takes to the air — attacks have a 40% chance to miss!");
             }
@@ -1035,7 +1048,7 @@ public class CombatEngine : ICombatEngine
             // InfernalDragon: Flame Breath every 2nd turn
             bool isFlameBreath = false;
             if (enemy.FlameBreathCooldown > 0) enemy.FlameBreathCooldown--;
-            if (enemy is InfernalDragon fd && fd.FlightPhaseActive)
+            if (enemy is InfernalDragon fd && fd.FlightPhaseActive && !flightJustActivated)
             {
                 if (fd.FlameBreathCooldown == 0)
                 {
@@ -1044,12 +1057,19 @@ public class CombatEngine : ICombatEngine
                     _display.ShowCombatMessage($"🔥 The {enemy.Name} unleashes a torrent of Flame Breath!");
                 }
             }
-            // AbyssalLeviathan re-emerge Tidal Slam
+            // AbyssalLeviathan re-emerge Tidal Slam — only after first full submerge cycle (TurnCount>3)
             bool isTidalSlam = false;
-            if (enemy is AbyssalLeviathan lev && lev.TurnCount > 0 && lev.TurnCount % 3 == 1 && !lev.IsSubmerged)
+            if (enemy is AbyssalLeviathan lev && lev.TurnCount > 3 && lev.TurnCount % 3 == 1 && !lev.IsSubmerged)
             {
                 isTidalSlam = true;
                 _display.ShowCombatMessage("⚡ The Leviathan erupts from the depths with a Tidal Slam!");
+            }
+
+            // BoneArchon: apply Weakened to player every 3rd attack turn
+            if (enemy is BoneArchon boneArchon && boneArchon.AttackCount % 3 == 0)
+            {
+                _statusEffects.Apply(player, StatusEffect.Weakened, 3);
+                _display.ShowCombatMessage("The Bone Archon's strikes drain your strength! (Weakened 3T)");
             }
 
             int enemyEffAtk = enemy.Attack + _statusEffects.GetStatModifier(enemy, "Attack");

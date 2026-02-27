@@ -8,6 +8,8 @@ using Dungnz.Systems;
 /// </summary>
 public class Mimic : Enemy
 {
+    private readonly Random _rng;
+
     /// <summary>
     /// Initialises the Mimic using either the provided external stats from config
     /// or built-in fallback defaults. Sets <see cref="Enemy.IsAmbush"/> to <see langword="true"/>
@@ -19,13 +21,15 @@ public class Mimic : Enemy
     /// </param>
     /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
     [System.Text.Json.Serialization.JsonConstructor]
-    private Mimic() { }
+    private Mimic() { _rng = new Random(); }
 
     /// <summary>Initialises a Mimic with the given stats and item configuration, or falls back to hard-coded defaults. Enables the ambush mechanic.</summary>
     /// <param name="stats">External stats from config, or <see langword="null"/> to use defaults.</param>
     /// <param name="itemConfig">Item configuration; currently unused for this enemy.</param>
-    public Mimic(EnemyStats? stats = null, List<ItemStats>? itemConfig = null)
+    /// <param name="rng">Random number generator; if null a new instance is created.</param>
+    public Mimic(EnemyStats? stats = null, List<ItemStats>? itemConfig = null, Random? rng = null)
     {
+        _rng = rng ?? new Random();
         IsAmbush = true; // first-turn surprise: player cannot act
         if (stats != null)
         {
@@ -53,7 +57,7 @@ public class Mimic : Enemy
                                                   && i.Name != "Boss Key").ToList();
             if (rareItems.Count > 0)
             {
-                var pick = rareItems[new Random().Next(rareItems.Count)];
+                var pick = rareItems[_rng.Next(rareItems.Count)];
                 LootTable.AddDrop(ItemConfig.CreateItem(pick), 1.0);
             }
         }
