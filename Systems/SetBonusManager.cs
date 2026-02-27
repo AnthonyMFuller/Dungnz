@@ -95,6 +95,20 @@ public static class SetBonusManager
             GrantsArcaneSurge = true
         },
 
+        // ── Shadowstep (Rogue) ───────────────────────────────────────────────
+        new SetBonus
+        {
+            SetId = "shadowstep-set", PiecesRequired = 2,
+            Description = "Shadowstep 2-piece: +15% dodge chance",
+            DodgeChanceBonus = 0.15f
+        },
+        new SetBonus
+        {
+            SetId = "shadowstep-set", PiecesRequired = 4,
+            Description = "Shadowstep 4-piece: first-attack advantage — +15% crit chance",
+            CritChanceBonus = 0.15f
+        },
+
         // ── 4-piece set bonuses ───────────────────────────────────────────────
         new SetBonus
         {
@@ -230,8 +244,9 @@ public static class SetBonusManager
     {
         var ids = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         if (player.EquippedWeapon?.SetId != null)    ids.Add(player.EquippedWeapon.SetId);
-        if (player.EquippedChest?.SetId != null)     ids.Add(player.EquippedChest.SetId);
         if (player.EquippedAccessory?.SetId != null) ids.Add(player.EquippedAccessory.SetId);
+        foreach (var armor in player.AllEquippedArmor)
+            if (armor.SetId != null) ids.Add(armor.SetId);
         return ids;
     }
 }
