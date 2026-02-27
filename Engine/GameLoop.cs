@@ -24,6 +24,7 @@ public class GameLoop
     private Room _currentRoom = null!;
     private RunStats _stats = null!;
     private DateTime _runStart;
+    private Random _rng = new();
     private readonly AchievementSystem _achievements = new();
     private readonly EquipmentManager _equipment;
     private readonly InventoryManager _inventoryManager;
@@ -118,6 +119,7 @@ public class GameLoop
         _currentRoom = startRoom;
         _stats = new RunStats();
         _runStart = DateTime.UtcNow;
+        _rng = _seed.HasValue ? new Random(_seed.Value) : new Random();
         _currentFloor = 1;
         _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
         _display.ShowMessage($"Floor {_currentFloor}");
@@ -216,16 +218,7 @@ public class GameLoop
             if (_turnConsumed) _stats.TurnsTaken++;
             if (_turnConsumed && !_gameOver) ApplyRoomHazard(_currentRoom, _player);
             if (_player.HP <= 0 && !_gameOver)
-            {
-                ShowGameOver(killedBy: "environmental hazard");
-                _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
-                if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
-                _stats.FinalLevel = _player.Level;
-                _stats.TimeElapsed = DateTime.UtcNow - _runStart;
-                _stats.Display(_display.ShowMessage);
-                RecordRunEnd(won: false);
-                _gameOver = true;
-            }
+                ExitRun("environmental hazard");
             if (_gameOver) break;
         }
     }
@@ -311,14 +304,7 @@ public class GameLoop
             _display.ShowMessage($"⚠ {hazardMsg} HP: {_player.HP}/{_player.MaxHP}");
             if (_player.HP <= 0)
             {
-                ShowGameOver(killedBy: "a dungeon trap");
-                _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
-                if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
-                _stats.FinalLevel = _player.Level;
-                _stats.TimeElapsed = DateTime.UtcNow - _runStart;
-                _stats.Display(_display.ShowMessage);
-                RecordRunEnd(won: false);
-                _gameOver = true;
+                ExitRun("a dungeon trap");
                 return;
             }
         }
@@ -337,14 +323,7 @@ public class GameLoop
             
             if (result == CombatResult.PlayerDied)
             {
-                ShowGameOver(killedBy: killerName);
-                _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
-                if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
-                _stats.FinalLevel = _player.Level;
-                _stats.TimeElapsed = DateTime.UtcNow - _runStart;
-                _stats.Display(_display.ShowMessage);
-                RecordRunEnd(won: false);
-                _gameOver = true;
+                ExitRun(killerName);
                 return;
             }
             
@@ -899,7 +878,7 @@ public class GameLoop
 
     private void HandlePetrifiedLibrary()
     {
-        var roll = new Random().Next(3);
+        var roll = _rng.Next(3);
         switch (roll)
         {
             case 0:
@@ -963,23 +942,14 @@ public class GameLoop
                 }
                 break;
             case "2":
-                var dmg = new Random().Next(15, 31);
+                var dmg = _rng.Next(15, 31);
                 _player.TakeDamage(dmg);
                 _stats.DamageTaken += dmg;
                 _display.ShowMessage($"Blades nick you as you grab the weapon! -{dmg} HP. HP: {_player.HP}/{_player.MaxHP}");
                 GiveArmoryLoot(uncommon: true);
                 _currentRoom.SpecialRoomUsed = true;
                 if (_player.HP <= 0)
-                {
-                    ShowGameOver(killedBy: "an armory trap");
-                    _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
-                    if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
-                    _stats.FinalLevel = _player.Level;
-                    _stats.TimeElapsed = DateTime.UtcNow - _runStart;
-                    _stats.Display(_display.ShowMessage);
-                    RecordRunEnd(won: false);
-                    _gameOver = true;
-                }
+                    ExitRun("an armory trap");
                 break;
             case "L":
                 _display.ShowMessage("You leave the armory untouched.");
@@ -1013,7 +983,7 @@ public class GameLoop
     private void HandleTrapRoom()
     {
         var variant = _currentRoom.Trap ?? TrapVariant.ArrowVolley;
-        var rng = new Random();
+        var rng = _rng;
 
         // Show dramatic room description
         string roomDesc = variant switch
@@ -1043,7 +1013,7 @@ public class GameLoop
                         _player.TakeDamage(15);
                         _stats.DamageTaken += 15;
                         _display.ShowMessage($"An arrow slips past your guard! -15 HP. HP: {_player.HP}/{_player.MaxHP}");
-                        if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _display.ShowMessage($"Difficulty: {GetDifficultyName()}"); if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}"); _stats.FinalLevel = _player.Level; _stats.TimeElapsed = DateTime.UtcNow - _runStart; _stats.Display(_display.ShowMessage); RecordRunEnd(won: false); _gameOver = true; return; }
+                        if (_player.HP <= 0) { ExitRun("a dungeon trap"); return; }
                     }
                     GiveTrapLoot(rng.NextDouble() < 0.5 ? Models.ItemTier.Uncommon : Models.ItemTier.Common,
                         "You spot a small cache behind the arrow slits.");
@@ -1053,7 +1023,7 @@ public class GameLoop
                     _player.TakeDamage(8);
                     _stats.DamageTaken += 8;
                     _display.ShowMessage($"You sprint through, arrows grazing your side! -8 HP. HP: {_player.HP}/{_player.MaxHP}");
-                    if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _display.ShowMessage($"Difficulty: {GetDifficultyName()}"); if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}"); _stats.FinalLevel = _player.Level; _stats.TimeElapsed = DateTime.UtcNow - _runStart; _stats.Display(_display.ShowMessage); RecordRunEnd(won: false); _gameOver = true; return; }
+                    if (_player.HP <= 0) { ExitRun("a dungeon trap"); return; }
                     GiveTrapLoot(Models.ItemTier.Uncommon, "Your speed reveals a hidden loot cache!");
                 }
                 else
@@ -1114,7 +1084,7 @@ public class GameLoop
                         _player.TakeDamage(20);
                         _stats.DamageTaken += 20;
                         _display.ShowMessage($"The floor gives way! You plummet into rubble! -20 HP. HP: {_player.HP}/{_player.MaxHP}");
-                        if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _display.ShowMessage($"Difficulty: {GetDifficultyName()}"); if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}"); _stats.FinalLevel = _player.Level; _stats.TimeElapsed = DateTime.UtcNow - _runStart; _stats.Display(_display.ShowMessage); RecordRunEnd(won: false); _gameOver = true; return; }
+                        if (_player.HP <= 0) { ExitRun("a dungeon trap"); return; }
                     }
                 }
                 else if (cfChoice == "2")
@@ -1380,6 +1350,22 @@ public class GameLoop
     /// <param name="byTrap">
     /// <see langword="true"/> when the player was killed by an environmental hazard rather than a monster.
     /// </param>
+    /// <summary>
+    /// Single chokepoint for all player-death paths. Records stats, shows the game-over screen,
+    /// and sets <see cref="_gameOver"/>. Every death path must call this instead of duplicating the sequence.
+    /// </summary>
+    private void ExitRun(string killedBy)
+    {
+        _stats.FinalLevel = _player.Level;
+        _stats.TimeElapsed = DateTime.UtcNow - _runStart;
+        _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
+        if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
+        _stats.Display(_display.ShowMessage);
+        ShowGameOver(killedBy: killedBy);
+        RecordRunEnd(won: false);
+        _gameOver = true;
+    }
+
     private void ShowGameOver(string? killedBy = null, bool byTrap = false)
     {
         _display.ShowGameOver(_player, killedBy, _stats);

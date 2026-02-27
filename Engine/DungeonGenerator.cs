@@ -13,7 +13,7 @@ using Dungnz.Systems;
 public class DungeonGenerator
 {
     private readonly Random _rng;
-    private readonly IReadOnlyList<Item> _allItems;
+    private readonly IReadOnlyList<Item> _allItems = Array.Empty<Item>();
 
     /// <summary>
     /// Initialises a new <see cref="DungeonGenerator"/> with an optional fixed seed.
@@ -27,10 +27,10 @@ public class DungeonGenerator
     /// All available items used to populate merchant stock. When <see langword="null"/>,
     /// merchants fall back to a hardcoded default set.
     /// </param>
-    public DungeonGenerator(int? seed = null, IReadOnlyList<Item>? allItems = null)
+    public DungeonGenerator(int? seed, IReadOnlyList<Item> allItems)
     {
         _rng = seed.HasValue ? new Random(seed.Value) : new Random();
-        _allItems = allItems ?? Array.Empty<Item>();
+        _allItems = allItems;
     }
 
     /// <summary>
