@@ -437,6 +437,92 @@ View unlocked achievements with `leaderboard`.
 
 ---
 
+## Phase 8: Grand Expansion — Bosses, Balance, Combat & Narrative
+
+### Floor Bosses
+
+Each floor (1–8) now has a unique named boss with a lore identity and a phase ability that triggers mid-fight:
+
+| Floor | Boss | Phase Ability |
+|-------|------|---------------|
+| 1 | Goblin Warchief | Calls reinforcements at 50% HP |
+| 2 | Plague Hound Alpha | Blood Frenzy (+5 ATK) at 40% HP |
+| 3 | Iron Sentinel | Stunning Blow at 60% HP |
+| 4 | Bone Archon | Weaken Aura at 50% HP |
+| 5 | Crimson Vampire | Blood Drain (MP drain + self-heal) at 25% HP |
+| 6 | Archlich Sovereign | Death Shroud at 40% HP |
+| 7 | Abyssal Leviathan | Tentacle Barrage at 50% HP |
+| 8 | Infernal Dragon | Flame Breath at 60% HP |
+
+### Class Passives
+
+Each class now has a unique passive trait that activates automatically in combat:
+
+| Class | Passive | Effect |
+|-------|---------|--------|
+| Warrior | Battle Hardened | Gains +2 ATK per 20% HP lost (max +8) |
+| Mage | Arcane Surge | Next ability costs 1 less mana after spending mana |
+| Rogue | Shadow Strike | First attack each combat deals 2× damage |
+| Paladin | Divine Bulwark | Gains Fortified status when HP < 25% (once per combat) |
+| Necromancer | Soul Harvest | Heals 5 HP on every kill |
+| Ranger | Eagle Eye | +15% dodge chance on turns 1–2 |
+
+### New Status Effects
+
+Three new status effects introduced:
+
+| Effect | Per-turn | Duration | Notes |
+|--------|----------|----------|-------|
+| **Freeze** | — | 2 turns | Cannot act; breaks on physical damage |
+| **Silence** | — | 3 turns | Cannot use abilities |
+| **Curse** | — | 4 turns | ATK and DEF reduced by 25% |
+
+### Trap Rooms
+
+10% of dungeon rooms are now trap rooms with interactive choices:
+
+| Trap | Choices | Risk / Reward |
+|------|---------|---------------|
+| **Arrow Volley** | Shield or sprint through | Sprint risks damage; shield is safe |
+| **Poison Gas Vent** | Sprint or find bypass | Sprint risks Poison; bypass costs a turn |
+| **Collapsing Floor** | Leap or cross carefully | Leap risks fall damage but may yield loot |
+
+Careful routes are safer; reckless routes offer bonus loot.
+
+### Environmental Hazards
+
+Rooms can now have persistent environmental hazards that affect every action taken inside:
+
+| Hazard | Floors | Spawn Rate | Effect |
+|--------|--------|-----------|--------|
+| 🔥 Lava Seam | 7–8 | 15% of rooms | 5 fire damage per action |
+| 💀 Corrupted Ground | 5–8 | 10% of rooms | 3 HP drain per action |
+| ✨ Blessed Clearing | 1–6 | 8% of rooms | +3 HP regen per action (once per visit) |
+
+### Epic Tier Loot
+
+Epic-tier armor items are now reachable through normal dungeon play:
+
+| Floors | Drop Chance |
+|--------|-------------|
+| 5–6 | ~8% per loot roll |
+| 7–8 | ~15% per loot roll |
+
+### Narrative Systems
+
+- **Room descriptions** vary by floor theme: stone dungeon (1–2) → armory (3–4) → undead domain (5–6) → volcanic abyss (7–8).
+- **Item flavor text**: pickups, equip/unequip actions, and consumable use all display flavor lines by tier and item type.
+- **Combat narration**: ambient lines for combat start, critical hits, killing blows, and near-death urgency.
+- **Boss narration**: all 8 bosses have unique intro, phase-trigger, and death lines delivered by `BossNarration`.
+- **Shrines**: outcome text is tailored to shrine type (Heal, Bless, Fortify, Meditate).
+- **Merchants**: floor-aware greeting lines reflect the dungeon's deepening danger.
+
+### Process Note
+
+Phase 8 introduced **isolated git worktrees** for parallel agent work on the same repository files, eliminating merge conflicts during concurrent development.
+
+---
+
 ## Architecture
 
 ```
