@@ -707,9 +707,25 @@ public class CombatEngine : ICombatEngine
                 _                   => _critMessages
             };
             if (isCrit)
+            {
                 _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(critPool, enemy.Name, playerDmg), playerDmg, true));
+                _display.ShowCombatMessage(_narration.Pick(CombatNarration.CritFlavor));
+            }
             else
                 _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(hitPool, enemy.Name, playerDmg), playerDmg));
+
+            // Killing-blow atmospheric flavor
+            if (enemy.HP <= 0)
+            {
+                var killPool = player.Class switch
+                {
+                    PlayerClass.Warrior or PlayerClass.Paladin => CombatNarration.KillMelee,
+                    PlayerClass.Ranger                         => CombatNarration.KillRanged,
+                    PlayerClass.Mage or PlayerClass.Necromancer => CombatNarration.KillMagic,
+                    _                                          => CombatNarration.KillGeneric
+                };
+                _display.ShowCombatMessage(_narration.Pick(killPool));
+            }
 
             string? statusApplied = null;
             // Bug #110: bleed-on-hit from equipped weapon (10% chance, 3 turns)
@@ -718,6 +734,13 @@ public class CombatEngine : ICombatEngine
                 _statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
                 statusApplied = "Bleed";
                 _display.ShowColoredCombatMessage($"{enemy.Name} is bleeding!", ColorCodes.Red);
+            }
+            // Shadowstep 4-pc set bonus: guaranteed bleed on every hit
+            if (player.SetBonusAppliesBleed && enemy.HP > 0)
+            {
+                _statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
+                statusApplied ??= "Bleed";
+                _display.ShowColoredCombatMessage($"[Shadowstep] {enemy.Name} is bleeding!", ColorCodes.Red);
             }
             _turnLog.Add(new CombatTurn("You", "Attack", playerDmg, isCrit, false, statusApplied));
 
@@ -823,7 +846,7 @@ public class CombatEngine : ICombatEngine
             else if (_rng.Next(100) < 30)
             {
                 boss.IsCharging = true;
-                _display.ShowCombatMessage($"⚠ {enemy.Name} is charging a powerful attack! Prepare to defend!");
+                _display.ShowCombatMessage("⚠ " + _narration.Pick(CombatNarration.EnemySpecialAttack, enemy.Name, "a powerful attack"));
                 return; // warn turn — no damage this turn
             }
         }
@@ -1038,6 +1061,10 @@ public class CombatEngine : ICombatEngine
             _stats.DamageTaken += enemyDmgFinal;
             _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmgFinal), enemyDmgFinal));
 
+            // Near-death atmospheric flavor (HP < 25%, ~50% chance to avoid spam)
+            if (player.HP > 0 && player.HP < player.MaxHP * 0.25f && _rng.NextDouble() < 0.5)
+                _display.ShowCombatMessage(_narration.Pick(CombatNarration.NearDeath));
+
             // Paladin passive: Divine Favor - once per combat, auto-heal at 30% HP
             if (player.Class == PlayerClass.Paladin && !player.DivineHealUsedThisCombat
                 && player.HP > 0 && player.HP <= player.MaxHP * 0.30f)
@@ -1048,10 +1075,32 @@ public class CombatEngine : ICombatEngine
                 _display.ShowCombatMessage($"✨ Divine Favor! You are healed for {divineHeal} HP!");
             }
 
+            // ── Ironclad 4-pc set bonus: DamageReflectPercent ──────────────
+            if (player.DamageReflectPercent > 0 && enemyDmgFinal > 0)
+            {
+                int reflected = (int)Math.Round(enemyDmgFinal * player.DamageReflectPercent);
+                if (reflected > 0 && enemy.HP > 0)
+                {
+                    enemy.HP -= reflected;
+                    _display.ShowColoredCombatMessage($"[Ironclad] Reflected {reflected} damage!", ColorCodes.BrightCyan);
+                }
+            }
+
             // ── Passive effects: on player take damage ──────────────────────
             int reflectDamage = _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerTakeDamage, enemy, enemyDmgFinal);
             if (reflectDamage > 0 && enemy.HP > 0)
                 enemy.HP -= reflectDamage;
+
+            // Ironclad 4-piece: reflect a percentage of incoming damage back to the attacker
+            if (player.DamageReflectPercent > 0 && enemyDmgFinal > 0)
+            {
+                int reflected = (int)(enemyDmgFinal * player.DamageReflectPercent);
+                if (reflected > 0)
+                {
+                    enemy.HP = Math.Max(0, enemy.HP - reflected);
+                    _display.ShowMessage($"{ColorCodes.BrightRed}{reflected} damage reflected back!{ColorCodes.Reset}");
+                }
+            }
 
             // ── survive-at-one / phoenix-revive intercept ───────────────────
             if (player.HP <= 0)

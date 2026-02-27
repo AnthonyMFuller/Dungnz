@@ -32,5 +32,14 @@ public enum StatusEffect
     BattleCry,
 
     /// <summary>Deals 8 fire damage per turn; applied by Infernal Dragon's Flame Breath.</summary>
-    Burn
+    Burn,
+
+    /// <summary>Target cannot act; breaks if target takes physical damage. Lasts 2 turns.</summary>
+    Freeze,
+
+    /// <summary>Target cannot use abilities for the duration. Lasts 3 turns.</summary>
+    Silence,
+
+    /// <summary>Reduces ATK and DEF by 25%. Lasts 4 turns.</summary>
+    Curse
 }
