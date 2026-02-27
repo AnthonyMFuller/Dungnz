@@ -273,4 +273,5 @@ internal sealed class SimEnemy : Enemy
 internal sealed class AlwaysAttackInputReader : IInputReader
 {
     public string? ReadLine() => "A";
+    public ConsoleKeyInfo? ReadKey() => null;
 }

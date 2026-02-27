@@ -402,8 +402,7 @@ public class CombatEngine : ICombatEngine
                 _statusEffects.GetActiveEffects(player), 
                 _statusEffects.GetActiveEffects(enemy));
             ShowRecentTurns();
-            ShowCombatMenu(player);
-            var choice = (_input.ReadLine() ?? string.Empty).Trim().ToUpperInvariant();
+            var choice = _display.ShowCombatMenuAndSelect(player, enemy);
             
             if (choice == "F" || choice == "FLEE")
             {
@@ -1525,15 +1524,14 @@ public class CombatEngine : ICombatEngine
             // Every 2 levels, offer a trait bonus
             if (player.Level % 2 == 0)
             {
-                _display.ShowLevelUpChoice(player);
-                var traitChoice = (_input.ReadLine() ?? "1").Trim();
-                switch (traitChoice)
+                var traitChoiceRaw = _display.ShowLevelUpChoiceAndSelect(player);
+                switch (traitChoiceRaw)
                 {
-                    case "2":
+                    case 2:
                         player.ModifyAttack(2);
                         _display.ShowMessage("You feel stronger! +2 Attack");
                         break;
-                    case "3":
+                    case 3:
                         player.ModifyDefense(2);
                         _display.ShowMessage("You feel tougher! +2 Defense");
                         break;

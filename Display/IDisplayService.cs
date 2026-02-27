@@ -264,4 +264,25 @@ public interface IDisplayService
     /// </summary>
     /// <param name="enemy">The enemy whose art should be displayed.</param>
     void ShowEnemyArt(Enemy enemy);
+
+    /// <summary>
+    /// Displays an arrow-key navigable level-up stat choice menu and returns the
+    /// player's selection as a 1-based index (1 = +5 Max HP, 2 = +2 Attack, 3 = +2 Defense).
+    /// Falls back to numbered text input when arrow-key input is unavailable.
+    /// </summary>
+    int ShowLevelUpChoiceAndSelect(Player player);
+
+    /// <summary>
+    /// Displays an arrow-key navigable combat action menu and returns the player's choice
+    /// as a single uppercase letter: "A" (Attack), "B" (Ability), or "F" (Flee).
+    /// Falls back to numbered text input when arrow-key input is unavailable.
+    /// </summary>
+    string ShowCombatMenuAndSelect(Player player, Enemy enemy);
+
+    /// <summary>
+    /// Displays an arrow-key navigable crafting recipe selection menu and returns the
+    /// 1-based index of the chosen recipe, or 0 if the player cancels.
+    /// Falls back to numbered text input when arrow-key input is unavailable.
+    /// </summary>
+    int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes);
 }

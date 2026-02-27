@@ -5,7 +5,8 @@ using Dungnz.Systems;
 
 var prestige = PrestigeSystem.Load();
 var inputReader = new ConsoleInputReader();
-var display = new ConsoleDisplayService();
+var navigator = new ConsoleMenuNavigator();
+var display = new ConsoleDisplayService(inputReader, navigator);
 
 var intro = new IntroSequence(display, inputReader);
 var (player, actualSeed, chosenDifficulty) = intro.Run(prestige);

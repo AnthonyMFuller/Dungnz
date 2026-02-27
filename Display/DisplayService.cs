@@ -1,3 +1,4 @@
+using Dungnz.Engine;
 using Dungnz.Models;
 
 namespace Dungnz.Display;
@@ -9,6 +10,16 @@ namespace Dungnz.Display;
 /// </summary>
 public class ConsoleDisplayService : IDisplayService
 {
+    private readonly IInputReader _input;
+    private readonly IMenuNavigator _navigator;
+
+    /// <summary>Initialises the display service with the given input and menu navigator.</summary>
+    public ConsoleDisplayService(IInputReader? input = null, IMenuNavigator? navigator = null)
+    {
+        _input = input ?? new ConsoleInputReader();
+        _navigator = navigator ?? new ConsoleMenuNavigator();
+    }
+
     /// <summary>
     /// Clears the terminal and prints the game's ASCII-art title banner.
     /// </summary>
@@ -540,8 +551,125 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine($"╚{new string('═', W)}╝");
     }
 
+    /// <summary>Shows shop inventory and returns the selected item index (1-based), or 0 to cancel.</summary>
+    public int ShowShopAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold)
+    {
+        var stockList = stock.ToList();
+        ShowShop(stockList, playerGold);
+        var options = stockList
+            .Select((s, i) => ($"[{i + 1}] {TruncateName(s.item.Name)}  {s.price}g", i + 1))
+            .Append(("Cancel", 0))
+            .ToList();
+        return SelectFromMenu(options.AsReadOnly(), _input);
+    }
+
+    /// <summary>Shows sell menu and returns the selected item index (1-based), or 0 to cancel.</summary>
+    public int ShowSellMenuAndSelect(IEnumerable<(Item item, int sellPrice)> items, int playerGold)
+    {
+        var itemList = items.ToList();
+        ShowSellMenu(itemList, playerGold);
+        var options = itemList
+            .Select((s, i) => ($"[{i + 1}] {TruncateName(s.item.Name)}  {s.sellPrice}g", i + 1))
+            .Append(("Cancel", 0))
+            .ToList();
+        return SelectFromMenu(options.AsReadOnly(), _input);
+    }
+
 
     // ── helpers ────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Renders an arrow-key navigable menu and returns the selected value.
+    /// When <see cref="IInputReader.ReadKey"/> returns null (test stub), falls back to ReadLine number input.
+    /// </summary>
+    private T SelectFromMenu<T>(
+        IReadOnlyList<(string Label, T Value)> options,
+        IInputReader input,
+        string? header = null)
+    {
+        if (header != null)
+        {
+            Console.WriteLine(header);
+            Console.WriteLine();
+        }
+
+        int selected = 0;
+
+        var probe = input.ReadKey();
+        if (probe == null)
+        {
+            for (int i = 0; i < options.Count; i++)
+                Console.WriteLine($"  [{i + 1}] {options[i].Label}");
+            Console.WriteLine();
+
+            while (true)
+            {
+                Console.Write("> ");
+                var line = input.ReadLine()?.Trim() ?? "";
+                if (int.TryParse(line, out int n) && n >= 1 && n <= options.Count)
+                    return options[n - 1].Value;
+                Console.WriteLine($"{Systems.ColorCodes.Red}Invalid choice. Please enter 1–{options.Count}.{Systems.ColorCodes.Reset}");
+            }
+        }
+
+        int startRow;
+        try { Console.CursorVisible = false; } catch { /* output may be redirected */ }
+
+        void Render(int sel)
+        {
+            Console.SetCursorPosition(0, startRow);
+            for (int i = 0; i < options.Count; i++)
+            {
+                if (i == sel)
+                    Console.WriteLine($"{Systems.ColorCodes.BrightWhite}▶ {options[i].Label}{Systems.ColorCodes.Reset}");
+                else
+                    Console.WriteLine($"  {options[i].Label}");
+            }
+        }
+
+        startRow = Console.CursorTop;
+        Render(selected);
+
+        ConsoleKeyInfo? key = probe;
+        while (true)
+        {
+            if (key.HasValue)
+            {
+                switch (key.Value.Key)
+                {
+                    case ConsoleKey.UpArrow:
+                        selected = selected == 0 ? options.Count - 1 : selected - 1;
+                        Render(selected);
+                        break;
+                    case ConsoleKey.DownArrow:
+                        selected = selected == options.Count - 1 ? 0 : selected + 1;
+                        Render(selected);
+                        break;
+                    case ConsoleKey.Enter:
+                        try { Console.CursorVisible = true; } catch { /* redirected */ }
+                        Console.WriteLine();
+                        return options[selected].Value;
+                    case ConsoleKey.X:
+                    case ConsoleKey.Escape:
+                        try { Console.CursorVisible = true; } catch { /* redirected */ }
+                        Console.WriteLine();
+                        return options[options.Count - 1].Value;
+                    default:
+                        if (key.Value.KeyChar >= '1' && key.Value.KeyChar <= '9')
+                        {
+                            int idx = key.Value.KeyChar - '1';
+                            if (idx < options.Count)
+                            {
+                                selected = idx;
+                                Render(selected);
+                            }
+                        }
+                        break;
+                }
+            }
+            key = input.ReadKey();
+        }
+    }
 
     private static string ItemTypeIcon(ItemType type) => type switch
     {
@@ -1349,4 +1477,73 @@ public class ConsoleDisplayService : IDisplayService
 
     private static string PadLeftVisible(string s, int totalWidth)
         => new string(' ', Math.Max(0, totalWidth - VisibleLength(s))) + s;
+
+    // ── WI-6: Level-up stat choice ─────────────────────────────────────────────
+
+    /// <summary>
+    /// Arrow-key navigable level-up stat choice. Returns 1 (+5 MaxHP), 2 (+2 Attack), or 3 (+2 Defense).
+    /// Falls back to numbered text input when ReadKey is unavailable.
+    /// </summary>
+    public int ShowLevelUpChoiceAndSelect(Player player)
+    {
+        var options = new (string Label, int Value)[]
+        {
+            ($"+5 Max HP     {Systems.ColorCodes.Gray}({player.MaxHP} → {player.MaxHP + 5}){Systems.ColorCodes.Reset}", 1),
+            ($"+2 Attack     {Systems.ColorCodes.Gray}({player.Attack} → {player.Attack + 2}){Systems.ColorCodes.Reset}", 2),
+            ($"+2 Defense    {Systems.ColorCodes.Gray}({player.Defense} → {player.Defense + 2}){Systems.ColorCodes.Reset}", 3),
+        };
+        return SelectFromMenu(options, _input, "★ Choose a stat bonus:");
+    }
+
+    // ── WI-7: Combat action menu ───────────────────────────────────────────────
+
+    /// <summary>
+    /// Arrow-key navigable combat action menu. Returns "A" (Attack), "B" (Ability), or "F" (Flee).
+    /// Shows a resource context line above the menu. Falls back to numbered text input when ReadKey
+    /// is unavailable.
+    /// </summary>
+    public string ShowCombatMenuAndSelect(Player player, Enemy enemy)
+    {
+        // Show class-specific resource line so the player can assess ability costs
+        var ctx = new System.Text.StringBuilder($"Mana: {player.Mana}/{player.MaxMana}");
+        if (player.Class == Models.PlayerClass.Rogue)
+        {
+            var dots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
+            ctx.Append($"  ⚡ Combo: {dots}");
+        }
+        if (player.Class == Models.PlayerClass.Mage && player.IsManaShieldActive)
+            ctx.Append(" [SHIELD ACTIVE]");
+        if (player.Class == Models.PlayerClass.Paladin && player.DivineShieldTurnsRemaining > 0)
+            ctx.Append($" [DIVINE SHIELD: {player.DivineShieldTurnsRemaining}T]");
+        Console.WriteLine(ctx.ToString());
+        Console.WriteLine();
+
+        var options = new (string Label, string Value)[]
+        {
+            ("⚔  Attack",  "A"),
+            ("✨ Ability",  "B"),
+            ("🏃 Flee",     "F"),
+        };
+        return SelectFromMenu(options, _input);
+    }
+
+    // ── WI-8: Crafting recipe selection ───────────────────────────────────────
+
+    /// <summary>
+    /// Arrow-key navigable crafting recipe selection menu. Returns 1-based recipe index, or 0 for cancel.
+    /// Falls back to numbered text input when ReadKey is unavailable.
+    /// </summary>
+    public int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes)
+    {
+        var recipeList = recipes.ToList();
+        var options = recipeList
+            .Select((r, i) => (
+                Label: r.canCraft
+                    ? $"{Systems.ColorCodes.Green}✅ {r.recipeName}{Systems.ColorCodes.Reset}"
+                    : $"{Systems.ColorCodes.Red}❌ {r.recipeName}{Systems.ColorCodes.Reset}",
+                Value: i + 1))
+            .Append(("↩  Cancel", 0))
+            .ToArray();
+        return SelectFromMenu(options, _input, "=== CRAFTING — Choose a recipe ===");
+    }
 }
