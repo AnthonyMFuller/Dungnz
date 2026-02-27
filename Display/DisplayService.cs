@@ -612,24 +612,33 @@ public class ConsoleDisplayService : IDisplayService
 
         // Arrow-key navigation — render the menu FIRST, then wait for input.
         int selected = 0;
-        int startRow;
+        bool firstRender = true;
         int maxLabelLen = options.Max(o => o.Label.Length);
         try { Console.CursorVisible = false; } catch { /* output may be redirected */ }
 
         void Render(int sel)
         {
-            Console.SetCursorPosition(0, startRow);
+            // Move cursor up to start of menu using ANSI relative positioning
+            // (avoids stale absolute row when terminal scrolls or lines wrap)
+            if (!firstRender)
+                Console.Write($"\x1b[{options.Count}A");
+            firstRender = false;
+
             for (int i = 0; i < options.Count; i++)
             {
+                // Clear line and return to column 0
+                Console.Write("\r\x1b[2K");
                 var padded = options[i].Label.PadRight(maxLabelLen);
                 if (i == sel)
-                    Console.WriteLine($"{Systems.ColorCodes.BrightWhite}▶ {padded}{Systems.ColorCodes.Reset}");
+                    Console.Write($"{Systems.ColorCodes.BrightWhite}▶ {padded}{Systems.ColorCodes.Reset}");
                 else
-                    Console.WriteLine($"  {padded}");
+                    Console.Write($"  {padded}");
+                // Add newline except after last item to avoid extra scroll
+                if (i < options.Count - 1)
+                    Console.WriteLine();
             }
         }
 
-        startRow = Console.CursorTop;
         Render(selected);
 
         while (true)

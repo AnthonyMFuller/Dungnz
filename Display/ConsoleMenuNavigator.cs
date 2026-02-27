@@ -25,9 +25,9 @@ public sealed class ConsoleMenuNavigator : IMenuNavigator
         }
 
         int selected = 0;
-        int startRow = Console.CursorTop;
+        bool firstRender = true;
 
-        RenderOptions(options, selected, startRow);
+        RenderOptions(options, selected, ref firstRender);
 
         while (true)
         {
@@ -35,14 +35,12 @@ public sealed class ConsoleMenuNavigator : IMenuNavigator
             switch (key.Key)
             {
                 case ConsoleKey.UpArrow:
-                    if (selected > 0) { selected--; RenderOptions(options, selected, startRow); }
+                    if (selected > 0) { selected--; RenderOptions(options, selected, ref firstRender); }
                     break;
                 case ConsoleKey.DownArrow:
-                    if (selected < options.Count - 1) { selected++; RenderOptions(options, selected, startRow); }
+                    if (selected < options.Count - 1) { selected++; RenderOptions(options, selected, ref firstRender); }
                     break;
                 case ConsoleKey.Enter:
-                    // Move cursor below the rendered menu
-                    Console.SetCursorPosition(0, startRow + options.Count);
                     Console.WriteLine();
                     return options[selected].Value;
             }
@@ -61,11 +59,18 @@ public sealed class ConsoleMenuNavigator : IMenuNavigator
             title: prompt);
     }
 
-    private static void RenderOptions<T>(IReadOnlyList<MenuOption<T>> options, int selected, int startRow)
+    private static void RenderOptions<T>(IReadOnlyList<MenuOption<T>> options, int selected, ref bool firstRender)
     {
-        Console.SetCursorPosition(0, startRow);
+        // Move cursor up to start of menu using ANSI relative positioning
+        // (avoids stale absolute row when terminal scrolls or lines wrap)
+        if (!firstRender)
+            Console.Write($"\x1b[{options.Count}A");
+        firstRender = false;
+
         for (int i = 0; i < options.Count; i++)
         {
+            // Clear line and return to column 0
+            Console.Write("\r\x1b[2K");
             bool isSelected = i == selected;
             string prefix   = isSelected ? $"{ColorCodes.Cyan}▶ {ColorCodes.Reset}" : "  ";
             string label    = isSelected
@@ -74,8 +79,10 @@ public sealed class ConsoleMenuNavigator : IMenuNavigator
             string subtitle = options[i].Subtitle != null
                 ? $"  {ColorCodes.Gray}{options[i].Subtitle}{ColorCodes.Reset}"
                 : "";
-            // Trailing spaces clear any stale characters from longer previous lines
-            Console.WriteLine($"  {prefix}{label}{subtitle}                    ");
+            Console.Write($"  {prefix}{label}{subtitle}");
+            // Add newline except after last item to avoid extra scroll
+            if (i < options.Count - 1)
+                Console.WriteLine();
         }
     }
 
