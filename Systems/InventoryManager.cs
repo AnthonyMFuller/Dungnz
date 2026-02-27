@@ -148,15 +148,9 @@ public class InventoryManager
                 return UseResult.Used;
 
             case ItemType.Weapon:
-                player.ModifyAttack(item.AttackBonus);
-                _display.ShowMessage($"You equipped {item.Name}. Attack +{item.AttackBonus}.");
-                player.Inventory.Remove(item);
-                return UseResult.Used;
-
             case ItemType.Armor:
-                player.ModifyDefense(item.DefenseBonus);
-                _display.ShowMessage($"You equipped {item.Name}. Defense +{item.DefenseBonus}.");
-                player.Inventory.Remove(item);
+                player.EquipItem(item);
+                _display.ShowMessage($"You equipped {item.Name}.");
                 return UseResult.Used;
 
             case ItemType.Accessory:

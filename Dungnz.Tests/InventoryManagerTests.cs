@@ -73,7 +73,7 @@ public class InventoryManagerTests
     public void UseItem_Weapon_IncreasesAttack()
     {
         var (player, room, display, manager) = Make();
-        var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5 };
+        var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true };
         player.Inventory.Add(sword);
 
         var result = manager.UseItem(player, "sword");
@@ -87,7 +87,7 @@ public class InventoryManagerTests
     public void UseItem_Armor_IncreasesDefense()
     {
         var (player, room, display, manager) = Make();
-        var armor = new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 3 };
+        var armor = new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 3, IsEquippable = true };
         player.Inventory.Add(armor);
 
         var result = manager.UseItem(player, "armor");

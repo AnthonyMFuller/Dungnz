@@ -88,6 +88,7 @@ public class PassiveEffectProcessor
     {
         player.AegisUsedThisCombat = false;
         player.ShadowmeldUsedThisCombat = false;
+        player.WardingRingActivated = false;
         player.BonusFleeUsed = false;
         player.ExtraFleeCount = 0;
         player.ShadowDanceCounter = 0;
@@ -235,9 +236,11 @@ public class PassiveEffectProcessor
     private int ApplyWardingRing(Player player, PassiveEffectTrigger trigger, Enemy? enemy)
     {
         if (trigger != PassiveEffectTrigger.OnTurnStart) return 0;
+        if (player.WardingRingActivated) return 0;
         if (player.HP > player.MaxHP * 0.25) return 0;
 
-        // Apply a temporary defense boost via status modifier (show message; stat system handles it separately)
+        player.WardingRingActivated = true;
+        _statusEffects.Apply(player, StatusEffect.Fortified, 3);
         _display.ShowColoredCombatMessage($"🔮 Ring of Warding — protective runes flare, granting +10 DEF while you're near death!", ColorCodes.Cyan);
         return 0;
     }
