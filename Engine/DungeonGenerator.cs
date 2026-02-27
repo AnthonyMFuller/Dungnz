@@ -186,7 +186,8 @@ public class DungeonGenerator
             {
                 var r = grid[y, x];
                 if (r != startRoom && r != exitRoom && r.Type != RoomType.ForgottenShrine
-                    && r.Type != RoomType.PetrifiedLibrary && r.Type != RoomType.ContestedArmory)
+                    && r.Type != RoomType.PetrifiedLibrary && r.Type != RoomType.ContestedArmory
+                    && r.Type != RoomType.TrapRoom)
                     eligibleRooms.Add(r);
             }
         eligibleRooms = eligibleRooms.OrderBy(_ => _rng.Next()).ToList();
@@ -196,7 +197,13 @@ public class DungeonGenerator
         if (floor >= 3 && specialIdx < eligibleRooms.Count)
             eligibleRooms[specialIdx++].Type = RoomType.PetrifiedLibrary;
         if (floor >= 4 && specialIdx < eligibleRooms.Count)
-            eligibleRooms[specialIdx].Type = RoomType.ContestedArmory;
+            eligibleRooms[specialIdx++].Type = RoomType.ContestedArmory;
+        if (floor >= 1 && specialIdx < eligibleRooms.Count)
+        {
+            var trapRoom = eligibleRooms[specialIdx++];
+            trapRoom.Type = RoomType.TrapRoom;
+            trapRoom.Trap = (TrapVariant)_rng.Next(3);
+        }
 
         // Assign context-aware descriptions now that all room contents are set
         for (int y = 0; y < height; y++)
@@ -213,7 +220,8 @@ public class DungeonGenerator
                     { HasShrine: true }    => RoomContext.Shrine,
                     { Type: RoomType.ForgottenShrine
                          or RoomType.PetrifiedLibrary
-                         or RoomType.ContestedArmory } => RoomContext.Special,
+                         or RoomType.ContestedArmory
+                         or RoomType.TrapRoom } => RoomContext.Special,
                     _                      => RoomContext.Empty,
                 };
                 var pool = RoomDescriptions.ForFloorAndContext(floor, ctx);

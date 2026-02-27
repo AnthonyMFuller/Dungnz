@@ -393,6 +393,10 @@ public class GameLoop
             HandlePetrifiedLibrary();
         }
 
+        // Auto-trigger TrapRoom on first entry
+        if (_currentRoom.Type == RoomType.TrapRoom && !_currentRoom.SpecialRoomUsed)
+            HandleTrapRoom();
+
         // Prompt for ContestedArmory
         if (_currentRoom.Type == RoomType.ContestedArmory && !_currentRoom.SpecialRoomUsed)
         {
