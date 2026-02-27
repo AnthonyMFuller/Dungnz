@@ -254,7 +254,7 @@ public class AbilityManager
         {
             effectiveCost = Math.Max(0, effectiveCost - 1);
             player.ArcaneSurgeReady = false;
-            display.ShowCombatMessage("[Arcane Surge] Next ability costs 1 less mana.");
+            display.ShowCombatMessage("Arcane Surge activated!");
         }
 
         // LichsBargain passive: HP < 15% = 0 cost abilities for 1 turn
@@ -272,7 +272,10 @@ public class AbilityManager
         player.SpendMana(effectiveCost);
         // Arcane Surge (Mage): set ready for next ability after spending mana
         if (player.Class == PlayerClass.Mage && effectiveCost > 0)
+        {
             player.ArcaneSurgeReady = true;
+            display.ShowCombatMessage("Next ability will cost 1 less mana. [Arcane Surge]"); // Fix #545: message fires on set-ready
+        }
         // Abilities with pre-conditions manage their own cooldown inside the case
         if (type is not AbilityType.LastStand and not AbilityType.Flurry and not AbilityType.Assassinate
                   and not AbilityType.RaiseDead and not AbilityType.CorpseExplosion)
