@@ -25,6 +25,7 @@ public class CombatEngine : ICombatEngine
     private int _baseEliteAttack;
     private int _baseEliteDefense;
     private int _shamanHealCooldown;
+    private int _combatTurn;
     private string? _pendingAchievement;
     private const int MaxLevel = 20; // Fix #183
 
@@ -274,10 +275,12 @@ public class CombatEngine : ICombatEngine
         _baseEliteAttack = enemy.Attack;
         _baseEliteDefense = enemy.Defense;
         _shamanHealCooldown = 0;
+        _combatTurn = 0;
         _abilities.ResetCooldowns(); // Fix #190: clear cooldowns from previous combat
 
         // ── Passive effects: combat start ────────────────────────────────────
         PassiveEffectProcessor.ResetCombatState(player);
+        player.ResetCombatPassives();
         _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnCombatStart, enemy, 0);
 
         // Ring of Haste: reduce cooldowns on combat start
@@ -338,7 +341,10 @@ public class CombatEngine : ICombatEngine
                 var wasEnraged = boss.IsEnraged;
                 boss.CheckEnrage();
                 if (!wasEnraged && boss.IsEnraged)
+                {
+                    _display.ShowCombat(BossNarration.GetPhase(enemy.Name));
                     _display.ShowCombatMessage("⚠ The boss ENRAGES! Its attack has increased by 50%!");
+                }
             }
             
             if (enemy.HP <= 0)
@@ -391,6 +397,7 @@ public class CombatEngine : ICombatEngine
                     player.HunterMarkUsedThisCombat = false;
                     player.DivineShieldTurnsRemaining = 0;
                     player.LichsBargainActive = false;
+                    player.ResetCombatPassives();
                     return CombatResult.Fled;
                 }
                 else
@@ -810,6 +817,7 @@ public class CombatEngine : ICombatEngine
         {
             lich.AddsAlive = 2;
             lich.DamageImmune = true;
+            _display.ShowCombat(BossNarration.GetPhase(enemy.Name));
             _display.ShowCombatMessage("The Archlich summons skeletal guardians! Defeat them to reach the Archlich!");
         }
 
@@ -820,6 +828,7 @@ public class CombatEngine : ICombatEngine
             if (leviathan.TurnCount % 3 == 0)
             {
                 leviathan.IsSubmerged = true;
+                _display.ShowCombat(BossNarration.GetPhase(enemy.Name));
                 _display.ShowCombatMessage("The Leviathan vanishes beneath the waves...");
                 // Re-emerge with Tidal Slam next turn (flag for enhanced attack handled below)
             }
@@ -831,6 +840,7 @@ public class CombatEngine : ICombatEngine
             if (!dragon.FlightPhaseActive && dragon.HP <= dragon.MaxHP * 0.50)
             {
                 dragon.FlightPhaseActive = true;
+                _display.ShowCombat(BossNarration.GetPhase(enemy.Name));
                 _display.ShowCombatMessage("⚠ The Infernal Dragon takes to the air — attacks have a 40% chance to miss!");
             }
         }
@@ -1160,6 +1170,7 @@ public class CombatEngine : ICombatEngine
     /// </summary>
     private void ExecuteBossPhaseAbility(DungeonBoss boss, Player player, string abilityName)
     {
+        _display.ShowCombat(BossNarration.GetPhase(boss.Name));
         switch (abilityName)
         {
             case "Reinforcements":

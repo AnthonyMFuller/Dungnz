@@ -1,9 +1,9 @@
 namespace Dungnz.Systems;
 
 /// <summary>
-/// Provides multi-line dramatic introductions and unique death narration for each
-/// boss variant. Intros are returned in order and should be displayed sequentially
-/// as a build-up, not picked at random.
+/// Provides multi-line dramatic introductions, death narration, and phase-trigger lines
+/// for each boss variant. Intros are returned in order and should be displayed
+/// sequentially as a build-up, not picked at random.
 /// </summary>
 public static class BossNarration
 {
@@ -14,6 +14,30 @@ public static class BossNarration
             "The ground shakes.",
             "Something ancient and terrible stirs in the darkness ahead.",
             "The dungeon boss emerges — this is what you came for."
+        },
+        ["Goblin Warchief"] = new[]
+        {
+            "\"You there! Kill it dead, boyz!\" The warchief levels a rusted cleaver.",
+            "Behind him, goblins scramble."
+        },
+        ["Plague Hound Alpha"] = new[]
+        {
+            "The beast circles you, foam at its maw.",
+            "It smells blood from floors away."
+        },
+        ["Iron Sentinel"] = new[]
+        {
+            "The construct turns, joints grinding.",
+            "No command given. It simply acts."
+        },
+        ["Bone Archon"] = new[]
+        {
+            "\"Join the collection.\" Its voice is borrowed — stitched from a dozen throats."
+        },
+        ["Crimson Vampire"] = new[]
+        {
+            "\"You smell... extraordinary.\" She tilts her head.",
+            "\"I'll try to make it quick.\""
         },
         ["Lich King"] = new[]
         {
@@ -41,38 +65,53 @@ public static class BossNarration
         },
         ["Archlich Sovereign"] = new[]
         {
-            "The air turns to ash. From the shadows coalesces a figure of impossible age — bone wrapped in void, crowned with the weight of a thousand stolen years.",
-            "The Archlich Sovereign does not speak. It simply raises one skeletal hand, and the dead begin to stir.",
-            "'You have come far, morsel. Further than most. But this is where all journeys end.'"
+            "\"Another mortal challenger. How... nostalgic.\"",
+            "It floats forward without moving its legs."
         },
         ["Abyssal Leviathan"] = new[]
         {
-            "The chamber floods in seconds. From the black water below erupts something vast and wrong — scales the color of deep ocean, eyes like collapsed stars, a body that shouldn't fit in the space it occupies.",
-            "The Abyssal Leviathan's roar shakes the bones of the world.",
-            "You realize, suddenly, that the water didn't flood the room. The room IS the creature."
+            "The water churns. Then the chamber walls move.",
+            "No — that's it. All of it."
         },
         ["Infernal Dragon"] = new[]
         {
-            "The Final Sanctum ignites. The creature that drops from the ceiling is made of fire given hunger, of hatred given wings.",
-            "The Infernal Dragon exhales once, and the temperature doubles.",
-            "It looks at you the way a furnace looks at kindling. It has been waiting. Not for a hero — for fuel."
+            "It doesn't roar. It waits, watching you with one ancient eye.",
+            "Then it breathes."
         }
     };
 
     private static readonly Dictionary<string, string> _deaths = new(StringComparer.OrdinalIgnoreCase)
     {
         ["Dungeon Boss"] = "The boss collapses with a thunderous crash. The dungeon grows quiet.",
+        ["Goblin Warchief"] = "He gurgles something that might have been an order.",
+        ["Plague Hound Alpha"] = "It collapses mid-lunge, a final wet cough rattling through it.",
+        ["Iron Sentinel"] = "The glow fades from its eye-slits. It stands still for a moment, then falls.",
+        ["Bone Archon"] = "The bones scatter. The voices stop.",
+        ["Crimson Vampire"] = "She turns to ash before she hits the ground.",
         ["Lich King"] = "The Lich King releases a terrible shriek as his phylactery shatters. The necromantic energies binding him dissolve into ash. The cold lifts.",
         ["Stone Titan"] = "The Stone Titan fractures from within, cracks of golden light racing across its body. It shatters into gravel with a sound like a collapsing cliff face.",
         ["Shadow Wraith"] = "The Shadow Wraith screams a sound that exists only inside your skull. Then — nothing. The torches relight. Whatever it was, it's gone.",
         ["Vampire Lord"] = "The Vampire Lord staggers, clutching the wound you've dealt. A look of genuine surprise crosses its ancient face. It crumbles to dust before it hits the floor.",
-        ["Archlich Sovereign"] = "The Archlich Sovereign releases a keening shriek as its phylactery fractures. The void that sustained it unravels — threads of stolen centuries dissolving into the dark.",
-        ["Abyssal Leviathan"] = "The Leviathan convulses, its vast body thrashing the chamber. The water recedes as the creature's will fails. The room is just a room again. Just wet stone and silence.",
-        ["Infernal Dragon"] = "The Infernal Dragon lets out one final, hollow roar — then the fire goes out. In the sudden dark and cold, the silence is absolute. You've done it. You've reached the end."
+        ["Archlich Sovereign"] = "\"This is not... the end...\" The phylactery will not be found.",
+        ["Abyssal Leviathan"] = "The tentacles go slack. The water turns still and dark.",
+        ["Infernal Dragon"] = "The fire dies. The silence is almost worse."
+    };
+
+    private static readonly Dictionary<string, string> _phases = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Goblin Warchief"] = "\"BOYZ! BOYZ TO ME!\" He bellows across the chamber.",
+        ["Plague Hound Alpha"] = "Wounds glowing sickly, it screams and lunges faster.",
+        ["Iron Sentinel"] = "Joints locking, it winds back and delivers a blow that shakes the floor.",
+        ["Bone Archon"] = "It raises a hand, and the air grows cold and heavy.",
+        ["Crimson Vampire"] = "She hisses and lunges with inhuman desperation. \"Give me that life.\"",
+        ["Archlich Sovereign"] = "A shroud of death unfolds from its outstretched arms.",
+        ["Abyssal Leviathan"] = "Multiple limbs crash down in rapid succession — there's no predicting them.",
+        ["Infernal Dragon"] = "It inhales slowly. The air itself begins to char."
     };
 
     private static readonly string[] _defaultIntro = { "The ground shakes.", "Something enormous stirs.", "A dungeon boss emerges!" };
     private static readonly string _defaultDeath = "The boss falls with a thunderous crash.";
+    private static readonly string _defaultPhase = "It reacts to its wounds with sudden, violent desperation.";
 
     /// <summary>
     /// Returns the ordered introduction lines for the named boss. Lines should be
@@ -90,4 +129,13 @@ public static class BossNarration
     /// <returns>A single dramatic death narration string.</returns>
     public static string GetDeath(string bossName) =>
         _deaths.GetValueOrDefault(bossName, _defaultDeath);
+
+    /// <summary>
+    /// Returns the phase-trigger narration line for the named boss, displayed when an
+    /// HP threshold is crossed and the boss's phase ability fires.
+    /// </summary>
+    /// <param name="bossName">The <see cref="Dungnz.Models.Enemy.Name"/> of the boss.</param>
+    /// <returns>A single dramatic phase-trigger narration string.</returns>
+    public static string GetPhase(string bossName) =>
+        _phases.GetValueOrDefault(bossName, _defaultPhase);
 }
