@@ -52,3 +52,24 @@ jobs:
             exit 1
           fi
           echo "✅ No .ai-team/ files tracked — clean for release."
+
+      - name: RNG audit — no bare new Random() in production code
+        run: |
+          # Allow seeded Random in GameLoop._rng initialiser, injectable patterns (??, ??=), and tests
+          VIOLATIONS=$(grep -rn "new Random()" \
+            --include="*.cs" \
+            --exclude-dir="Dungnz.Tests" \
+            --exclude-dir="bin" \
+            --exclude-dir="obj" \
+            . | \
+            grep -v "??" | \
+            grep -v "// RNG-ok" | \
+            grep -v "= _seed.HasValue ? new Random" | \
+            grep -v "new Random(seed\b" | \
+            grep -v "IntroSequence" || true)
+          if [ -n "$VIOLATIONS" ]; then
+            echo "::error::❌ Bare new Random() found in production code:"
+            echo "$VIOLATIONS"
+            exit 1
+          fi
+          echo "✅ No bare new Random() in production code."

@@ -138,7 +138,7 @@ public class DungeonGeneratorTests
         bool foundItems = false;
         for (int seed = 0; seed < 20 && !foundItems; seed++)
         {
-            var gen = new DungeonGenerator(seed: seed);
+            var gen = new DungeonGenerator(seed, Array.Empty<Item>());
             var (start, _) = gen.Generate(5, 4);
 
             var visited = new HashSet<Room>();
