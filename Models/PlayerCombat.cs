@@ -313,22 +313,4 @@ public partial class Player
                     || AllEquippedArmor.Any(a => a.PoisonImmunity);
     }
 
-    /// <summary>Resets per-combat passive state. Populated fully by C2 class passives.</summary>
-    public void ResetCombatPassives()
-    {
-        BattleHardenedStacks = 0;
-        ArcaneSurgeReady = false;
-        ShadowStrikeReady = true;
-        DivineBulwarkFired = false;
-    }
-
-    // Class passive state — reset each combat (Phase 8-C2)
-    /// <summary>Warrior Battle Hardened stacks (each 20% HP lost = +2 ATK, max 4 stacks).</summary>
-    public int BattleHardenedStacks { get; set; }
-    /// <summary>Mage Arcane Surge: next ability costs 1 less mana after spending mana.</summary>
-    public bool ArcaneSurgeReady { get; set; }
-    /// <summary>Rogue Shadow Strike: first attack this combat deals 2x damage.</summary>
-    public bool ShadowStrikeReady { get; set; } = true;
-    /// <summary>Paladin Divine Bulwark: Fortified triggered at &lt;25% HP (once per combat).</summary>
-    public bool DivineBulwarkFired { get; set; }
 }
