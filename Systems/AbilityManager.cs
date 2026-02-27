@@ -270,7 +270,10 @@ public class AbilityManager
         // Arcane Surge (Mage): set ready for next ability after spending mana
         if (player.Class == PlayerClass.Mage && effectiveCost > 0)
             player.ArcaneSurgeReady = true;
-        PutOnCooldown(type, ability.CooldownTurns, player);
+        // Abilities with pre-conditions manage their own cooldown inside the case
+        if (type is not AbilityType.LastStand and not AbilityType.Flurry and not AbilityType.Assassinate
+                  and not AbilityType.RaiseDead and not AbilityType.CorpseExplosion)
+            PutOnCooldown(type, ability.CooldownTurns, player);
 
         if (_abilityFlavor.TryGetValue(type.ToString(), out var flavorText))
             display.ShowCombatMessage(flavorText);
@@ -362,6 +365,7 @@ public class AbilityManager
                         player.RestoreMana(effectiveCost); // refund mana
                         return UseAbilityResult.InsufficientMana; // reuse this as generic failure
                     }
+                    PutOnCooldown(type, ability.CooldownTurns, player);
                     player.LastStandTurns = 2;
                     display.ShowCombatMessage("Your vision narrows. Everything slows. This ends now.");
                 }
@@ -482,6 +486,7 @@ public class AbilityManager
                         player.RestoreMana(effectiveCost);
                         return UseAbilityResult.InsufficientMana;
                     }
+                    PutOnCooldown(type, ability.CooldownTurns, player);
                     var pts = player.SpendComboPoints();
                     var flurryDamage = Math.Max(1, (int)((0.6 * pts) * player.Attack) - enemy.Defense);
                     enemy.HP -= flurryDamage;
@@ -508,6 +513,7 @@ public class AbilityManager
                         player.RestoreMana(effectiveCost);
                         return UseAbilityResult.InsufficientMana;
                     }
+                    PutOnCooldown(type, ability.CooldownTurns, player);
                     var pts = player.SpendComboPoints();
                     var assassinateDamage = Math.Max(1, (int)((pts * 0.8) * player.Attack) - enemy.Defense);
                     enemy.HP -= assassinateDamage;
@@ -613,7 +619,7 @@ public class AbilityManager
 
             case AbilityType.Curse:
                 {
-                    statusEffects.Apply(enemy, StatusEffect.Weakened, 3);
+                    statusEffects.Apply(enemy, StatusEffect.Curse, 3);
                     display.ShowCombatMessage($"You invoke a withering curse! {enemy.Name} is weakened for 3 turns!");
                 }
                 break;
@@ -632,6 +638,7 @@ public class AbilityManager
                         player.RestoreMana(effectiveCost);
                         return UseAbilityResult.InsufficientMana;
                     }
+                    PutOnCooldown(type, ability.CooldownTurns, player);
                     var skeleHp = (int)(player.LastKilledEnemyHp * 0.3);
                     var skeleAtk = (int)(player.Attack * 0.5);
                     // MasterOfDeath passive: +10% minion ATK
@@ -674,6 +681,7 @@ public class AbilityManager
                         player.RestoreMana(effectiveCost);
                         return UseAbilityResult.InsufficientMana;
                     }
+                    PutOnCooldown(type, ability.CooldownTurns, player);
                     var totalMinionHp = player.ActiveMinions.Sum(m => m.MaxHP);
                     var explosionDmg = (int)(totalMinionHp * 1.5);
                     player.ActiveMinions.Clear();
