@@ -1024,7 +1024,7 @@ public class GameLoop
                     {
                         _player.TakeDamage(15);
                         _display.ShowMessage($"An arrow slips past your guard! -15 HP. HP: {_player.HP}/{_player.MaxHP}");
-                        if (_player.HP <= 0) { ShowGameOver(byTrap: true); _gameOver = true; return; }
+                        if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _gameOver = true; return; }
                     }
                     GiveTrapLoot(rng.NextDouble() < 0.5 ? Models.ItemTier.Uncommon : Models.ItemTier.Common,
                         "You spot a small cache behind the arrow slits.");
@@ -1033,7 +1033,7 @@ public class GameLoop
                 {
                     _player.TakeDamage(8);
                     _display.ShowMessage($"You sprint through, arrows grazing your side! -8 HP. HP: {_player.HP}/{_player.MaxHP}");
-                    if (_player.HP <= 0) { ShowGameOver(byTrap: true); _gameOver = true; return; }
+                    if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _gameOver = true; return; }
                     GiveTrapLoot(Models.ItemTier.Uncommon, "Your speed reveals a hidden loot cache!");
                 }
                 else

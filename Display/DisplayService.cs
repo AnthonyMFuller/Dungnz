@@ -106,7 +106,7 @@ public class ConsoleDisplayService : IDisplayService
         }
 
         // Contextual hints
-        if (room.HasShrine)
+        if (room.HasShrine && room.Type != RoomType.ForgottenShrine)
         {
             var shrineAtmosphere = Systems.ShrineNarration.Presence[Random.Shared.Next(Systems.ShrineNarration.Presence.Length)];
             Console.WriteLine($"{Systems.ColorCodes.Cyan}{shrineAtmosphere}{Systems.ColorCodes.Reset}");
@@ -265,8 +265,8 @@ public class ConsoleDisplayService : IDisplayService
                 var count = group.Count();
                 var icon  = ItemTypeIcon(item.Type);
                 var isEquipped = item == player.EquippedWeapon
-                              || item == player.EquippedChest
-                              || item == player.EquippedAccessory;
+                              || item == player.EquippedAccessory
+                              || player.AllEquippedArmor.Contains(item);
                 var equippedTag = isEquipped
                     ? $" {Systems.ColorCodes.Green}[E]{Systems.ColorCodes.Reset}"
                     : string.Empty;
@@ -295,6 +295,7 @@ public class ConsoleDisplayService : IDisplayService
         {
             ItemTier.Uncommon  => $"[{Systems.ColorCodes.Green}Uncommon{Systems.ColorCodes.Reset}]",
             ItemTier.Rare      => $"[{Systems.ColorCodes.BrightCyan}Rare{Systems.ColorCodes.Reset}]",
+            ItemTier.Epic      => $"[{Systems.ColorCodes.Magenta}Epic{Systems.ColorCodes.Reset}]",
             ItemTier.Legendary => $"[{Systems.ColorCodes.Yellow}Legendary{Systems.ColorCodes.Reset}]",
             _                  => "[Common]"
         };
@@ -378,6 +379,7 @@ public class ConsoleDisplayService : IDisplayService
         {
             ItemTier.Uncommon  => Systems.ColorCodes.Green,
             ItemTier.Rare      => Systems.ColorCodes.BrightCyan,
+            ItemTier.Epic      => Systems.ColorCodes.Magenta,
             ItemTier.Legendary => Systems.ColorCodes.Yellow,
             _                  => Systems.ColorCodes.BrightWhite
         };
@@ -392,7 +394,7 @@ public class ConsoleDisplayService : IDisplayService
         if (item.DefenseBonus != 0)
             Console.WriteLine($"║  {"Defense:",-10}{Systems.ColorCodes.Cyan}+{item.DefenseBonus}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 12 - (item.DefenseBonus.ToString().Length + 1)))}║");
         if (item.HealAmount != 0)
-            Console.WriteLine($"║  {"Heal:",-10}{Systems.ColorCodes.Green}+{item.HealAmount} HP{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 15 - item.HealAmount.ToString().Length))}║");
+            Console.WriteLine($"║  {"Heal:",-10}{Systems.ColorCodes.Green}+{item.HealAmount} HP{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 16 - item.HealAmount.ToString().Length))}║");
         if (item.ManaRestore != 0)
             Console.WriteLine($"║  {"Mana:",-10}{Systems.ColorCodes.Blue}+{item.ManaRestore}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 12 - (item.ManaRestore.ToString().Length + 1)))}║");
         if (item.MaxManaBonus != 0)
@@ -449,6 +451,7 @@ public class ConsoleDisplayService : IDisplayService
             {
                 ItemTier.Uncommon  => Systems.ColorCodes.Green,
                 ItemTier.Rare      => Systems.ColorCodes.BrightCyan,
+                ItemTier.Epic      => Systems.ColorCodes.Magenta,
                 ItemTier.Legendary => Systems.ColorCodes.Yellow,
                 _                  => Systems.ColorCodes.BrightWhite
             };
@@ -491,6 +494,7 @@ public class ConsoleDisplayService : IDisplayService
             {
                 ItemTier.Uncommon  => Systems.ColorCodes.Green,
                 ItemTier.Rare      => Systems.ColorCodes.BrightCyan,
+                ItemTier.Epic      => Systems.ColorCodes.Magenta,
                 ItemTier.Legendary => Systems.ColorCodes.Yellow,
                 _                  => Systems.ColorCodes.BrightWhite
             };
@@ -1322,13 +1326,19 @@ public class ConsoleDisplayService : IDisplayService
 
     private static string EffectIcon(StatusEffect effect) => effect switch
     {
-        StatusEffect.Poison   => "☠",
-        StatusEffect.Bleed    => "🩸",
-        StatusEffect.Stun     => "⚡",
-        StatusEffect.Regen    => "✨",
+        StatusEffect.Poison    => "☠",
+        StatusEffect.Bleed     => "🩸",
+        StatusEffect.Stun      => "⚡",
+        StatusEffect.Regen     => "✨",
         StatusEffect.Fortified => "🛡",
-        StatusEffect.Weakened => "💀",
-        _                     => "●"
+        StatusEffect.Weakened  => "💀",
+        StatusEffect.Slow      => ">",
+        StatusEffect.BattleCry => "!",
+        StatusEffect.Burn      => "*",
+        StatusEffect.Freeze    => "~",
+        StatusEffect.Silence   => "X",
+        StatusEffect.Curse     => "@",
+        _                      => "●"
     };
 
     private static int VisibleLength(string s)
