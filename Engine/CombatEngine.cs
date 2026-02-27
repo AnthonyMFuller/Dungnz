@@ -1154,6 +1154,74 @@ public class CombatEngine : ICombatEngine
         }
     }
     
+    /// <summary>
+    /// Executes the phase ability effect for a boss when an HP threshold is crossed.
+    /// Each ability fires exactly once per combat (guarded by <see cref="DungeonBoss.FiredPhases"/>).
+    /// </summary>
+    private void ExecuteBossPhaseAbility(DungeonBoss boss, Player player, string abilityName)
+    {
+        switch (abilityName)
+        {
+            case "Reinforcements":
+                // GoblinWarchief: deal 10 bonus damage + narrative message
+                int reinforceDmg = Math.Max(1, 10 - player.Defense);
+                player.TakeDamage(reinforceDmg);
+                _display.ShowCombatMessage($"Goblin reinforcements swarm you for {reinforceDmg} damage!");
+                break;
+
+            case "Bloodfrenzy":
+                // PlagueHoundAlpha: permanently gain +5 ATK
+                boss.Attack += 5;
+                _display.ShowCombatMessage($"The {boss.Name} gains +5 ATK from its blood frenzy!");
+                break;
+
+            case "StunningBlow":
+                // IronSentinel: stun the player for 1 turn
+                _statusEffects.Apply(player, StatusEffect.Stun, 1);
+                _display.ShowCombatMessage("You are stunned by the force of the blow!");
+                break;
+
+            case "WeakenAura":
+                // BoneArchon: apply Weakened to player for 3 turns
+                _statusEffects.Apply(player, StatusEffect.Weakened, 3);
+                _display.ShowCombatMessage("You feel your strength sapped by the archon's aura! (Weakened 3T)");
+                break;
+
+            case "BloodDrain":
+                // CrimsonVampire: drain 10 MP from player, heal boss 15 HP
+                int drained = Math.Min(player.Mana, 10);
+                player.Mana = Math.Max(0, player.Mana - 10);
+                int vampHeal = Math.Min(15, boss.MaxHP - boss.HP);
+                boss.HP = Math.Min(boss.MaxHP, boss.HP + 15);
+                _display.ShowCombatMessage($"The {boss.Name} drains {drained} MP and heals {vampHeal} HP!");
+                break;
+
+            case "DeathShroud":
+                // ArchlichSovereign: apply Weakened + Slow to player
+                _statusEffects.Apply(player, StatusEffect.Weakened, 3);
+                _statusEffects.Apply(player, StatusEffect.Slow, 3);
+                _display.ShowCombatMessage("The death shroud saps your strength and speed! (Weakened + Slow 3T)");
+                break;
+
+            case "TentacleBarrage":
+                // AbyssalLeviathan: 3 hits of 40% ATK each
+                for (int i = 0; i < 3; i++)
+                {
+                    int tentDmg = Math.Max(1, (int)(boss.Attack * 0.4f) - player.Defense);
+                    player.TakeDamage(tentDmg);
+                    _display.ShowCombatMessage(ColorizeDamage($"A tentacle lashes you for {tentDmg} damage!", tentDmg));
+                }
+                break;
+
+            case "FlameBreath":
+                // InfernalDragon: apply Burn 5 turns + permanently gain +8 ATK
+                _statusEffects.Apply(player, StatusEffect.Burn, 5);
+                boss.Attack += 8;
+                _display.ShowCombatMessage($"You are set ablaze! (Burn 5T) The {boss.Name} grows fiercer (+8 ATK)!");
+                break;
+        }
+    }
+
     private void PerformMinionAttackPhase(Player player, Enemy enemy)
     {
         foreach (var minion in player.ActiveMinions.Where(m => m.HP > 0).ToList())
