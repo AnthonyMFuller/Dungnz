@@ -21,7 +21,7 @@ public class Mimic : Enemy
     /// </param>
     /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
     [System.Text.Json.Serialization.JsonConstructor]
-    private Mimic() { _rng = new Random(); }
+    private Mimic() { _rng = new Random(); } // RNG-ok: JsonConstructor (deserialization only)
 
     /// <summary>Initialises a Mimic with the given stats and item configuration, or falls back to hard-coded defaults. Enables the ambush mechanic.</summary>
     /// <param name="stats">External stats from config, or <see langword="null"/> to use defaults.</param>

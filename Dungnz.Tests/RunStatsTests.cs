@@ -67,6 +67,12 @@ public class RunStatsTests
             Won = false,
         };
 
+        // Ensure any prior corruption is cleared before writing
+        var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Dungnz");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, "stats-history.json");
+        File.WriteAllText(path, "[]");
+
         RunStats.AppendToHistory(stats, won: false);
 
         var history = RunStats.LoadHistory();
@@ -89,6 +95,12 @@ public class RunStatsTests
             TimeElapsed = TimeSpan.FromSeconds(30),
             Won = false,
         };
+
+        // Ensure any prior corruption is cleared before writing
+        var dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Dungnz");
+        Directory.CreateDirectory(dir);
+        var path = Path.Combine(dir, "stats-history.json");
+        File.WriteAllText(path, "[]");
 
         RunStats.AppendToHistory(stats, won: false);
 

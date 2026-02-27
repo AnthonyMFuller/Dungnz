@@ -6,7 +6,7 @@
   <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <GenerateDocumentationFile>true</GenerateDocumentationFile>
-    <WarningsAsErrors>CS1591</WarningsAsErrors>
+    <WarningsAsErrors>CS1591;CS0108;CS0114;CS0169;CS0649;IDE0051;IDE0052</WarningsAsErrors>
   </PropertyGroup>
 
   <ItemGroup>

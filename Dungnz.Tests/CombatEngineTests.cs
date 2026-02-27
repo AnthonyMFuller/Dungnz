@@ -336,6 +336,42 @@ public class CombatEngineTests
         stats.DamageDealt.Should().Be(12);
     }
 
+    // ── Minion attack phase ────────────────────────────────────────────────
+
+    [Fact]
+    public void MinionAttackPhase_MinionDealsExpectedDamage()
+    {
+        var player = new Player { HP = 100, MaxHP = 100, Attack = 10, Defense = 5, Level = 1 };
+        player.ActiveMinions.Add(new Minion { Name = "Skeleton", HP = 10, MaxHP = 10, ATK = 5, AttackFlavorText = "Skeleton strikes for {dmg}!" });
+        var enemy = new Enemy_Stub(hp: 50, atk: 0, def: 0, xp: 1);
+        var display = new FakeDisplayService();
+        // A=attack each turn; eventually enemy dies from player hits; minion attacks before enemy
+        var input = new FakeInputReader("A", "A", "A", "A", "A", "A");
+        var rng = new ControlledRandom(defaultDouble: 0.05);
+        var engine = new CombatEngine(display, input, rng);
+        engine.RunCombat(player, enemy);
+        // Minion attacked at least once (player ATK=10, def=0: player deals 10/turn; enemy HP=50 → 5 turns; minion hits each)
+        display.CombatMessages.Should().Contain(m => m.Contains("Skeleton strikes"));
+    }
+
+    // ── Frozen enemy skips turn ───────────────────────────────────────────
+
+    [Fact]
+    public void FrozenEnemy_PhysicalAttackBreaksFreeze_MessageShown()
+    {
+        // Fix #542: physical damage breaks Freeze; this tests that the "Freeze broken" message appears
+        var player = new Player { HP = 50, MaxHP = 50, Attack = 10, Defense = 5, Level = 1 };
+        var enemy = new Enemy_Stub(hp: 999, atk: 20, def: 0, xp: 1);
+        var display = new FakeDisplayService();
+        var statusEffects = new StatusEffectManager(display);
+        statusEffects.Apply(enemy, StatusEffect.Freeze, 3);
+        var input = new FakeInputReader("A", "F"); // attack once then flee
+        var rng = new ControlledRandom(defaultDouble: 0.05); // flee succeeds
+        var engine = new CombatEngine(display, input, rng, statusEffects: statusEffects);
+        engine.RunCombat(player, enemy);
+        display.CombatMessages.Should().Contain(m => m.Contains("Freeze broken"));
+    }
+
 }
 
 /// <summary>Test stub enemy with configurable stats.</summary>
