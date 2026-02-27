@@ -51,6 +51,17 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine(room.Description);
         Console.WriteLine();
 
+        // Environmental hazard indicator
+        var envHazardWarning = room.EnvironmentalHazard switch
+        {
+            RoomHazard.LavaSeam        => $"{Systems.ColorCodes.Red}🔥 Lava seams crack the floor — each action will burn you.{Systems.ColorCodes.Reset}",
+            RoomHazard.CorruptedGround => $"{Systems.ColorCodes.Gray}💀 The ground pulses with dark energy — it will drain you with every action.{Systems.ColorCodes.Reset}",
+            RoomHazard.BlessedClearing => $"{Systems.ColorCodes.Cyan}✨ A blessed warmth fills this clearing.{Systems.ColorCodes.Reset}",
+            _                          => null
+        };
+        if (envHazardWarning != null)
+            Console.WriteLine(envHazardWarning);
+
         // Hazard forewarning
         var hazardWarning = room.Type switch
         {

@@ -142,6 +142,14 @@ public class DungeonGenerator
 
                 if (_rng.Next(100) < 20) room.Merchant = Merchant.CreateRandom(_rng, floor, _allItems);
                 if (_rng.Next(100) < 15) room.Hazard = (HazardType)(_rng.Next(3) + 1); // 1-3 = Spike/Poison/Fire
+
+                // Assign per-action environmental hazards by floor range
+                if (floor >= 7 && _rng.Next(100) < 15)
+                    room.EnvironmentalHazard = RoomHazard.LavaSeam;
+                else if (floor >= 5 && _rng.Next(100) < 10)
+                    room.EnvironmentalHazard = RoomHazard.CorruptedGround;
+                else if (floor <= 6 && _rng.Next(100) < 8)
+                    room.EnvironmentalHazard = RoomHazard.BlessedClearing;
             }
         }
 

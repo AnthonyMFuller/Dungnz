@@ -39,6 +39,19 @@ public enum HazardType
     Fire
 }
 
+/// <summary>Describes persistent environmental hazards that apply an effect after each player action.</summary>
+public enum RoomHazard
+{
+    /// <summary>No environmental hazard.</summary>
+    None,
+    /// <summary>Floors 7-8: deals 5 fire damage per player action.</summary>
+    LavaSeam,
+    /// <summary>Floors 5-8: deals 3 HP damage per player action.</summary>
+    CorruptedGround,
+    /// <summary>Floors 1-6: restores 3 HP once per room visit.</summary>
+    BlessedClearing
+}
+
 /// <summary>
 /// Represents a single room in the dungeon. Holds navigational connections to adjacent rooms,
 /// the enemy or items present, and state flags that track player interaction (visited, looted,
@@ -107,6 +120,12 @@ public class Room
 
     /// <summary>Gets or sets the environmental hazard in this room that damages the player on entry.</summary>
     public HazardType Hazard { get; set; } = HazardType.None;
+
+    /// <summary>Gets or sets the persistent environmental hazard that applies an effect after each player action.</summary>
+    public RoomHazard EnvironmentalHazard { get; set; } = RoomHazard.None;
+
+    /// <summary>Gets or sets whether the BlessedClearing heal has already been applied this visit (once per visit).</summary>
+    public bool BlessedHealApplied { get; set; } = false;
 
     /// <summary>
     /// Gets or sets whether the special room interaction (ForgottenShrine blessing,
