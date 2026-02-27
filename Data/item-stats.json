@@ -1295,7 +1295,7 @@
             "SetId": "shadowstalker"
         },
         {
-            "Name": "Ironclad Helm",
+            "Name": "Ironclad Reinforced Helm",
             "Type": "Accessory",
             "HealAmount": 0,
             "AttackBonus": 0,
@@ -1326,7 +1326,7 @@
             "SetId": null
         },
         {
-            "Name": "Ironclad Gauntlets",
+            "Name": "Ironclad Plated Gauntlets",
             "Type": "Weapon",
             "HealAmount": 0,
             "AttackBonus": 8,
