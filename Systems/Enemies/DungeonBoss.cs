@@ -9,6 +9,12 @@ using Dungnz.Systems;
 /// </summary>
 public class DungeonBoss : Enemy
 {
+    /// <summary>Flavour description of this boss's special ability (used in enemy info display).</summary>
+    public string SpecialAbilityDescription { get; protected set; } = string.Empty;
+
+    /// <summary>The dungeon floor this boss guards (1–8).</summary>
+    public int FloorNumber { get; protected set; }
+
     /// <summary>
     /// Indicates whether the boss has entered its enraged phase, triggered when HP falls
     /// to 40% or below. While enraged the boss's attack is permanently increased by 50%.

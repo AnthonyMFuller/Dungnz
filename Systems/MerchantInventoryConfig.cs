@@ -63,6 +63,7 @@ public static class MerchantInventoryConfig
         ItemTier.Common    => 15 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 5,
         ItemTier.Uncommon  => 40 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 6,
         ItemTier.Rare      => 80 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 8,
+        ItemTier.Epic      => 150 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 11,
         ItemTier.Legendary => 400 + item.HealAmount + (item.AttackBonus + item.DefenseBonus) * 15,
         _                  => 20
     };
