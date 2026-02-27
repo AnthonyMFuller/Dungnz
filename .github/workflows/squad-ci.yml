@@ -73,3 +73,34 @@ jobs:
             exit 1
           fi
           echo "✅ No bare new Random() in production code."
+
+      - name: Validate JSON data files against schemas
+        run: |
+          pip install jsonschema --quiet
+          python3 - << 'PYEOF'
+import json, jsonschema, sys
+
+pairs = [
+    ("Data/item-stats.json",        "Data/schemas/item-stats.schema.json"),
+    ("Data/enemy-stats.json",       "Data/schemas/enemy-stats.schema.json"),
+    ("Data/crafting-recipes.json",  "Data/schemas/crafting-recipes.schema.json"),
+    ("Data/item-affixes.json",      "Data/schemas/item-affixes.schema.json"),
+]
+
+errors = []
+for data_path, schema_path in pairs:
+    with open(data_path) as f:
+        data = json.load(f)
+    with open(schema_path) as f:
+        schema = json.load(f)
+    try:
+        jsonschema.validate(data, schema)
+        print(f"✅ {data_path}")
+    except jsonschema.ValidationError as e:
+        errors.append(f"❌ {data_path}: {e.message}")
+        print(f"❌ {data_path}: {e.message}")
+
+if errors:
+    print(f"\n::error::JSON schema validation failed for {len(errors)} file(s).")
+    sys.exit(1)
+PYEOF

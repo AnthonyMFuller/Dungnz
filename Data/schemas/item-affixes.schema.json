@@ -1,0 +1,32 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Item Affixes",
+  "type": "object",
+  "properties": {
+    "prefixes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Id", "Name"],
+        "properties": {
+          "Id":   { "type": "string", "minLength": 1 },
+          "Name": { "type": "string", "minLength": 1 },
+          "AttackBonus":  { "type": "number" },
+          "DefenseBonus": { "type": "number" },
+          "ManaBonus":    { "type": "number" }
+        }
+      }
+    },
+    "suffixes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Id", "Name"],
+        "properties": {
+          "Id":   { "type": "string", "minLength": 1 },
+          "Name": { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}
