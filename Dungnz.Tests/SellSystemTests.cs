@@ -163,18 +163,22 @@ public class SellSystemTests
     }
 
     [Fact]
-    public void Sell_OnlyEquippedWeapon_NoInventoryItems_ShowsNoSellNarration()
+    public void Sell_OnlyEquippedWeapon_NoInventoryItems_ShowsSellMenuWithEquippedItem()
     {
-        // Only equipped weapon — Inventory is empty → a "NoSell" narration line is shown
-        var (player, room, display, loop) = MakeSellSetup("sell", "quit");
+        // Only equipped weapon — with BuildSellableList, equipped items ARE included in sell menu.
+        // Input: "sell" → shows sell menu, "x" → cancel, "quit" → exit
+        var (player, room, display, loop) = MakeSellSetup("sell", "x", "quit");
 
         var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, Tier = ItemTier.Common, IsEquippable = true };
         player.EquippedWeapon = sword;
 
         loop.Run(player, room);
 
-        display.Messages.Should().Contain(m => MerchantNarration.NoSell.Contains(m),
-            "a no-sell narration line should be shown when inventory has nothing sellable");
+        // Sell menu should be shown containing the equipped weapon
+        display.AllOutput.Should().Contain(m => m.StartsWith("sell:"),
+            "the sell menu should appear because BuildSellableList includes equipped items");
+        player.EquippedWeapon.Should().Be(sword, "weapon should remain equipped after cancelling");
+        player.Gold.Should().Be(0, "no gold should be awarded on cancel");
     }
 
     // ────────────────────────────────────────────────────────────────────────

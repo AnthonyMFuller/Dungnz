@@ -1217,10 +1217,9 @@ public class GameLoop
             return;
         }
 
-        // Items in _player.Inventory are already unequipped; exclude Gold-type items
-        var sellable = _player.Inventory
-            .Where(i => i.Type != ItemType.Gold)
-            .ToList();
+        // Build a unified list of every item the player owns — inventory AND equipped slots.
+        // Equipped items are tagged "(equipped)" so the player knows selling will unequip them.
+        var sellable = BuildSellableList();
 
         if (!sellable.Any())
         {
@@ -1228,7 +1227,7 @@ public class GameLoop
             return;
         }
 
-        _display.ShowSellMenu(sellable.Select(i => (i, MerchantInventoryConfig.ComputeSellPrice(i))), _player.Gold);
+        _display.ShowSellMenu(sellable.Select(s => (s.Item, MerchantInventoryConfig.ComputeSellPrice(s.Item))), _player.Gold);
         _display.ShowCommandPrompt();
 
         var input = _input.ReadLine()?.Trim() ?? "";
@@ -1241,10 +1240,10 @@ public class GameLoop
             return;
         }
 
-        var item = sellable[idx - 1];
+        var (item, isEquipped) = sellable[idx - 1];
         int price = MerchantInventoryConfig.ComputeSellPrice(item);
 
-        _display.ShowMessage($"Sell {item.Name} for {price}g? [Y/N]");
+        _display.ShowMessage($"Sell {item.Name}{(isEquipped ? " (equipped)" : "")} for {price}g? [Y/N]");
         var confirm = _input.ReadLine()?.Trim() ?? "";
         if (!confirm.Equals("y", StringComparison.OrdinalIgnoreCase) &&
             !confirm.Equals("yes", StringComparison.OrdinalIgnoreCase))
@@ -1253,13 +1252,60 @@ public class GameLoop
             return;
         }
 
-        _player.Inventory.Remove(item);
+        // If the item was equipped, clear its slot first then remove from inventory (if it ended up there)
+        if (isEquipped)
+            UnequipItemFromSlot(item);
+        else
+            _player.Inventory.Remove(item);
+
         _player.AddGold(price);
         _display.ShowMessage($"You sold {item.Name} for {price}g. Gold remaining: {_player.Gold}g");
         if (item.Tier == Models.ItemTier.Legendary)
             _display.ShowMessage(Systems.MerchantNarration.GetLegendarySold());
         else
             _display.ShowMessage(MerchantNarration.GetAfterSale());
+    }
+
+    /// <summary>
+    /// Returns all items the player can sell: unequipped inventory items first, then equipped items.
+    /// Gold-type items are excluded. Each entry notes whether the item is currently equipped.
+    /// </summary>
+    private List<(Item Item, bool IsEquipped)> BuildSellableList()
+    {
+        var list = new List<(Item, bool)>();
+
+        // Unequipped inventory items (excluding loose gold coins)
+        foreach (var item in _player.Inventory.Where(i => i.Type != ItemType.Gold))
+            list.Add((item, false));
+
+        // Equipped items — selling auto-unequips
+        if (_player.EquippedWeapon    != null) list.Add((_player.EquippedWeapon,    true));
+        if (_player.EquippedAccessory != null) list.Add((_player.EquippedAccessory, true));
+        foreach (var a in _player.AllEquippedArmor)
+            list.Add((a, true));
+
+        return list;
+    }
+
+    /// <summary>Clears the equipment slot that holds <paramref name="item"/> and recalculates derived stats.</summary>
+    private void UnequipItemFromSlot(Item item)
+    {
+        if (_player.EquippedWeapon    == item) { _player.EquippedWeapon    = null; }
+        else if (_player.EquippedAccessory == item) { _player.EquippedAccessory = null; }
+        else if (_player.EquippedHead      == item) { _player.EquippedHead      = null; }
+        else if (_player.EquippedShoulders == item) { _player.EquippedShoulders = null; }
+        else if (_player.EquippedChest     == item) { _player.EquippedChest     = null; }
+        else if (_player.EquippedHands     == item) { _player.EquippedHands     = null; }
+        else if (_player.EquippedLegs      == item) { _player.EquippedLegs      = null; }
+        else if (_player.EquippedFeet      == item) { _player.EquippedFeet      = null; }
+        else if (_player.EquippedBack      == item) { _player.EquippedBack      = null; }
+        else if (_player.EquippedOffHand   == item) { _player.EquippedOffHand   = null; }
+
+        // Remove from inventory in case Equip() placed the old item back there
+        _player.Inventory.Remove(item);
+
+        // Recalculate derived stats (dodge, poison immunity, etc.)
+        _player.RecalculateDerivedBonuses();
     }
 
     private void HandleSkills()

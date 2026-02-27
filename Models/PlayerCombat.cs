@@ -302,7 +302,7 @@ public partial class Player
         RecalculateDerivedBonuses();
     }
 
-    private void RecalculateDerivedBonuses()
+    internal void RecalculateDerivedBonuses()
     {
         DodgeBonus = (EquippedWeapon?.DodgeBonus ?? 0f)
                    + (EquippedAccessory?.DodgeBonus ?? 0f)
