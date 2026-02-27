@@ -1124,7 +1124,7 @@ public class ConsoleDisplayService : IDisplayService
             var manaLine = $" Mana:    {manaBar}  {manaColor}{effectiveMana}{reset}";
             var manaVisibleLen = Systems.ColorCodes.StripAnsiCodes(manaLine).Length;
             Console.WriteLine($"{cyan}│{reset}{manaLine}{new string(' ', Math.Max(0, boxInner - manaVisibleLen))}{cyan}│{reset}");
-            Console.WriteLine($"{cyan}│{reset} Trait: {def.TraitDescription,-39} {cyan}│{reset}");
+            Console.WriteLine($"{cyan}│{reset} Passive: {def.TraitDescription,-37} {cyan}│{reset}");
             Console.WriteLine($"{cyan}│{reset} {gray}\"{def.Description}\"{reset}{new string(' ', Math.Max(0, 45 - def.Description.Length))}{cyan}│{reset}");
             Console.WriteLine($"{cyan}└────────────────────────────────────────────────┘{reset}");
             Console.WriteLine();
