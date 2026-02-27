@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Item Stats",
+  "type": "object",
+  "required": ["Items"],
+  "properties": {
+    "Items": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["Name", "Type"],
+        "properties": {
+          "Name":        { "type": "string", "minLength": 1, "maxLength": 30 },
+          "Type":        { "type": "string", "enum": ["Consumable","Weapon","Armor","Accessory","Key","Gold"] },
+          "HealAmount":  { "type": "integer", "minimum": 0 },
+          "AttackBonus": { "type": "integer", "minimum": 0 },
+          "DefenseBonus":{ "type": "integer", "minimum": 0 },
+          "IsEquippable":{ "type": "boolean" },
+          "Tier":        { "type": "string", "enum": ["Common","Uncommon","Rare","Epic","Legendary"] },
+          "Id":          { "type": "string", "minLength": 1 }
+        }
+      }
+    }
+  }
+}

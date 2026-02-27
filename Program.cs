@@ -14,6 +14,7 @@ var difficultySettings = DifficultySettings.For(chosenDifficulty);
 display.ShowMessage($"Run #{prestige.TotalRuns + 1} — Seed: {actualSeed} (share to replay)");
 
 EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
+StartupValidator.ValidateOrThrow();
 CraftingSystem.Load("Data/crafting-recipes.json");
 AffixRegistry.Load("Data/item-affixes.json");
 var allItems = ItemConfig.Load("Data/item-stats.json").Select(ItemConfig.CreateItem).ToList();

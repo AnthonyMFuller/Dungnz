@@ -1,0 +1,42 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Crafting Recipes",
+  "type": "object",
+  "required": ["recipes"],
+  "properties": {
+    "recipes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["id", "name", "ingredients", "result"],
+        "properties": {
+          "id":          { "type": "string", "minLength": 1 },
+          "name":        { "type": "string", "minLength": 1 },
+          "goldCost":    { "type": "integer", "minimum": 0 },
+          "description": { "type": "string" },
+          "ingredients": {
+            "type": "array",
+            "minItems": 1,
+            "items": {
+              "type": "object",
+              "required": ["itemId"],
+              "properties": {
+                "itemId":      { "type": "string", "minLength": 1 },
+                "displayName": { "type": "string" },
+                "count":       { "type": "integer", "minimum": 1 }
+              }
+            }
+          },
+          "result": {
+            "type": "object",
+            "required": ["itemId"],
+            "properties": {
+              "itemId": { "type": "string", "minLength": 1 },
+              "name":   { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  }
+}
