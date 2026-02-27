@@ -10,6 +10,7 @@ public class AbilityManager
 {
     private readonly Dictionary<AbilityType, int> _cooldowns = new();
     private readonly List<Ability> _abilities;
+    private readonly Random _rng;
 
     /// <summary>Flavor text displayed immediately before each ability activates.</summary>
     private static readonly Dictionary<string, string> _abilityFlavor = new(StringComparer.OrdinalIgnoreCase)
@@ -24,8 +25,9 @@ public class AbilityManager
     /// Initialises the manager and registers all available abilities with their names,
     /// descriptions, mana costs, cooldown turns, unlock levels, and ability types.
     /// </summary>
-    public AbilityManager()
+    public AbilityManager(Random? rng = null)
     {
+        _rng = rng ?? new Random();
         _abilities = new List<Ability>
         {
             // Warrior abilities
@@ -310,7 +312,7 @@ public class AbilityManager
                     var bashDamage = Math.Max(1, (int)(player.Attack * 1.2) - enemy.Defense);
                     enemy.HP -= bashDamage;
                     display.ShowCombatMessage($"You slam your shield into the enemy's skull! ({bashDamage} damage)");
-                    if (new Random().NextDouble() < 0.5)
+                    if (_rng.NextDouble() < 0.5)
                     {
                         statusEffects.Apply(enemy, StatusEffect.Stun, 1);
                         display.ShowCombatMessage($"{enemy.Name} is stunned!");
@@ -393,7 +395,8 @@ public class AbilityManager
                     var frostDamage = Math.Max(1, baseDmg - (enemy.Defense / 4));
                     enemy.HP -= frostDamage;
                     statusEffects.Apply(enemy, StatusEffect.Slow, 2);
-                    display.ShowCombatMessage($"A wave of bitter cold explodes outward! ({frostDamage} damage, enemy slowed)");
+                    statusEffects.Apply(enemy, StatusEffect.Freeze, 2);
+                    display.ShowCombatMessage($"A wave of bitter cold explodes outward! ({frostDamage} damage, enemy slowed and frozen)");
                 }
                 break;
             
