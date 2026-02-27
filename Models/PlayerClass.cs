@@ -81,14 +81,14 @@ public class PlayerClassDefinition
         BonusAttack = 2, BonusDefense = 0, BonusMaxHP = 5, BonusMaxMana = 10
     };
 
-    /// <summary>Gets a short description of the class's passive combat trait.</summary>
+    /// <summary>Gets a short description of the class's passive combat trait (Phase 8-C2).</summary>
     public string TraitDescription => Class switch {
-        PlayerClass.Warrior => "Passive: +5% damage when HP < 50%",
-        PlayerClass.Mage => "Passive: Spells deal +20% damage",
-        PlayerClass.Rogue => "Passive: +10% dodge chance",
-        PlayerClass.Paladin => "Divine Favor: auto-heal at 30% HP",
-        PlayerClass.Necromancer => "Soul Harvest: +2 max mana on kill",
-        PlayerClass.Ranger => "Hunter's Mark: +25% first attack",
+        PlayerClass.Warrior     => "Battle Hardened — ATK↑ as HP↓",
+        PlayerClass.Mage        => "Arcane Surge — next cast -1 mana",
+        PlayerClass.Rogue       => "Shadow Strike — 2× first hit",
+        PlayerClass.Paladin     => "Divine Bulwark — Fortified <25% HP",
+        PlayerClass.Necromancer => "Soul Harvest — +5 HP per kill",
+        PlayerClass.Ranger      => "Eagle Eye — +dodge turns 1-2",
         _ => ""
     };
 
