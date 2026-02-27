@@ -247,6 +247,14 @@ public class AbilityManager
         if (player.ManaDiscount > 0)
             effectiveCost = Math.Max(0, effectiveCost - player.ManaDiscount);
         
+        // Arcane Surge (Mage): next ability costs 1 less mana after spending mana
+        if (player.Class == PlayerClass.Mage && player.ArcaneSurgeReady)
+        {
+            effectiveCost = Math.Max(0, effectiveCost - 1);
+            player.ArcaneSurgeReady = false;
+            display.ShowCombatMessage("[Arcane Surge] Next ability costs 1 less mana.");
+        }
+
         // LichsBargain passive: HP < 15% = 0 cost abilities for 1 turn
         if (player.Class == PlayerClass.Necromancer && player.HasSkill(Skill.LichsBargain) 
             && player.HP < player.MaxHP * 0.15f)
@@ -259,6 +267,9 @@ public class AbilityManager
             return UseAbilityResult.InsufficientMana;
         
         player.SpendMana(effectiveCost);
+        // Arcane Surge (Mage): set ready for next ability after spending mana
+        if (player.Class == PlayerClass.Mage && effectiveCost > 0)
+            player.ArcaneSurgeReady = true;
         PutOnCooldown(type, ability.CooldownTurns, player);
 
         if (_abilityFlavor.TryGetValue(type.ToString(), out var flavorText))

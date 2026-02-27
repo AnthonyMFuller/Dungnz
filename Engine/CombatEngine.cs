@@ -305,6 +305,7 @@ public class CombatEngine : ICombatEngine
         
         while (true)
         {
+            _combatTurn++;
             // Fix #167: capture stun state BEFORE ProcessTurnStart decrements durations
             bool playerStunnedThisTurn = _statusEffects.HasEffect(player, StatusEffect.Stun);
             bool enemyStunnedThisTurn  = _statusEffects.HasEffect(enemy,  StatusEffect.Stun);
@@ -685,6 +686,14 @@ public class CombatEngine : ICombatEngine
                 _display.ShowCombatMessage("🎯 Hunter's Mark! First strike deals bonus damage!");
             }
             
+            // Shadow Strike (Rogue): first attack each combat deals 2x damage
+            if (player.Class == PlayerClass.Rogue && player.ShadowStrikeReady)
+            {
+                playerDmg *= 2;
+                player.ShadowStrikeReady = false;
+                _display.ShowCombatMessage("[Shadow Strike] From the shadows — double damage!");
+            }
+            
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
 
@@ -693,6 +702,12 @@ public class CombatEngine : ICombatEngine
                 _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerHit, enemy, playerDmg);
             else
             {
+                // Soul Harvest (Necromancer): heal 5 HP on enemy kill
+                if (player.Class == PlayerClass.Necromancer)
+                {
+                    player.HP = Math.Min(player.MaxHP, player.HP + 5);
+                    _display.ShowCombatMessage("[Soul Harvest] You absorb the fallen's essence. +5 HP");
+                }
                 // on-kill bonus damage from thunderstrike
                 int killBonus = _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnEnemyKilled, enemy, playerDmg);
                 if (killBonus > 0) _stats.DamageDealt += killBonus;
@@ -1085,6 +1100,31 @@ public class CombatEngine : ICombatEngine
                 _display.ShowCombatMessage($"✨ Divine Favor! You are healed for {divineHeal} HP!");
             }
 
+            // Battle Hardened (Warrior): gain +2 ATK per 20% HP lost (max 4 stacks = +8 ATK)
+            if (player.Class == PlayerClass.Warrior && player.HP > 0)
+            {
+                int newStacks = (int)((1f - (float)player.HP / player.MaxHP) / 0.20f);
+                newStacks = Math.Min(newStacks, 4);
+                if (newStacks > player.BattleHardenedStacks)
+                {
+                    int gained = newStacks - player.BattleHardenedStacks;
+                    player.BattleHardenedStacks = newStacks;
+                    player.ModifyAttack(gained * 2);
+                    _display.ShowCombatMessage($"[Battle Hardened] Fury builds — +{gained * 2} ATK!");
+                }
+            }
+
+            // Divine Bulwark (Paladin): once-per-combat Fortified at <25% HP
+            if (player.Class == PlayerClass.Paladin
+                && !player.DivineBulwarkFired
+                && player.HP > 0
+                && player.HP < player.MaxHP * 0.25f)
+            {
+                player.DivineBulwarkFired = true;
+                _statusEffects.Apply(player, StatusEffect.Fortified, 3);
+                _display.ShowCombatMessage("[Divine Bulwark] Faith shields you from death's door!");
+            }
+
             // ── Ironclad 4-pc set bonus: DamageReflectPercent ──────────────
             if (player.DamageReflectPercent > 0 && enemyDmgFinal > 0)
             {
@@ -1445,6 +1485,9 @@ public class CombatEngine : ICombatEngine
         // Quick Reflexes passive — +5% dodge chance
         if (player.Skills.IsUnlocked(Skill.QuickReflexes))
             dodgeChance += 0.05f;
+        // Eagle Eye (Ranger): +15% dodge on turns 1–2
+        if (player.Class == PlayerClass.Ranger && _combatTurn <= 2)
+            dodgeChance += 0.15f;
         dodgeChance = Math.Min(dodgeChance, 0.95f);
         return _rng.NextDouble() < dodgeChance;
     }

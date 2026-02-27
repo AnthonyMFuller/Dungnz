@@ -84,6 +84,34 @@ public partial class Player
     /// <summary>Counter used by the Shadowstalker 3-piece set bonus — auto-crit on every 3rd attack.</summary>
     public int ShadowDanceCounter { get; set; } = 0;
 
+    // ── Class passive state (reset each combat) ───────────────────────────────────────
+
+    /// <summary>Warrior: current Battle Hardened stacks (max 4, each granting +2 ATK).</summary>
+    public int BattleHardenedStacks { get; set; } = 0;
+
+    /// <summary>Mage: true when the next ability costs 1 less mana (set after spending mana).</summary>
+    public bool ArcaneSurgeReady { get; set; } = false;
+
+    /// <summary>Rogue: true when Shadow Strike first-attack double-damage is available.</summary>
+    public bool ShadowStrikeReady { get; set; } = true;
+
+    /// <summary>Paladin: true once Divine Bulwark (Fortified at &lt;25% HP) has already fired this combat.</summary>
+    public bool DivineBulwarkFired { get; set; } = false;
+
+    /// <summary>
+    /// Resets all class passive state to its default at the start of each combat.
+    /// Also reverses any Battle Hardened ATK bonus accumulated during the previous fight.
+    /// </summary>
+    public void ResetCombatPassives()
+    {
+        if (BattleHardenedStacks > 0)
+            ModifyAttack(-BattleHardenedStacks * 2);
+        BattleHardenedStacks = 0;
+        ArcaneSurgeReady = false;
+        ShadowStrikeReady = true;
+        DivineBulwarkFired = false;
+    }
+
     // ── 4-piece set bonus flags (set by SetBonusManager.ApplySetBonuses) ──────
 
     /// <summary>Ironclad 4-piece: fraction of incoming damage reflected back to the attacker (e.g. 0.1 = 10%).</summary>
