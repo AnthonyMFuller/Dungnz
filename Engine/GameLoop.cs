@@ -212,6 +212,7 @@ public class GameLoop
                     break;
             }
             if (_turnConsumed) _stats.TurnsTaken++;
+            if (_turnConsumed && !_gameOver) ApplyRoomHazard(_currentRoom, _player);
             if (_gameOver) break;
         }
     }
@@ -397,6 +398,29 @@ public class GameLoop
     private void HandleLook()
     {
         _display.ShowRoom(_currentRoom);
+    }
+
+    private void ApplyRoomHazard(Room room, Player player)
+    {
+        switch (room.EnvironmentalHazard)
+        {
+            case RoomHazard.LavaSeam:
+                player.HP = Math.Max(0, player.HP - 5);
+                _display.ShowMessage("🔥 The lava seam sears you. (-5 HP)");
+                break;
+            case RoomHazard.CorruptedGround:
+                player.HP = Math.Max(0, player.HP - 3);
+                _display.ShowMessage("💀 The corrupted ground drains you. (-3 HP)");
+                break;
+            case RoomHazard.BlessedClearing:
+                if (!room.BlessedHealApplied)
+                {
+                    room.BlessedHealApplied = true;
+                    player.HP = Math.Min(player.MaxHP, player.HP + 3);
+                    _display.ShowMessage("✨ A blessed warmth flows through you. (+3 HP)");
+                }
+                break;
+        }
     }
 
     private void HandleExamine(string target)
