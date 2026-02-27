@@ -33,6 +33,17 @@ jobs:
       - name: Run tests with coverage
         run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Threshold=62 /p:ThresholdType=line
 
+      - name: Enforce PR closes-issue reference
+        if: github.event_name == 'pull_request'
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+        run: |
+          if echo "$PR_BODY" | grep -qiE '(closes|fixes|resolves) #[0-9]+'; then
+            echo "✅ PR body contains a closes/fixes/resolves issue reference."
+          else
+            echo "::warning::⚠️ PR body is missing a 'Closes #N' / 'Fixes #N' issue reference. Squash merges do not auto-close issues from PR body — the commit message must contain the reference. Please add 'Closes #N' to the PR body (and the squash commit subject)."
+          fi
+
       - name: Check no .ai-team/ files are tracked (preview only)
         if: github.ref == 'refs/heads/preview'
         run: |
