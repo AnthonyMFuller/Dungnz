@@ -66,6 +66,9 @@ public class PlagueHoundAlpha : DungeonBoss
 /// </summary>
 public class IronSentinel : DungeonBoss
 {
+    /// <summary>Flat damage reduction from iron plating (50%).</summary>
+    public double ProtectionDR { get; } = 0.5;
+
     /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
     [System.Text.Json.Serialization.JsonConstructor]
     public IronSentinel() : base(null, null)
@@ -207,9 +210,6 @@ public class VampireBoss : DungeonBoss
 /// <summary>The Archlich Sovereign — an ancient undead overlord of the Void Antechamber (Floor 6).</summary>
 public class ArchlichSovereign : DungeonBoss
 {
-    /// <summary>Whether phase 2 has been activated (adds summoned at least once).</summary>
-    public bool Phase2Triggered { get; set; }
-
     /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
     [System.Text.Json.Serialization.JsonConstructor]
     public ArchlichSovereign() : base(null, null) { Name = "Archlich Sovereign"; HP = MaxHP = 180; Attack = 42; Defense = 14; XPValue = 150; IsUndead = true; Phases.Add(new BossPhase(0.50, "DeathShroud")); }
