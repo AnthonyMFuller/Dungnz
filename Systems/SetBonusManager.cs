@@ -134,6 +134,20 @@ public static class SetBonusManager
             Description = "Sentinel 4-piece: Stun immunity",
             GrantsStunImmunity = true
         },
+
+        // ── Arcane Ascendant (Mage/Epic) ────────────────────────────────────
+        new SetBonus
+        {
+            SetId = "arcane-ascendant-set", PiecesRequired = 2,
+            Description = "Arcane Ascendant 2-piece: +20 Spell Power (attack)",
+            AttackBonus = 20
+        },
+        new SetBonus
+        {
+            SetId = "arcane-ascendant-set", PiecesRequired = 4,
+            Description = "Arcane Ascendant 4-piece: Mana cost of abilities reduced by 2",
+            ManaDiscount = 2
+        },
     };
 
     /// <summary>

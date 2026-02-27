@@ -1391,7 +1391,7 @@
             "SetId": "arcanist"
         },
         {
-            "Name": "FrostScaleArmor",
+            "Name": "Frost Scale Armor",
             "Type": "Armor",
             "HealAmount": 0,
             "AttackBonus": 0,
@@ -1406,7 +1406,7 @@
             "SellPrice": 60
         },
         {
-            "Name": "LichsCrown",
+            "Name": "Lich's Crown",
             "Type": "Accessory",
             "HealAmount": 0,
             "AttackBonus": 5,
@@ -1420,7 +1420,7 @@
             "SellPrice": 150
         },
         {
-            "Name": "StaffOfDomination",
+            "Name": "Staff of Domination",
             "Type": "Weapon",
             "HealAmount": 0,
             "AttackBonus": 12,
@@ -1434,7 +1434,7 @@
             "SellPrice": 200
         },
         {
-            "Name": "InfernalGreatsword",
+            "Name": "Infernal Greatsword",
             "Type": "Weapon",
             "HealAmount": 0,
             "AttackBonus": 15,
@@ -1578,6 +1578,7 @@
             "Tier": "Rare",
             "Description": "The buckle is inscribed with a serpent eating its own tail. Appropriate.",
             "Id": "belt-of-regeneration",
+            "PassiveEffectId": "belt_regen",
             "Weight": 1,
             "SellPrice": 120
         },

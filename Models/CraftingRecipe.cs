@@ -71,6 +71,7 @@ public record RecipeResult
     /// <summary>Constructs a runtime <see cref="Item"/> from this result definition.</summary>
     public Item ToItem() => new Item
     {
+        Id = ItemId,
         Name = Name,
         Type = Enum.TryParse<ItemType>(Type, ignoreCase: true, out var t) ? t : ItemType.Consumable,
         HealAmount = HealAmount,
