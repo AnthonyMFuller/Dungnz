@@ -352,9 +352,9 @@ public class Phase6ClassAbilityTests
         _abilities.UseAbility(player, enemy, AbilityType.ArcaneBolt, _statusEffects, _display);
 
         // Arcane Bolt: (ATK * 1.5) + (Mana / 10) - def/4
-        // After casting, mana is reduced by 8, so mana during calc is (50 - 8) = 42
-        var manaAfter = player.Mana;
-        var baseDmg = (int)((player.Attack * 1.5) + (manaAfter / 10));
+        // Mana is captured before the 8-cost is spent, so calc uses pre-cast mana (50)
+        var manaBeforeCast = 50;
+        var baseDmg = (int)((player.Attack * 1.5) + (manaBeforeCast / 10));
         var expectedDamage = Math.Max(1, baseDmg);
         enemy.HP.Should().Be(200 - expectedDamage);
     }
