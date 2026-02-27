@@ -23,7 +23,21 @@ public enum RoomType
     PetrifiedLibrary,
 
     /// <summary>A contested armory with trapped weapons — risky but potentially rewarding.</summary>
-    ContestedArmory
+    ContestedArmory,
+
+    /// <summary>A room rigged with a deadly trap — the player must choose how to deal with it.</summary>
+    TrapRoom
+}
+
+/// <summary>Identifies the specific trap mechanism inside a <see cref="RoomType.TrapRoom"/>.</summary>
+public enum TrapVariant
+{
+    /// <summary>Triggered pressure plates fire a volley of arrows from hidden wall slits.</summary>
+    ArrowVolley,
+    /// <summary>Ceiling vents release a cloud of choking, poisonous gas.</summary>
+    PoisonGas,
+    /// <summary>The floor is riddled with stress fractures that collapse under weight.</summary>
+    CollapsingFloor
 }
 
 /// <summary>Describes environmental hazards that can damage the player on entry.</summary>
@@ -107,6 +121,12 @@ public class Room
 
     /// <summary>Gets or sets the environmental hazard in this room that damages the player on entry.</summary>
     public HazardType Hazard { get; set; } = HazardType.None;
+
+    /// <summary>
+    /// Gets or sets the specific trap variant for <see cref="RoomType.TrapRoom"/> rooms.
+    /// <see langword="null"/> for all other room types.
+    /// </summary>
+    public TrapVariant? Trap { get; set; }
 
     /// <summary>
     /// Gets or sets whether the special room interaction (ForgottenShrine blessing,

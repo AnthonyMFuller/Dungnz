@@ -951,6 +951,142 @@ public class GameLoop
         }
     }
 
+    private void HandleTrapRoom()
+    {
+        var variant = _currentRoom.Trap ?? TrapVariant.ArrowVolley;
+        var rng = new Random();
+
+        // Show dramatic room description
+        string roomDesc = variant switch
+        {
+            TrapVariant.ArrowVolley     => "⚠ The walls bristle with arrow slits. Pressure plates line the floor.",
+            TrapVariant.PoisonGas       => "⚠ Yellow-green mist seeps from vents in the ceiling.",
+            TrapVariant.CollapsingFloor => "⚠ The floor ahead is riddled with cracks. Each step could be the last.",
+            _                           => "⚠ A dangerous trap room."
+        };
+        _display.ShowColoredMessage(roomDesc, Systems.ColorCodes.Yellow);
+
+        switch (variant)
+        {
+            case TrapVariant.ArrowVolley:
+                _display.ShowMessage("[1] Raise your shield — 70% chance to block (no damage); 30% chance to take 15 damage");
+                _display.ShowMessage("[2] Sprint through  — take 8 damage, but find a loot cache");
+                _display.ShowCommandPrompt();
+                var avChoice = _input.ReadLine()?.Trim() ?? "";
+                if (avChoice == "1")
+                {
+                    if (rng.NextDouble() < 0.70)
+                    {
+                        _display.ShowMessage("You raise your shield and the arrows clatter harmlessly off it. You pass unscathed.");
+                    }
+                    else
+                    {
+                        _player.TakeDamage(15);
+                        _display.ShowMessage($"An arrow slips past your guard! -15 HP. HP: {_player.HP}/{_player.MaxHP}");
+                        if (_player.HP <= 0) { ShowGameOver(byTrap: true); _gameOver = true; return; }
+                    }
+                    GiveTrapLoot(rng.NextDouble() < 0.5 ? Models.ItemTier.Uncommon : Models.ItemTier.Common,
+                        "You spot a small cache behind the arrow slits.");
+                }
+                else if (avChoice == "2")
+                {
+                    _player.TakeDamage(8);
+                    _display.ShowMessage($"You sprint through, arrows grazing your side! -8 HP. HP: {_player.HP}/{_player.MaxHP}");
+                    if (_player.HP <= 0) { ShowGameOver(byTrap: true); _gameOver = true; return; }
+                    GiveTrapLoot(Models.ItemTier.Uncommon, "Your speed reveals a hidden loot cache!");
+                }
+                else
+                {
+                    _display.ShowMessage("You hesitate — the trap remains.");
+                    _currentRoom.SpecialRoomUsed = false;
+                    return;
+                }
+                break;
+
+            case TrapVariant.PoisonGas:
+                _display.ShowMessage("[1] Hold your breath and sprint — 60% escape unharmed; 40% get Poisoned (3 turns)");
+                _display.ShowMessage("[2] Find a bypass route    — always safe; 80% chance to find an Uncommon item");
+                _display.ShowCommandPrompt();
+                var pgChoice = _input.ReadLine()?.Trim() ?? "";
+                if (pgChoice == "1")
+                {
+                    if (rng.NextDouble() < 0.60)
+                    {
+                        _display.ShowMessage("You dash through the mist, lungs burning — but you make it clean!");
+                    }
+                    else
+                    {
+                        _player.ActiveEffects.Add(new Models.ActiveEffect(Models.StatusEffect.Poison, 3));
+                        _display.ShowMessage("The gas floods your lungs. You have been Poisoned for 3 turns!");
+                    }
+                }
+                else if (pgChoice == "2")
+                {
+                    _display.ShowMessage("You take the long way round, tracing the walls for a safe passage.");
+                    if (rng.NextDouble() < 0.80)
+                        GiveTrapLoot(Models.ItemTier.Uncommon, "Your careful detour leads you past a forgotten cache.");
+                    else
+                        _display.ShowMessage("The bypass yields nothing but cobwebs.");
+                }
+                else
+                {
+                    _display.ShowMessage("You hesitate — the gas continues to seep.");
+                    _currentRoom.SpecialRoomUsed = false;
+                    return;
+                }
+                break;
+
+            case TrapVariant.CollapsingFloor:
+                _display.ShowMessage("[1] Leap across quickly     — 75% cross safely and find a Rare item; 25% take 20 damage");
+                _display.ShowMessage("[2] Cross carefully, test each step — 100% safe, no loot, slow");
+                _display.ShowCommandPrompt();
+                var cfChoice = _input.ReadLine()?.Trim() ?? "";
+                if (cfChoice == "1")
+                {
+                    if (rng.NextDouble() < 0.75)
+                    {
+                        _display.ShowMessage("You leap with precision — the floor crumbles behind you as you land safely!");
+                        GiveTrapLoot(Models.ItemTier.Rare, "In the far corner, a rare item waits for you.");
+                    }
+                    else
+                    {
+                        _player.TakeDamage(20);
+                        _display.ShowMessage($"The floor gives way! You plummet into rubble! -20 HP. HP: {_player.HP}/{_player.MaxHP}");
+                        if (_player.HP <= 0) { ShowGameOver(byTrap: true); _gameOver = true; return; }
+                    }
+                }
+                else if (cfChoice == "2")
+                {
+                    _display.ShowMessage("Inch by inch you test every stone. It takes an age, but you reach the other side safely.");
+                }
+                else
+                {
+                    _display.ShowMessage("You hesitate at the edge.");
+                    _currentRoom.SpecialRoomUsed = false;
+                    return;
+                }
+                break;
+        }
+
+        _currentRoom.SpecialRoomUsed = true;
+    }
+
+    private void GiveTrapLoot(Models.ItemTier tier, string message)
+    {
+        var loot = Models.LootTable.RollTier(tier);
+        if (loot == null) return;
+        _display.ShowMessage(message);
+        if (_player.Inventory.Count >= Player.MaxInventorySize)
+        {
+            _display.ShowMessage($"Your inventory is full! You leave {loot.Name} behind.");
+        }
+        else
+        {
+            _player.Inventory.Add(loot);
+            _display.ShowMessage($"You obtained: {loot.Name}!");
+        }
+    }
+
     private Room? FindExitRoom()
     {
         var visited = new HashSet<Room>();
