@@ -745,6 +745,9 @@ public class CombatEngine : ICombatEngine
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
 
+            // Fix #542: physical damage breaks Freeze
+            _statusEffects.NotifyPhysicalDamage(enemy);
+
             // ── Passive effects: on player hit ──────────────────────────────
             if (enemy.HP > 0)
                 _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerHit, enemy, playerDmg);
@@ -831,6 +834,13 @@ public class CombatEngine : ICombatEngine
         if (stunOverride || _statusEffects.HasEffect(enemy, StatusEffect.Stun))
         {
             _display.ShowCombatMessage($"{enemy.Name} is stunned and cannot act!");
+            return;
+        }
+
+        // Fix #542: frozen enemies also skip their turn
+        if (_statusEffects.HasEffect(enemy, StatusEffect.Freeze))
+        {
+            _display.ShowCombatMessage($"{enemy.Name} is frozen solid and cannot act!");
             return;
         }
 
