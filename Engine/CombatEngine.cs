@@ -1151,10 +1151,75 @@ public class CombatEngine : ICombatEngine
             }
 
             _turnLog.Add(new CombatTurn(enemy.Name, "Attack", enemyDmgFinal, isCrit, false, statusApplied));
+
+            // Boss phase ability check (fires once per threshold crossing)
+            if (enemy is DungeonBoss phaseCheckBoss && phaseCheckBoss.HP > 0)
+            {
+                float hpPct = (float)phaseCheckBoss.HP / phaseCheckBoss.MaxHP;
+                foreach (var phase in phaseCheckBoss.Phases)
+                {
+                    if (hpPct <= phase.HpPercent && !phaseCheckBoss.FiredPhases.Contains(phase.AbilityName))
+                    {
+                        phaseCheckBoss.FiredPhases.Add(phase.AbilityName);
+                        _display.ShowCombatMessage($"[BOSS PHASE] {phase.Description}");
+                        ExecuteBossPhaseAbility(phaseCheckBoss, player, phase.AbilityName);
+                    }
+                }
+            }
         }
     }
     
-    private void PerformMinionAttackPhase(Player player, Enemy enemy)
+    /// <summary>Executes a boss HP-threshold phase ability (fires once per ability per combat).</summary>
+    private void ExecuteBossPhaseAbility(DungeonBoss boss, Player player, string abilityName)
+    {
+        switch (abilityName)
+        {
+            case "Reinforcements":
+                int reinforceDmg = Math.Max(1, 10 - player.Defense);
+                player.TakeDamage(reinforceDmg);
+                _display.ShowCombatMessage($"Goblin reinforcements swarm you for {reinforceDmg} damage!");
+                break;
+            case "Bloodfrenzy":
+                boss.Attack += 5;
+                _display.ShowCombatMessage($"The {boss.Name} gains +5 ATK from its blood frenzy!");
+                break;
+            case "StunningBlow":
+                _statusEffects.Apply(player, StatusEffect.Stun, 1);
+                _display.ShowCombatMessage("You are stunned by the force of the blow!");
+                break;
+            case "WeakenAura":
+                _statusEffects.Apply(player, StatusEffect.Weakened, 3);
+                _display.ShowCombatMessage("You feel your strength sapped by the archon's aura! (Weakened 3T)");
+                break;
+            case "BloodDrain":
+                int drained = Math.Min(player.Mana, 10);
+                player.Mana = Math.Max(0, player.Mana - 10);
+                int vampHeal = Math.Min(15, boss.MaxHP - boss.HP);
+                boss.HP = Math.Min(boss.MaxHP, boss.HP + 15);
+                _display.ShowCombatMessage($"The {boss.Name} drains {drained} MP and heals {vampHeal} HP!");
+                break;
+            case "DeathShroud":
+                _statusEffects.Apply(player, StatusEffect.Weakened, 3);
+                _statusEffects.Apply(player, StatusEffect.Slow, 3);
+                _display.ShowCombatMessage("The death shroud saps your strength and speed! (Weakened + Slow 3T)");
+                break;
+            case "TentacleBarrage":
+                for (int i = 0; i < 3; i++)
+                {
+                    int tentDmg = Math.Max(1, (int)(boss.Attack * 0.4f) - player.Defense);
+                    player.TakeDamage(tentDmg);
+                    _display.ShowCombatMessage(ColorizeDamage($"A tentacle lashes you for {tentDmg} damage!", tentDmg));
+                }
+                break;
+            case "FlameBreath":
+                _statusEffects.Apply(player, StatusEffect.Burn, 5);
+                boss.Attack += 8;
+                _display.ShowCombatMessage($"You are set ablaze! (Burn 5T) The {boss.Name} grows fiercer (+8 ATK)!");
+                break;
+        }
+    }
+
+        private void PerformMinionAttackPhase(Player player, Enemy enemy)
     {
         foreach (var minion in player.ActiveMinions.Where(m => m.HP > 0).ToList())
         {

@@ -2,6 +2,9 @@ namespace Dungnz.Systems.Enemies;
 using Dungnz.Models;
 using Dungnz.Systems;
 
+/// <summary>Represents a single HP-threshold-triggered ability for a boss.</summary>
+public record BossPhase(float HpPercent, string AbilityName, string Description);
+
 /// <summary>
 /// The final boss of the dungeon. Gains an enrage buff at low health, boosting its attack
 /// by 50%, and can perform a telegraphed charged attack that deals triple damage the following turn.
@@ -9,6 +12,12 @@ using Dungnz.Systems;
 /// </summary>
 public class DungeonBoss : Enemy
 {
+    /// <summary>HP-threshold phase abilities (fire once each per combat).</summary>
+    public List<BossPhase> Phases { get; init; } = new();
+
+    /// <summary>Tracks which phase ability names have already been fired.</summary>
+    public HashSet<string> FiredPhases { get; } = new();
+
     /// <summary>Flavour description of this boss's special ability (used in enemy info display).</summary>
     public string SpecialAbilityDescription { get; protected set; } = string.Empty;
 
