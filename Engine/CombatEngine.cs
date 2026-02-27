@@ -417,6 +417,18 @@ public class CombatEngine : ICombatEngine
                     player.WardingVeilActive = false;
                     player.IsManaShieldActive = false;
                     player.ResetCombatPassives();
+                    // Fix #547: reset boss combat state on flee
+                    if (enemy is DungeonBoss fb1)
+                    {
+                        fb1.IsCharging = false;
+                        fb1.ChargeActive = false;
+                        fb1.IsEnraged = false;
+                        fb1.FlightPhaseActive = false;
+                        fb1.IsSubmerged = false;
+                        fb1.DamageImmune = false;
+                        fb1.AddsAlive = 0;
+                        fb1.FiredPhases.Clear();
+                    }
                     return CombatResult.Fled;
                 }
                 if (_rng.NextDouble() < 0.5)
@@ -438,6 +450,18 @@ public class CombatEngine : ICombatEngine
                     player.WardingVeilActive = false;
                     player.IsManaShieldActive = false;
                     player.ResetCombatPassives();
+                    // Fix #547: reset boss combat state on flee
+                    if (enemy is DungeonBoss fb2)
+                    {
+                        fb2.IsCharging = false;
+                        fb2.ChargeActive = false;
+                        fb2.IsEnraged = false;
+                        fb2.FlightPhaseActive = false;
+                        fb2.IsSubmerged = false;
+                        fb2.DamageImmune = false;
+                        fb2.AddsAlive = 0;
+                        fb2.FiredPhases.Clear();
+                    }
                     return CombatResult.Fled;
                 }
                 else
@@ -481,7 +505,19 @@ public class CombatEngine : ICombatEngine
                     HandleLootAndXP(player, enemy);
                     return CombatResult.Won;
                 }
-                
+
+                // Fix #538: wire minion attack phase between player and enemy turns
+                if (enemy.HP > 0)
+                    PerformMinionAttackPhase(player, enemy);
+                if (enemy.HP <= 0)
+                {
+                    if (CheckOnDeathEffects(player, enemy, _rng)) continue;
+                    ShowDeathNarration(enemy);
+                    ApplyOnDeathEffects(player, enemy);
+                    HandleLootAndXP(player, enemy);
+                    return CombatResult.Won;
+                }
+
                 PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
                 if (player.HP <= 0) return CombatResult.PlayerDied;
             }
@@ -745,6 +781,9 @@ public class CombatEngine : ICombatEngine
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
 
+            // Fix #542: physical damage breaks Freeze
+            _statusEffects.NotifyPhysicalDamage(enemy);
+
             // ── Passive effects: on player hit ──────────────────────────────
             if (enemy.HP > 0)
                 _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerHit, enemy, playerDmg);
@@ -831,6 +870,13 @@ public class CombatEngine : ICombatEngine
         if (stunOverride || _statusEffects.HasEffect(enemy, StatusEffect.Stun))
         {
             _display.ShowCombatMessage($"{enemy.Name} is stunned and cannot act!");
+            return;
+        }
+
+        // Fix #542: frozen enemies also skip their turn
+        if (_statusEffects.HasEffect(enemy, StatusEffect.Freeze))
+        {
+            _display.ShowCombatMessage($"{enemy.Name} is frozen solid and cannot act!");
             return;
         }
 
@@ -1428,6 +1474,7 @@ public class CombatEngine : ICombatEngine
         player.LichsBargainActive = false;
         player.IsManaShieldActive = false;
         PassiveEffectProcessor.ResetCombatState(player);
+        player.ResetCombatPassives(); // Fix #544: revert BattleHardened ATK stacks; Fix #546: clear DivineBulwarkFired
     }
     
     private void CheckLevelUp(Player player)
