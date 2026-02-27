@@ -27,6 +27,7 @@ public class GameLoop
     private readonly AchievementSystem _achievements = new();
     private readonly EquipmentManager _equipment;
     private readonly InventoryManager _inventoryManager;
+    private readonly IReadOnlyList<Item> _allItems = [];
     private readonly NarrationService _narration = new();
     private int _currentFloor = 1;
     private bool _turnConsumed;
@@ -91,7 +92,7 @@ public class GameLoop
     /// The difficulty settings to apply for this run. Defaults to <see cref="Difficulty.Normal"/>
     /// when <see langword="null"/>.
     /// </param>
-    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null, DifficultySettings? difficulty = null)
+    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null, DifficultySettings? difficulty = null, IReadOnlyList<Item>? allItems = null)
     {
         _display = display;
         _combat = combat;
@@ -101,6 +102,7 @@ public class GameLoop
         _difficulty = difficulty ?? DifficultySettings.For(Difficulty.Normal);
         _equipment = new EquipmentManager(display);
         _inventoryManager = new InventoryManager(display);
+        _allItems = allItems ?? [];
     }
 
     /// <summary>
@@ -215,7 +217,7 @@ public class GameLoop
             if (_turnConsumed && !_gameOver) ApplyRoomHazard(_currentRoom, _player);
             if (_player.HP <= 0 && !_gameOver)
             {
-                ShowGameOver();
+                ShowGameOver(killedBy: "environmental hazard");
                 _gameOver = true;
             }
             if (_gameOver) break;
@@ -302,7 +304,7 @@ public class GameLoop
             _display.ShowMessage($"⚠ {hazardMsg} HP: {_player.HP}/{_player.MaxHP}");
             if (_player.HP <= 0)
             {
-                ShowGameOver(byTrap: true);
+                ShowGameOver(killedBy: "a dungeon trap");
                 _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
                 if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
                 _stats.FinalLevel = _player.Level;
@@ -734,7 +736,7 @@ public class GameLoop
 
         float floorMult = 1.0f + (_currentFloor - 1) * 0.5f;
         var floorSeed = _seed.HasValue ? _seed.Value + _currentFloor : (int?)null;
-        var gen = new DungeonGenerator(floorSeed);
+        var gen = new DungeonGenerator(floorSeed, _allItems);
         var (newStart, _) = gen.Generate(floorMultiplier: floorMult, difficulty: _difficulty, floor: _currentFloor);
         _currentRoom = newStart;
         _currentRoom.Visited = true;
@@ -872,7 +874,7 @@ public class GameLoop
                 break;
             case "3":
                 _player.WardingVeilActive = true;
-                _display.ShowMessage("A shimmering veil wraps around you. Ability cooldowns diminish each floor.");
+                _display.ShowMessage("A shimmering veil of protection wraps around you. Enemy attacks have a 20% chance to miss this floor.");
                 _currentRoom.SpecialRoomUsed = true;
                 break;
             case "L":
@@ -957,7 +959,7 @@ public class GameLoop
                 _currentRoom.SpecialRoomUsed = true;
                 if (_player.HP <= 0)
                 {
-                    ShowGameOver(killedBy: "armory trap");
+                    ShowGameOver(killedBy: "an armory trap");
                     _gameOver = true;
                 }
                 break;
@@ -976,8 +978,13 @@ public class GameLoop
         var loot = Models.LootTable.RollArmorTier(tier);
         if (loot != null)
         {
-            _player.Inventory.Add(loot);
-            _display.ShowMessage($"You obtained: {loot.Name}!");
+            if (_player.Inventory.Count >= Player.MaxInventorySize)
+                _display.ShowMessage($"Your inventory is full! You leave {loot.Name} behind.");
+            else
+            {
+                _player.Inventory.Add(loot);
+                _display.ShowMessage($"You obtained: {loot.Name}!");
+            }
         }
         else
         {
@@ -1086,7 +1093,7 @@ public class GameLoop
                     {
                         _player.TakeDamage(20);
                         _display.ShowMessage($"The floor gives way! You plummet into rubble! -20 HP. HP: {_player.HP}/{_player.MaxHP}");
-                        if (_player.HP <= 0) { ShowGameOver(byTrap: true); _gameOver = true; return; }
+                        if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _gameOver = true; return; }
                     }
                 }
                 else if (cfChoice == "2")
