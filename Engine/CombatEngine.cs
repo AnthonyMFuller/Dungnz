@@ -413,6 +413,8 @@ public class CombatEngine : ICombatEngine
                     player.HunterMarkUsedThisCombat = false;
                     player.DivineShieldTurnsRemaining = 0;
                     player.LichsBargainActive = false;
+                    player.WardingVeilActive = false;
+                    player.IsManaShieldActive = false;
                     player.ResetCombatPassives();
                     return CombatResult.Fled;
                 }
@@ -535,6 +537,12 @@ public class CombatEngine : ICombatEngine
     
     private AbilityMenuResult HandleAbilityMenu(Player player, Enemy enemy)
     {
+        if (_statusEffects.HasEffect(player, StatusEffect.Silence))
+        {
+            _display.ShowCombatMessage("You are silenced and cannot use abilities!");
+            return AbilityMenuResult.Cancel;
+        }
+
         var unlocked = _abilities.GetUnlockedAbilities(player);
         if (!unlocked.Any())
         {
@@ -651,7 +659,8 @@ public class CombatEngine : ICombatEngine
         }
         else
         {
-            var playerDmg = Math.Max(1, player.Attack - enemy.Defense);
+            var playerEffAtk = player.Attack + _statusEffects.GetStatModifier(player, "Attack");
+            var playerDmg = Math.Max(1, playerEffAtk - enemy.Defense);
 
             // SiegeOgre thick hide
             if (enemy.ThickHideHitsRemaining > 0)
