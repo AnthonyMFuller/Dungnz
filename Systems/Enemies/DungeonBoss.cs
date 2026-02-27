@@ -46,6 +46,12 @@ public class DungeonBoss : Enemy
     /// <summary>Tracks which phase ability names have already fired this combat, preventing duplicate triggers.</summary>
     public HashSet<string> FiredPhases { get; } = new();
 
+    /// <summary>
+    /// Periodic turn-based abilities. Key = turn interval (fires when <c>TurnCount % key == 0</c>),
+    /// value = ability name passed to <see cref="Engine.CombatEngine.ExecuteBossPhaseAbility"/>.
+    /// </summary>
+    public Dictionary<int, string> TurnActions { get; } = new();
+
     private readonly int _baseAttack;
 
     /// <summary>

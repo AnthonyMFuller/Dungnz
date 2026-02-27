@@ -98,7 +98,7 @@ public static class MerchantInventoryConfig
         foreach (var id in config.Guaranteed)
         {
             if (byId.TryGetValue(id, out var item))
-                stock.Add(new MerchantItem { Item = item, Price = ComputePrice(item) });
+                stock.Add(new MerchantItem { Item = item.Clone(), Price = ComputePrice(item) });
         }
 
         // Fill remaining slots from pool (exclude already-stocked IDs)
@@ -112,7 +112,7 @@ public static class MerchantInventoryConfig
         foreach (var id in available.Take(remaining))
         {
             if (byId.TryGetValue(id, out var item))
-                stock.Add(new MerchantItem { Item = item, Price = ComputePrice(item) });
+                stock.Add(new MerchantItem { Item = item.Clone(), Price = ComputePrice(item) });
         }
 
         return stock;

@@ -238,7 +238,7 @@ public class AbyssalLeviathan : DungeonBoss
 {
     /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
     [System.Text.Json.Serialization.JsonConstructor]
-    public AbyssalLeviathan() : base(null, null) { Name = "Abyssal Leviathan"; HP = MaxHP = 220; Attack = 48; Defense = 12; XPValue = 180; Phases.Add(new BossPhase(0.40, "TentacleBarrage")); }
+    public AbyssalLeviathan() : base(null, null) { Name = "Abyssal Leviathan"; HP = MaxHP = 220; Attack = 48; Defense = 12; XPValue = 180; Phases.Add(new BossPhase(0.40, "TentacleBarrage")); TurnActions[3] = "TidalSlam"; }
 
     /// <summary>Creates an AbyssalLeviathan with optional data-driven stats.</summary>
     public AbyssalLeviathan(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
@@ -246,6 +246,7 @@ public class AbyssalLeviathan : DungeonBoss
         Name = "Abyssal Leviathan";
         HP = MaxHP = 220; Attack = 48; Defense = 12; XPValue = 180;
         Phases.Add(new BossPhase(0.40, "TentacleBarrage"));
+        TurnActions[3] = "TidalSlam"; // every 3 turns
         AddLoot(itemConfig);
     }
 

@@ -362,6 +362,16 @@ public class CombatEngine : ICombatEngine
                 }
             }
 
+            // Boss turn-action table dispatch (periodic turn-based abilities)
+            if (enemy is DungeonBoss bossTurn && bossTurn.TurnActions.Count > 0 && bossTurn.TurnCount > 0)
+            {
+                foreach (var (interval, abilityName) in bossTurn.TurnActions)
+                {
+                    if (bossTurn.TurnCount % interval == 0)
+                        ExecuteBossPhaseAbility(bossTurn, player, abilityName);
+                }
+            }
+
             if (enemy.HP <= 0)
             {
                 if (CheckOnDeathEffects(player, enemy, _rng)) continue; // enemy revived
@@ -1371,6 +1381,14 @@ public class CombatEngine : ICombatEngine
                     _display.ShowCombatMessage(ColorizeDamage($"A tentacle lashes you for {tentDmg} damage!", tentDmg));
                     if (player.HP <= 0) break;
                 }
+                break;
+
+            case "TidalSlam":
+                // AbyssalLeviathan: periodic 150% ATK slam + Slow (every 3rd turn from TurnActions table)
+                int slamDmg = Math.Max(1, (int)(boss.Attack * 1.5f) - player.Defense);
+                player.TakeDamage(slamDmg);
+                _statusEffects.Apply(player, StatusEffect.Slow, 2);
+                _display.ShowCombatMessage(ColorizeDamage($"⚡ The Leviathan erupts with a Tidal Slam! {slamDmg} damage + Slow!", slamDmg));
                 break;
 
             case "FlameBreath":
