@@ -220,6 +220,26 @@ public class SellSystemTests
     }
 
     // ────────────────────────────────────────────────────────────────────────
+    // Regression: #574 — typing SELL inside the shop must open sell menu, not exit shop
+    // ────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Regression574_Sell_TypedInsideShop_OpensSellerNotExitShop()
+    {
+        // Sequence: open shop with SHOP, type SELL inside shop, pick item 1, confirm Y, exit shop with X
+        var (player, room, display, loop) = MakeSellSetup("shop", "sell", "1", "Y", "x", "quit");
+        var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, Tier = ItemTier.Common };
+        player.Inventory.Add(potion);
+
+        int expectedPrice = MerchantInventoryConfig.ComputeSellPrice(potion);
+
+        loop.Run(player, room);
+
+        player.Inventory.Should().NotContain(potion, "item should have been sold via SELL typed inside the shop");
+        player.Gold.Should().Be(expectedPrice, "gold should be awarded after selling from inside the shop");
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
     // 6. Cancel sell
     // ────────────────────────────────────────────────────────────────────────
 
