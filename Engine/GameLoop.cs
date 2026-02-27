@@ -218,6 +218,12 @@ public class GameLoop
             if (_player.HP <= 0 && !_gameOver)
             {
                 ShowGameOver(killedBy: "environmental hazard");
+                _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
+                if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
+                _stats.FinalLevel = _player.Level;
+                _stats.TimeElapsed = DateTime.UtcNow - _runStart;
+                _stats.Display(_display.ShowMessage);
+                RecordRunEnd(won: false);
                 _gameOver = true;
             }
             if (_gameOver) break;
@@ -294,6 +300,7 @@ public class GameLoop
                 _ => 0
             };
             _player.TakeDamage(dmg);
+            _stats.DamageTaken += dmg;
             string hazardMsg = _currentRoom.Hazard switch
             {
                 HazardType.Spike  => _narration.Pick(_spikeHazardLines, dmg),
@@ -417,10 +424,12 @@ public class GameLoop
         {
             case RoomHazard.LavaSeam:
                 player.HP = Math.Max(0, player.HP - 5);
+                _stats.DamageTaken += 5;
                 _display.ShowMessage("🔥 The lava seam sears you. (-5 HP)");
                 break;
             case RoomHazard.CorruptedGround:
                 player.HP = Math.Max(0, player.HP - 3);
+                _stats.DamageTaken += 3;
                 _display.ShowMessage("💀 The corrupted ground drains you. (-3 HP)");
                 break;
             case RoomHazard.BlessedClearing:
@@ -728,8 +737,10 @@ public class GameLoop
         }
 
         _currentFloor++;
+        _stats.FloorsVisited = _currentFloor;
         if (_player.TempAttackBonus > 0) { _player.ModifyAttack(-_player.TempAttackBonus); _player.TempAttackBonus = 0; }
         if (_player.TempDefenseBonus != 0) { _player.ModifyDefense(-_player.TempDefenseBonus); _player.TempDefenseBonus = 0; }
+        _player.WardingVeilActive = false;
         foreach (var line in FloorTransitionNarration.GetSequence(_currentFloor))
             _display.ShowMessage(line);
         _display.ShowMessage($"You descend deeper into the dungeon... Floor {_currentFloor}");
@@ -954,12 +965,19 @@ public class GameLoop
             case "2":
                 var dmg = new Random().Next(15, 31);
                 _player.TakeDamage(dmg);
+                _stats.DamageTaken += dmg;
                 _display.ShowMessage($"Blades nick you as you grab the weapon! -{dmg} HP. HP: {_player.HP}/{_player.MaxHP}");
                 GiveArmoryLoot(uncommon: true);
                 _currentRoom.SpecialRoomUsed = true;
                 if (_player.HP <= 0)
                 {
                     ShowGameOver(killedBy: "an armory trap");
+                    _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
+                    if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
+                    _stats.FinalLevel = _player.Level;
+                    _stats.TimeElapsed = DateTime.UtcNow - _runStart;
+                    _stats.Display(_display.ShowMessage);
+                    RecordRunEnd(won: false);
                     _gameOver = true;
                 }
                 break;
@@ -1023,8 +1041,9 @@ public class GameLoop
                     else
                     {
                         _player.TakeDamage(15);
+                        _stats.DamageTaken += 15;
                         _display.ShowMessage($"An arrow slips past your guard! -15 HP. HP: {_player.HP}/{_player.MaxHP}");
-                        if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _gameOver = true; return; }
+                        if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _display.ShowMessage($"Difficulty: {GetDifficultyName()}"); if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}"); _stats.FinalLevel = _player.Level; _stats.TimeElapsed = DateTime.UtcNow - _runStart; _stats.Display(_display.ShowMessage); RecordRunEnd(won: false); _gameOver = true; return; }
                     }
                     GiveTrapLoot(rng.NextDouble() < 0.5 ? Models.ItemTier.Uncommon : Models.ItemTier.Common,
                         "You spot a small cache behind the arrow slits.");
@@ -1032,8 +1051,9 @@ public class GameLoop
                 else if (avChoice == "2")
                 {
                     _player.TakeDamage(8);
+                    _stats.DamageTaken += 8;
                     _display.ShowMessage($"You sprint through, arrows grazing your side! -8 HP. HP: {_player.HP}/{_player.MaxHP}");
-                    if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _gameOver = true; return; }
+                    if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _display.ShowMessage($"Difficulty: {GetDifficultyName()}"); if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}"); _stats.FinalLevel = _player.Level; _stats.TimeElapsed = DateTime.UtcNow - _runStart; _stats.Display(_display.ShowMessage); RecordRunEnd(won: false); _gameOver = true; return; }
                     GiveTrapLoot(Models.ItemTier.Uncommon, "Your speed reveals a hidden loot cache!");
                 }
                 else
@@ -1092,8 +1112,9 @@ public class GameLoop
                     else
                     {
                         _player.TakeDamage(20);
+                        _stats.DamageTaken += 20;
                         _display.ShowMessage($"The floor gives way! You plummet into rubble! -20 HP. HP: {_player.HP}/{_player.MaxHP}");
-                        if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _gameOver = true; return; }
+                        if (_player.HP <= 0) { ShowGameOver(killedBy: "a dungeon trap"); _display.ShowMessage($"Difficulty: {GetDifficultyName()}"); if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}"); _stats.FinalLevel = _player.Level; _stats.TimeElapsed = DateTime.UtcNow - _runStart; _stats.Display(_display.ShowMessage); RecordRunEnd(won: false); _gameOver = true; return; }
                     }
                 }
                 else if (cfChoice == "2")
