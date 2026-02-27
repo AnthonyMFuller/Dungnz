@@ -22,6 +22,6 @@ var allItems = ItemConfig.Load("Data/item-stats.json").Select(ItemConfig.CreateI
 var generator = new DungeonGenerator(actualSeed, allItems);
 var (startRoom, _) = generator.Generate(difficulty: difficultySettings);
 
-var combat = new CombatEngine(display, inputReader);
-var gameLoop = new GameLoop(display, combat, inputReader, seed: actualSeed, difficulty: difficultySettings, allItems: allItems);
+var combat = new CombatEngine(display, inputReader, navigator: navigator);
+var gameLoop = new GameLoop(display, combat, inputReader, seed: actualSeed, difficulty: difficultySettings, allItems: allItems, navigator: navigator);
 gameLoop.Run(player, startRoom);

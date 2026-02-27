@@ -1136,28 +1136,13 @@ public class ConsoleDisplayService : IDisplayService
         var red = Systems.ColorCodes.Red;
         var reset = Systems.ColorCodes.Reset;
 
-        Console.WriteLine("Choose your difficulty:");
-        Console.WriteLine();
-        Console.WriteLine($"  {green}[1] CASUAL{reset}     (Enemy Power ×0.7 | Loot ×1.5 | Gold ×1.5)");
-        Console.WriteLine($"  {yellow}[2] NORMAL{reset}     (Enemy Power ×1.0 | Balanced)");
-        Console.WriteLine($"  {red}[3] HARD{reset}       (Enemy Power ×1.3 | Loot ×0.7 | Gold ×0.7)");
-        Console.WriteLine();
-
-        while (true)
+        var options = new (string Label, Difficulty Value)[]
         {
-            Console.Write("> ");
-            var input = Console.ReadLine()?.Trim() ?? "";
-            
-            switch (input)
-            {
-                case "1": return Difficulty.Casual;
-                case "2": return Difficulty.Normal;
-                case "3": return Difficulty.Hard;
-                default:
-                    Console.WriteLine($"{Systems.ColorCodes.Red}Invalid choice. Please enter 1, 2, or 3.{reset}");
-                    break;
-            }
-        }
+            ($"{green}CASUAL{reset}     (Enemy Power ×0.7 | Loot ×1.5 | Gold ×1.5)", Difficulty.Casual),
+            ($"{yellow}NORMAL{reset}     (Enemy Power ×1.0 | Balanced)",               Difficulty.Normal),
+            ($"{red}HARD{reset}       (Enemy Power ×1.3 | Loot ×0.7 | Gold ×0.7)",   Difficulty.Hard),
+        };
+        return SelectFromMenu(options, _input, "Choose your difficulty:");
     }
 
     /// <summary>
@@ -1262,24 +1247,16 @@ public class ConsoleDisplayService : IDisplayService
             Console.WriteLine();
         }
 
-        while (true)
+        var selectOptions = new (string Label, PlayerClassDefinition Value)[]
         {
-            Console.Write("> ");
-            var input = Console.ReadLine()?.Trim() ?? "";
-            
-            switch (input)
-            {
-                case "1": return PlayerClassDefinition.Warrior;
-                case "2": return PlayerClassDefinition.Mage;
-                case "3": return PlayerClassDefinition.Rogue;
-                case "4": return PlayerClassDefinition.Paladin;
-                case "5": return PlayerClassDefinition.Necromancer;
-                case "6": return PlayerClassDefinition.Ranger;
-                default:
-                    Console.WriteLine($"{Systems.ColorCodes.Red}Invalid choice. Please enter 1–6.{reset}");
-                    break;
-            }
-        }
+            ("⚔  Warrior",     PlayerClassDefinition.Warrior),
+            ("🔮 Mage",         PlayerClassDefinition.Mage),
+            ("🗡  Rogue",        PlayerClassDefinition.Rogue),
+            ("🛡 Paladin",      PlayerClassDefinition.Paladin),
+            ("💀 Necromancer",  PlayerClassDefinition.Necromancer),
+            ("🏹 Ranger",       PlayerClassDefinition.Ranger),
+        };
+        return SelectFromMenu(selectOptions, _input, "Choose your class:");
     }
 
     /// <summary>
