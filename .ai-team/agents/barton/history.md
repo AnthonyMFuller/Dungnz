@@ -820,3 +820,32 @@ Branch: `squad/272-phase1-combat-prep`
 
 Adding ASCII art for enemies is **highly feasible**. The project's existing data-driven architecture (JSON-based stats, EnemyStats loading pattern) provides a natural home for ASCII art. The display layer (DisplayService) and encounter flow (CombatEngine.RunCombat) have clear insertion points. Content scope is manageable (18 regular + 5 boss pieces). Implementation has zero breaking changes and minimal surface area. Ready to proceed if approved.
 
+
+### 2026-02-27: WI-6+7+8 — Arrow-Key Navigation for Combat, Level-Up, Crafting
+
+**Context:** `feat/interactive-menus` branch. Coulson added `ReadKey()` to `IInputReader`. Hill is converting shop/sell/difficulty/class menus (WI-2 through WI-5). Barton owns WI-6, WI-7, WI-8.
+
+**Files Modified:**
+- `Display/IDisplayService.cs` — Added 3 new method signatures: `ShowLevelUpChoiceAndSelect`, `ShowCombatMenuAndSelect`, `ShowCraftMenuAndSelect`
+- `Display/DisplayService.cs` — Added `SelectFromMenu<T>` private helper + implementations of the 3 new methods; made constructor params optional (default to ConsoleInputReader/ConsoleMenuNavigator)
+- `Engine/CombatEngine.cs` — WI-6: replaced `ShowLevelUpChoice+ReadLine` with `ShowLevelUpChoiceAndSelect`; WI-7: replaced `ShowCombatMenu(player)+ReadLine` with `ShowCombatMenuAndSelect(player, enemy)`
+- `Engine/GameLoop.cs` — WI-8: replaced static recipe list + "Type CRAFT <name>" with `ShowCraftMenuAndSelect` interactive menu
+- `Dungnz.Tests/CombatBalanceSimulationTests.cs` — Fixed `AlwaysAttackInputReader`: added `ReadKey()=>null` stub (broken by Coulson's IInputReader.ReadKey addition)
+
+**Design Decisions:**
+- `SelectFromMenu<T>` is a private helper in `ConsoleDisplayService` — not on the interface, not static
+- Falls back to numbered text input when `ReadKey()` returns null (test stubs, redirected stdin)
+- `ShowCombatMenuAndSelect` shows class-specific resource context line (mana/combo points/shields) above the menu using direct Player property access — no AbilityManager dependency
+- `ShowLevelUpChoiceAndSelect` replaces both ShowLevelUpChoice display AND ReadLine input in one call
+- `ShowCraftMenuAndSelect` returns 0 for cancel, 1-based recipe index on selection; GameLoop shows full recipe card then crafts
+- WI-8: CRAFT with explicit name argument still works (command-only path unchanged)
+- Constructor default params allow `new ConsoleDisplayService()` in tests (pre-existing Hill breakage fixed)
+
+**Coordination:**
+- Hill's `ShowShopAndSelect`/`ShowSellMenuAndSelect`/`SelectFromMenu` were already in the working tree (uncommitted) — preserved intact
+- Hill's constructor addition broke DisplayService tests — fixed by making params optional (safe, backward-compatible)
+- No merge conflicts: IDisplayService methods appended at end of interface
+
+## Learnings
+- Phase 1 of interactive menu UX: IMenuNavigator interface created, ConsoleMenuNavigator implemented, DI wiring added to ConsoleDisplayService/GameLoop/CombatEngine/Program.cs
+- No menus converted yet — all existing ReadLine() paths unchanged

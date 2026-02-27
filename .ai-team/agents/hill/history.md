@@ -923,3 +923,29 @@ When a display string contains ANSI escape codes (e.g., from ColorizeItemName), 
 
 **Conclusion:**
 Display layer is **well-structured for multi-line ASCII art integration**. VisibleLength/PadRightVisible helpers already solve ANSI-color padding. Box-drawing patterns are established. A ShowEnemyArt(string[] lines) method fits naturally into IDisplayService contract with minimal FakeDisplayService overhead. Recommended width: 18-22 chars for ASCII art to fit standard 80-column layout. No architectural barriers.
+
+---
+
+## Learnings — WI-2 through WI-5 (Interactive Menus)
+
+### Branch: feat/interactive-menus | Commit: a8dcb52
+
+**Context:**
+Converted bounded menu selection from typed-number input to arrow-key navigation with highlighted cursor. Typed-number fallback preserved (tests use FakeInputReader which returns null from ReadKey).
+
+**Key Decisions:**
+
+1. **`SelectFromMenu<T>` uses `IInputReader` parameter** — not `IMenuNavigator`. This keeps the method self-contained and directly spec-compliant. `ConsoleMenuNavigator` is still injected via constructor (`_navigator`) for potential future use but `SelectFromMenu` drives its own key loop.
+
+2. **Constructor signature: `ConsoleDisplayService(IInputReader? input = null, IMenuNavigator? navigator = null)`** — optional params with defaults (`new ConsoleInputReader()`, `new ConsoleMenuNavigator()`) preserve backward compatibility with `new ConsoleDisplayService()` calls in existing tests.
+
+3. **`SelectDifficulty()` / `SelectClass()` converted** — both replaced their `while(true) ReadLine()` loops with `SelectFromMenu` calls. Class card rendering (the elaborate box UI) is preserved; `SelectFromMenu` now handles the selection line below the cards.
+
+4. **`ShowShopAndSelect` / `ShowSellMenuAndSelect`** — new methods added to both `IDisplayService` and `ConsoleDisplayService`. They call the existing `ShowShop`/`ShowSellMenu` for rendering, then use `SelectFromMenu` to handle selection. Returns 1-based index, 0 for cancel. FakeDisplayService stubs return 0.
+
+5. **WI-6/7/8 already committed by Barton** — `ShowLevelUpChoiceAndSelect`, `ShowCombatMenuAndSelect`, `ShowCraftMenuAndSelect` were in the branch already (commit 10097eb). Only needed to ensure `SelectFromMenu` method existed for them to compile.
+
+**Pitfalls:**
+- The branch already had a constructor (`IInputReader`, `IMenuNavigator`) and WI-6/7/8 implementations from Barton's commit. Multiple agents working the same branch required careful diff inspection.
+- `CombatEngineTests` and `CombatBalanceSimulationTests` time out — this is a pre-existing issue from Barton's combat menu work, unrelated to my changes.
+- `IDisplayService` did NOT have `ShowShopAndSelect`/`ShowSellMenuAndSelect` until I added them — test helpers had them already (Barton added stubs), but the interface itself was missing.
