@@ -213,6 +213,11 @@ public class GameLoop
             }
             if (_turnConsumed) _stats.TurnsTaken++;
             if (_turnConsumed && !_gameOver) ApplyRoomHazard(_currentRoom, _player);
+            if (_player.HP <= 0 && !_gameOver)
+            {
+                ShowGameOver();
+                _gameOver = true;
+            }
             if (_gameOver) break;
         }
     }
@@ -769,6 +774,7 @@ public class GameLoop
                 _player.Heal(healed);
                 _display.ShowMessage($"Sacred Ground pulses beneath your feet, restoring you to full health! HP: {_player.HP}/{_player.MaxHP}");
             }
+            _player.SacredGroundActive = false;
         }
 
         _display.ShowColoredMessage("✨ [Shrine Menu] — press H/B/F/M or L to leave.", Systems.ColorCodes.Cyan);
@@ -842,7 +848,7 @@ public class GameLoop
         _display.ShowColoredMessage("🕯 [Forgotten Shrine] — choose a blessing:", Systems.ColorCodes.Cyan);
         _display.ShowMessage("[1] Holy Strength   — +5 ATK (lasts until next floor)");
         _display.ShowMessage("[2] Sacred Ground   — Auto-heal at shrines");
-        _display.ShowMessage("[3] Warding Veil    — Reduce all ability cooldowns by 1 each floor");
+        _display.ShowMessage("[3] Warding Veil    — 20% chance to deflect enemy attacks this floor");
         _display.ShowMessage("[L]eave");
         _display.ShowCommandPrompt();
 

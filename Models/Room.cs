@@ -138,7 +138,7 @@ public class Room
     /// <summary>Gets or sets the persistent environmental hazard that applies an effect after each player action.</summary>
     public RoomHazard EnvironmentalHazard { get; set; } = RoomHazard.None;
 
-    /// <summary>Gets or sets whether the BlessedClearing heal has already been applied this visit (once per visit).</summary>
+    /// <summary>Gets or sets whether the BlessedClearing heal has already been applied. Once per run (not reset on re-entry).</summary>
     public bool BlessedHealApplied { get; set; } = false;
 
     /// <summary>
