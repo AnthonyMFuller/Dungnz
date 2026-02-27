@@ -1752,7 +1752,7 @@
             "Id": "ironclad-set-helm",
             "Weight": 12,
             "SellPrice": 150,
-            "SetId": "ironclad-set",
+            "SetId": "ironclad",
             "ClassRestriction": [
                 "Warrior",
                 "Paladin"
@@ -1959,7 +1959,7 @@
             "Id": "sentinel-pauldrons",
             "Weight": 9,
             "SellPrice": 145,
-            "SetId": "sentinel-set"
+            "SetId": "sentinel"
         },
         {
             "Name": "Pauldrons of Ruin",
@@ -1990,7 +1990,7 @@
             "Id": "ironclad-breastplate",
             "Weight": 14,
             "SellPrice": 80,
-            "SetId": "ironclad-set",
+            "SetId": "ironclad",
             "ClassRestriction": [
                 "Warrior",
                 "Paladin"
@@ -2030,7 +2030,7 @@
             "Id": "sentinel-hauberk",
             "Weight": 12,
             "SellPrice": 165,
-            "SetId": "sentinel-set"
+            "SetId": "sentinel"
         },
         {
             "Name": "Battlemage's Cuirass",
@@ -2159,7 +2159,7 @@
             "Id": "ironclad-set-gauntlets",
             "Weight": 8,
             "SellPrice": 62,
-            "SetId": "ironclad-set",
+            "SetId": "ironclad",
             "ClassRestriction": [
                 "Warrior",
                 "Paladin"
@@ -2370,7 +2370,7 @@
             "Id": "ironclad-greaves",
             "Weight": 12,
             "SellPrice": 70,
-            "SetId": "ironclad-set",
+            "SetId": "ironclad",
             "ClassRestriction": [
                 "Warrior",
                 "Paladin"
@@ -2431,7 +2431,7 @@
             "Id": "sentinel-cuisses",
             "Weight": 11,
             "SellPrice": 155,
-            "SetId": "sentinel-set"
+            "SetId": "sentinel"
         },
         {
             "Name": "Wrathbound Legplates",
@@ -2970,7 +2970,7 @@
             "IsEquippable": true,
             "Slot": "Head",
             "Tier": "Epic",
-            "SetId": "sentinel-set",
+            "SetId": "sentinel",
             "Description": "A full-face coif of layered chain and plate, worn by the Sentinel order's most decorated veterans. Functional. Dour. Undefeated.",
             "Id": "sentinel-coif",
             "Weight": 6,

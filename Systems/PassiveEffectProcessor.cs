@@ -70,12 +70,9 @@ public class PassiveEffectProcessor
     {
         int bonusDamage = 0;
 
-        var equipped = new[]
-        {
-            player.EquippedWeapon,
-            player.EquippedChest,
-            player.EquippedAccessory
-        };
+        var equipped = new[] { player.EquippedWeapon, player.EquippedAccessory }
+            .Concat(player.AllEquippedArmor)
+            .Where(i => i != null);
 
         foreach (var item in equipped)
         {
