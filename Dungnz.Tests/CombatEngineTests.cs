@@ -14,11 +14,11 @@ public class CombatEngineTests
     private static (Player player, Enemy enemy, FakeDisplayService display) MakeBasic(
         int playerHp = 100, int playerAtk = 10, int playerDef = 5,
         int enemyHp = 1, int enemyAtk = 8, int enemyDef = 2,
-        int enemyXp = 15)
+        int enemyXp = 15, IInputReader? input = null)
     {
         var player = new Player { HP = playerHp, MaxHP = playerHp, Attack = playerAtk, Defense = playerDef };
         var enemy = new Enemy_Stub(enemyHp, enemyAtk, enemyDef, enemyXp);
-        var display = new FakeDisplayService();
+        var display = new FakeDisplayService(input);
         return (player, enemy, display);
     }
 
@@ -66,8 +66,8 @@ public class CombatEngineTests
     [Fact]
     public void FleeSucceeds_ReturnsFlcd()
     {
-        var (player, enemy, display) = MakeBasic();
         var input = new FakeInputReader("F");
+        var (player, enemy, display) = MakeBasic(input: input);
         // NextDouble() = 0.1 < 0.5 → flee succeeds
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.1));
 
@@ -79,8 +79,8 @@ public class CombatEngineTests
     [Fact]
     public void FleeFails_PlayerTakesDamage_CombatContinues()
     {
-        var (player, enemy, display) = MakeBasic(enemyHp: 1);
         var input = new FakeInputReader("F", "A");
+        var (player, enemy, display) = MakeBasic(enemyHp: 1, input: input);
         // First NextDouble() = 0.9 >= 0.5 → flee fails; second call for loot (doesn't matter)
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.9));
 
@@ -95,8 +95,8 @@ public class CombatEngineTests
     public void FleeFails_PlayerDies_ReturnsPlayerDied()
     {
         // Player very low HP, flee fails, enemy kill blow
-        var (player, enemy, display) = MakeBasic(playerHp: 1, playerDef: 0, enemyHp: 9999, enemyAtk: 100);
         var input = new FakeInputReader("F");
+        var (player, enemy, display) = MakeBasic(playerHp: 1, playerDef: 0, enemyHp: 9999, enemyAtk: 100, input: input);
         // NextDouble() = 0.9 → flee fails → enemy hits for 100 → player dies
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.9));
 
@@ -151,8 +151,8 @@ public class CombatEngineTests
     {
         var player = new Player { HP = 100, MaxHP = 100, Attack = 10, Defense = 5, XP = 90, Level = 1 };
         var enemy = new Enemy_Stub(hp: 1, atk: 8, def: 2, xp: 15);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A", "1"); // "A" = attack, "1" = trait: +5 MaxHP
+        var display = new FakeDisplayService(input);
         var engine = new CombatEngine(display, input, new ControlledRandom());
 
         engine.RunCombat(player, enemy);
@@ -194,9 +194,9 @@ public class CombatEngineTests
     [Fact]
     public void Bug85_ClassDodgeBonus_IncludedInPlayerDodgeRoll()
     {
-        var (player, enemy, display) = MakeBasic(playerDef: 0, enemyHp: 999, enemyAtk: 50);
-        player.ClassDodgeBonus = 0.99f;
         var input = new FakeInputReader("A", "F");
+        var (player, enemy, display) = MakeBasic(playerDef: 0, enemyHp: 999, enemyAtk: 50, input: input);
+        player.ClassDodgeBonus = 0.99f;
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.01));
         engine.RunCombat(player, enemy);
         display.CombatMessages.Should().Contain(m => m.Contains("dodge"));
@@ -206,9 +206,9 @@ public class CombatEngineTests
     [Fact]
     public void Bug85_EquipmentDodgeBonus_IncludedInPlayerDodgeRoll()
     {
-        var (player, enemy, display) = MakeBasic(playerDef: 0, enemyHp: 999, enemyAtk: 50);
-        player.DodgeBonus = 0.99f;
         var input = new FakeInputReader("A", "F");
+        var (player, enemy, display) = MakeBasic(playerDef: 0, enemyHp: 999, enemyAtk: 50, input: input);
+        player.DodgeBonus = 0.99f;
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.01));
         engine.RunCombat(player, enemy);
         display.CombatMessages.Should().Contain(m => m.Contains("dodge"));
@@ -224,8 +224,8 @@ public class CombatEngineTests
         var player = new Player { HP = 100, MaxHP = 100, Attack = 10, Defense = 5, Level = 3 };
         player.Skills.TryUnlock(player, Skill.PowerStrike);
         var enemy = new Enemy_Stub(hp: 1, atk: 0, def: 0, xp: 1);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A");
+        var display = new FakeDisplayService(input);
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.95));
         engine.RunCombat(player, enemy);
         display.CombatMessages.Should().Contain(m => m.Contains("11 damage"));
@@ -238,8 +238,8 @@ public class CombatEngineTests
         var player = new Player { HP = 100, MaxHP = 100, Attack = 1, Defense = 0, Level = 6 };
         player.Skills.TryUnlock(player, Skill.BattleHardened);
         var enemy = new Enemy_Stub(hp: 999, atk: 10, def: 0, xp: 1);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A", "F");
+        var display = new FakeDisplayService(input);
         var rng = new ControlledRandom(defaultDouble: 0.1, 0.95, 0.95, 0.95, 0.95);
         var engine = new CombatEngine(display, input, rng);
         engine.RunCombat(player, enemy);
@@ -253,8 +253,8 @@ public class CombatEngineTests
         var player = new Player { HP = 100, MaxHP = 100, Attack = 1, Defense = 0, Level = 5 };
         player.Skills.TryUnlock(player, Skill.Swiftness);
         var enemy = new Enemy_Stub(hp: 999, atk: 50, def: 0, xp: 1);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A", "F");
+        var display = new FakeDisplayService(input);
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.03));
         engine.RunCombat(player, enemy);
         display.CombatMessages.Should().Contain(m => m.Contains("dodge"));
@@ -270,10 +270,10 @@ public class CombatEngineTests
         // Enemy atk=10 → damage = Max(1, 10-6) = 4 → player HP = 96
         var player = new Player { HP = 100, MaxHP = 100, Attack = 1, Defense = 4 };
         var enemy = new Enemy_Stub(hp: 999, atk: 10, def: 0, xp: 1);
-        var display = new FakeDisplayService();
+        var input = new FakeInputReader("A", "F");
+        var display = new FakeDisplayService(input);
         var statusEffects = new StatusEffectManager(display);
         statusEffects.Apply(player, StatusEffect.Fortified, 5);
-        var input = new FakeInputReader("A", "F");
         var rng = new ControlledRandom(defaultDouble: 0.1, 0.95, 0.95, 0.95, 0.95);
         var engine = new CombatEngine(display, input, rng, statusEffects: statusEffects);
         engine.RunCombat(player, enemy);
@@ -292,8 +292,8 @@ public class CombatEngineTests
         boss.HP = boss.MaxHP = 999;
         boss.Attack = 50;
         boss.IsCharging = true;
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A", "F");
+        var display = new FakeDisplayService(input);
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.01));
         engine.RunCombat(player, boss);
         boss.ChargeActive.Should().BeFalse();
@@ -309,8 +309,8 @@ public class CombatEngineTests
         player.Inventory.Add(bleedSword);
         player.EquipItem(bleedSword);
         var enemy = new Enemy_Stub(hp: 999, atk: 0, def: 0, xp: 1);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A", "F");
+        var display = new FakeDisplayService(input);
         // Queue: [0.95(enemy no-dodge), 0.95(no crit), 0.05(bleed proc)]
         // default=0.1: player dodge (0.1 < 5/25=0.2), flee success
         var rng = new ControlledRandom(defaultDouble: 0.1, 0.95, 0.95, 0.05);
@@ -327,9 +327,9 @@ public class CombatEngineTests
         // ShieldBash: Max(1, 10*1.2 - 0) = 12
         var player = new Player { HP = 100, MaxHP = 100, Attack = 10, Defense = 5, Level = 1, Mana = 30, MaxMana = 30, Class = PlayerClass.Warrior };
         var enemy = new Enemy_Stub(hp: 999, atk: 0, def: 0, xp: 1);
-        var display = new FakeDisplayService();
-        var stats = new RunStats();
         var input = new FakeInputReader("B", "1", "F");
+        var display = new FakeDisplayService(input);
+        var stats = new RunStats();
         var rng = new ControlledRandom(defaultDouble: 0.1);
         var engine = new CombatEngine(display, input, rng);
         engine.RunCombat(player, enemy, stats);
@@ -344,9 +344,8 @@ public class CombatEngineTests
         var player = new Player { HP = 100, MaxHP = 100, Attack = 10, Defense = 5, Level = 1 };
         player.ActiveMinions.Add(new Minion { Name = "Skeleton", HP = 10, MaxHP = 10, ATK = 5, AttackFlavorText = "Skeleton strikes for {dmg}!" });
         var enemy = new Enemy_Stub(hp: 50, atk: 0, def: 0, xp: 1);
-        var display = new FakeDisplayService();
-        // A=attack each turn; eventually enemy dies from player hits; minion attacks before enemy
         var input = new FakeInputReader("A", "A", "A", "A", "A", "A");
+        var display = new FakeDisplayService(input);
         var rng = new ControlledRandom(defaultDouble: 0.05);
         var engine = new CombatEngine(display, input, rng);
         engine.RunCombat(player, enemy);
@@ -362,10 +361,10 @@ public class CombatEngineTests
         // Fix #542: physical damage breaks Freeze; this tests that the "Freeze broken" message appears
         var player = new Player { HP = 50, MaxHP = 50, Attack = 10, Defense = 5, Level = 1 };
         var enemy = new Enemy_Stub(hp: 999, atk: 20, def: 0, xp: 1);
-        var display = new FakeDisplayService();
+        var input = new FakeInputReader("A", "F"); // attack once then flee
+        var display = new FakeDisplayService(input);
         var statusEffects = new StatusEffectManager(display);
         statusEffects.Apply(enemy, StatusEffect.Freeze, 3);
-        var input = new FakeInputReader("A", "F"); // attack once then flee
         var rng = new ControlledRandom(defaultDouble: 0.05); // flee succeeds
         var engine = new CombatEngine(display, input, rng, statusEffects: statusEffects);
         engine.RunCombat(player, enemy);
