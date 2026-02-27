@@ -26,6 +26,14 @@ public interface IInputReader
     /// (e.g., a test stub).
     /// </returns>
     ConsoleKeyInfo? ReadKey();
+
+    /// <summary>
+    /// Returns <see langword="true"/> when the input source is a live interactive
+    /// terminal and arrow-key navigation menus should be used; <see langword="false"/>
+    /// for test stubs or redirected input where numbered text prompts are used instead.
+    /// Checking this property never consumes a keypress.
+    /// </summary>
+    bool IsInteractive { get; }
 }
 
 /// <summary>
@@ -47,4 +55,10 @@ public class ConsoleInputReader : IInputReader
     /// </summary>
     /// <returns>A <see cref="ConsoleKeyInfo"/> describing the key pressed.</returns>
     public ConsoleKeyInfo? ReadKey() => Console.ReadKey(intercept: true);
+
+    /// <summary>
+    /// Returns <see langword="true"/> when stdin is connected to a live terminal
+    /// so arrow-key navigation menus can be used.
+    /// </summary>
+    public bool IsInteractive => !Console.IsInputRedirected;
 }

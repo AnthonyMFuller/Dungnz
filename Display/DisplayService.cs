@@ -593,11 +593,9 @@ public class ConsoleDisplayService : IDisplayService
             Console.WriteLine();
         }
 
-        int selected = 0;
-
-        var probe = input.ReadKey();
-        if (probe == null)
+        if (!input.IsInteractive)
         {
+            // Text-mode fallback for tests and redirected input.
             for (int i = 0; i < options.Count; i++)
                 Console.WriteLine($"  [{i + 1}] {options[i].Label}");
             Console.WriteLine();
@@ -612,7 +610,10 @@ public class ConsoleDisplayService : IDisplayService
             }
         }
 
+        // Arrow-key navigation — render the menu FIRST, then wait for input.
+        int selected = 0;
         int startRow;
+        int maxLabelLen = options.Max(o => o.Label.Length);
         try { Console.CursorVisible = false; } catch { /* output may be redirected */ }
 
         void Render(int sel)
@@ -620,54 +621,53 @@ public class ConsoleDisplayService : IDisplayService
             Console.SetCursorPosition(0, startRow);
             for (int i = 0; i < options.Count; i++)
             {
+                var padded = options[i].Label.PadRight(maxLabelLen);
                 if (i == sel)
-                    Console.WriteLine($"{Systems.ColorCodes.BrightWhite}▶ {options[i].Label}{Systems.ColorCodes.Reset}");
+                    Console.WriteLine($"{Systems.ColorCodes.BrightWhite}▶ {padded}{Systems.ColorCodes.Reset}");
                 else
-                    Console.WriteLine($"  {options[i].Label}");
+                    Console.WriteLine($"  {padded}");
             }
         }
 
         startRow = Console.CursorTop;
         Render(selected);
 
-        ConsoleKeyInfo? key = probe;
         while (true)
         {
-            if (key.HasValue)
+            var key = input.ReadKey();
+            if (!key.HasValue) continue;
+
+            switch (key.Value.Key)
             {
-                switch (key.Value.Key)
-                {
-                    case ConsoleKey.UpArrow:
-                        selected = selected == 0 ? options.Count - 1 : selected - 1;
-                        Render(selected);
-                        break;
-                    case ConsoleKey.DownArrow:
-                        selected = selected == options.Count - 1 ? 0 : selected + 1;
-                        Render(selected);
-                        break;
-                    case ConsoleKey.Enter:
-                        try { Console.CursorVisible = true; } catch { /* redirected */ }
-                        Console.WriteLine();
-                        return options[selected].Value;
-                    case ConsoleKey.X:
-                    case ConsoleKey.Escape:
-                        try { Console.CursorVisible = true; } catch { /* redirected */ }
-                        Console.WriteLine();
-                        return options[options.Count - 1].Value;
-                    default:
-                        if (key.Value.KeyChar >= '1' && key.Value.KeyChar <= '9')
+                case ConsoleKey.UpArrow:
+                    selected = selected == 0 ? options.Count - 1 : selected - 1;
+                    Render(selected);
+                    break;
+                case ConsoleKey.DownArrow:
+                    selected = selected == options.Count - 1 ? 0 : selected + 1;
+                    Render(selected);
+                    break;
+                case ConsoleKey.Enter:
+                    try { Console.CursorVisible = true; } catch { /* redirected */ }
+                    Console.WriteLine();
+                    return options[selected].Value;
+                case ConsoleKey.X:
+                case ConsoleKey.Escape:
+                    try { Console.CursorVisible = true; } catch { /* redirected */ }
+                    Console.WriteLine();
+                    return options[options.Count - 1].Value;
+                default:
+                    if (key.Value.KeyChar >= '1' && key.Value.KeyChar <= '9')
+                    {
+                        int idx = key.Value.KeyChar - '1';
+                        if (idx < options.Count)
                         {
-                            int idx = key.Value.KeyChar - '1';
-                            if (idx < options.Count)
-                            {
-                                selected = idx;
-                                Render(selected);
-                            }
+                            selected = idx;
+                            Render(selected);
                         }
-                        break;
-                }
+                    }
+                    break;
             }
-            key = input.ReadKey();
         }
     }
 
@@ -1154,9 +1154,6 @@ public class ConsoleDisplayService : IDisplayService
         var yellow = Systems.ColorCodes.Yellow;
         var gray = Systems.ColorCodes.Gray;
         var reset = Systems.ColorCodes.Reset;
-
-        Console.WriteLine("Choose your class:");
-        Console.WriteLine();
 
         // Base stats (from Player defaults)
         const int baseHP = 100;
