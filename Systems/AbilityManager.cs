@@ -266,6 +266,7 @@ public class AbilityManager
         if (player.Mana < effectiveCost)
             return UseAbilityResult.InsufficientMana;
         
+        var manaBeforeCast = player.Mana;
         player.SpendMana(effectiveCost);
         // Arcane Surge (Mage): set ready for next ability after spending mana
         if (player.Class == PlayerClass.Mage && effectiveCost > 0)
@@ -374,7 +375,7 @@ public class AbilityManager
             // Mage abilities - Phase 3 implementation (Issue #362)
             case AbilityType.ArcaneBolt:
                 {
-                    var baseDmg = (int)((player.Attack * 1.5) + (player.Mana / 10));
+                    var baseDmg = (int)((player.Attack * 1.5) + (manaBeforeCast / 10));
                     if (player.IsOverchargeActive())
                         baseDmg = (int)(baseDmg * 1.25);
                     // Magic damage bypasses defense (or reduces it significantly)

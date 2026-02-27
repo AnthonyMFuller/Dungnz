@@ -397,6 +397,28 @@ public class CombatEngine : ICombatEngine
             
             if (choice == "F" || choice == "FLEE")
             {
+                if (player.ExtraFleeCount > 0)
+                {
+                    player.ExtraFleeCount--;
+                    _display.ShowMessage("You vanish with supernatural speed, escaping effortlessly!");
+                    _statusEffects.Clear(player);
+                    _statusEffects.Clear(enemy);
+                    player.ActiveEffects.Clear();
+                    player.ResetComboPoints();
+                    player.LastStandTurns = 0;
+                    player.EvadeNextAttack = false;
+                    player.ActiveMinions.Clear();
+                    player.ActiveTraps.Clear();
+                    player.TrapTriggeredThisCombat = false;
+                    player.DivineHealUsedThisCombat = false;
+                    player.HunterMarkUsedThisCombat = false;
+                    player.DivineShieldTurnsRemaining = 0;
+                    player.LichsBargainActive = false;
+                    player.WardingVeilActive = false;
+                    player.IsManaShieldActive = false;
+                    player.ResetCombatPassives();
+                    return CombatResult.Fled;
+                }
                 if (_rng.NextDouble() < 0.5)
                 {
                     _display.ShowMessage("You fled successfully!");
@@ -978,7 +1000,7 @@ public class CombatEngine : ICombatEngine
             }
             // AbyssalLeviathan re-emerge Tidal Slam
             bool isTidalSlam = false;
-            if (enemy is AbyssalLeviathan lev && lev.TurnCount > 0 && lev.TurnCount % 3 == 0 && !lev.IsSubmerged)
+            if (enemy is AbyssalLeviathan lev && lev.TurnCount > 0 && lev.TurnCount % 3 == 1 && !lev.IsSubmerged)
             {
                 isTidalSlam = true;
                 _display.ShowCombatMessage("⚡ The Leviathan erupts from the depths with a Tidal Slam!");
@@ -1026,8 +1048,11 @@ public class CombatEngine : ICombatEngine
             // NightStalker first-attack multiplier
             if (!enemy.FirstAttackUsed && enemy.FirstAttackMultiplier > 1f)
             {
-                enemyDmg = (int)(enemyDmg * enemy.FirstAttackMultiplier);
                 enemy.FirstAttackUsed = true;
+                if (enemy.FirstAttackCritChance > 0 && _rng.NextDouble() < enemy.FirstAttackCritChance)
+                    enemyDmg = (int)(enemyDmg * enemy.FirstAttackMultiplier * 2); // crit: 3x
+                else
+                    enemyDmg = (int)(enemyDmg * enemy.FirstAttackMultiplier);     // normal: 1.5x
                 _display.ShowCombatMessage($"The {enemy.Name} strikes from the shadows for bonus damage!");
             }
 
@@ -1278,6 +1303,7 @@ public class CombatEngine : ICombatEngine
                     int tentDmg = Math.Max(1, (int)(boss.Attack * 0.4f) - player.Defense);
                     player.TakeDamage(tentDmg);
                     _display.ShowCombatMessage(ColorizeDamage($"A tentacle lashes you for {tentDmg} damage!", tentDmg));
+                    if (player.HP <= 0) break;
                 }
                 break;
 
