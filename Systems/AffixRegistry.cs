@@ -109,5 +109,13 @@ public static class AffixRegistry
         if (affix.ManaBonus > 0)    item.MaxManaBonus += affix.ManaBonus;
         if (affix.MaxHPBonus > 0)   item.StatModifier += affix.MaxHPBonus;
         if (affix.DodgeChanceBonus > 0) item.DodgeBonus += affix.DodgeChanceBonus;
+        if (affix.CritChanceBonus > 0) item.CritChance += affix.CritChanceBonus;
+        if (affix.HPOnHit > 0) item.HPOnHit += affix.HPOnHit;
+        if (affix.OnHitStatus == "Bleed" && affix.OnHitChance > 0) item.AppliesBleedOnHit = true;
+        // TODO: wire affix.EnemyDefReduction when Item gains an EnemyDefReduction field
+        // TODO: wire affix.HolyDamageVsUndead when Item gains a HolyDamageVsUndead field
+        // TODO: wire affix.BlockChanceBonus when Item gains a BlockChanceBonus field
+        // TODO: wire affix.ReviveCooldownBonus when Item gains a ReviveCooldownBonus field
+        // TODO: wire affix.PeriodicDmgBonus when Item gains a PeriodicDmgBonus field
     }
 }

@@ -120,6 +120,17 @@ public class Item
     public string? Suffix { get; set; }
 
     /// <summary>
+    /// Gets or sets the bonus flat critical hit chance granted while this item is equipped,
+    /// expressed as a fraction in the range [0, 1] (e.g., <c>0.10</c> for 10%).
+    /// </summary>
+    public float CritChance { get; set; }
+
+    /// <summary>
+    /// Gets or sets the flat HP restored to the player on each successful hit while this item is equipped.
+    /// </summary>
+    public int HPOnHit { get; set; }
+
+    /// <summary>
     /// Gets or sets an optional set identifier linking this item to a named equipment set
     /// (e.g. "shadowbane_set"). <see langword="null"/> when the item does not belong to a set.
     /// </summary>
