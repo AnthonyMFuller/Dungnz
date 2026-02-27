@@ -8,6 +8,7 @@ namespace Dungnz.Tests;
 /// Tests for RunStats accumulation — FloorsVisited, DamageTaken, and history recording.
 /// RunStats is a POCO; GameLoop writes to it directly, so we exercise it directly here.
 /// </summary>
+[Collection("RunStatsFileIO")] // serializes tests that write to stats-history.json
 public class RunStatsTests
 {
     [Fact]

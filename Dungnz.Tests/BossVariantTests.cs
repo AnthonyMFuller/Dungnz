@@ -80,4 +80,20 @@ public class BossVariantTests
 
         isTidalSlam.Should().BeFalse("TidalSlam requires !IsSubmerged");
     }
+
+    [Fact]
+    public void AbyssalLeviathan_TurnActions_ContainsTidalSlamOnInterval3()
+    {
+        var leviathan = new AbyssalLeviathan();
+        leviathan.TurnActions.Should().ContainKey(3);
+        leviathan.TurnActions[3].Should().Be("TidalSlam");
+    }
+
+    [Fact]
+    public void DungeonBoss_TurnActions_EmptyByDefault()
+    {
+        // Base class should have no turn actions unless a subclass adds them.
+        var boss = new DungeonBoss();
+        boss.TurnActions.Should().BeEmpty();
+    }
 }

@@ -258,7 +258,7 @@ public class DungeonGenerator
         {
             var pool = _allItems.Where(i => i.Tier == tier).ToList();
             if (pool.Count > 0)
-                return pool[_rng.Next(pool.Count)];
+                return pool[_rng.Next(pool.Count)].Clone();
         }
 
         // Fallback when item config not loaded
