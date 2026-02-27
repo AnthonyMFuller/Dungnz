@@ -666,7 +666,7 @@ public class CombatEngine : ICombatEngine
                 if (hpPercent <= 0.25f) multiplier = 1.40f;      // 75% missing = +40%
                 else if (hpPercent <= 0.50f) multiplier = 1.30f; // 50% missing = +30%
                 else if (hpPercent <= 0.75f) multiplier = 1.20f; // 25% missing = +20%
-                else multiplier = 1.10f;                         // <25% missing = +10%
+                else multiplier = 1.0f;                          // <25% missing = no bonus
                 playerDmg = Math.Max(1, (int)(playerDmg * multiplier));
             }
             // Last Stand damage boost — +50% damage
@@ -831,6 +831,7 @@ public class CombatEngine : ICombatEngine
         if (enemy is ArchlichSovereign lich && !lich.DamageImmune && !lich.HasRevived && lich.HP <= lich.MaxHP * 0.30 && lich.AddsAlive == 0)
         {
             lich.AddsAlive = 2;
+            lich.Phase2Triggered = true;
             lich.DamageImmune = true;
             _display.ShowCombat(BossNarration.GetPhase(enemy.Name));
             _display.ShowCombatMessage("The Archlich summons skeletal guardians! Defeat them to reach the Archlich!");
@@ -1141,16 +1142,6 @@ public class CombatEngine : ICombatEngine
             if (reflectDamage > 0 && enemy.HP > 0)
                 enemy.HP -= reflectDamage;
 
-            // Ironclad 4-piece: reflect a percentage of incoming damage back to the attacker
-            if (player.DamageReflectPercent > 0 && enemyDmgFinal > 0)
-            {
-                int reflected = (int)(enemyDmgFinal * player.DamageReflectPercent);
-                if (reflected > 0)
-                {
-                    enemy.HP = Math.Max(0, enemy.HP - reflected);
-                    _display.ShowMessage($"{ColorCodes.BrightRed}{reflected} damage reflected back!{ColorCodes.Reset}");
-                }
-            }
 
             // ── survive-at-one / phoenix-revive intercept ───────────────────
             if (player.HP <= 0)
@@ -1383,6 +1374,7 @@ public class CombatEngine : ICombatEngine
         player.HunterMarkUsedThisCombat = false;
         player.DivineShieldTurnsRemaining = 0;
         player.LichsBargainActive = false;
+        player.IsManaShieldActive = false;
         PassiveEffectProcessor.ResetCombatState(player);
     }
     
@@ -1424,7 +1416,7 @@ public class CombatEngine : ICombatEngine
     private bool CheckOnDeathEffects(Player player, Enemy enemy, Random rng)
     {
         // ArchlichSovereign revive: once per combat at 0 HP after adds were summoned
-        if (enemy is ArchlichSovereign lich && !lich.HasRevived && lich.AddsAlive >= 0 && lich.TurnCount >= 0)
+        if (enemy is ArchlichSovereign lich && !lich.HasRevived && lich.Phase2Triggered && lich.TurnCount >= 0)
         {
             lich.HasRevived = true;
             lich.HP = (int)(lich.MaxHP * 0.20);
@@ -1500,8 +1492,8 @@ public class CombatEngine : ICombatEngine
     /// <summary>Returns true when any of the player's equipped items has the given passive effect id.</summary>
     private static bool HasPassiveEffect(Player player, string effectId)
         => player.EquippedWeapon?.PassiveEffectId == effectId
-        || player.EquippedChest?.PassiveEffectId == effectId
-        || player.EquippedAccessory?.PassiveEffectId == effectId;
+        || player.EquippedAccessory?.PassiveEffectId == effectId
+        || player.AllEquippedArmor.Any(a => a.PassiveEffectId == effectId);
 }
 
 /// <summary>

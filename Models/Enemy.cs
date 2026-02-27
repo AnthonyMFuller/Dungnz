@@ -203,6 +203,9 @@ public abstract class Enemy
     /// <summary>ArchlichSovereign: has already triggered its once-per-combat revive.</summary>
     public bool HasRevived { get; set; }
 
+    /// <summary>ArchlichSovereign: true once the adds phase has fired (prevents premature revive).</summary>
+    public bool Phase2Triggered { get; set; }
+
     /// <summary>AbyssalLeviathan: turn counter used to track submerge cycles.</summary>
     public int TurnCount { get; set; }
 

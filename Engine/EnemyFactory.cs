@@ -103,9 +103,9 @@ public static class EnemyFactory
             3 => new IronSentinel(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
             4 => new BoneArchon(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
             5 => new CrimsonVampire(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
-            6 => new ArchlichSovereign(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
-            7 => new AbyssalLeviathan(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
-            8 => new InfernalDragon(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig),
+            6 => new ArchlichSovereign(_enemyConfig?.GetValueOrDefault("ArchlichSovereign"), _itemConfig),
+            7 => new AbyssalLeviathan(_enemyConfig?.GetValueOrDefault("AbyssalLeviathan"), _itemConfig),
+            8 => new InfernalDragon(_enemyConfig?.GetValueOrDefault("InfernalDragon"), _itemConfig),
             _ => new GoblinWarchief(_enemyConfig?.GetValueOrDefault("DungeonBoss"), _itemConfig), // fallback for floor < 1
         };
     }
