@@ -499,10 +499,9 @@ public class AbilityManager
                     enemy.HP -= flurryDamage;
                     
                     // Each "hit" has 30% chance to bleed
-                    var rng = new Random();
                     for (int i = 0; i < pts; i++)
                     {
-                        if (rng.NextDouble() < 0.30)
+                        if (_rng.NextDouble() < 0.30)
                         {
                             statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
                             break; // Only apply once
