@@ -59,6 +59,9 @@ public record RecipeResult
     /// <summary>Gets the defense bonus granted when this armor is equipped.</summary>
     public int DefenseBonus { get; init; } = 0;
 
+    /// <summary>Gets the mana restored when this consumable is used.</summary>
+    public int ManaRestore { get; init; } = 0;
+
     /// <summary>Gets whether this item can be placed in an equipment slot.</summary>
     public bool IsEquippable { get; init; } = false;
 
@@ -75,6 +78,7 @@ public record RecipeResult
         Name = Name,
         Type = Enum.TryParse<ItemType>(Type, ignoreCase: true, out var t) ? t : ItemType.Consumable,
         HealAmount = HealAmount,
+        ManaRestore = ManaRestore,
         AttackBonus = AttackBonus,
         DefenseBonus = DefenseBonus,
         IsEquippable = IsEquippable,

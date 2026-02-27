@@ -72,6 +72,9 @@ public partial class Player
     /// <summary>Tracks whether the Shadowmeld Cloak first-attack-dodge passive has fired this combat.</summary>
     public bool ShadowmeldUsedThisCombat { get; set; } = false;
 
+    /// <summary>Tracks whether the Ring of Warding +DEF passive has fired this combat.</summary>
+    public bool WardingRingActivated { get; set; } = false;
+
     /// <summary>Tracks whether the Amulet of the Phoenix revive passive has fired this dungeon run.</summary>
     public bool PhoenixUsedThisRun { get; set; } = false;
 
