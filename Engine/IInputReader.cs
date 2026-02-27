@@ -14,6 +14,18 @@ public interface IInputReader
     /// stream has ended (e.g., end-of-file on stdin).
     /// </returns>
     string? ReadLine();
+
+    /// <summary>
+    /// Reads a single keypress from the underlying input source without echoing it
+    /// to the console. Used by bounded menus (shop, sell, difficulty, class, level-up,
+    /// combat, crafting) to support arrow-key navigation.
+    /// </summary>
+    /// <returns>
+    /// A <see cref="ConsoleKeyInfo"/> describing the key pressed, or
+    /// <see langword="null"/> if the input source does not support single-key reads
+    /// (e.g., a test stub).
+    /// </returns>
+    ConsoleKeyInfo? ReadKey();
 }
 
 /// <summary>
@@ -29,4 +41,10 @@ public class ConsoleInputReader : IInputReader
     /// The line entered, or <see langword="null"/> if stdin is closed.
     /// </returns>
     public string? ReadLine() => Console.ReadLine();
+
+    /// <summary>
+    /// Reads a single keypress from the console without echoing it to the screen.
+    /// </summary>
+    /// <returns>A <see cref="ConsoleKeyInfo"/> describing the key pressed.</returns>
+    public ConsoleKeyInfo? ReadKey() => Console.ReadKey(intercept: true);
 }
