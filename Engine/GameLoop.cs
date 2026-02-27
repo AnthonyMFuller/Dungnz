@@ -312,7 +312,7 @@ public class GameLoop
         // Notify about merchant if present
         if (_currentRoom.Merchant != null)
         {
-            _display.ShowMessage("🛒 A merchant is here! Type SHOP to browse wares.");
+            _display.ShowMessage("🛒 A merchant is here! Type SHOP to browse, or SELL to sell items.");
         }
 
         // Check for enemy encounter
@@ -1151,47 +1151,61 @@ public class GameLoop
         }
 
         var merchant = _currentRoom.Merchant;
-        _display.ShowMessage($"=== MERCHANT SHOP ({merchant.Name}) ===");
-        _display.ShowMessage(Systems.MerchantNarration.GetFloorGreeting(_currentFloor));
-        _display.ShowShop(merchant.Stock.Select(mi => (mi.Item, mi.Price)), _player.Gold);
-        _display.ShowColoredMessage("  💰 Type SELL to sell items to the merchant.", Systems.ColorCodes.Gray);
-        _display.ShowCommandPrompt();
 
-        var input = _input.ReadLine()?.Trim() ?? "";
-        if (input.Equals("x", StringComparison.OrdinalIgnoreCase))
+        // Keep the shop open in a loop so the player can sell then buy (or vice versa)
+        while (true)
         {
-            _display.ShowMessage("You leave the shop.");
-            _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.NoBuy));
-            return;
-        }
+            _display.ShowMessage($"=== MERCHANT SHOP ({merchant.Name}) ===");
+            _display.ShowMessage(Systems.MerchantNarration.GetFloorGreeting(_currentFloor));
+            _display.ShowShop(merchant.Stock.Select(mi => (mi.Item, mi.Price)), _player.Gold);
+            _display.ShowColoredMessage("  💰 Type SELL to sell items  |  X to leave", Systems.ColorCodes.Gray);
+            _display.ShowCommandPrompt();
 
-        if (int.TryParse(input, out var choice) && choice >= 1 && choice <= merchant.Stock.Count)
-        {
-            var selected = merchant.Stock[choice - 1];
-            if (_player.Gold < selected.Price)
+            var input = _input.ReadLine()?.Trim() ?? "";
+
+            if (input.Equals("x", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(input))
             {
-                _display.ShowMessage(Systems.MerchantNarration.GetCantAfford());
+                _display.ShowMessage("You leave the shop.");
+                _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.NoBuy));
+                return;
             }
-            else
+
+            // Fix #574: SELL typed inside the shop now opens the sell menu
+            if (input.Equals("sell", StringComparison.OrdinalIgnoreCase))
             {
-                _player.SpendGold(selected.Price);
-                if (!_inventoryManager.TryAddItem(_player, selected.Item))
+                HandleSell();
+                continue; // re-display shop after selling
+            }
+
+            if (int.TryParse(input, out var choice) && choice >= 1 && choice <= merchant.Stock.Count)
+            {
+                var selected = merchant.Stock[choice - 1];
+                if (_player.Gold < selected.Price)
                 {
-                    _player.AddGold(selected.Price); // refund — inventory was full or too heavy
-                    _display.ShowMessage(Systems.MerchantNarration.GetInventoryFull());
+                    _display.ShowMessage(Systems.MerchantNarration.GetCantAfford());
                 }
                 else
                 {
-                    merchant.Stock.RemoveAt(choice - 1);
-                    _display.ShowMessage($"You bought {selected.Item.Name} for {selected.Price}g. Gold remaining: {_player.Gold}g");
-                    _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.AfterPurchase));
+                    _player.SpendGold(selected.Price);
+                    if (!_inventoryManager.TryAddItem(_player, selected.Item))
+                    {
+                        _player.AddGold(selected.Price); // refund — inventory was full or too heavy
+                        _display.ShowMessage(Systems.MerchantNarration.GetInventoryFull());
+                    }
+                    else
+                    {
+                        merchant.Stock.RemoveAt(choice - 1);
+                        _display.ShowMessage($"You bought {selected.Item.Name} for {selected.Price}g. Gold remaining: {_player.Gold}g");
+                        _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.AfterPurchase));
+                    }
                 }
+                // Re-display shop after buying so player can continue shopping
+                continue;
             }
-        }
-        else
-        {
+
             _display.ShowMessage("Leaving the shop.");
             _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.NoBuy));
+            return;
         }
     }
 
