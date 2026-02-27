@@ -319,7 +319,11 @@ public class CombatEngine : ICombatEngine
             // Fix #210: player death has priority over enemy death in simultaneous-tick kills
             if (player.HP <= 0) return CombatResult.PlayerDied;
             // Fix #209: guard against enraging/acting on an enemy killed by a DoT tick
-            if (enemy.HP <= 0) break;
+            if (enemy.HP <= 0)
+            {
+                if (CheckOnDeathEffects(player, enemy, _rng)) continue; // enemy revived
+                break;
+            }
 
             int manaRegen = player.Skills.IsUnlocked(Skill.ManaFlow) ? 15 : 10;
             // Ley Conduit passive — +5 mana regeneration/turn
@@ -347,9 +351,20 @@ public class CombatEngine : ICombatEngine
                     _display.ShowCombatMessage("⚠ The boss ENRAGES! Its attack has increased by 50%!");
                 }
             }
-            
+
+            // Boss phase ability dispatch
+            if (enemy is DungeonBoss bossPhase && bossPhase.Phases?.Count > 0)
+            {
+                foreach (var phase in bossPhase.Phases.Where(p => (double)bossPhase.HP / bossPhase.MaxHP <= p.HpPercent && !bossPhase.FiredPhases.Contains(p.AbilityName)))
+                {
+                    bossPhase.FiredPhases.Add(phase.AbilityName);
+                    ExecuteBossPhaseAbility(bossPhase, player, phase.AbilityName);
+                }
+            }
+
             if (enemy.HP <= 0)
             {
+                if (CheckOnDeathEffects(player, enemy, _rng)) continue; // enemy revived
                 ShowDeathNarration(enemy);
                 ApplyOnDeathEffects(player, enemy);
                 HandleLootAndXP(player, enemy);
@@ -419,6 +434,7 @@ public class CombatEngine : ICombatEngine
                 {
                     if (enemy.HP <= 0)
                     {
+                        if (CheckOnDeathEffects(player, enemy, _rng)) continue; // enemy revived
                         ShowDeathNarration(enemy);
                         ApplyOnDeathEffects(player, enemy);
                         HandleLootAndXP(player, enemy);
@@ -435,6 +451,7 @@ public class CombatEngine : ICombatEngine
                 
                 if (enemy.HP <= 0)
                 {
+                    if (CheckOnDeathEffects(player, enemy, _rng)) continue; // enemy revived
                     ShowDeathNarration(enemy);
                     ApplyOnDeathEffects(player, enemy);
                     HandleLootAndXP(player, enemy);

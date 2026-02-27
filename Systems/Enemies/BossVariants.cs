@@ -18,6 +18,7 @@ public class GoblinWarchief : DungeonBoss
         Name = "Goblin Warchief"; HP = MaxHP = 60; Attack = 10; Defense = 3; XPValue = 60;
         FloorNumber = 1;
         SpecialAbilityDescription = "Calls minion reinforcements at 50% HP.";
+        Phases.Add(new BossPhase(0.50, "Reinforcements"));
     }
     /// <summary>Creates a GoblinWarchief with optional data-driven stats.</summary>
     public GoblinWarchief(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
@@ -25,6 +26,7 @@ public class GoblinWarchief : DungeonBoss
         Name = "Goblin Warchief"; HP = MaxHP = 60; Attack = 10; Defense = 3; XPValue = 60;
         FloorNumber = 1;
         SpecialAbilityDescription = "Calls minion reinforcements at 50% HP.";
+        Phases.Add(new BossPhase(0.50, "Reinforcements"));
     }
 }
 
@@ -43,6 +45,7 @@ public class PlagueHoundAlpha : DungeonBoss
         AppliesPoisonOnHit = true;
         FloorNumber = 2;
         SpecialAbilityDescription = "Poisons every hit; enters a frenzy at 40% HP (+5 ATK).";
+        Phases.Add(new BossPhase(0.40, "Bloodfrenzy"));
     }
     /// <summary>Creates a PlagueHoundAlpha with optional data-driven stats.</summary>
     public PlagueHoundAlpha(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
@@ -51,6 +54,7 @@ public class PlagueHoundAlpha : DungeonBoss
         AppliesPoisonOnHit = true;
         FloorNumber = 2;
         SpecialAbilityDescription = "Poisons every hit; enters a frenzy at 40% HP (+5 ATK).";
+        Phases.Add(new BossPhase(0.40, "Bloodfrenzy"));
     }
 }
 
@@ -69,6 +73,7 @@ public class IronSentinel : DungeonBoss
         Name = "Iron Sentinel"; HP = MaxHP = 110; Attack = 14; Defense = 10; XPValue = 90;
         FloorNumber = 3;
         SpecialAbilityDescription = "50% damage reduction from plating; stuns the player at 60% HP.";
+        Phases.Add(new BossPhase(0.60, "StunningBlow"));
     }
     /// <summary>Creates an IronSentinel with optional data-driven stats.</summary>
     public IronSentinel(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
@@ -76,6 +81,7 @@ public class IronSentinel : DungeonBoss
         Name = "Iron Sentinel"; HP = MaxHP = 110; Attack = 14; Defense = 10; XPValue = 90;
         FloorNumber = 3;
         SpecialAbilityDescription = "50% damage reduction from plating; stuns the player at 60% HP.";
+        Phases.Add(new BossPhase(0.60, "StunningBlow"));
     }
 }
 
@@ -94,6 +100,7 @@ public class BoneArchon : DungeonBoss
         IsUndead = true;
         FloorNumber = 4;
         SpecialAbilityDescription = "Weakened on every 3rd hit received; raises a skeleton when it kills.";
+        Phases.Add(new BossPhase(0.50, "WeakenAura"));
     }
     /// <summary>Creates a BoneArchon with optional data-driven stats.</summary>
     public BoneArchon(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
@@ -102,6 +109,7 @@ public class BoneArchon : DungeonBoss
         IsUndead = true;
         FloorNumber = 4;
         SpecialAbilityDescription = "Weakened on every 3rd hit received; raises a skeleton when it kills.";
+        Phases.Add(new BossPhase(0.50, "WeakenAura"));
     }
 }
 
@@ -120,6 +128,7 @@ public class CrimsonVampire : DungeonBoss
         LifestealPercent = 0.30f;
         FloorNumber = 5;
         SpecialAbilityDescription = "30% life steal on every hit; drains player MP at 25% HP.";
+        Phases.Add(new BossPhase(0.25, "BloodDrain"));
     }
     /// <summary>Creates a CrimsonVampire with optional data-driven stats.</summary>
     public CrimsonVampire(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
@@ -128,6 +137,7 @@ public class CrimsonVampire : DungeonBoss
         LifestealPercent = 0.30f;
         FloorNumber = 5;
         SpecialAbilityDescription = "30% life steal on every hit; drains player MP at 25% HP.";
+        Phases.Add(new BossPhase(0.25, "BloodDrain"));
     }
 }
 
@@ -202,7 +212,7 @@ public class ArchlichSovereign : DungeonBoss
 
     /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
     [System.Text.Json.Serialization.JsonConstructor]
-    public ArchlichSovereign() : base(null, null) { Name = "Archlich Sovereign"; HP = MaxHP = 180; Attack = 42; Defense = 14; XPValue = 150; IsUndead = true; }
+    public ArchlichSovereign() : base(null, null) { Name = "Archlich Sovereign"; HP = MaxHP = 180; Attack = 42; Defense = 14; XPValue = 150; IsUndead = true; Phases.Add(new BossPhase(0.50, "DeathShroud")); }
 
     /// <summary>Creates an ArchlichSovereign with optional data-driven stats.</summary>
     public ArchlichSovereign(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
@@ -210,6 +220,7 @@ public class ArchlichSovereign : DungeonBoss
         Name = "Archlich Sovereign";
         HP = MaxHP = 180; Attack = 42; Defense = 14; XPValue = 150;
         IsUndead = true;
+        Phases.Add(new BossPhase(0.50, "DeathShroud"));
         AddLoot(itemConfig);
     }
 
@@ -227,13 +238,14 @@ public class AbyssalLeviathan : DungeonBoss
 {
     /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
     [System.Text.Json.Serialization.JsonConstructor]
-    public AbyssalLeviathan() : base(null, null) { Name = "Abyssal Leviathan"; HP = MaxHP = 220; Attack = 48; Defense = 12; XPValue = 180; }
+    public AbyssalLeviathan() : base(null, null) { Name = "Abyssal Leviathan"; HP = MaxHP = 220; Attack = 48; Defense = 12; XPValue = 180; Phases.Add(new BossPhase(0.40, "TentacleBarrage")); }
 
     /// <summary>Creates an AbyssalLeviathan with optional data-driven stats.</summary>
     public AbyssalLeviathan(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
     {
         Name = "Abyssal Leviathan";
         HP = MaxHP = 220; Attack = 48; Defense = 12; XPValue = 180;
+        Phases.Add(new BossPhase(0.40, "TentacleBarrage"));
         AddLoot(itemConfig);
     }
 
@@ -251,7 +263,7 @@ public class InfernalDragon : DungeonBoss
 {
     /// <summary>Parameterless constructor used by the JSON deserializer.</summary>
     [System.Text.Json.Serialization.JsonConstructor]
-    public InfernalDragon() : base(null, null) { Name = "Infernal Dragon"; HP = MaxHP = 250; Attack = 54; Defense = 16; XPValue = 220; FlameBreathCooldown = 2; }
+    public InfernalDragon() : base(null, null) { Name = "Infernal Dragon"; HP = MaxHP = 250; Attack = 54; Defense = 16; XPValue = 220; FlameBreathCooldown = 2; Phases.Add(new BossPhase(0.50, "FlameBreath")); }
 
     /// <summary>Creates an InfernalDragon with optional data-driven stats.</summary>
     public InfernalDragon(EnemyStats? stats, List<ItemStats>? itemConfig) : base(stats, itemConfig)
@@ -259,6 +271,7 @@ public class InfernalDragon : DungeonBoss
         Name = "Infernal Dragon";
         HP = MaxHP = 250; Attack = 54; Defense = 16; XPValue = 220;
         FlameBreathCooldown = 2; // first breath fires on turn 2 (decrement-first)
+        Phases.Add(new BossPhase(0.50, "FlameBreath"));
         AddLoot(itemConfig);
     }
 

@@ -2,6 +2,11 @@ namespace Dungnz.Systems.Enemies;
 using Dungnz.Models;
 using Dungnz.Systems;
 
+/// <summary>Defines an HP-threshold phase for a boss, triggering a named ability once.</summary>
+/// <param name="HpPercent">Fraction of max HP (0.0–1.0) at or below which the ability fires.</param>
+/// <param name="AbilityName">The ability identifier passed to <see cref="CombatEngine.ExecuteBossPhaseAbility"/>.</param>
+public record BossPhase(double HpPercent, string AbilityName);
+
 /// <summary>
 /// The final boss of the dungeon. Gains an enrage buff at low health, boosting its attack
 /// by 50%, and can perform a telegraphed charged attack that deals triple damage the following turn.
@@ -34,6 +39,12 @@ public class DungeonBoss : Enemy
     /// <see langword="true"/> the previous turn.
     /// </summary>
     public bool ChargeActive { get; set; }
+
+    /// <summary>HP-threshold phases for this boss. Each entry fires its ability once when HP falls to or below the threshold.</summary>
+    public List<BossPhase> Phases { get; } = new();
+
+    /// <summary>Tracks which phase ability names have already fired this combat, preventing duplicate triggers.</summary>
+    public HashSet<string> FiredPhases { get; } = new();
 
     private readonly int _baseAttack;
 
