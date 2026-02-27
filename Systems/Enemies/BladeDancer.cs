@@ -29,7 +29,7 @@ public class BladeDancer : Enemy
         {
             Name = "Blade Dancer";
             HP = MaxHP = 50;
-            Attack = 19;
+            Attack = 24;
             Defense = 7;
             XPValue = 46;
             LootTable = new LootTable(minGold: 14, maxGold: 28);

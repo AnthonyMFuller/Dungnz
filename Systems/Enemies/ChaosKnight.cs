@@ -29,7 +29,7 @@ public class ChaosKnight : Enemy
         {
             Name = "Chaos Knight";
             HP = MaxHP = 85;
-            Attack = 24;
+            Attack = 30;
             Defense = 16;
             XPValue = 80;
             LootTable = new LootTable(minGold: 35, maxGold: 60);

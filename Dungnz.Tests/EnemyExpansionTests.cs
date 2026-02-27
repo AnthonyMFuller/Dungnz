@@ -306,7 +306,7 @@ public class EnemyExpansionTests
         var lich = new ArchlichSovereign();
         lich.Name.Should().Be("Archlich Sovereign");
         lich.MaxHP.Should().Be(180);
-        lich.Attack.Should().Be(28);
+        lich.Attack.Should().Be(42);
         lich.Defense.Should().Be(14);
         lich.IsUndead.Should().BeTrue();
     }
@@ -344,7 +344,7 @@ public class EnemyExpansionTests
         var lev = new AbyssalLeviathan();
         lev.Name.Should().Be("Abyssal Leviathan");
         lev.MaxHP.Should().Be(220);
-        lev.Attack.Should().Be(32);
+        lev.Attack.Should().Be(48);
         lev.Defense.Should().Be(12);
     }
 
@@ -381,7 +381,7 @@ public class EnemyExpansionTests
         var dragon = new InfernalDragon();
         dragon.Name.Should().Be("Infernal Dragon");
         dragon.MaxHP.Should().Be(250);
-        dragon.Attack.Should().Be(36);
+        dragon.Attack.Should().Be(54);
         dragon.Defense.Should().Be(16);
     }
 

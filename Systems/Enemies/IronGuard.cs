@@ -29,7 +29,7 @@ public class IronGuard : Enemy
         {
             Name = "Iron Guard";
             HP = MaxHP = 50;
-            Attack = 14;
+            Attack = 18;
             Defense = 14;
             XPValue = 48;
             LootTable = new LootTable(minGold: 15, maxGold: 32);

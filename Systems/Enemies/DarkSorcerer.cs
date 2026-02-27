@@ -29,7 +29,7 @@ public class DarkSorcerer : Enemy
         {
             Name = "Dark Sorcerer";
             HP = MaxHP = 45;
-            Attack = 15;
+            Attack = 18;
             Defense = 6;
             XPValue = 40;
             LootTable = new LootTable(minGold: 10, maxGold: 22);

@@ -29,7 +29,7 @@ public class NightStalker : Enemy
         {
             Name = "Night Stalker";
             HP = MaxHP = 55;
-            Attack = 20;
+            Attack = 25;
             Defense = 8;
             XPValue = 58;
             LootTable = new LootTable(minGold: 18, maxGold: 38);

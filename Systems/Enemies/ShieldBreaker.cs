@@ -29,7 +29,7 @@ public class ShieldBreaker : Enemy
         {
             Name = "Shield Breaker";
             HP = MaxHP = 55;
-            Attack = 17;
+            Attack = 21;
             Defense = 8;
             XPValue = 50;
             LootTable = new LootTable(minGold: 14, maxGold: 28);

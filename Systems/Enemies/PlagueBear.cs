@@ -29,7 +29,7 @@ public class PlagueBear : Enemy
         {
             Name = "Plague Bear";
             HP = MaxHP = 48;
-            Attack = 16;
+            Attack = 19;
             Defense = 7;
             XPValue = 44;
             LootTable = new LootTable(minGold: 12, maxGold: 26);

@@ -28,7 +28,7 @@ public class SiegeOgre : Enemy
         {
             Name = "Siege Ogre";
             HP = MaxHP = 65;
-            Attack = 18;
+            Attack = 23;
             Defense = 10;
             XPValue = 58;
             LootTable = new LootTable(minGold: 16, maxGold: 32);

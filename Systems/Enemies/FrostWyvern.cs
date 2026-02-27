@@ -29,7 +29,7 @@ public class FrostWyvern : Enemy
         {
             Name = "Frost Wyvern";
             HP = MaxHP = 75;
-            Attack = 22;
+            Attack = 28;
             Defense = 12;
             XPValue = 70;
             LootTable = new LootTable(minGold: 25, maxGold: 50);
