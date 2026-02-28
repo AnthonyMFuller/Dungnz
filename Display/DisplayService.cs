@@ -1512,6 +1512,7 @@ public class ConsoleDisplayService : IDisplayService
             ("⚔  Attack",  "A"),
             ("✨ Ability",  "B"),
             ("🏃 Flee",     "F"),
+            ("🧪 Use Item", "I"),
         };
         return SelectFromMenu(options, _input);
     }
@@ -1605,5 +1606,22 @@ public class ConsoleDisplayService : IDisplayService
             .ToArray();
 
         return SelectFromMenu(options, _input, "=== Abilities ===");
+    }
+
+    /// <summary>
+    /// Arrow-key navigable consumable item selection menu during combat.
+    /// Returns the selected Item, or null if the player cancels.
+    /// </summary>
+    public Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables)
+    {
+        var options = consumables
+            .Select(item =>
+            {
+                var manaStr = item.ManaRestore > 0 ? $" +{item.ManaRestore} MP" : "";
+                return ($"🧪 {item.Name} (+{item.HealAmount} HP{manaStr})", (Item?)item);
+            })
+            .Append(("↩  Cancel", (Item?)null))
+            .ToArray();
+        return SelectFromMenu(options, _input, "=== USE ITEM — Choose a consumable ===");
     }
 }

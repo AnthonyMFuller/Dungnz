@@ -326,4 +326,11 @@ public interface IDisplayService
     Ability? ShowAbilityMenuAndSelect(
         IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities,
         IEnumerable<Ability> availableAbilities);
+
+    /// <summary>
+    /// Presents an arrow-key navigable consumable item selection menu during combat.
+    /// Returns the selected <see cref="Item"/>, or <c>null</c> if the player cancels.
+    /// </summary>
+    /// <param name="consumables">The list of consumable items the player can use.</param>
+    Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables);
 }

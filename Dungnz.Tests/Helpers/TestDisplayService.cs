@@ -139,6 +139,8 @@ public class TestDisplayService : IDisplayService
         AllOutput.Add("ability_menu"); 
         return null; 
     }
+
+    public Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables) => null;
     
     public void ShowCombatStart(Enemy enemy) { AllOutput.Add($"combat_start:{enemy.Name}"); }
     public void ShowCombatEntryFlags(Enemy enemy) { AllOutput.Add($"combat_flags:{enemy.Name}"); }

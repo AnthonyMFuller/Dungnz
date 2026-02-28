@@ -187,6 +187,13 @@ public class FakeDisplayService : IDisplayService
         }
         return null; 
     }
+
+    public Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables)
+    {
+        AllOutput.Add("combat_item_menu");
+        _input?.ReadLine();
+        return consumables.FirstOrDefault();
+    }
     
     public void ShowCombatStart(Enemy enemy) { AllOutput.Add($"combat_start:{enemy.Name}"); }
     public void ShowCombatEntryFlags(Enemy enemy) { AllOutput.Add($"combat_flags:{enemy.Name}"); }

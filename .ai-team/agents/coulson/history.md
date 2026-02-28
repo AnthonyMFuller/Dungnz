@@ -1672,3 +1672,26 @@ The team's strongest capability right now is **finding and fixing bugs systemati
 
 **Outcome:** Team has a clear baseline (0 issues, 0 PRs, 689 tests), a list of 30 prioritized action items, and 10 process decisions ready for canonical merge. Next iteration should address P0 blockers before starting new features.
 
+
+---
+
+### 2025-07-24: Combat Item Usage Feature Design
+
+**Requested by:** Anthony  
+**Objective:** Add "Use Item" option to combat action menu for consuming potions mid-fight.
+
+**Design Decisions:**
+- New `IDisplayService` method: `Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables)`
+- Combat menu gets 4th option "🧪 Use Item" → "I"; grayed out when no consumables (info line pattern)
+- `CombatEngine.HandleItemMenu()` mirrors `HandleAbilityMenu()` pattern
+- Reuses `AbilityMenuResult` enum — no new types needed
+- `InventoryManager.UseItem` called as-is — no changes required
+- Cancel does NOT consume turn (differs from ability cancel per #611)
+- `Heal()`/`RestoreMana()` already clamp at max — no overflow handling needed
+
+**Issues Created:**
+- #647 — Display: combat item selection menu (assigned Hill)
+- #648 — Engine: wire Use Item into CombatEngine (assigned Barton, depends on #647)
+- #649 — Tests: combat item usage tests (assigned Romanoff, depends on #647 + #648)
+
+**Decision written to:** `.ai-team/decisions/inbox/coulson-combat-items-design.md`
