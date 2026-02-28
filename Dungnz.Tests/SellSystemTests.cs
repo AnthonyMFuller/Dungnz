@@ -11,6 +11,7 @@ namespace Dungnz.Tests;
 /// <summary>
 /// Tests for the sell system: ComputeSellPrice formula and the sell flow via GameLoop.
 /// </summary>
+[Collection("PrestigeTests")]
 public class SellSystemTests
 {
     // ────────────────────────────────────────────────────────────────────────

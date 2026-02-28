@@ -18,6 +18,7 @@ namespace Dungnz.Tests;
 /// This acts as a regression guard: it will fail if Phase 2 (or later) additions skew the
 /// tier pools embedded in <see cref="LootTable"/> away from the intended ratios.
 /// </summary>
+[Collection("LootTableTests")]
 public class LootDistributionSimulationTests
 {
     private const int SimulationRolls   = 10_000;

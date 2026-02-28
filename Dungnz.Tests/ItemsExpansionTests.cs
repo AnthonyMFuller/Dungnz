@@ -8,6 +8,7 @@ using FluentAssertions;
 using Xunit;
 
 /// <summary>WI-D6: Tests for Legendaries, affixes, set bonuses, class restrictions, and passive effects.</summary>
+[Collection("LootTableTests")]
 public class ItemsExpansionTests
 {
     // ── Helpers ──────────────────────────────────────────────────────────────

@@ -8,6 +8,7 @@ namespace Dungnz.Tests;
 /// Tests for PrestigeSystem. Each test uses a temp directory to avoid touching
 /// the real ApplicationData folder. The override is reset in Dispose().
 /// </summary>
+[Collection("PrestigeTests")]
 public class PrestigeSystemTests : IDisposable
 {
     private readonly string _tempDir;
