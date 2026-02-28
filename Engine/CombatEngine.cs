@@ -624,53 +624,37 @@ public class CombatEngine : ICombatEngine
             return AbilityMenuResult.Cancel;
         }
         
-        _display.ShowMessage("\n=== Abilities ===");
-        // Fix #194: use a sequential display counter so shown indices have no gaps
-        var displayToAbility = new Dictionary<int, Ability>();
-        int displayIndex = 1;
+        // Classify abilities into available and unavailable
+        var unavailable = new List<(Ability, bool, int, bool)>();
+        var available = new List<Ability>();
         foreach (var ability in unlocked)
         {
             if (_abilities.IsOnCooldown(ability.Type))
-            {
-                var cooldown = _abilities.GetCooldown(ability.Type);
-                _display.ShowColoredMessage($" (Cooldown: {cooldown} turns) {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)", ColorCodes.Gray);
-            }
+                unavailable.Add((ability, true, _abilities.GetCooldown(ability.Type), false));
             else if (player.Mana < ability.ManaCost)
-            {
-                _display.ShowColoredMessage($" (Need {ability.ManaCost} mana) {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP, CD: {ability.CooldownTurns} turns)", ColorCodes.Red);
-            }
+                unavailable.Add((ability, false, 0, true));
             else
-            {
-                displayToAbility[displayIndex] = ability;
-                _display.ShowColoredMessage($" [{displayIndex}] {ability.Name} - {ability.Description} (Cost: {ability.ManaCost} MP) — ready", ColorCodes.Green + ColorCodes.Bold);
-                displayIndex++;
-            }
+                available.Add(ability);
         }
-        _display.ShowMessage("[C]ancel");
-        
-        var choice = (_input.ReadLine() ?? string.Empty).Trim().ToUpperInvariant();
-        if (choice == "C" || choice == "CANCEL")
+
+        var selectedAbility = _display.ShowAbilityMenuAndSelect(unavailable, available);
+        if (selectedAbility == null)
             return AbilityMenuResult.Cancel;
+
+        // Execute the selected ability
+        var hpBeforeAbility = enemy.HP;
+        var result = _abilities.UseAbility(player, enemy, selectedAbility.Type, _statusEffects, _display);
         
-        if (int.TryParse(choice, out int selectedIndex) && displayToAbility.TryGetValue(selectedIndex, out var selectedAbility))
+        if (result == UseAbilityResult.Success)
         {
-            var hpBeforeAbility = enemy.HP;
-            var result = _abilities.UseAbility(player, enemy, selectedAbility.Type, _statusEffects, _display);
-            
-            if (result == UseAbilityResult.Success)
-            {
-                _display.ShowMessage($"{ColorCodes.Bold}{ColorCodes.Yellow}[{selectedAbility.Name} activated — {selectedAbility.Description}]{ColorCodes.Reset}");
-                // Bug #111: track ability damage in run stats
-                if (enemy.HP < hpBeforeAbility)
-                    _stats.DamageDealt += hpBeforeAbility - enemy.HP;
-                return AbilityMenuResult.Used;
-            }
-            
-            _display.ShowMessage($"Cannot use ability: {result}");
-            return AbilityMenuResult.Cancel;
+            _display.ShowMessage($"{ColorCodes.Bold}{ColorCodes.Yellow}[{selectedAbility.Name} activated — {selectedAbility.Description}]{ColorCodes.Reset}");
+            // Bug #111: track ability damage in run stats
+            if (enemy.HP < hpBeforeAbility)
+                _stats.DamageDealt += hpBeforeAbility - enemy.HP;
+            return AbilityMenuResult.Used;
         }
         
-        _display.ShowMessage("Invalid choice!");
+        _display.ShowMessage($"Cannot use ability: {result}");
         return AbilityMenuResult.Cancel;
     }
     

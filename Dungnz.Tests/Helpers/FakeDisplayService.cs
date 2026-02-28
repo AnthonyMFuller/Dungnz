@@ -145,7 +145,16 @@ public class FakeDisplayService : IDisplayService
     public int ShowContestedArmoryMenuAndSelect(int playerDefense) { AllOutput.Add("armory_menu"); return 0; }
     public Ability? ShowAbilityMenuAndSelect(IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities, IEnumerable<Ability> availableAbilities) 
     { 
-        AllOutput.Add("ability_menu"); 
+        AllOutput.Add("ability_menu");
+        if (_input is not null)
+        {
+            var available = availableAbilities.ToList();
+            var line = _input.ReadLine()?.Trim() ?? "";
+            if (line.Equals("C", StringComparison.OrdinalIgnoreCase) || line.Equals("CANCEL", StringComparison.OrdinalIgnoreCase))
+                return null;
+            if (int.TryParse(line, out int idx) && idx >= 1 && idx <= available.Count)
+                return available[idx - 1];
+        }
         return null; 
     }
     
