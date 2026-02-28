@@ -137,6 +137,53 @@ public class StatusEffectManagerTests
         mgr.HasEffect(enemy, StatusEffect.Bleed).Should().BeFalse();
     }
 
+    // ── Bug #613: DoT HP floor ─────────────────────────────────────────────
+
+    [Fact]
+    public void Poison_EnemyAtOneHP_ClampsToZeroNotNegative()
+    {
+        // Arrange
+        var (mgr, _, _, enemy) = MakeFixture();
+        enemy.HP = 1;
+        mgr.Apply(enemy, StatusEffect.Poison, 3);
+
+        // Act
+        mgr.ProcessTurnStart(enemy);
+
+        // Assert: HP floors at 0 (not -2)
+        enemy.HP.Should().Be(0);
+    }
+
+    [Fact]
+    public void Bleed_EnemyAtOneHP_ClampsToZeroNotNegative()
+    {
+        // Arrange
+        var (mgr, _, _, enemy) = MakeFixture();
+        enemy.HP = 1;
+        mgr.Apply(enemy, StatusEffect.Bleed, 3);
+
+        // Act
+        mgr.ProcessTurnStart(enemy);
+
+        // Assert: HP floors at 0 (not -4)
+        enemy.HP.Should().Be(0);
+    }
+
+    [Fact]
+    public void Burn_EnemyAtOneHP_ClampsToZeroNotNegative()
+    {
+        // Arrange
+        var (mgr, _, _, enemy) = MakeFixture();
+        enemy.HP = 1;
+        mgr.Apply(enemy, StatusEffect.Burn, 3);
+
+        // Act
+        mgr.ProcessTurnStart(enemy);
+
+        // Assert: HP floors at 0 (not -7)
+        enemy.HP.Should().Be(0);
+    }
+
     [Fact]
     public void RemoveDebuffs_RemovesNegativeEffects_KeepsRegen()
     {

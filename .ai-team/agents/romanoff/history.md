@@ -8,6 +8,53 @@
 
 ## Learnings
 
+### 2026-02-28: PR Review — Bug Hunt Fix Session (#625, #626)
+
+**PRs Reviewed:**
+- PR #625 — Barton's systems fixes (6 bugs: #611–#616)
+- PR #626 — Hill's display/engine fixes (13 bugs: #604–#610, #618–#624)
+
+**Review Findings:**
+
+**PR #625 — APPROVED** (684/684 tests)
+- #611: PerformEnemyTurn correctly called before `continue` in Cancel branch; death check present ✓
+- #612: `pool.Count > 0` guard prevents crash; empty pool returns null item + gold gracefully ✓
+- #613: All 3 enemy DoT effects (Poison/Bleed/Burn) now use `Math.Max(0, HP - N)` ✓
+- #614: `SelfHealEveryTurns - 1` reset with decrement-first pattern produces correct N-turn interval ✓
+- #615: `SpendMana(manaLost)` called with pre-validated mana amount ✓
+- #616: `CheckLevelUp` moved before XP display; post-level threshold shown correctly ✓
+
+**PR #626 — APPROVED** (684/684 tests; one ShieldBash flake observed, confirmed pre-existing)
+- Display branch built on top of systems branch (2 commits above master)
+- VisualWidth() correctly adds 1 extra col per ⚔/⭐ (only double-width BMP emoji in codebase) ✓
+- HandleUse no-effect paths: _turnConsumed=false, "Nothing happened." message ✓
+- _stats = new RunStats() after successful load, not in catch ✓
+- ConsoleMenuNavigator try/finally restores cursor; SelectFromMenu delegates to it ✓
+- Scrolling menu: maxVisible=WindowHeight-4, ↑/↓ indicators, boundary wrap correct ✓
+- Escape/X are no-ops in ConsoleMenuNavigator (menu stays open, user must press Enter) ✓
+- SelectFromMenu delegates to _navigator.Select(); dead inline loop removed ✓
+- ShowLevelUpChoice padding corrected (W-13, W-25) ✓
+
+**Key observations:**
+- Both PRs merged successfully via squash merge (#625 first, then #626)
+- Display branch included systems fixes as first commit — squash diff correctly excludes the already-merged systems changes
+- GitHub cannot approve own PRs — used `gh pr comment` for review documentation
+
+**Tests Written (PR #627):**
+- `AbilityCancel_EnemyTurnStillRuns_PlayerTakesDamage` (#611) — enemy attacks after ability cancel
+- `RollDrop_EmptyTierPools_DoesNotThrow_ReturnsGoldOnly` (#612) — empty pool guarded with try/finally cleanup
+- `Poison_EnemyAtOneHP_ClampsToZeroNotNegative` (#613) — HP floors at 0
+- `Bleed_EnemyAtOneHP_ClampsToZeroNotNegative` (#613)
+- `Burn_EnemyAtOneHP_ClampsToZeroNotNegative` (#613)
+- #622 (Escape no-op): not unit-testable — ConsoleMenuNavigator requires live console I/O
+
+**Test count:** 684 baseline → 689 with new tests
+
+**Patterns learned:**
+- ControlledRandom(defaultDouble: X) must be chosen carefully — 0.1 is below the 0.15 crit threshold and causes enemy to always crit; use 0.9 for deterministic non-crit tests
+- LootTable.SetTierPools is static — tests mutating it must restore pools in try/finally
+- ShieldBash test is order-sensitive (flaky under parallel test execution) — confirmed pre-existing
+
 ### 2026-02-27: Deep Bug Hunt Session
 **Scope:** Full source review — DisplayService, ConsoleMenuNavigator, GameLoop, CombatEngine, Models
 **Tests baseline:** 684 tests passing, build succeeds with 35 warnings (XML doc only)

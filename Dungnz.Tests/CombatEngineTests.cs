@@ -353,6 +353,29 @@ public class CombatEngineTests
         display.CombatMessages.Should().Contain(m => m.Contains("Skeleton strikes"));
     }
 
+    // ── Bug #611: ability cancel exploit ──────────────────────────────────
+
+    [Fact]
+    public void AbilityCancel_EnemyTurnStillRuns_PlayerTakesDamage()
+    {
+        // Arrange: Warrior with mana so the ability menu shows real options;
+        // enemy Attack=20, player Defense=0 → guaranteed 20 damage when enemy acts.
+        var player = new Player { HP = 100, MaxHP = 100, Attack = 50, Defense = 0, Level = 1, Mana = 30, MaxMana = 30, Class = PlayerClass.Warrior };
+        var enemy = new Enemy_Stub(hp: 50, atk: 20, def: 0, xp: 1);
+        // "B" opens ability menu → "C" cancels (enemy must now act) → "A" kills enemy (50 atk, 50 hp, 0 def)
+        var input = new FakeInputReader("B", "C", "A");
+        var display = new FakeDisplayService(input);
+        var rng = new ControlledRandom(defaultDouble: 0.9); // 0.9 > 0.15 crit threshold → no crits, no dodges
+
+        var engine = new CombatEngine(display, input, rng);
+
+        // Act
+        engine.RunCombat(player, enemy);
+
+        // Assert: player took 20 damage during the cancel turn, proving enemy acted
+        player.HP.Should().Be(80, "enemy must have attacked after ability cancel");
+    }
+
     // ── Frozen enemy skips turn ───────────────────────────────────────────
 
     [Fact]
