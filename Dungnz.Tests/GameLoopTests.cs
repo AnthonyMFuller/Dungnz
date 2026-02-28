@@ -8,6 +8,7 @@ using Xunit;
 
 namespace Dungnz.Tests;
 
+[Collection("PrestigeTests")]
 public class GameLoopTests
 {
     private static (Player player, Room startRoom, FakeDisplayService display, Mock<ICombatEngine> combat) MakeSetup(

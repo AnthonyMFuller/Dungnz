@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Dungnz.Tests;
 
+[Collection("EnemyFactory")]
 public class LootTableTests
 {
     [Fact]
