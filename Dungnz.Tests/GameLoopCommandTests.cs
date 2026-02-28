@@ -24,6 +24,7 @@ public class GameLoopCommandTests
     private static GameLoop MakeLoop(FakeDisplayService display, ICombatEngine combat, params string[] inputs)
     {
         var reader = new FakeInputReader(inputs);
+        display.SetInputReader(reader);
         return new GameLoop(display, combat, reader);
     }
 
@@ -234,7 +235,7 @@ public class GameLoopCommandTests
         player.MaxHP = 100;
         player.AddGold(50);
         room.HasShrine = true;
-        var loop = MakeLoop(display, combat.Object, "use shrine", "H", "quit");
+        var loop = MakeLoop(display, combat.Object, "use shrine", "1", "quit");
         loop.Run(player, room);
         player.HP.Should().Be(100, "shrine heal should restore to full HP");
     }
@@ -246,7 +247,7 @@ public class GameLoopCommandTests
         player.HP = 50;
         player.AddGold(10); // only 10g, need 30g
         room.HasShrine = true;
-        var loop = MakeLoop(display, combat.Object, "use shrine", "H", "L", "quit");
+        var loop = MakeLoop(display, combat.Object, "use shrine", "1", "quit");
         loop.Run(player, room);
         display.Errors.Should().Contain(e => e.Contains("gold") || e.Contains("Gold") || e.Contains("30g"));
     }
@@ -258,7 +259,7 @@ public class GameLoopCommandTests
         var initialAtk = player.Attack;
         player.AddGold(100);
         room.HasShrine = true;
-        var loop = MakeLoop(display, combat.Object, "use shrine", "B", "quit");
+        var loop = MakeLoop(display, combat.Object, "use shrine", "2", "quit");
         loop.Run(player, room);
         player.Attack.Should().BeGreaterThan(initialAtk, "shrine bless should boost attack");
     }
@@ -270,7 +271,7 @@ public class GameLoopCommandTests
         var initialMaxHP = player.MaxHP;
         player.AddGold(100);
         room.HasShrine = true;
-        var loop = MakeLoop(display, combat.Object, "use shrine", "F", "quit");
+        var loop = MakeLoop(display, combat.Object, "use shrine", "3", "quit");
         loop.Run(player, room);
         player.MaxHP.Should().BeGreaterThan(initialMaxHP, "shrine fortify should increase MaxHP");
     }
@@ -282,7 +283,7 @@ public class GameLoopCommandTests
         var initialMaxMana = player.MaxMana;
         player.AddGold(100);
         room.HasShrine = true;
-        var loop = MakeLoop(display, combat.Object, "use shrine", "M", "quit");
+        var loop = MakeLoop(display, combat.Object, "use shrine", "4", "quit");
         loop.Run(player, room);
         player.MaxMana.Should().BeGreaterThan(initialMaxMana, "shrine meditate should increase MaxMana");
     }
