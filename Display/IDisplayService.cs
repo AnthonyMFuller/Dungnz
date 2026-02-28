@@ -196,10 +196,22 @@ public interface IDisplayService
     void ShowShop(IEnumerable<(Dungnz.Models.Item item, int price)> stock, int playerGold);
 
     /// <summary>
+    /// Renders the shop and handles arrow-key selection. Returns the 1-based index of the
+    /// selected item, or 0 if the player cancels.
+    /// </summary>
+    int ShowShopAndSelect(IEnumerable<(Dungnz.Models.Item item, int price)> stock, int playerGold);
+
+    /// <summary>
     /// Renders a numbered sell menu listing items the player can sell with tier-colored names
     /// and green sell prices.
     /// </summary>
     void ShowSellMenu(IEnumerable<(Dungnz.Models.Item item, int sellPrice)> items, int playerGold);
+
+    /// <summary>
+    /// Renders the sell menu and handles arrow-key selection. Returns the 1-based index of the
+    /// selected item, or 0 if the player cancels.
+    /// </summary>
+    int ShowSellMenuAndSelect(IEnumerable<(Dungnz.Models.Item item, int sellPrice)> items, int playerGold);
 
     /// <summary>
     /// Renders a box-drawn recipe card showing the craftable result's stats and each ingredient
@@ -264,4 +276,25 @@ public interface IDisplayService
     /// </summary>
     /// <param name="enemy">The enemy whose art should be displayed.</param>
     void ShowEnemyArt(Enemy enemy);
+
+    /// <summary>
+    /// Displays an arrow-key navigable level-up stat choice menu and returns the
+    /// player's selection as a 1-based index (1 = +5 Max HP, 2 = +2 Attack, 3 = +2 Defense).
+    /// Falls back to numbered text input when arrow-key input is unavailable.
+    /// </summary>
+    int ShowLevelUpChoiceAndSelect(Player player);
+
+    /// <summary>
+    /// Displays an arrow-key navigable combat action menu and returns the player's choice
+    /// as a single uppercase letter: "A" (Attack), "B" (Ability), or "F" (Flee).
+    /// Falls back to numbered text input when arrow-key input is unavailable.
+    /// </summary>
+    string ShowCombatMenuAndSelect(Player player, Enemy enemy);
+
+    /// <summary>
+    /// Displays an arrow-key navigable crafting recipe selection menu and returns the
+    /// 1-based index of the chosen recipe, or 0 if the player cancels.
+    /// Falls back to numbered text input when arrow-key input is unavailable.
+    /// </summary>
+    int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes);
 }

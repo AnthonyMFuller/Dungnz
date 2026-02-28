@@ -28,6 +28,7 @@ public class GameLoop
     private readonly AchievementSystem _achievements = new();
     private readonly EquipmentManager _equipment;
     private readonly InventoryManager _inventoryManager;
+    private readonly IMenuNavigator? _navigator;
     private readonly IReadOnlyList<Item> _allItems = [];
     private readonly NarrationService _narration = new();
     private int _currentFloor = 1;
@@ -93,7 +94,7 @@ public class GameLoop
     /// The difficulty settings to apply for this run. Defaults to <see cref="Difficulty.Normal"/>
     /// when <see langword="null"/>.
     /// </param>
-    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null, DifficultySettings? difficulty = null, IReadOnlyList<Item>? allItems = null)
+    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null, DifficultySettings? difficulty = null, IReadOnlyList<Item>? allItems = null, IMenuNavigator? navigator = null)
     {
         _display = display;
         _combat = combat;
@@ -104,6 +105,7 @@ public class GameLoop
         _equipment = new EquipmentManager(display);
         _inventoryManager = new InventoryManager(display);
         _allItems = allItems ?? [];
+        _navigator = navigator;
     }
 
     /// <summary>
@@ -1305,18 +1307,31 @@ public class GameLoop
         if (string.IsNullOrWhiteSpace(recipeName))
         {
             _turnConsumed = false;
-            _display.ShowMessage("=== CRAFTING RECIPES ===");
-            foreach (var r in CraftingSystem.Recipes)
+
+            // Build (recipeName, canCraft) pairs for the selection menu
+            var menuEntries = CraftingSystem.Recipes.Select(r =>
             {
-                var ingredientsWithAvailability = r.Ingredients
-                    .Select(ing => (
-                        $"{ing.Count}x {ing.DisplayName}",
-                        _player.Inventory.Count(i => i.Name.Equals(ing.DisplayName, StringComparison.OrdinalIgnoreCase)) >= ing.Count
-                    ))
-                    .ToList();
-                _display.ShowCraftRecipe(r.Name, r.Result.ToItem(), ingredientsWithAvailability);
-            }
-            _display.ShowMessage("Type CRAFT <recipe name> to craft.");
+                bool canCraft = r.Ingredients.All(ing =>
+                    _player.Inventory.Count(i => i.Name.Equals(ing.DisplayName, StringComparison.OrdinalIgnoreCase)) >= ing.Count);
+                return (r.Name, canCraft);
+            }).ToList();
+
+            int selectedIndex = _display.ShowCraftMenuAndSelect(menuEntries);
+            if (selectedIndex == 0) return; // cancelled
+
+            // Show the full recipe card for the selected recipe before crafting
+            var chosen = CraftingSystem.Recipes[selectedIndex - 1];
+            var ingredientsWithAvailability = chosen.Ingredients
+                .Select(ing => (
+                    $"{ing.Count}x {ing.DisplayName}",
+                    _player.Inventory.Count(i => i.Name.Equals(ing.DisplayName, StringComparison.OrdinalIgnoreCase)) >= ing.Count
+                ))
+                .ToList();
+            _display.ShowCraftRecipe(chosen.Name, chosen.Result.ToItem(), ingredientsWithAvailability);
+
+            var (success, msg) = CraftingSystem.TryCraft(_player, chosen);
+            if (success) _display.ShowMessage(msg);
+            else _display.ShowError(msg);
             return;
         }
 
@@ -1329,9 +1344,9 @@ public class GameLoop
             return;
         }
 
-        var (success, msg) = CraftingSystem.TryCraft(_player, recipe);
-        if (success) _display.ShowMessage(msg);
-        else _display.ShowError(msg);
+        var (success2, msg2) = CraftingSystem.TryCraft(_player, recipe);
+        if (success2) _display.ShowMessage(msg2);
+        else _display.ShowError(msg2);
     }
 
     /// <summary>

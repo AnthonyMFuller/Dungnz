@@ -14,6 +14,26 @@ public interface IInputReader
     /// stream has ended (e.g., end-of-file on stdin).
     /// </returns>
     string? ReadLine();
+
+    /// <summary>
+    /// Reads a single keypress from the underlying input source without echoing it
+    /// to the console. Used by bounded menus (shop, sell, difficulty, class, level-up,
+    /// combat, crafting) to support arrow-key navigation.
+    /// </summary>
+    /// <returns>
+    /// A <see cref="ConsoleKeyInfo"/> describing the key pressed, or
+    /// <see langword="null"/> if the input source does not support single-key reads
+    /// (e.g., a test stub).
+    /// </returns>
+    ConsoleKeyInfo? ReadKey();
+
+    /// <summary>
+    /// Returns <see langword="true"/> when the input source is a live interactive
+    /// terminal and arrow-key navigation menus should be used; <see langword="false"/>
+    /// for test stubs or redirected input where numbered text prompts are used instead.
+    /// Checking this property never consumes a keypress.
+    /// </summary>
+    bool IsInteractive { get; }
 }
 
 /// <summary>
@@ -29,4 +49,16 @@ public class ConsoleInputReader : IInputReader
     /// The line entered, or <see langword="null"/> if stdin is closed.
     /// </returns>
     public string? ReadLine() => Console.ReadLine();
+
+    /// <summary>
+    /// Reads a single keypress from the console without echoing it to the screen.
+    /// </summary>
+    /// <returns>A <see cref="ConsoleKeyInfo"/> describing the key pressed.</returns>
+    public ConsoleKeyInfo? ReadKey() => Console.ReadKey(intercept: true);
+
+    /// <summary>
+    /// Returns <see langword="true"/> when stdin is connected to a live terminal
+    /// so arrow-key navigation menus can be used.
+    /// </summary>
+    public bool IsInteractive => !Console.IsInputRedirected;
 }

@@ -129,8 +129,8 @@ public class Phase1DisplayTests
         // Arrange: player vs weak enemy, forced crit
         var player = new Player { HP = 100, MaxHP = 100, Attack = 50, Defense = 5 };
         var enemy = new Enemy_Stub(hp: 50, atk: 1, def: 0, xp: 10);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A"); // single attack
+        var display = new FakeDisplayService(input);
         // Force crit with controlled random: NextDouble() returns 0.01 < 0.05
         var rng = new ControlledRandom(defaultDouble: 0.01);
         var engine = new CombatEngine(display, input, rng);
@@ -152,8 +152,8 @@ public class Phase1DisplayTests
         // Arrange: player with very low attack vs high-defense enemy, guaranteed to miss via dodge roll
         var player = new Player { HP = 100, MaxHP = 100, Attack = 1, Defense = 5 };
         var enemy = new Enemy_Stub(hp: 200, atk: 1, def: 100, xp: 10);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A", "A", "A", "F"); // try attacks, then flee
+        var display = new FakeDisplayService(input);
         // Force dodge: NextDouble() for dodge check returns 0.01 < 0.05 (5% dodge)
         var rng = new ControlledRandom(defaultDouble: 0.01);
         var engine = new CombatEngine(display, input, rng);
@@ -187,8 +187,8 @@ public class Phase1DisplayTests
             AppliesBleedOnHit = true
         };
         var enemy = new Enemy_Stub(hp: 100, atk: 1, def: 0, xp: 10);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A", "F"); // attack once, then flee
+        var display = new FakeDisplayService(input);
         var rng = new ControlledRandom(0.01); // 0.01 < 0.5 → flee succeeds; 0.01 < 0.10 → bleed procs
         var engine = new CombatEngine(display, input, rng);
 
@@ -219,8 +219,8 @@ public class Phase1DisplayTests
             AppliesBleedOnHit = true
         };
         var golem = new StoneGolem(null, null); // immune enemy
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A", "F"); // attack once, then flee
+        var display = new FakeDisplayService(input);
         // Queue: 0.9 → dodge(20)=0.5: not dodged; 0.9 → crit: miss; then 0.01 → bleed procs + flee succeeds
         var rng = new ControlledRandom(0.01, 0.9, 0.9);
         var engine = new CombatEngine(display, input, rng);
@@ -251,8 +251,8 @@ public class Phase1DisplayTests
             Level = 1
         };
         var enemy = new Enemy_Stub(hp: 1, atk: 1, def: 0, xp: 20);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A");
+        var display = new FakeDisplayService(input);
         var rng = new ControlledRandom();
         var engine = new CombatEngine(display, input, rng);
 
@@ -281,8 +281,8 @@ public class Phase1DisplayTests
             Level = 1
         };
         var enemy = new Enemy_Stub(hp: 1, atk: 1, def: 0, xp: 15);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("A");
+        var display = new FakeDisplayService(input);
         var rng = new ControlledRandom();
         var engine = new CombatEngine(display, input, rng);
 
@@ -315,8 +315,8 @@ public class Phase1DisplayTests
         };
 
         var enemy = new Enemy_Stub(hp: 50, atk: 1, def: 0, xp: 10);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("B", "1", "F"); // use ability (B=ability menu), then flee
+        var display = new FakeDisplayService(input);
         var rng = new ControlledRandom(0.01); // 0.01 < 0.5 → flee succeeds
         var engine = new CombatEngine(display, input, rng);
 
@@ -345,8 +345,8 @@ public class Phase1DisplayTests
         };
 
         var enemy = new Enemy_Stub(hp: 100, atk: 1, def: 0, xp: 10);
-        var display = new FakeDisplayService();
         var input = new FakeInputReader("B", "1", "F"); // use ability (B=ability menu), then flee
+        var display = new FakeDisplayService(input);
         var rng = new ControlledRandom(0.01); // 0.01 < 0.5 → flee succeeds
         var engine = new CombatEngine(display, input, rng);
 

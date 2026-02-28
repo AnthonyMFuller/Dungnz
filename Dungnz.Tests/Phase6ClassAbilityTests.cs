@@ -780,7 +780,7 @@ public class Phase6ClassAbilityTests
         var player = MakePlayer(PlayerClass.Warrior, level: 3);
         var enemy = MakeEnemy(hp: 10, atk: 5, def: 0, xp: 10);
         var input = new FakeInputReader("B", "1", "A"); // B=abilities, 1=ShieldBash, A=attack
-        var display = new FakeDisplayService();
+        var display = new FakeDisplayService(input);
         var engine = new CombatEngine(display, input, new ControlledRandom());
 
         var result = engine.RunCombat(player, enemy);
@@ -797,7 +797,7 @@ public class Phase6ClassAbilityTests
         player.MaxMana = 100;
         var enemy = MakeEnemy(hp: 50, atk: 5, def: 0, xp: 10);
         var input = new FakeInputReader("B", "1", "A"); // B=abilities, 1=ArcaneBolt, A=attack
-        var display = new FakeDisplayService();
+        var display = new FakeDisplayService(input);
         var engine = new CombatEngine(display, input, new ControlledRandom());
 
         var result = engine.RunCombat(player, enemy);
@@ -817,7 +817,7 @@ public class Phase6ClassAbilityTests
         enemy.MaxHP = 100; // So 30 HP = 30%
         // Quick Strike 3 times to get 3 CP, then Assassinate for execute
         var input = new FakeInputReader("B", "1", "B", "1", "B", "1", "B", "5"); // 3x QuickStrike + Assassinate
-        var display = new FakeDisplayService();
+        var display = new FakeDisplayService(input);
         var engine = new CombatEngine(display, input, new ControlledRandom());
 
         var result = engine.RunCombat(player, enemy);

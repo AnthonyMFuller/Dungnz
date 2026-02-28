@@ -19,6 +19,7 @@ public class CombatEngine : ICombatEngine
     private readonly AbilityManager _abilities;
     private readonly NarrationService _narration;
     private readonly InventoryManager _inventoryManager;
+    private readonly IMenuNavigator? _navigator;
     private readonly PassiveEffectProcessor _passives;
     private readonly List<CombatTurn> _turnLog = new();
     private RunStats _stats = new();
@@ -191,7 +192,7 @@ public class CombatEngine : ICombatEngine
     /// Optional narration service used to pick varied combat messages; a default instance
     /// sharing <paramref name="rng"/> is created when <see langword="null"/>.
     /// </param>
-    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null, NarrationService? narration = null, InventoryManager? inventoryManager = null)
+    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null, NarrationService? narration = null, InventoryManager? inventoryManager = null, IMenuNavigator? navigator = null)
     {
         _display = display;
         _input = input ?? new ConsoleInputReader();
@@ -201,6 +202,7 @@ public class CombatEngine : ICombatEngine
         _abilities = abilities ?? new AbilityManager();
         _narration = narration ?? new NarrationService(_rng);
         _inventoryManager = inventoryManager ?? new InventoryManager(display);
+        _navigator = navigator;
         _passives = new PassiveEffectProcessor(_display, _rng, _statusEffects);
     }
 
@@ -402,8 +404,7 @@ public class CombatEngine : ICombatEngine
                 _statusEffects.GetActiveEffects(player), 
                 _statusEffects.GetActiveEffects(enemy));
             ShowRecentTurns();
-            ShowCombatMenu(player);
-            var choice = (_input.ReadLine() ?? string.Empty).Trim().ToUpperInvariant();
+            var choice = _display.ShowCombatMenuAndSelect(player, enemy);
             
             if (choice == "F" || choice == "FLEE")
             {
@@ -1525,15 +1526,14 @@ public class CombatEngine : ICombatEngine
             // Every 2 levels, offer a trait bonus
             if (player.Level % 2 == 0)
             {
-                _display.ShowLevelUpChoice(player);
-                var traitChoice = (_input.ReadLine() ?? "1").Trim();
-                switch (traitChoice)
+                var traitChoiceRaw = _display.ShowLevelUpChoiceAndSelect(player);
+                switch (traitChoiceRaw)
                 {
-                    case "2":
+                    case 2:
                         player.ModifyAttack(2);
                         _display.ShowMessage("You feel stronger! +2 Attack");
                         break;
-                    case "3":
+                    case 3:
                         player.ModifyDefense(2);
                         _display.ShowMessage("You feel tougher! +2 Defense");
                         break;

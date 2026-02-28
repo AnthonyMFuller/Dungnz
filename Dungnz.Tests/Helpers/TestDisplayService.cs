@@ -121,7 +121,12 @@ public class TestDisplayService : IDisplayService
     public Difficulty SelectDifficulty() => SelectDifficultyResult;
     public PlayerClassDefinition SelectClass(PrestigeData? prestige) => SelectClassResult;
     public void ShowShop(IEnumerable<(Item item, int price)> stock, int playerGold) { AllOutput.Add($"shop:{playerGold}g"); }
+    public int ShowShopAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold) { AllOutput.Add($"shop_select:{playerGold}g"); return 0; }
     public void ShowSellMenu(IEnumerable<(Item item, int sellPrice)> items, int playerGold) { AllOutput.Add($"sell:{playerGold}g"); }
+    public int ShowSellMenuAndSelect(IEnumerable<(Item item, int sellPrice)> items, int playerGold) { AllOutput.Add($"sell_select:{playerGold}g"); return 0; }
+    public int ShowLevelUpChoiceAndSelect(Player player) { AllOutput.Add($"levelup_select:{player.Level}"); return 1; }
+    public string ShowCombatMenuAndSelect(Player player, Enemy enemy) { AllOutput.Add($"combat_menu:{enemy.Name}"); return "A"; }
+    public int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes) { AllOutput.Add("craft_menu"); return 0; }
     public void ShowCraftRecipe(string recipeName, Item result, List<(string ingredient, bool playerHasIt)> ingredients) { AllOutput.Add($"recipe:{recipeName}"); }
     
     public void ShowCombatStart(Enemy enemy) { AllOutput.Add($"combat_start:{enemy.Name}"); }
