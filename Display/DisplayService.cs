@@ -1494,4 +1494,32 @@ public class ConsoleDisplayService : IDisplayService
             .ToArray();
         return SelectFromMenu(options, _input, "=== CRAFTING — Choose a recipe ===");
     }
+
+    /// <summary>
+    /// Presents the ability menu with available abilities as selectable options
+    /// and unavailable abilities shown as informational lines above.
+    /// Returns the selected Ability, or null if the player cancels.
+    /// </summary>
+    public Ability? ShowAbilityMenuAndSelect(
+        IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities,
+        IEnumerable<Ability> availableAbilities)
+    {
+        // Show unavailable abilities as info lines (not selectable)
+        foreach (var (ability, onCooldown, cooldownTurns, notEnoughMana) in unavailableAbilities)
+        {
+            if (onCooldown)
+                ShowColoredMessage($"  ○ {ability.Name} — Cooldown: {cooldownTurns} turns (Cost: {ability.ManaCost} MP)", Systems.ColorCodes.Gray);
+            else if (notEnoughMana)
+                ShowColoredMessage($"  ○ {ability.Name} — Need {ability.ManaCost} MP (Cost: {ability.ManaCost} MP)", Systems.ColorCodes.Red);
+        }
+
+        // Build selectable options from available abilities + Cancel
+        var availList = availableAbilities.ToList();
+        var options = availList
+            .Select(a => ($"{a.Name} — {a.Description} (Cost: {a.ManaCost} MP)", (Ability?)a))
+            .Append(("Cancel", (Ability?)null))
+            .ToArray();
+
+        return SelectFromMenu(options, _input, "=== Abilities ===");
+    }
 }

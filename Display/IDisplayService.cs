@@ -297,4 +297,12 @@ public interface IDisplayService
     /// Falls back to numbered text input when arrow-key input is unavailable.
     /// </summary>
     int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes);
+
+    /// <summary>
+    /// Presents the ability menu. Unavailable abilities shown as info lines.
+    /// Returns selected Ability, or null for cancel.
+    /// </summary>
+    Ability? ShowAbilityMenuAndSelect(
+        IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities,
+        IEnumerable<Ability> availableAbilities);
 }

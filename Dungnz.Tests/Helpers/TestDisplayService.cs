@@ -128,6 +128,11 @@ public class TestDisplayService : IDisplayService
     public string ShowCombatMenuAndSelect(Player player, Enemy enemy) { AllOutput.Add($"combat_menu:{enemy.Name}"); return "A"; }
     public int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes) { AllOutput.Add("craft_menu"); return 0; }
     public void ShowCraftRecipe(string recipeName, Item result, List<(string ingredient, bool playerHasIt)> ingredients) { AllOutput.Add($"recipe:{recipeName}"); }
+    public Ability? ShowAbilityMenuAndSelect(IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities, IEnumerable<Ability> availableAbilities) 
+    { 
+        AllOutput.Add("ability_menu"); 
+        return null; 
+    }
     
     public void ShowCombatStart(Enemy enemy) { AllOutput.Add($"combat_start:{enemy.Name}"); }
     public void ShowCombatEntryFlags(Enemy enemy) { AllOutput.Add($"combat_flags:{enemy.Name}"); }
