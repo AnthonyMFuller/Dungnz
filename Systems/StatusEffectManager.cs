@@ -77,11 +77,11 @@ public class StatusEffectManager
             {
                 case StatusEffect.Poison:
                     if (target is Player p) { p.TakeDamage(3); _display.ShowCombatMessage($"{GetTargetName(target)} takes 3 poison damage!"); }
-                    else if (target is Enemy e) { e.HP -= 3; _display.ShowCombatMessage($"{GetTargetName(target)} takes 3 poison damage!"); }
+                    else if (target is Enemy e) { e.HP = Math.Max(0, e.HP - 3); _display.ShowCombatMessage($"{GetTargetName(target)} takes 3 poison damage!"); } // Fix #613
                     break;
                 case StatusEffect.Bleed:
                     if (target is Player p2) { p2.TakeDamage(5); _display.ShowCombatMessage($"{GetTargetName(target)} takes 5 bleed damage!"); }
-                    else if (target is Enemy e2) { e2.HP -= 5; _display.ShowCombatMessage($"{GetTargetName(target)} takes 5 bleed damage!"); }
+                    else if (target is Enemy e2) { e2.HP = Math.Max(0, e2.HP - 5); _display.ShowCombatMessage($"{GetTargetName(target)} takes 5 bleed damage!"); } // Fix #613
                     break;
                 case StatusEffect.Regen:
                     if (target is Player p3) { p3.Heal(4); _display.ShowCombatMessage($"{GetTargetName(target)} regenerates 4 HP!"); }
@@ -92,7 +92,7 @@ public class StatusEffectManager
                     break;
                 case StatusEffect.Burn:
                     if (target is Player pb) { pb.TakeDamage(8); _display.ShowCombatMessage($"{GetTargetName(target)} takes 8 burn damage!"); }
-                    else if (target is Enemy eb) { eb.HP -= 8; _display.ShowCombatMessage($"{GetTargetName(target)} takes 8 burn damage!"); }
+                    else if (target is Enemy eb) { eb.HP = Math.Max(0, eb.HP - 8); _display.ShowCombatMessage($"{GetTargetName(target)} takes 8 burn damage!"); } // Fix #613
                     break;
                 case StatusEffect.Freeze:
                     // Freeze message is emitted by CombatEngine before ProcessTurnStart is called.

@@ -190,7 +190,8 @@ public class LootTable
             // Elite enemies guarantee tier-2+ drop
             if (enemy?.IsElite == true && playerLevel < 4) pool = _sharedTier2 ?? FallbackTier2;
 
-            dropped = pool[_rng.Next(pool.Count)].Clone();
+            if (pool.Count > 0) // Fix #612: guard against empty pool to prevent ArgumentOutOfRangeException
+                dropped = pool[_rng.Next(pool.Count)].Clone();
         }
 
         return new LootResult { Item = dropped, Gold = gold };
