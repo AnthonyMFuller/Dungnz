@@ -488,7 +488,12 @@ public class CombatEngine : ICombatEngine
             {
                 var abilityResult = HandleAbilityMenu(player, enemy);
                 if (abilityResult == AbilityMenuResult.Cancel)
+                {
+                    // Fix #611: cancel consumes the player's turn so enemy still acts
+                    PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
+                    if (player.HP <= 0) return CombatResult.PlayerDied;
                     continue;
+                }
                 if (abilityResult == AbilityMenuResult.Used)
                 {
                     if (enemy.HP <= 0)
@@ -930,7 +935,7 @@ public class CombatEngine : ICombatEngine
                 enemy.SelfHealCooldown--;
             else
             {
-                enemy.SelfHealCooldown = enemy.SelfHealEveryTurns;
+                enemy.SelfHealCooldown = enemy.SelfHealEveryTurns - 1; // Fix #614: decrement-first pattern requires N-1 reset
                 enemy.HP = Math.Min(enemy.MaxHP, enemy.HP + enemy.SelfHealAmount);
                 _display.ShowCombatMessage(ColorizeDamage($"The {enemy.Name} channels divine energy, healing {enemy.SelfHealAmount} HP!", enemy.SelfHealAmount, false, true));
             }
@@ -1195,7 +1200,7 @@ public class CombatEngine : ICombatEngine
                 var manaLost = (int)(enemyDmgFinal * 1.5);
                 if (player.Mana >= manaLost)
                 {
-                    player.Mana -= manaLost;
+                    player.SpendMana(manaLost); // Fix #615: use SpendMana API instead of direct mutation
                     _display.ShowCombatMessage($"The mana shield absorbs the blow! ({manaLost} mana lost)");
                     _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, isCrit, false, null));
                     return; // No HP damage taken
@@ -1479,9 +1484,9 @@ public class CombatEngine : ICombatEngine
         }
         
         player.AddXP(enemy.XPValue);
+        CheckLevelUp(player); // Fix #616: level up first so xpToNext reflects new level threshold
         var xpToNext = 100 * player.Level;
         _display.ShowMessage($"You gained {enemy.XPValue} XP. (Total: {player.XP}/{xpToNext} to next level)");
-        CheckLevelUp(player);
         
         _stats.EnemiesDefeated++;
         
