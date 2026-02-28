@@ -12834,3 +12834,121 @@ The sell system has **solid flow coverage** (happy path, cancellation, equipment
 **By:** Anthony (via Copilot)
 **What:** Implementation work is never considered complete if there are open GitHub Issues or open Pull Requests that relate to the work being done. Before marking any task done or calling task_complete, the team must verify that all related issues are closed and all related PRs are merged (or explicitly closed as not needed).
 **Why:** User request — captured for team memory. Prevents the recurring pattern where the squad marks tasks complete while leaving open issues and stale PRs behind.
+
+---
+
+## 2026-02-27: Code Review Findings — Hill Display & Engine Audit
+
+**By:** Hill
+**What:** Deep review of Display/DisplayService.cs, ConsoleMenuNavigator.cs, Engine/GameLoop.cs, CommandParser.cs, IntroSequence.cs, and Program.cs
+**Findings:** 7 bugs filed (high/medium priority)
+
+### Issues Identified
+- **#604** — ShowLootDrop emoji width miscalculation (HIGH)
+- **#605** — HandleUse turn consumption on unhandled items (HIGH)
+- **#606** — HandleLoad doesn't reset RunStats (HIGH)
+- **#607** — SelectFromMenu cursor resource leak (MEDIUM)
+- **#608** — ConsoleMenuNavigator cursor not managed (MEDIUM)
+- **#609** — Arrow-key menus corrupt when items >= terminal height (MEDIUM)
+- **#610** — ShowPrestigeInfo emoji box misalignment (LOW)
+
+### Clean Areas Confirmed
+- CommandParser.Parse fully null-safe
+- Program.cs single-run setup correct
+- ShowMap BFS only renders visited rooms
+- HandleGo/HandleExamine/HandleTake reject paths all set _turnConsumed correctly
+- Color management complete, no leaks
+- ConsoleMenuNavigator cursor-up formula correct
+- 1-item menu handling correct
+
+---
+
+## 2026-02-27: Systems Code Review — Barton Game Systems Audit
+
+**By:** Barton
+**What:** Deep review of CombatEngine, StatusEffectManager, AbilityManager, InventoryManager, LootTable, Player models, and enemy classes
+**Findings:** 6 bugs filed (critical, moderate, minor)
+
+### Critical Issues
+- **#611** — Ability menu cancel allows indefinite stalling (CombatEngine ~L490)
+- **#612** — LootTable.RollDrop crashes on empty tier pool (LootTable ~L193)
+
+### Moderate Issues
+- **#613** — Enemy HP goes negative from DoT damage (StatusEffectManager ~L80)
+- **#614** — CryptPriest self-heal cooldown off-by-one (CombatEngine ~L933)
+
+### Minor Issues
+- **#615** — ManaShield bypasses SpendMana() API (CombatEngine ~L1197)
+- **#616** — XP progress shows stale threshold on level-up (CombatEngine ~L1482)
+
+### Clean Areas Confirmed
+- Damage formula prevents negative damage
+- HP overflow handling correct on level-up
+- Max level cap (20) enforced
+- Player death detection correct
+- Gold underflow guarded
+- Flee mechanic (50% + free turn on fail) correct
+- Inventory usage graceful fallback
+- Equip validation checks inventory
+- XP level-up formula mathematically correct
+- Status effect application/expiry correct
+- Stun handling preserves pre-turn state
+- LootTable explicit drop pool safe
+
+---
+
+## 2026-02-28: Bug Hunt Session — 21 Bugs Found & Fixed
+
+**By:** Romanoff (Lead), Hill, Barton, Fitz
+**Scope:** Full display, engine, and systems review
+**Outcome:** 19 unique bugs filed (#604–#624), 2 duplicates closed
+
+### Fix Deliverables
+1. **PR #626** — Hill fixes 13 bugs (display/engine)
+   - Merged ✅ · 684 tests passing
+2. **PR #625** — Barton fixes 6 bugs (game systems)
+   - Merged ✅ · 684 tests passing
+3. **PR #627** — Romanoff writes 5 new regression tests
+   - Merged ✅ · 689 tests passing
+4. **PR #603** — Fitz prior cleanup
+   - Merged ✅
+5. **PR #602** — Fitz post-session GitHub state cleanup
+   - Merged ✅
+
+### Final State
+- Open PRs: **0**
+- Open Issues: **0**
+- Test Suite: **689 tests passing**
+- Repository: **Clean, all fixes integrated**
+
+### Decisions
+- User directive confirmed: implementation work incomplete with open issues/PRs (see above)
+- Bug hunt approach: deep review + filing → fix PRs → test verification → merge
+- Code quality: no architectural refactoring needed; bugs were isolated, well-scoped fixes
+- Regression prevention: Romanoff added 5 new tests covering bug patterns
+
+---
+
+## 2026-02-28: DevOps Cleanup — Post-Session GitHub State
+
+**By:** Fitz
+**Scope:** Verify PR/issue cleanup after bug hunt completion
+**Findings:** All major items resolved; only PR #602 outstanding
+
+### Actions Taken
+- **PR #602** rebased onto master and merged
+  - Branch: `scribe/log-copilot-directive`
+  - Contained: `.ai-team/decisions.md` user directive capture
+  - Rationale: Safe to merge after upstream conflict resolution
+
+### Canonical Repo Reference
+- Remote: `https://github.com/AnthonyMFuller/Dungnz.git`
+- Owner/Repo: `AnthonyMFuller/Dungnz`
+- Default branch: `master`
+
+### Repository State After Cleanup
+- **Open PRs:** 0
+- **Open Issues:** 0
+- **Master HEAD:** 182ea9d clean, 684 tests passing
+- **All UI consistency fixes:** integrated
+- **All bug hunt fixes:** integrated
