@@ -576,6 +576,47 @@ public class ConsoleDisplayService : IDisplayService
         return SelectFromMenu(options.AsReadOnly(), _input);
     }
 
+    /// <summary>Presents the Shrine blessing choices as an arrow-key menu and returns 1–4 or 0 (leave).</summary>
+    public int ShowShrineMenuAndSelect(int playerGold)
+    {
+        var options = new (string Label, int Value)[]
+        {
+            ($"Heal fully        — 30g  (Your gold: {playerGold}g)", 1),
+            ("Bless             — 50g  (+2 ATK/DEF permanently)", 2),
+            ("Fortify           — 75g  (MaxHP +10, permanent)", 3),
+            ("Meditate          — 75g  (MaxMana +10, permanent)", 4),
+            ("Leave", 0),
+        };
+        return SelectFromMenu(options.AsReadOnly(), _input, "✨ [Shrine Menu]");
+    }
+
+    /// <summary>
+    /// Presents the shop menu with merchant stock, a Sell Items option, and Leave.
+    /// Returns the selected item index (1-based for buying), -1 for Sell, or 0 to Leave.
+    /// </summary>
+    public int ShowShopWithSellAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold)
+    {
+        var stockList = stock.ToList();
+        ShowShop(stockList, playerGold);   // Use existing box-drawing render
+        var options = stockList
+            .Select((s, i) => ($"{TruncateName(s.item.Name)}  {s.price}g", i + 1))
+            .Append(("💰 Sell Items", -1))
+            .Append(("Leave", 0))
+            .ToArray();
+        return SelectFromMenu(options.AsReadOnly(), _input);
+    }
+
+    /// <summary>Presents a Yes/No confirmation menu. Returns true if Yes selected.</summary>
+    public bool ShowConfirmMenu(string prompt)
+    {
+        var options = new (string Label, bool Value)[]
+        {
+            ("Yes", true),
+            ("No", false),
+        };
+        return SelectFromMenu(options.AsReadOnly(), _input, prompt);
+    }
+
 
     // ── helpers ────────────────────────────────────────────────────────────
 

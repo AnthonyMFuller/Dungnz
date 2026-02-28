@@ -143,6 +143,36 @@ public class FakeDisplayService : IDisplayService
     public int ShowTrapChoiceAndSelect(string header, string option1, string option2) { AllOutput.Add("trap_choice"); return 0; }
     public int ShowForgottenShrineMenuAndSelect() { AllOutput.Add("shrine_menu"); return 0; }
     public int ShowContestedArmoryMenuAndSelect(int playerDefense) { AllOutput.Add("armory_menu"); return 0; }
+    public int ShowShrineMenuAndSelect(int playerGold) 
+    { 
+        AllOutput.Add("shrine_regular"); 
+        if (_input is not null)
+        {
+            var line = _input.ReadLine()?.Trim() ?? "";
+            if (int.TryParse(line, out int n) && n >= 0 && n <= 4) return n;
+        }
+        return 0; 
+    }
+    public int ShowShopWithSellAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold)
+    {
+        AllOutput.Add($"shop_with_sell:{playerGold}g");
+        if (_input is not null)
+        {
+            var line = _input.ReadLine()?.Trim() ?? "";
+            if (int.TryParse(line, out int n)) return n;
+        }
+        return 0;
+    }
+    public bool ShowConfirmMenu(string prompt)
+    {
+        AllOutput.Add($"confirm:{prompt}");
+        if (_input is not null)
+        {
+            var line = _input.ReadLine()?.Trim().ToUpperInvariant() ?? "";
+            if (line == "Y" || line == "YES" || line == "1") return true;
+        }
+        return false;
+    }
     public Ability? ShowAbilityMenuAndSelect(IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities, IEnumerable<Ability> availableAbilities) 
     { 
         AllOutput.Add("ability_menu");
