@@ -274,4 +274,5 @@ internal sealed class AlwaysAttackInputReader : IInputReader
 {
     public string? ReadLine() => "A";
     public ConsoleKeyInfo? ReadKey() => null;
+    public bool IsInteractive => false;
 }

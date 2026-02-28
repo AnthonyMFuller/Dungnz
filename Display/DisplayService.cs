@@ -11,6 +11,7 @@ namespace Dungnz.Display;
 public class ConsoleDisplayService : IDisplayService
 {
     private readonly IInputReader _input;
+    // TODO: wire up navigator call-sites (issue #586)
     private readonly IMenuNavigator _navigator;
 
     /// <summary>Initialises the display service with the given input and menu navigator.</summary>
@@ -621,7 +622,7 @@ public class ConsoleDisplayService : IDisplayService
             // Move cursor up to start of menu using ANSI relative positioning
             // (avoids stale absolute row when terminal scrolls or lines wrap)
             if (!firstRender)
-                Console.Write($"\x1b[{options.Count}A");
+                Console.Write($"\x1b[{options.Count - 1}A");
             firstRender = false;
 
             for (int i = 0; i < options.Count; i++)
