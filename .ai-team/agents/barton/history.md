@@ -901,3 +901,23 @@ Adding ASCII art for enemies is **highly feasible**. The project's existing data
 - `Models/LootTable.cs` (#612)
 
 **Test Results:** 684/684 passed ✅
+
+### 2026-02-28: Ability Menu Migration (#640)
+
+Migrated the ability selection menu in `Engine/CombatEngine.cs` to use the arrow-key navigation pattern.
+
+**Files Changed:**
+- `Display/IDisplayService.cs` — Added `ShowAbilityMenuAndSelect` method signature
+- `Display/DisplayService.cs` — Implemented `ShowAbilityMenuAndSelect` using `SelectFromMenu<T>`
+- `Engine/CombatEngine.cs` — Refactored `HandleAbilityMenu` to classify abilities and delegate UI to display layer
+- `Dungnz.Tests/Helpers/TestDisplayService.cs` — Added stub implementation
+- `Dungnz.Tests/Helpers/FakeDisplayService.cs` — Added stub implementation
+
+**Key Patterns:**
+- Unavailable abilities (cooldown/mana) displayed as non-selectable info lines
+- Available abilities + Cancel option passed to `SelectFromMenu<T>`
+- Returns `Ability?` (null for cancel)
+- Maintains backward compatibility with test-mode number-entry fallback
+- Zero combat logic changes — pure UI refactor
+
+**Result:** PR #643 — All 1284 tests passing, highest-UX-impact migration complete.
