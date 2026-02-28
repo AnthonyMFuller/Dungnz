@@ -26,26 +26,50 @@ public sealed class ConsoleMenuNavigator : IMenuNavigator
 
         int selected = 0;
         bool firstRender = true;
+        int maxVisible = Math.Max(3, Console.WindowHeight - 4);
+        int scrollTop = 0;
 
-        RenderOptions(options, selected, ref firstRender);
-
-        while (true)
+        try
         {
-            var key = Console.ReadKey(intercept: true);
-            switch (key.Key)
+            try { Console.CursorVisible = false; } catch { /* output may be redirected */ }
+
+            RenderOptions(options, selected, ref firstRender, scrollTop, maxVisible);
+
+            while (true)
             {
-                case ConsoleKey.UpArrow:
-                    selected = (selected - 1 + options.Count) % options.Count;
-                    RenderOptions(options, selected, ref firstRender);
-                    break;
-                case ConsoleKey.DownArrow:
-                    selected = (selected + 1) % options.Count;
-                    RenderOptions(options, selected, ref firstRender);
-                    break;
-                case ConsoleKey.Enter:
-                    Console.WriteLine();
-                    return options[selected].Value;
+                var key = Console.ReadKey(intercept: true);
+                int optVisible = options.Count > maxVisible ? maxVisible - 2 : options.Count;
+                switch (key.Key)
+                {
+                    case ConsoleKey.UpArrow:
+                        selected = (selected - 1 + options.Count) % options.Count;
+                        if (selected < scrollTop)
+                            scrollTop = selected;
+                        else if (selected == options.Count - 1)
+                            scrollTop = Math.Max(0, options.Count - optVisible);
+                        RenderOptions(options, selected, ref firstRender, scrollTop, maxVisible);
+                        break;
+                    case ConsoleKey.DownArrow:
+                        selected = (selected + 1) % options.Count;
+                        if (selected >= scrollTop + optVisible)
+                            scrollTop = selected - optVisible + 1;
+                        else if (selected == 0)
+                            scrollTop = 0;
+                        RenderOptions(options, selected, ref firstRender, scrollTop, maxVisible);
+                        break;
+                    case ConsoleKey.Enter:
+                        Console.WriteLine();
+                        return options[selected].Value;
+                    case ConsoleKey.X:
+                    case ConsoleKey.Escape:
+                        // Escape/X are no-ops — press Enter to confirm selection.
+                        break;
+                }
             }
+        }
+        finally
+        {
+            try { Console.CursorVisible = true; } catch { /* output may be redirected */ }
         }
     }
 
@@ -61,30 +85,59 @@ public sealed class ConsoleMenuNavigator : IMenuNavigator
             title: prompt);
     }
 
-    private static void RenderOptions<T>(IReadOnlyList<MenuOption<T>> options, int selected, ref bool firstRender)
+    private static void RenderOptions<T>(IReadOnlyList<MenuOption<T>> options, int selected, ref bool firstRender, int scrollTop, int maxVisible)
     {
+        bool needsScroll = options.Count > maxVisible;
+        // When scrolling, reserve 2 rows for ↑/↓ indicators; remaining rows = option rows
+        int optRowCount = needsScroll ? Math.Max(1, maxVisible - 2) : options.Count;
+        int totalRows   = needsScroll ? maxVisible : options.Count;
+
         // Move cursor up to start of menu using ANSI relative positioning
-        // (avoids stale absolute row when terminal scrolls or lines wrap)
         if (!firstRender)
-            Console.Write($"\x1b[{options.Count - 1}A");
+            Console.Write($"\x1b[{totalRows - 1}A");
         firstRender = false;
 
-        for (int i = 0; i < options.Count; i++)
+        int row = 0;
+
+        // Scroll-up indicator
+        if (needsScroll)
         {
-            // Clear line and return to column 0
             Console.Write("\r\x1b[2K");
-            bool isSelected = i == selected;
-            string prefix   = isSelected ? $"{ColorCodes.Cyan}▶ {ColorCodes.Reset}" : "  ";
-            string label    = isSelected
-                ? $"{ColorCodes.BrightWhite}{options[i].Label}{ColorCodes.Reset}"
-                : $"{ColorCodes.Gray}{options[i].Label}{ColorCodes.Reset}";
-            string subtitle = options[i].Subtitle != null
-                ? $"  {ColorCodes.Gray}{options[i].Subtitle}{ColorCodes.Reset}"
-                : "";
-            Console.Write($"  {prefix}{label}{subtitle}");
-            // Add newline except after last item to avoid extra scroll
-            if (i < options.Count - 1)
+            if (scrollTop > 0)
+                Console.Write($"  {ColorCodes.Gray}↑ more{ColorCodes.Reset}");
+            Console.WriteLine();
+            row++;
+        }
+
+        // Visible option rows
+        for (int i = 0; i < optRowCount; i++)
+        {
+            Console.Write("\r\x1b[2K");
+            int optIdx = scrollTop + i;
+            if (optIdx < options.Count)
+            {
+                bool isSelected = optIdx == selected;
+                string prefix   = isSelected ? $"{ColorCodes.Cyan}▶ {ColorCodes.Reset}" : "  ";
+                string label    = isSelected
+                    ? $"{ColorCodes.BrightWhite}{options[optIdx].Label}{ColorCodes.Reset}"
+                    : $"{ColorCodes.Gray}{options[optIdx].Label}{ColorCodes.Reset}";
+                string subtitle = options[optIdx].Subtitle != null
+                    ? $"  {ColorCodes.Gray}{options[optIdx].Subtitle}{ColorCodes.Reset}"
+                    : "";
+                Console.Write($"  {prefix}{label}{subtitle}");
+            }
+            row++;
+            if (row < totalRows)
                 Console.WriteLine();
+        }
+
+        // Scroll-down indicator
+        if (needsScroll)
+        {
+            Console.WriteLine();
+            Console.Write("\r\x1b[2K");
+            if (scrollTop + optRowCount < options.Count)
+                Console.Write($"  {ColorCodes.Gray}↓ more{ColorCodes.Reset}");
         }
     }
 

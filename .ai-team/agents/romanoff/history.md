@@ -8,6 +8,34 @@
 
 ## Learnings
 
+### 2026-02-27: Deep Bug Hunt Session
+**Scope:** Full source review — DisplayService, ConsoleMenuNavigator, GameLoop, CombatEngine, Models
+**Tests baseline:** 684 tests passing, build succeeds with 35 warnings (XML doc only)
+
+**Bugs Found (8 total):**
+1. #617 — HandleLoad does not reset _stats; inflated end-of-run summaries after save/load
+2. #618 — ShowEnemyDetail HP line overflows box right border by 9 chars (formula uses W-14, should be W-23)
+3. #619 — ShowEnemyDetail name line is 2 chars short of box border (W-4 should be W-2)
+4. #620 — ShowCombatStart banner overflows 44-char border by 2 when sword emoji renders double-width
+5. #621 — ShowLootDrop weapon loot card name line overflows by 1 (sword icon BMP .Length=1 vs visual=2)
+6. #622 — SelectFromMenu Escape/X silently selects last option even in menus without a Cancel option
+7. #623 — IMenuNavigator injected into ConsoleDisplayService but never used (_navigator field is dead)
+8. #624 — ShowLevelUpChoice box padding wrong (dead method, but on IDisplayService interface)
+
+**Categories:**
+- State management: 1 bug
+- Box border alignment: 4 bugs (3 in ShowEnemyDetail/ShowCombatStart/ShowLootDrop + 1 dead method)
+- Menu navigation: 2 bugs (Escape behavior, unused navigator dependency)
+
+**Patterns Identified:**
+- `icon.Length` ≠ visual column width for BMP emoji like U+2694 sword (1 C# char, 2 visual cols)
+- Surrogate pair emoji (.Length=2) happen to match their ~2 visual col width and work correctly
+- `PadRightVisible`/`StripAnsiCodes` do NOT account for emoji visual width — only ANSI codes stripped
+- Box padding formulas need careful manual counting; hpBar width (10) was omitted from ShowEnemyDetail
+- `_navigator` injection architecture is incomplete — SelectFromMenu is a reimplementation
+
+**Fix Assignments (suggested):** Hill (display fixes), Barton (save/load stats), architecture clarification on navigator
+
 ### 2026-02-20: WI-10 Code Review (Feature-Complete Quality Pass)
 **Reviewed:** All 23 source files (Program.cs, Models, Engine, Systems, Display)
 **Scope:** Bug hunting, logic errors, architectural violations, edge cases

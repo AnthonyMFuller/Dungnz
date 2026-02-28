@@ -67,15 +67,17 @@ public class Phase1DisplayTests
             _svc.ShowLootDrop(item, player);
 
             // Assert: box borders should appear at consistent positions
-            // Strip ANSI codes from each line, check that all border lines have consistent lengths
+            // Strip ANSI codes from each line, check that all border lines have consistent visual lengths
             var lines = Output.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries);
             var strippedLines = lines.Select(l => ColorCodes.StripAnsiCodes(l)).ToList();
             
-            // All lines with "║" should have the same visible length
+            // All lines with "║" should have the same visual length.
+            // ⚔ (U+2694) renders as 2 columns in modern terminals (visual width = string.Length + count of ⚔/⭐).
             var borderLines = strippedLines.Where(l => l.Contains("║")).ToList();
             borderLines.Should().NotBeEmpty("box should have border lines");
             
-            var lengths = borderLines.Select(l => l.Length).Distinct().ToList();
+            static int VisualWidth(string s) => s.Length + s.Count(c => c == '⭐' || c == '⚔');
+            var lengths = borderLines.Select(VisualWidth).Distinct().ToList();
             lengths.Should().ContainSingle("all border lines should have the same visible length");
         }
 
