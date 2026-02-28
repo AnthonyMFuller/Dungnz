@@ -994,3 +994,25 @@ Converted bounded menu selection from typed-number input to arrow-key navigation
 - The selection menu (`SelectFromMenu<T>`) uses `PadRight(maxLabelLen)` which only works correctly when all labels have consistent `.Length` vs visual width relationships. Mixing BMP chars (`.Length=1`) and emoji (`.Length=2`) causes misalignment because emoji display 2 columns wide but may count as 2 chars in `.Length`, while the terminal renders them at 2 columns. Plain text labels (no icons) are always safe with `PadRight`.
 
 **Decision:** Selection menu labels now use plain class names only (no icons). The class cards above the menu already show all icons prominently. This avoids all Unicode display-width concerns in the menu renderer.
+
+## Learnings — Deep Code Review (2026-02-27)
+
+**Task:** Full review of Display layer and Engine/GameLoop for bugs affecting player experience.
+
+**Files reviewed:** `Display/DisplayService.cs`, `Display/ConsoleMenuNavigator.cs`, `Engine/GameLoop.cs`, `Engine/CommandParser.cs`, `Engine/IntroSequence.cs`, `Program.cs`.
+
+**Issues filed:**
+
+| Issue | Title | Severity |
+|-------|-------|----------|
+| #604 | `ShowLootDrop` namePad uses `icon.Length` not visual width | HIGH |
+| #605 | `HandleUse` turn consumed when consumable has no recognized effect | HIGH |
+| #606 | `HandleLoad` does not reset `RunStats` — pre-load stats bleed into loaded run | HIGH |
+| #607 | `SelectFromMenu` cursor not restored on exception (no try/finally) | MEDIUM |
+| #608 | `ConsoleMenuNavigator.Select` never hides cursor during navigation | MEDIUM |
+| #609 | Arrow-key menus corrupt rendering when option count ≥ terminal height | MEDIUM |
+| #610 | `ShowPrestigeInfo` box misaligned — ⭐ (U+2B50) counts as 1 char but is 2 visual cols | LOW |
+
+**Key things confirmed clean:** CommandParser is fully null-safe; color-reset discipline is consistent across all display methods; cursor-up formula in menu renderers (`options.Count - 1`) is correct for the no-trailing-newline pattern; 1-item menus work correctly; `HandleGo`/`HandleTake`/`HandleExamine` all set `_turnConsumed = false` on every rejection path.
+
+**Pattern reinforced:** `PadRightVisible` should be used everywhere icon+name strings are constructed in box rows — raw `.Length` on icons is unreliable.

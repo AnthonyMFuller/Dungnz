@@ -301,7 +301,7 @@ public class ConsoleDisplayService : IDisplayService
     {
         var icon = ItemTypeIcon(item.Type);
         var stat = PrimaryStatLabel(item);
-        var namePad = new string(' ', Math.Max(0, 35 - icon.Length - TruncateName(item.Name).Length));
+        var namePad = new string(' ', Math.Max(0, 35 - VisualWidth(icon) - TruncateName(item.Name).Length));
         var header = isElite ? $"✦ {Systems.ColorCodes.Yellow}ELITE LOOT DROP{Systems.ColorCodes.Reset}" : "✦ LOOT DROP";
         var tierLabel = item.Tier switch
         {
@@ -580,8 +580,9 @@ public class ConsoleDisplayService : IDisplayService
     // ── helpers ────────────────────────────────────────────────────────────
 
     /// <summary>
-    /// Renders an arrow-key navigable menu and returns the selected value.
-    /// When <see cref="IInputReader.ReadKey"/> returns null (test stub), falls back to ReadLine number input.
+    /// Presents a labeled list of choices to the player and returns the selected value.
+    /// Falls back to numbered ReadLine input when <see cref="IInputReader.IsInteractive"/> is false.
+    /// For interactive sessions, delegates to the injected <see cref="IMenuNavigator"/>.
     /// </summary>
     private T SelectFromMenu<T>(
         IReadOnlyList<(string Label, T Value)> options,
@@ -611,74 +612,12 @@ public class ConsoleDisplayService : IDisplayService
             }
         }
 
-        // Arrow-key navigation — render the menu FIRST, then wait for input.
-        int selected = 0;
-        bool firstRender = true;
-        int maxLabelLen = options.Max(o => o.Label.Length);
-        try { Console.CursorVisible = false; } catch { /* output may be redirected */ }
-
-        void Render(int sel)
-        {
-            // Move cursor up to start of menu using ANSI relative positioning
-            // (avoids stale absolute row when terminal scrolls or lines wrap)
-            if (!firstRender)
-                Console.Write($"\x1b[{options.Count - 1}A");
-            firstRender = false;
-
-            for (int i = 0; i < options.Count; i++)
-            {
-                // Clear line and return to column 0
-                Console.Write("\r\x1b[2K");
-                var padded = options[i].Label.PadRight(maxLabelLen);
-                if (i == sel)
-                    Console.Write($"{Systems.ColorCodes.BrightWhite}▶ {padded}{Systems.ColorCodes.Reset}");
-                else
-                    Console.Write($"  {padded}");
-                // Add newline except after last item to avoid extra scroll
-                if (i < options.Count - 1)
-                    Console.WriteLine();
-            }
-        }
-
-        Render(selected);
-
-        while (true)
-        {
-            var key = input.ReadKey();
-            if (!key.HasValue) continue;
-
-            switch (key.Value.Key)
-            {
-                case ConsoleKey.UpArrow:
-                    selected = selected == 0 ? options.Count - 1 : selected - 1;
-                    Render(selected);
-                    break;
-                case ConsoleKey.DownArrow:
-                    selected = selected == options.Count - 1 ? 0 : selected + 1;
-                    Render(selected);
-                    break;
-                case ConsoleKey.Enter:
-                    try { Console.CursorVisible = true; } catch { /* redirected */ }
-                    Console.WriteLine();
-                    return options[selected].Value;
-                case ConsoleKey.X:
-                case ConsoleKey.Escape:
-                    try { Console.CursorVisible = true; } catch { /* redirected */ }
-                    Console.WriteLine();
-                    return options[options.Count - 1].Value;
-                default:
-                    if (key.Value.KeyChar >= '1' && key.Value.KeyChar <= '9')
-                    {
-                        int idx = key.Value.KeyChar - '1';
-                        if (idx < options.Count)
-                        {
-                            selected = idx;
-                            Render(selected);
-                        }
-                    }
-                    break;
-            }
-        }
+        // Delegate to injected IMenuNavigator for interactive arrow-key navigation.
+        var menuOptions = options
+            .Select(o => new MenuOption<T>(o.Label, o.Value))
+            .ToList()
+            .AsReadOnly();
+        return _navigator.Select(menuOptions);
     }
 
     private static string ItemTypeIcon(ItemType type) => type switch
@@ -1122,7 +1061,9 @@ public class ConsoleDisplayService : IDisplayService
         var reset = Systems.ColorCodes.Reset;
 
         Console.WriteLine($"{yellow}╔═══════════════════════════════╗{reset}");
-        Console.WriteLine($"{yellow}║{reset}  {yellow}⭐ PRESTIGE LEVEL {prestige.PrestigeLevel,-10}{reset} {yellow}║{reset}");
+        var lvlLabel = $"⭐ PRESTIGE LEVEL {prestige.PrestigeLevel}";
+        var lvlPad = new string(' ', Math.Max(0, 28 - VisualWidth(lvlLabel)));
+        Console.WriteLine($"{yellow}║{reset}  {yellow}{lvlLabel}{lvlPad}{reset} {yellow}║{reset}");
         Console.WriteLine($"{yellow}║{reset}  Wins: {prestige.TotalWins,-3} Runs: {prestige.TotalRuns,-10} {yellow}║{reset}");
         
         if (prestige.BonusStartAttack > 0)
@@ -1282,7 +1223,7 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine();
         Console.WriteLine($"{Systems.ColorCodes.BrightRed}{line}{Systems.ColorCodes.Reset}");
         var banner = "  ⚔  COMBAT BEGINS  ⚔";
-        var pad = new string(' ', Math.Max(0, 44 - banner.Length));
+        var pad = new string(' ', Math.Max(0, 44 - VisualWidth(banner)));
         Console.WriteLine($"{Systems.ColorCodes.BrightRed}{Systems.ColorCodes.Bold}{banner}{pad}{Systems.ColorCodes.Reset}");
         Console.WriteLine($"{Systems.ColorCodes.BrightRed}  {enemy.Name}{Systems.ColorCodes.Reset}");
         Console.WriteLine($"{Systems.ColorCodes.BrightRed}{line}{Systems.ColorCodes.Reset}");
@@ -1306,11 +1247,11 @@ public class ConsoleDisplayService : IDisplayService
         var border = new string('═', W);
         Console.WriteLine();
         Console.WriteLine($"╔{border}╗");
-        Console.WriteLine($"║  {Systems.ColorCodes.Bold}{Systems.ColorCodes.BrightWhite}★ LEVEL UP!{Systems.ColorCodes.Reset}{new string(' ', W - 12)}║");
+        Console.WriteLine($"║  {Systems.ColorCodes.Bold}{Systems.ColorCodes.BrightWhite}★ LEVEL UP!{Systems.ColorCodes.Reset}{new string(' ', W - 13)}║");
         Console.WriteLine($"╠{border}╣");
-        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}[1]{Systems.ColorCodes.Reset} +5 Max HP     {Systems.ColorCodes.Gray}({player.MaxHP} → {player.MaxHP + 5}){Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 26 - (player.MaxHP + 5).ToString().Length - player.MaxHP.ToString().Length))}║");
-        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}[2]{Systems.ColorCodes.Reset} +2 Attack     {Systems.ColorCodes.Gray}({player.Attack} → {player.Attack + 2}){Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 26 - (player.Attack + 2).ToString().Length - player.Attack.ToString().Length))}║");
-        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}[3]{Systems.ColorCodes.Reset} +2 Defense    {Systems.ColorCodes.Gray}({player.Defense} → {player.Defense + 2}){Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 26 - (player.Defense + 2).ToString().Length - player.Defense.ToString().Length))}║");
+        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}[1]{Systems.ColorCodes.Reset} +5 Max HP     {Systems.ColorCodes.Gray}({player.MaxHP} → {player.MaxHP + 5}){Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 25 - (player.MaxHP + 5).ToString().Length - player.MaxHP.ToString().Length))}║");
+        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}[2]{Systems.ColorCodes.Reset} +2 Attack     {Systems.ColorCodes.Gray}({player.Attack} → {player.Attack + 2}){Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 25 - (player.Attack + 2).ToString().Length - player.Attack.ToString().Length))}║");
+        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}[3]{Systems.ColorCodes.Reset} +2 Defense    {Systems.ColorCodes.Gray}({player.Defense} → {player.Defense + 2}){Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 25 - (player.Defense + 2).ToString().Length - player.Defense.ToString().Length))}║");
         Console.WriteLine($"╚{border}╝");
         Console.WriteLine();
     }
@@ -1349,9 +1290,9 @@ public class ConsoleDisplayService : IDisplayService
         var eliteTag = enemy.IsElite ? $" {Systems.ColorCodes.Yellow}⭐ ELITE{Systems.ColorCodes.Reset}" : "";
         
         Console.WriteLine($"╔{border}╗");
-        Console.WriteLine($"║  {nameColor}{nameUpper}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 4 - nameUpper.Length))}║");
+        Console.WriteLine($"║  {nameColor}{nameUpper}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 2 - nameUpper.Length))}║");
         Console.WriteLine($"╠{border}╣");
-        Console.WriteLine($"║  HP:      {hpBar} {enemy.HP}/{enemy.MaxHP}{new string(' ', Math.Max(0, W - 14 - enemy.HP.ToString().Length - enemy.MaxHP.ToString().Length))}║");
+        Console.WriteLine($"║  HP:      {hpBar} {enemy.HP}/{enemy.MaxHP}{new string(' ', Math.Max(0, W - 23 - enemy.HP.ToString().Length - enemy.MaxHP.ToString().Length))}║");
         Console.WriteLine($"║  ATK:     {Systems.ColorCodes.BrightRed}{enemy.Attack}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 11 - enemy.Attack.ToString().Length))}║");
         Console.WriteLine($"║  DEF:     {Systems.ColorCodes.Cyan}{enemy.Defense}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 11 - enemy.Defense.ToString().Length))}║");
         Console.WriteLine($"║  XP:      {Systems.ColorCodes.Green}{enemy.XPValue}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 11 - enemy.XPValue.ToString().Length))}║");
@@ -1455,6 +1396,13 @@ public class ConsoleDisplayService : IDisplayService
 
     private static int VisibleLength(string s)
         => Systems.ColorCodes.StripAnsiCodes(s).Length;
+
+    /// <summary>
+    /// Returns the visual column width of a string, accounting for BMP emoji that
+    /// render as 2 columns in modern terminals (⭐ U+2B50, ⚔ U+2694).
+    /// </summary>
+    private static int VisualWidth(string s)
+        => s.Length + s.Count(c => c == '⭐' || c == '⚔');
 
     private static string PadRightVisible(string s, int totalWidth)
         => s + new string(' ', Math.Max(0, totalWidth - VisibleLength(s)));

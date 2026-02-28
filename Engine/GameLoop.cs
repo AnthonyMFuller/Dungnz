@@ -624,6 +624,8 @@ public class GameLoop
                 }
                 else
                 {
+                    _turnConsumed = false;
+                    _display.ShowMessage("Nothing happened.");
                     _display.ShowError($"You can't use {item.Name} right now.");
                 }
                 break;
@@ -631,10 +633,12 @@ public class GameLoop
             case ItemType.Weapon:
             case ItemType.Armor:
             case ItemType.Accessory:
+                _turnConsumed = false;
                 _display.ShowError($"Use 'EQUIP {item.Name}' to equip this item.");
                 break;
 
             default:
+                _turnConsumed = false;
                 _display.ShowError($"You can't use {item.Name}.");
                 break;
         }
@@ -667,6 +671,7 @@ public class GameLoop
             _currentRoom = state.CurrentRoom;
             _currentFloor = state.CurrentFloor;
             _runStart = DateTime.UtcNow;
+            _stats = new RunStats();
             _display.ShowMessage($"Loaded save '{saveName}'.");
             _display.ShowRoom(_currentRoom);
         }

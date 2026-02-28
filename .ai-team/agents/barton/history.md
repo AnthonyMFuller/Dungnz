@@ -849,3 +849,55 @@ Adding ASCII art for enemies is **highly feasible**. The project's existing data
 ## Learnings
 - Phase 1 of interactive menu UX: IMenuNavigator interface created, ConsoleMenuNavigator implemented, DI wiring added to ConsoleDisplayService/GameLoop/CombatEngine/Program.cs
 - No menus converted yet — all existing ReadLine() paths unchanged
+
+### 2026-02-20: Deep Systems Code Review
+
+**Task:** Full audit of all owned systems for gameplay-affecting bugs.
+
+**Files Reviewed:**
+- `Engine/CombatEngine.cs` (1654 lines)
+- `Systems/StatusEffectManager.cs`
+- `Systems/AbilityManager.cs`
+- `Systems/InventoryManager.cs`
+- `Models/LootTable.cs`, `Player.cs`, `PlayerStats.cs`, `PlayerCombat.cs`, `PlayerInventory.cs`
+- `Models/Enemy.cs`, `Item.cs`, `Merchant.cs`
+- `Systems/Enemies/CryptPriest.cs`, `BossVariants.cs`
+
+**Bugs Filed:**
+
+| Issue | Title | Severity |
+|-------|-------|----------|
+| #611 | Ability menu cancel skips enemy turn (free stall exploit) | **Critical** |
+| #612 | LootTable.RollDrop crashes with empty tier pool | **Critical** |
+| #613 | Enemy HP not clamped to 0 after DoT damage | Moderate |
+| #614 | CryptPriest heals every 3 turns instead of 2 (cooldown off-by-one) | Moderate |
+| #615 | ManaShield uses direct Mana -= instead of SpendMana() | Minor |
+| #616 | XP progress display shows stale threshold on level-up | Minor |
+
+**Areas Confirmed Clean:**
+- Damage formula (no negative damage), HP overflow, max level cap, gold underflow, player death priority, stun handling (Fix #167), flee mechanic, inventory null safety, equip validation, XP formula correctness, status effect apply/expiry.
+
+
+## 2025-01-30: Bug Hunt Fixes — PR #625
+
+**Task:** Fix 6 game systems bugs (#611–#616) identified in the deep systems review.
+**Branch:** squad/bug-hunt-systems-fixes
+**PR:** #625 — All 6 bugs fixed in a single commit.
+
+**Fixes Applied:**
+
+| Issue | Fix |
+|-------|-----|
+| #611 | Ability menu Cancel now calls PerformEnemyTurn — exploit closed |
+| #612 | `pool.Count > 0` guard added before `_rng.Next(pool.Count)` in LootTable tiered drop |
+| #613 | All enemy DoT assignments (Poison/Bleed/Burn) now use `Math.Max(0, HP - dmg)` |
+| #614 | CryptPriest cooldown reset changed to `SelfHealEveryTurns - 1` for decrement-first pattern |
+| #615 | `player.Mana -= manaLost` replaced with `player.SpendMana(manaLost)` in ManaShield handler |
+| #616 | `CheckLevelUp` moved before XP progress message so threshold reflects new level |
+
+**Files Changed:**
+- `Engine/CombatEngine.cs` (#611, #614, #615, #616)
+- `Systems/StatusEffectManager.cs` (#613)
+- `Models/LootTable.cs` (#612)
+
+**Test Results:** 684/684 passed ✅
