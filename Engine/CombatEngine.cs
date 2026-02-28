@@ -509,6 +509,22 @@ public class CombatEngine : ICombatEngine
                     continue;
                 }
             }
+            else if (choice == "I" || choice == "ITEM")
+            {
+                var itemResult = HandleItemMenu(player, enemy);
+                if (itemResult == AbilityMenuResult.Cancel)
+                {
+                    // Using the item menu is free — don't consume turn
+                    continue;
+                }
+                if (itemResult == AbilityMenuResult.Used)
+                {
+                    // Enemy acts after item use
+                    PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
+                    if (player.HP <= 0) return CombatResult.PlayerDied;
+                    continue;
+                }
+            }
             else if (choice == "A" || choice == "ATTACK")
             {
                 PerformPlayerAttack(player, enemy);
@@ -656,6 +672,25 @@ public class CombatEngine : ICombatEngine
         
         _display.ShowMessage($"Cannot use ability: {result}");
         return AbilityMenuResult.Cancel;
+    }
+
+    private AbilityMenuResult HandleItemMenu(Player player, Enemy enemy)
+    {
+        var consumables = player.Inventory
+            .Where(i => i.Type == ItemType.Consumable)
+            .ToList();
+
+        if (consumables.Count == 0)
+        {
+            _display.ShowMessage("You have no usable items!");
+            return AbilityMenuResult.Cancel;
+        }
+
+        var selected = _display.ShowCombatItemMenuAndSelect(consumables);
+        if (selected == null) return AbilityMenuResult.Cancel;
+
+        _inventoryManager.UseItem(player, selected.Name);
+        return AbilityMenuResult.Used;
     }
     
     private void PerformPlayerAttack(Player player, Enemy enemy)
