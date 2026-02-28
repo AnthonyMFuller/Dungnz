@@ -13162,3 +13162,14 @@ An unbounded bug hunt creates an unbounded backlog spike. The 19-bug hunt went f
 
 *End of proposed decisions from 2026-02-27 retrospective*  
 *Next step: Scribe reviews and merges into `decisions.md`*
+
+---
+
+### 2026-02-28: User directive — minimum test coverage gate
+**By:** Anthony (via Copilot)
+**What:** Test coverage must never fall below 80% (line coverage). This is a hard rule. Any PR or commit that drops coverage below 80% must be blocked.
+**Why:** User request — captured for team memory
+
+---
+### CI Coverage Gate — Fitz, 2026-02-28
+**Decision:** CI threshold raised from 62% to 80% line coverage (PR #630). `scripts/coverage.sh` added for local runs. Coverage at gate introduction: 61.75% line / 50.36% branch.
