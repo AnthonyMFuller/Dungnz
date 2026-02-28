@@ -6,7 +6,7 @@ using Xunit;
 namespace Dungnz.Tests;
 
 /// <summary>Additional LootTable tests to cover SetTierPools, RollTier, RollArmorTier, and RollDrop edge paths.</summary>
-[Collection("LootTableTests")]
+[Collection("EnemyFactory")]
 public class LootTableAdditionalTests : IDisposable
 {
     // Snapshot of pools before each test — to restore on cleanup
