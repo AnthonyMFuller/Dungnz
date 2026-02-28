@@ -11413,3 +11413,1416 @@ Once the TRX file is removed and .gitignore updated: **APPROVED for merge**.
 **By:** Fitz
 **What:** Added *.trx and **/TestResults/ to .gitignore; removed accidentally committed test artifact from squad/class-abilities branch
 **Why:** Local test result files (TRX format) should never be committed to the repo. They are machine-specific artifacts.
+# Decision: Arrow-Key Navigation — Combat, Level-Up, Crafting (WI-6+7+8)
+
+**Date:** 2026-02-27  
+**Author:** Barton (Systems Dev)  
+**Branch:** feat/interactive-menus
+
+---
+
+## Decisions Made
+
+### 1. SelectFromMenu<T> as private ConsoleDisplayService helper
+`SelectFromMenu<T>` is implemented as a private instance method on `ConsoleDisplayService`, not on the interface. This keeps the interface clean — callers get domain-specific return types (int for level-up, string for combat, int for craft). The helper handles arrow-key + numbered fallback transparently.
+
+### 2. ShowCombatMenuAndSelect returns shorthand string ("A"/"B"/"F")
+Returns single-char strings matching the existing combat dispatch conditions (`"A"`, `"B"`, `"F"`). This minimises CombatEngine changes — the existing `if (choice == "F" || choice == "FLEE")` pattern still works.
+
+### 3. Combat resource context shown inside ShowCombatMenuAndSelect
+The mana/combo points/shield status lines are rendered inside `ShowCombatMenuAndSelect` using direct `Player` property access, not via AbilityManager. This avoids introducing a display→systems dependency. The separate `ShowCombatMenu(player)` private method in CombatEngine is now dead code (not deleted to avoid noise in the diff, but the call is removed).
+
+### 4. ShowLevelUpChoiceAndSelect replaces both display + input in one call
+`ShowLevelUpChoice(player)` (which shows the box-drawn card) is no longer called — `ShowLevelUpChoiceAndSelect` handles both rendering and selection. The old `ShowLevelUpChoice` method remains on the interface for backward compatibility but is no longer called from CombatEngine.
+
+### 5. WI-8: Interactive CRAFT menu only on bare CRAFT command
+`CRAFT <name>` still routes directly to `TryCraft` (no menu). The interactive recipe browser only activates when the player types `CRAFT` with no argument. This preserves power-user efficiency while improving discoverability.
+
+### 6. SelectFromMenu fallback for tests
+When `ReadKey()` returns `null` (test stubs, non-interactive stdin), `SelectFromMenu` falls back to numbered list + `ReadLine()` input. `FakeInputReader.ReadKey()` returns null, so existing tests driving menus via numbered `ReadLine()` inputs continue to work unchanged.
+
+### 7. ConsoleDisplayService constructor optional params
+Changed `ConsoleDisplayService(IInputReader input, IMenuNavigator navigator)` to have optional defaults (`?? new ConsoleInputReader()` / `?? new ConsoleMenuNavigator()`). This fixes test compilation broken by Hill's constructor addition (pre-existing in the working tree). Safe because the real app wires explicit instances via Program.cs.
+# Sell Bug Root Cause Analysis
+
+## Summary
+Items picked up on Floor 1 cannot be sold at merchants. Investigation shows the code logic is sound — all items from JSON have valid `Type` values, and the sell filter `i.Type != ItemType.Gold` should work correctly.
+
+## Investigation Results
+
+### Item Flow Trace
+1. **JSON Load** (`Program.cs:20`)
+   - Items loaded via `ItemConfig.Load("Data/item-stats.json")`
+   - All items validated for Type field (throws on invalid/missing)
+   - Floor 1 items confirmed: Health Potion (Consumable), Iron Sword (Weapon), Leather Armor (Armor)
+
+2. **Item Creation**
+   - `ItemConfig.CreateItem()` explicitly sets `Type` from parsed enum
+   - Validation at lines 186-189 throws on invalid types
+   - All Floor 1 items have valid non-Gold types
+
+3. **Item Cloning** (Room loot / Combat drops)
+   - `Item.Clone()` uses `MemberwiseClone()` which DOES copy enum values
+   - Tested: `DungeonGenerator.CreateRandomItem()` line 261
+   - Tested: `LootTable.RollDrop()` line 193
+
+4. **Sell Filter** (`GameLoop.cs:1278`)
+   ```csharp
+   foreach (var item in _player.Inventory.Where(i => i.Type != ItemType.Gold))
+       list.Add((item, false));
+   ```
+   - Filters items where `Type == ItemType.Gold`
+   - Default ItemType is `Weapon` (0), NOT `Gold` (4)
+   - Filter logic is correct
+
+5. **Display Layer** (`DisplayService.cs:482-502`)
+   - `ShowSellMenu()` renders items as provided
+   - No additional filtering
+
+### ItemType Enum Values
+```csharp
+Weapon = 0      // Default value
+Armor = 1
+Accessory = 2
+Consumable = 3
+Gold = 4
+```
+
+## Root Cause
+
+**The logical code path is correct. The bug must be in one of these areas:**
+
+1. ❓ **Runtime State Corruption** — Item.Type being modified after pickup
+2. ❓ **Edge Case Item** — Specific item in JSON with unexpected Type value
+3. ❓ **Input Selection Bug** — Items display but selection fails silently
+
+## Recommended Fix
+
+Add diagnostic logging to `BuildSellableList()` to identify the actual issue:
+
+**File:** `Engine/GameLoop.cs` lines 1273-1288
+
+```csharp
+private List<(Item Item, bool IsEquipped)> BuildSellableList()
+{
+    var list = new List<(Item, bool)>();
+    
+    // DEBUG: Log inventory state
+    System.Console.WriteLine($"[DEBUG] Inventory count: {_player.Inventory.Count}");
+    foreach (var item in _player.Inventory)
+    {
+        var isGold = item.Type == ItemType.Gold;
+        System.Console.WriteLine($"[DEBUG] {item.Name} | Type: {item.Type} | IsGold: {isGold}");
+    }
+    
+    // Unequipped inventory items (excluding loose gold coins)
+    foreach (var item in _player.Inventory.Where(i => i.Type != ItemType.Gold))
+        list.Add((item, false));
+    
+    System.Console.WriteLine($"[DEBUG] Sellable items: {list.Count}");
+    
+    // Equipped items — selling auto-unequips
+    if (_player.EquippedWeapon    != null) list.Add((_player.EquippedWeapon,    true));
+    if (_player.EquippedAccessory != null) list.Add((_player.EquippedAccessory, true));
+    foreach (var a in _player.AllEquippedArmor)
+        list.Add((a, true));
+    
+    return list;
+}
+```
+
+## Next Steps
+
+1. Add debug logging as shown above
+2. Reproduce bug with logging enabled
+3. Check console output for item Type values
+4. If all items show correct Type but still filtered out, investigate LINQ execution timing
+
+## Files Requiring Changes
+
+- `Engine/GameLoop.cs` lines 1273-1288 — Add diagnostic logging
+### 2026-02-27: Sell fix PR opened
+**By:** Barton
+**What:** PR opened for fix/577-sell-compilation-and-equipped-items — sell-to-merchant crash fix
+**Why:** Issue #577 fix committed and pushed, PR open for review and merge
+# Interactive Menu Navigation — Design Proposal
+
+**Author:** Coulson (Lead/Architect)  
+**Date:** 2026-02-24  
+**Requested by:** Anthony Fuller  
+**Status:** PROPOSAL — awaiting approval before implementation begins
+
+---
+
+## Problem Statement
+
+Every menu in Dungnz currently follows the same interaction model:
+
+```
+_display.ShowMessage("[1] Option A  [2] Option B  [X] Leave");
+var choice = _input.ReadLine()?.Trim() ?? "";
+switch (choice) { ... }
+```
+
+This works but feels archaic. The player must type a number and press Enter. The goal is to replace this with cursor-navigable menus: arrow keys move a `▶` highlight, Enter confirms. The main free-text command loop (movement, EXAMINE, etc.) is **not** changing — only fixed-choice menus.
+
+---
+
+## A. Architecture Approach
+
+### Decision: Add a new `IMenuNavigator` interface
+
+Do **not** extend `IInputReader`. `ReadLine()` is for free-text commands; it should stay focused on that. Menu navigation is a distinct interaction paradigm with distinct testability needs. Separating them keeps both interfaces minimal and honest.
+
+Do **not** put key-reading logic inside `IDisplayService` or `ConsoleDisplayService`. Display is output. Navigation is a separate concern. Mixing them made `SelectDifficulty()` and `SelectClass()` console-coupled already — we should not deepen that pattern.
+
+### New interface
+
+```csharp
+// Engine/IMenuNavigator.cs
+namespace Dungnz.Engine;
+
+/// <summary>
+/// Presents the player with a fixed list of choices and returns their selection.
+/// Real implementation uses Console.ReadKey with cursor highlighting.
+/// Test implementation accepts a pre-scripted sequence of selections.
+/// </summary>
+public interface IMenuNavigator
+{
+    /// <summary>
+    /// Displays a cursor-navigable list of options and returns the value of the
+    /// selected entry. Blocks until the player confirms with Enter.
+    /// </summary>
+    T Select<T>(IReadOnlyList<MenuOption<T>> options, string? title = null);
+
+    /// <summary>
+    /// Shows a Y/N confirmation prompt. Returns true when the player confirms.
+    /// </summary>
+    bool Confirm(string prompt);
+}
+
+public record MenuOption<T>(string Label, T Value, string? Subtitle = null);
+```
+
+### Dependency injection
+
+`IMenuNavigator` is injected via constructor into:
+- `ConsoleDisplayService` — for `SelectDifficulty()` and `SelectClass()`
+- `GameLoop` — for shrine, armory, trap, shop, and sell menus
+- `CombatEngine` — for combat action menu, ability sub-menu, and level-up choice
+
+`Program.cs` constructs one `ConsoleMenuNavigator` and passes it everywhere. Tests inject `FakeMenuNavigator`.
+
+### Existing violation fixed
+
+`SelectDifficulty()` and `SelectClass()` in `DisplayService.cs` currently call `Console.ReadLine()` directly — they bypass `IInputReader` entirely. This is a pre-existing coupling violation (noted in past retrospective). Converting them to use `IMenuNavigator` fixes the violation at no extra cost.
+
+### IDisplayService contract — unchanged
+
+`SelectDifficulty()` and `SelectClass()` remain on `IDisplayService` with the same signature. `ConsoleDisplayService` delegates input to the injected `IMenuNavigator`. `FakeDisplayService` continues to return `SelectDifficultyResult` / `SelectClassResult` as today — these tests are unaffected.
+
+---
+
+## B. Reusable Component Design
+
+### `ConsoleMenuNavigator`
+
+```csharp
+// Display/ConsoleMenuNavigator.cs
+public class ConsoleMenuNavigator : IMenuNavigator
+{
+    public T Select<T>(IReadOnlyList<MenuOption<T>> options, string? title = null)
+    {
+        if (title != null) Console.WriteLine(title);
+
+        int selected = 0;
+        int startRow = Console.CursorTop;
+
+        RenderOptions(options, selected, startRow);
+
+        while (true)
+        {
+            var key = Console.ReadKey(intercept: true);
+
+            switch (key.Key)
+            {
+                case ConsoleKey.UpArrow:
+                    if (selected > 0) { selected--; RenderOptions(options, selected, startRow); }
+                    break;
+                case ConsoleKey.DownArrow:
+                    if (selected < options.Count - 1) { selected++; RenderOptions(options, selected, startRow); }
+                    break;
+                case ConsoleKey.Enter:
+                    Console.WriteLine(); // move past the menu
+                    return options[selected].Value;
+            }
+        }
+    }
+
+    public bool Confirm(string prompt)
+    {
+        return Select(
+            new[]
+            {
+                new MenuOption<bool>("Yes", true),
+                new MenuOption<bool>("No",  false),
+            },
+            title: prompt);
+    }
+
+    private static void RenderOptions<T>(IReadOnlyList<MenuOption<T>> options, int selected, int startRow)
+    {
+        Console.SetCursorPosition(0, startRow);
+        for (int i = 0; i < options.Count; i++)
+        {
+            var prefix    = i == selected ? $"{ColorCodes.Cyan}▶ {ColorCodes.Reset}" : "  ";
+            var label     = i == selected
+                ? $"{ColorCodes.Bold}{options[i].Label}{ColorCodes.Reset}"
+                : $"{ColorCodes.Gray}{options[i].Label}{ColorCodes.Reset}";
+            var subtitle  = options[i].Subtitle != null ? $"  {ColorCodes.Gray}{options[i].Subtitle}{ColorCodes.Reset}" : "";
+            Console.WriteLine($"  {prefix}{label}{subtitle}    "); // trailing spaces erase any previous longer line
+        }
+    }
+}
+```
+
+Key rendering notes:
+- `Console.SetCursorPosition(0, startRow)` redraws in-place — no scroll artifacts
+- Trailing spaces on each line clear stale characters from shorter-than-previous lines
+- `intercept: true` prevents key presses appearing as console output
+- `ColorCodes.Bold` + `ColorCodes.Cyan` highlight the selected row using the existing color system
+
+### `FakeMenuNavigator` (test double)
+
+```csharp
+// Dungnz.Tests/Helpers/FakeMenuNavigator.cs
+public class FakeMenuNavigator : IMenuNavigator
+{
+    private readonly Queue<int>  _selections    = new();
+    private readonly Queue<bool> _confirmations = new();
+
+    /// <summary>Enqueue a 0-based index to be returned on the next Select call.</summary>
+    public FakeMenuNavigator EnqueueSelection(int index)
+    {
+        _selections.Enqueue(index);
+        return this;
+    }
+
+    /// <summary>Enqueue a bool to be returned on the next Confirm call.</summary>
+    public FakeMenuNavigator EnqueueConfirm(bool value)
+    {
+        _confirmations.Enqueue(value);
+        return this;
+    }
+
+    public T Select<T>(IReadOnlyList<MenuOption<T>> options, string? title = null)
+    {
+        var idx = _selections.Count > 0 ? _selections.Dequeue() : 0;
+        if (idx < 0 || idx >= options.Count)
+            throw new InvalidOperationException(
+                $"FakeMenuNavigator: index {idx} out of range (0–{options.Count - 1})");
+        return options[idx].Value;
+    }
+
+    public bool Confirm(string prompt)
+        => _confirmations.Count > 0 ? _confirmations.Dequeue() : false;
+}
+```
+
+This is intentionally minimal. Tests become:
+
+```csharp
+var nav = new FakeMenuNavigator()
+    .EnqueueSelection(0)   // buy first item
+    .EnqueueSelection(2);  // leave shop (index of "X Leave" option)
+
+var loop = new GameLoop(display, nav, input, ...);
+```
+
+No string parsing, no `ReadKey`, no TTY required.
+
+---
+
+## C. Scope of Call Sites
+
+Every numbered or fixed-choice menu that should become interactive:
+
+| # | Menu | File | Approx. line | Notes |
+|---|------|------|-------------|-------|
+| 1 | **Difficulty select** | `Display/DisplayService.cs` | ~1004 | Uses raw `Console.ReadLine()` today — violation |
+| 2 | **Class select** | `Display/DisplayService.cs` | ~1038 | Uses raw `Console.ReadLine()` today — violation |
+| 3 | **Shop buy** | `Engine/GameLoop.cs` | ~1164 | Loop: buy/sell/leave; `SELL` word stays as shorthand or becomes a menu option |
+| 4 | **Sell menu** | `Engine/GameLoop.cs` | ~1233 | Item list; confirm sub-step at ~1247 → `navigator.Confirm()` |
+| 5 | **Level-up choice** | `Engine/CombatEngine.cs` | ~1528 | 3 options: +HP / +ATK / +DEF |
+| 6 | **Shrine menu** | `Engine/GameLoop.cs` | ~784 | H/B/F/M/L → 5-option menu |
+| 7 | **Forgotten Shrine** | `Engine/GameLoop.cs` | ~851 | 3 blessings + Leave |
+| 8 | **Contested Armory** | `Engine/GameLoop.cs` | ~929 | Careful / Reckless / Leave |
+| 9 | **Trap — Arrow Volley** | `Engine/GameLoop.cs` | ~1004 | 2 options (shield / sprint) |
+| 10 | **Trap — Poison Gas** | `Engine/GameLoop.cs` | ~1041 | 2 options (sprint / bypass) |
+| 11 | **Trap — Collapsing Floor** | `Engine/GameLoop.cs` | ~1074 | 2 options (leap / careful) |
+| 12 | **Combat action menu** | `Engine/CombatEngine.cs` | ~406 | A / B / F (+ USE item) — highest risk |
+| 13 | **Ability sub-menu** | `Engine/CombatEngine.cs` | ~645 | Dynamic list of unlocked abilities |
+
+**Out of scope (stays as free-text `ReadLine`):**
+- Main exploration loop (line 132 GameLoop) — movement, EXAMINE, TAKE, etc.
+- `ReadPlayerName()` — single free-text entry, not a menu
+
+---
+
+## D. Test Strategy
+
+### No real terminal in tests — ever
+
+All menu interaction in tests goes through `FakeMenuNavigator`. It never calls `Console.ReadKey`. Tests remain fully headless.
+
+### What `FakeInputReader` needs — nothing new
+
+`FakeInputReader` already handles `ReadLine()` for free-text commands. It does not need to change. `FakeMenuNavigator` is a separate concern and handles menu selections independently.
+
+### Test patterns
+
+**Menu index testing:**
+```csharp
+// Test: player heals at shrine (index 0 = Heal)
+var nav = new FakeMenuNavigator().EnqueueSelection(0);
+// ... invoke shrine handler ...
+Assert.True(player.HP == player.MaxHP);
+```
+
+**Confirm dialog testing:**
+```csharp
+// Test: player confirms sell
+var nav = new FakeMenuNavigator()
+    .EnqueueSelection(1)    // sell item at index 1
+    .EnqueueConfirm(true);  // confirm "Yes"
+```
+
+**Cancellation testing:**
+```csharp
+// Test: player backs out of shop
+var nav = new FakeMenuNavigator().EnqueueSelection(leaveIndex);
+```
+
+### Guarding against silent failures
+
+`FakeMenuNavigator.Select()` throws `InvalidOperationException` if the scripted index is out of range. This surfaces test setup bugs immediately rather than silently selecting index 0.
+
+When the queue is empty, default to index 0 (first option). This is safe for tests that don't care about the menu outcome.
+
+### Existing tests
+
+Existing tests using `FakeDisplayService.SelectDifficultyResult` / `SelectClassResult` are **not broken**. `FakeDisplayService` does not use `IMenuNavigator` at all — it just returns the pre-set value. These tests stay green through all phases.
+
+---
+
+## E. Platform Constraint
+
+### `Console.ReadKey()` and headless environments
+
+`Console.ReadKey(intercept: true)` requires a real TTY (interactive terminal). In GitHub Actions CI, stdin is redirected and `ReadKey` will throw `InvalidOperationException` at runtime.
+
+**Mitigation in `ConsoleMenuNavigator`:**
+
+```csharp
+public T Select<T>(IReadOnlyList<MenuOption<T>> options, string? title = null)
+{
+    // Guard: if not attached to a real TTY, fall back to ReadLine-based selection.
+    // This should never happen in production (the game is a terminal app),
+    // but defends against accidental calls in CI or piped contexts.
+    if (Console.IsInputRedirected)
+        return FallbackReadLine(options, title);
+
+    // ... ReadKey loop ...
+}
+
+private static T FallbackReadLine<T>(IReadOnlyList<MenuOption<T>> options, string? title)
+{
+    if (title != null) Console.WriteLine(title);
+    for (int i = 0; i < options.Count; i++)
+        Console.WriteLine($"  [{i + 1}] {options[i].Label}");
+    Console.Write("> ");
+    var input = Console.ReadLine()?.Trim() ?? "1";
+    return int.TryParse(input, out var idx) && idx >= 1 && idx <= options.Count
+        ? options[idx - 1].Value
+        : options[0].Value;
+}
+```
+
+This means:
+- **Production terminal**: full arrow-key navigation
+- **Piped / redirected stdin**: graceful numbered fallback (identical to current behaviour)
+- **Tests**: `FakeMenuNavigator` is injected — `ConsoleMenuNavigator` is never constructed
+
+### `Console.SetCursorPosition` on Linux
+
+`Console.SetCursorPosition` works on all .NET-supported terminals (Linux, macOS, Windows). It requires `TERM` to be set (standard for any interactive terminal). No special handling needed beyond the `IsInputRedirected` guard above.
+
+---
+
+## F. Phasing — Recommended Conversion Order
+
+### Phase 1 — Infrastructure (zero gameplay change)
+
+1. Create `IMenuNavigator` interface (`Engine/IMenuNavigator.cs`)
+2. Create `MenuOption<T>` record
+3. Create `ConsoleMenuNavigator` with `IsInputRedirected` guard
+4. Create `FakeMenuNavigator` in test project
+5. Wire `IMenuNavigator` into `ConsoleDisplayService`, `GameLoop`, and `CombatEngine` constructors
+6. Update `Program.cs` to construct and inject `ConsoleMenuNavigator`
+7. **No menus converted yet** — all existing `ReadLine` paths still work
+
+**Gate:** All 125+ existing tests pass. Build clean.
+
+### Phase 2 — Pre-game menus (highest impact, lowest risk)
+
+Convert `SelectDifficulty()` and `SelectClass()` in `ConsoleDisplayService`. These are the first thing every player sees. High visibility. No game state involved.
+
+**Why first:** Every run starts here. Player immediately perceives the UX upgrade. Easiest to manually verify. Also fixes the `Console.ReadLine()` bypass violation.
+
+### Phase 3 — Shop and Sell menus
+
+Convert `HandleShop()` and `HandleSell()` in `GameLoop`. The shop is the most player-visited non-combat menu. Convert sell confirmation to `navigator.Confirm()`.
+
+**Note:** The shop render (`ShowShop`) shows rich box-drawn item cards — keep `ShowShop()` as a pure display call for the header/items. The navigator provides the selection separately. The item cards become a visual reference; the cursor moves in a simpler list below, or we render a compact selector list (discuss with Hill before implementation).
+
+### Phase 4 — Level-up choice
+
+Convert `CheckLevelUp()` in `CombatEngine`. Three options. Low risk — already well-tested.
+
+### Phase 5 — Special rooms
+
+Convert shrine, forgotten shrine, armory, and all three trap variants in `GameLoop`. All follow the same shape: 2–5 options + Leave. Straightforward once Phase 1 is in place.
+
+### Phase 6 — Combat menus (highest risk)
+
+Convert combat action menu and ability sub-menu in `CombatEngine`. These execute every combat turn. Existing combat tests are extensive — run full suite before and after.
+
+**Risk note for combat menus:** The ability sub-menu is dynamically built (varies by class, mana, unlocked abilities). The `MenuOption<T>` list must be constructed correctly from the dynamic ability list. Test coverage for this path must be reviewed with Romanoff before conversion.
+
+---
+
+## Risks
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| `Console.ReadKey` throws in CI | **HIGH** | `IsInputRedirected` guard in ConsoleMenuNavigator |
+| `Console.SetCursorPosition` panics on narrow terminal | Medium | Clamp rendering width; test on 80-col terminal |
+| Combat menu conversion breaks existing combat tests | Medium | Phase 6 last; Romanoff reviews test coverage before work starts |
+| Shop "SELL" typed as free-text inside shop | Low | Either keep it as a fallback text alias, or add "Sell Items" as an explicit menu option |
+| `SelectDifficulty`/`SelectClass` currently on `IDisplayService` — changes affect FakeDisplayService | Low | FakeDisplayService unchanged; only ConsoleDisplayService changes |
+| `FakeMenuNavigator` queue exhaustion produces wrong results | Low | Throw on out-of-range index; default-to-zero only when queue empty |
+| Phase 6 (combat) regresses ability ordering across classes | Medium | Romanoff writes ability-menu ordering tests before Phase 6 starts |
+
+---
+
+## Summary of Interface Changes
+
+### New: `Engine/IMenuNavigator.cs`
+```
++ interface IMenuNavigator
++ record MenuOption<T>(string Label, T Value, string? Subtitle = null)
+```
+
+### New: `Display/ConsoleMenuNavigator.cs`
+```
++ class ConsoleMenuNavigator : IMenuNavigator
+```
+
+### New: `Dungnz.Tests/Helpers/FakeMenuNavigator.cs`
+```
++ class FakeMenuNavigator : IMenuNavigator
+```
+
+### Modified: `Display/DisplayService.cs` (ConsoleDisplayService)
+```
++ constructor parameter: IMenuNavigator navigator
+~ SelectDifficulty(): removes Console.ReadLine() loop → uses _navigator.Select(...)
+~ SelectClass():      removes Console.ReadLine() loop → uses _navigator.Select(...)
+```
+
+### Modified: `Engine/GameLoop.cs`
+```
++ constructor parameter: IMenuNavigator navigator
+~ HandleShop, HandleSell, HandleShrine, HandleForgottenShrine,
+  HandleContestedArmory, HandleTrapRoom: ReadLine → navigator.Select(...)
+```
+
+### Modified: `Engine/CombatEngine.cs`
+```
++ constructor parameter: IMenuNavigator navigator
+~ ShowCombatMenu/action read, HandleAbilityMenu, CheckLevelUp: ReadLine → navigator.Select(...)
+```
+
+### Modified: `Program.cs`
+```
++ var navigator = new ConsoleMenuNavigator();
+~ pass navigator into ConsoleDisplayService, GameLoop, CombatEngine
+```
+
+### Unchanged
+- `IInputReader` / `ConsoleInputReader` / `FakeInputReader` — untouched
+- `IDisplayService` interface — signature unchanged (SelectDifficulty, SelectClass stay)
+- `FakeDisplayService` — untouched; existing tests unaffected
+- All 125+ existing tests — must remain green after Phase 1
+
+---
+
+*Awaiting Anthony's approval before any implementation begins. Phase 1 (infrastructure only) can be assigned to Hill (interface + ConsoleMenuNavigator) and Romanoff (FakeMenuNavigator + test harness update) in parallel.*
+# Decision: ReadKey() Contract on IInputReader
+
+**Author:** Coulson  
+**Date:** 2026-02-24  
+**Phase:** 9 — Interactive Menus Foundation (WI-1)  
+**Branch:** feat/interactive-menus
+
+---
+
+## Decision
+
+`IInputReader` gains a second method:
+
+```csharp
+ConsoleKeyInfo? ReadKey();
+```
+
+Return type is **nullable** (`ConsoleKeyInfo?`).
+
+---
+
+## Rationale
+
+### Why nullable?
+
+`FakeInputReader` (and any future test double) cannot provide a real `ConsoleKeyInfo` without spinning up a terminal. Returning `null` is the idiomatic signal that "this source does not support single-key reads." Callers must null-check before acting on the result, which is the natural defensive pattern for menus that fall back to numbered input.
+
+An alternative (`bool SupportsReadKey` + non-nullable `ReadKey()`) was rejected — it adds ceremony for no benefit given C# nullable reference types already communicate the optionality.
+
+### Why `intercept: true`?
+
+Arrow keys produce ANSI escape sequences. Without `intercept: true`, these appear as garbage characters in the console output. Intercepting is mandatory for any real UX.
+
+---
+
+## Scope
+
+This is **interface scaffolding only**. No menu logic is implemented here. Hill and Barton consume `ReadKey()` when implementing the bounded menus in their respective work items.
+
+---
+
+## Impact
+
+| File | Change |
+|------|--------|
+| `Engine/IInputReader.cs` | New method on interface + `ConsoleInputReader` implementation |
+| `Dungnz.Tests/Helpers/FakeInputReader.cs` | Stub returning `null` |
+
+No existing tests broken. Build: 0 errors.
+# Root Cause Analysis: Sell Command Failure
+
+**Investigator:** Coulson (Lead)  
+**Date:** 2026-02-27  
+**Status:** ✅ CRITICAL BUG IDENTIFIED — COMPILATION ERROR
+
+---
+
+## Executive Summary
+
+The SELL command cannot work because **the codebase does not compile**. Line 1308 in `Engine/GameLoop.cs` calls `_player.RecalculateDerivedStats()`, but this method **does not exist** in the `Player` class.
+
+---
+
+## Root Cause
+
+**File:** `Engine/GameLoop.cs`  
+**Line:** 1308  
+**Method:** `UnequipItemFromSlot(Item item)`
+
+```csharp
+private void UnequipItemFromSlot(Item item)
+{
+    if (_player.EquippedWeapon    == item) { _player.EquippedWeapon    = null; }
+    else if (_player.EquippedAccessory == item) { _player.EquippedAccessory = null; }
+    // ... (clears other slots)
+    
+    _player.Inventory.Remove(item);
+    
+    // ❌ THIS METHOD DOES NOT EXIST
+    _player.RecalculateDerivedStats();  // LINE 1308
+}
+```
+
+**Build Error:**
+```
+Engine/GameLoop.cs(1308,17): error CS1061: 'Player' does not contain a definition 
+for 'RecalculateDerivedStats' and no accessible extension method 'RecalculateDerivedStats' 
+accepting a first argument of type 'Player' could be found
+```
+
+---
+
+## Impact Analysis
+
+### Why the player cannot sell items:
+
+1. **Build fails** → No executable can be produced
+2. Without a working build, the game cannot run
+3. The SELL flow is correct but **cannot execute** because the code doesn't compile
+
+### Affected Code Paths:
+
+- `HandleSell()` line 1257: Calls `UnequipItemFromSlot()` when selling equipped items
+- `UnequipItemFromSlot()` line 1308: Calls missing method
+- **Result:** Any attempt to compile fails before the game can run
+
+---
+
+## Investigation Details
+
+### SELL Command Flow (Theoretical — Cannot Execute)
+
+1. ✅ Player enters merchant room → sees "Type SHOP or SELL"
+2. ✅ Player types `SELL` → `CommandParser.Parse()` returns `CommandType.Sell`
+3. ✅ Main loop dispatches to `HandleSell()` (line 197)
+4. ✅ `HandleSell()` checks for merchant presence (lines 1214-1218)
+5. ✅ `BuildSellableList()` correctly gathers all inventory + equipped items (lines 1273-1288)
+6. ✅ `BuildSellableList()` filters out `ItemType.Gold` (line 1278)
+7. ✅ Display shows sell menu with correct prices
+8. ✅ Player selects item, confirms
+9. ❌ **If item is equipped:** `UnequipItemFromSlot()` is called (line 1257)
+10. ❌ **Line 1308:** Attempts to call non-existent `RecalculateDerivedStats()`
+11. ❌ **Compilation fails** before this point can ever be reached
+
+### Code Analysis Summary:
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| CommandParser | ✅ Correct | `SELL` maps to `CommandType.Sell` |
+| GameLoop dispatch | ✅ Correct | Case handles `CommandType.Sell` |
+| HandleSell() | ✅ Correct | Logic is sound |
+| BuildSellableList() | ✅ Correct | Filters Gold, includes all items |
+| UnequipItemFromSlot() | ❌ **BROKEN** | Calls missing method line 1308 |
+| MerchantInventoryConfig | ✅ Correct | ComputeSellPrice works for all items |
+| Item definitions | ✅ Correct | All items have valid SellPrice or tier-based fallback |
+
+---
+
+## Minimal Fix
+
+**Remove line 1308** or **stub the missing method**.
+
+### Option 1: Delete the call (fastest)
+```csharp
+// Line 1305-1308 (Engine/GameLoop.cs)
+_player.Inventory.Remove(item);
+
+// Recalculate derived stats (dodge, poison immunity, etc.)
+// _player.RecalculateDerivedStats();  // ← COMMENT OUT OR DELETE
+```
+
+### Option 2: Stub the method in Player
+```csharp
+// Models/Player.cs (add new method)
+public void RecalculateDerivedStats()
+{
+    // TODO: Implement stat recalculation logic
+    // For now, this is a no-op to unblock compilation
+}
+```
+
+**Recommendation:** Use Option 1 for immediate unblock. The stat recalculation was likely meant for a future feature (passive effects from equipment) that isn't fully implemented yet.
+
+---
+
+## Git History Context
+
+Latest commit touching this area:
+```
+736e5e5 fix: SELL typed inside shop now opens sell menu (fixes #574, #575) (#576)
+```
+
+This commit modified `HandleShop()` and `HandleSell()` but did not introduce the `RecalculateDerivedStats()` call — that must have been added in an earlier commit and never caught because:
+1. CI may not be enforcing compilation checks
+2. The dev environment may have a stale binary that still runs
+3. The method was removed from Player but the call site wasn't cleaned up
+
+---
+
+## Conclusion
+
+**Bug Type:** Compilation error (code bug)  
+**Severity:** Critical — blocks all gameplay  
+**Fix Complexity:** Trivial (1 line change)  
+**Testing Required:** Verify build succeeds, then manual test of SELL flow
+
+The SELL flow logic is **architecturally correct**. The only issue is a missing method reference that prevents compilation.
+### 2026-02-27: Guard-rails implemented
+**By:** Hill
+**What:** Added `master` to the `pull_request` branch trigger in `.github/workflows/squad-ci.yml`. Previously, `push` to master was covered but PRs *targeting* master were not — meaning a feature branch could compile-fail undetected until it landed.
+
+The CI (`squad-ci.yml`) already runs `dotnet build` + `dotnet test` + coverage threshold enforcement. The gap was that its `pull_request:` trigger listed `[dev, preview, main]` but omitted `master`. One-line fix: added `master` to that list.
+
+**WarningsAsErrors audit:** `Dungnz.csproj` already has `<WarningsAsErrors>CS1591;CS0108;CS0114;CS0169;CS0649;IDE0051;IDE0052</WarningsAsErrors>`. The sell-bug failure was a hard compiler **error** (CS0117 — method not found), not a warning, so it would have been caught by `dotnet build` regardless. The root cause was that the PR's CI run never triggered against master. No csproj changes required; `dotnet build` reports 0 warnings and 0 errors.
+
+**Why:** Prevent compilation errors from reaching master without detection.
+
+**Change made:**
+```diff
+# .github/workflows/squad-ci.yml
+ on:
+   pull_request:
+-    branches: [dev, preview, main]
++    branches: [dev, preview, main, master]
+```
+# Decisions — Hill: Interactive Menus (WI-2 through WI-5)
+
+**Date:** feat/interactive-menus branch  
+**Author:** Hill  
+**Commit:** a8dcb52
+
+---
+
+## Decision 1: `SelectFromMenu<T>` accepts `IInputReader` (not delegates to `IMenuNavigator`)
+
+**Context:** Both `IInputReader` and `IMenuNavigator`/`ConsoleMenuNavigator` are available. The task spec required `SelectFromMenu` to accept `IInputReader` and handle null-ReadKey fallback.
+
+**Decision:** `SelectFromMenu<T>` uses `IInputReader` directly for its key loop. `_navigator` is available in `ConsoleDisplayService` (injected via constructor) but not used by `SelectFromMenu`.
+
+**Rationale:** Spec compliance; simpler null-fallback path via `IInputReader.ReadKey() == null → ReadLine()` rather than `Console.IsInputRedirected`.
+
+---
+
+## Decision 2: `ConsoleDisplayService` constructor uses optional parameters
+
+**Signature:** `public ConsoleDisplayService(IInputReader? input = null, IMenuNavigator? navigator = null)`
+
+**Rationale:** Multiple test classes call `new ConsoleDisplayService()` with zero arguments. Making parameters optional (with sane defaults) preserves BC without requiring test changes.
+
+---
+
+## Decision 3: `SelectClass()` retains card-rendering, replaces only input loop
+
+**Context:** `SelectClass()` renders elaborate ASCII stat cards for all 6 classes, then waits for numbered input.
+
+**Decision:** Card rendering is preserved as-is. Only the `while(true) ReadLine()` selection loop at the bottom is replaced with a `SelectFromMenu` call using simple icon + class name labels.
+
+**Rationale:** The cards are informational (show stats, mana, passives). The arrow-key selection appears below them as a compact picker.
+
+---
+
+## Decision 4: `ShowShopAndSelect` / `ShowSellMenuAndSelect` return 1-based index (0 = cancel)
+
+**Convention:** Matches the existing shop/sell convention in `GameLoop.cs` where `1` = first item, `0` = cancel/exit.
+
+**FakeDisplayService stubs:** Both return `0` (cancel) by default — neutral/safe for tests that don't exercise shop flow.
+
+---
+
+## Decision 5: `SelectFromMenu` null probe — consume first keypress eagerly
+
+**Pattern:** Call `input.ReadKey()` once before rendering to probe whether key input is available. If null → fall back to ReadLine loop. If non-null → render, then process that probe key as the first input.
+
+**Rationale:** Avoids an extra `if (Console.IsInputRedirected)` check and works correctly with `FakeInputReader.ReadKey() == null`.
+# Decision: Fix Menu Duplication Bug with ANSI Relative Cursor Movement
+
+**Date:** 2026-02-22  
+**Author:** Hill (C# Dev)  
+**Status:** Implemented  
+**Impact:** Bug fix for all arrow-key navigable menus (DisplayService, ConsoleMenuNavigator)
+
+## Problem
+
+Arrow-key menus duplicated on screen with each navigation keypress instead of updating the cursor position in-place. The menu content appeared to "stack" vertically, with a new copy rendered below the previous one on every up/down arrow press.
+
+## Root Cause
+
+Both `DisplayService.SelectFromMenu<T>` and `ConsoleMenuNavigator.RenderOptions` used absolute cursor positioning via `Console.SetCursorPosition(0, startRow)` where `startRow` was captured before the first render.
+
+This approach is fundamentally broken when:
+
+1. **Terminal scrolling**: Menu rendered near bottom of terminal → last `Console.WriteLine()` triggers scroll → terminal buffer shifts up → `startRow` is now stale and points to middle of shifted content → next render writes from wrong position.
+
+2. **Line wrapping**: Menu option text exceeds terminal width → wraps to multiple lines → cursor advances more than expected → next `SetCursorPosition` doesn't account for wrapped lines → ghost text remains.
+
+3. **Emoji double-width**: Emoji characters are 2 display columns but counted as 1-2 chars by `string.Length` → `PadRight()` miscalculates padding → labels exceed terminal width and wrap.
+
+## Solution
+
+Replace absolute cursor positioning with **ANSI relative cursor movement**:
+
+- **Before each re-render** (except first): `Console.Write($"\x1b[{N}A")` moves cursor UP N lines from current position
+- **For each line**: `Console.Write("\r\x1b[2K")` clears line and returns to column 0
+- **Between lines only**: `Console.WriteLine()` after each item except the last (avoids extra scroll)
+
+This works regardless of terminal scrolling or buffer shifts because cursor movement is relative to current position, not absolute coordinates.
+
+## Implementation
+
+**Files Changed:**
+- `Display/DisplayService.cs` (SelectFromMenu<T> method, lines 613-640)
+- `Display/ConsoleMenuNavigator.cs` (RenderOptions method, lines 27-80)
+
+**Changes:**
+1. Removed `int startRow` variable and `Console.SetCursorPosition` calls
+2. Added `bool firstRender` flag to track initial render
+3. Applied ANSI escape codes: `\x1b[{N}A` (cursor up), `\x1b[2K` (clear line)
+4. Changed `Console.WriteLine(...)` to `Console.Write(...)` + conditional newlines
+5. Updated method signatures: `RenderOptions(..., int startRow)` → `RenderOptions(..., ref bool firstRender)`
+
+## Alternatives Considered
+
+1. **Track lines written per render**: Count actual terminal lines (including wraps) and move cursor by exact count. More complex, doesn't handle terminal resizing.
+
+2. **Clear entire screen**: Use `Console.Clear()` before each render. Simple but causes flicker and loses scroll history.
+
+3. **Use existing ConsoleMenuNavigator**: ConsoleMenuNavigator had the same bug, so not a viable solution without fixing it first.
+
+## Testing
+
+- ✅ `dotnet build` succeeds (0 errors)
+- ✅ `dotnet test` passes (684/684 tests)
+- Text-mode fallback (`!input.IsInteractive`) unchanged — no impact on test harnesses
+
+## Platform Compatibility
+
+- **Linux**: ANSI escape codes work natively (project runs on Linux/.NET 10)
+- **Windows**: ANSI codes require VirtualTerminalProcessing or Console.OutputEncoding — not a concern for current deployment
+- **Terminals without ANSI support**: Text-mode fallback already handles non-interactive input
+
+## Design Principles
+
+- **Industry standard**: ANSI relative positioning is used by ncurses, blessed, ink, and all modern TUI frameworks
+- **Robustness**: Handles terminal scrolling, resizing, line wrapping without special cases
+- **No breaking changes**: Existing behavior preserved for redirected input (test mode)
+
+## Key Learning
+
+**Never use `Console.SetCursorPosition` for in-place menu redraws in scrollable terminal contexts.** Absolute positioning breaks when terminal content shifts (scrolling, resizing, wrapping). Always use ANSI relative cursor movement (`\x1b[{N}A`) for robust terminal UI updates.
+
+## References
+
+- ANSI/VT100 escape sequences: https://en.wikipedia.org/wiki/ANSI_escape_code
+- CSI Cursor Up: `ESC [ {N} A` or `\x1b[{N}A`
+- CSI Erase Line: `ESC [ 2 K` or `\x1b[2K`
+# Test Impact Assessment: Interactive Arrow-Key Menu Navigation
+
+**Author:** Romanoff (Tester/QA)
+**Date:** 2026-06-13
+**Requested by:** Anthony Fuller
+**Feature:** Convert text-command menus to interactive arrow-key navigable menus (↑/↓ + Enter)
+
+---
+
+## Baseline
+
+**Total test methods:** 611 (`[Fact]` + `[Theory]` across all `.cs` files in `Dungnz.Tests/`)  
+**Current build/test status:** Build succeeds (0 warnings, 0 errors). All tests pass (confirmed via `dotnet test`).
+
+---
+
+## A. How Many Tests Currently Rely on Text-Input Menu Simulation?
+
+**11 test files** use `FakeInputReader` or a custom `IInputReader` implementation to simulate player input. Total instantiation count: **~49 constructor call sites**.
+
+| Test File | FakeInputReader Usages | Notes |
+|---|---|---|
+| `CombatEngineTests.cs` | 23 | Every test; uses "A", "F", "B"+"1" patterns |
+| `Phase1DisplayTests.cs` | 8 | Combat flow + ability sub-menu ("B", "1") |
+| `Phase6ClassAbilityTests.cs` | 3 | Ability sub-menus ("B", "1" through "B", "5") |
+| `RngDeterminismTests.cs` | 4 | All attack sequences ("A"×8) |
+| `IntegrationTests.cs` | 3 | Attack + trait selection ("A", "1") |
+| `SellSystemTests.cs` | 2 (+ 10 via `MakeSellSetup`) | Text commands + numeric item selection + Y/N confirm |
+| `Phase8ASetBonusCombatTests.cs` | 2 | Attack sequences |
+| `GameLoopTests.cs` | 1 (+ 20 via `MakeLoop`) | All 20 tests route through `FakeInputReader` for exploration commands |
+| `IntroSequenceTests.cs` | 1 | Used but `SelectDifficulty`/`SelectClass` already handled by `FakeDisplayService` |
+| `Display/ShowEnemyArtTests.cs` | 1 | Single attack to trigger combat |
+| `ColorizeDamageTests.cs` | 1 | Attack sequence |
+| `CombatBalanceSimulationTests.cs` | 0 (custom) | Uses `AlwaysAttackInputReader : IInputReader` inline class |
+
+**Tests using numeric sub-menu selection specifically** (the inputs most directly affected by arrow-key conversion):
+
+| Pattern | Files | Approximate Test Count |
+|---|---|---|
+| `"B", "1"` (ability sub-menu entry + select) | CombatEngineTests, Phase1DisplayTests, Phase6ClassAbilityTests, IntegrationTests | ~10 tests |
+| `"1"` for trait/level-up selection | CombatEngineTests, IntegrationTests | ~2 tests |
+| `"sell", "1", "Y/N"` (sell menu item + confirm) | SellSystemTests | ~7 tests |
+| `"sell", "x"` or `"shop", "sell"` (cancel/navigate) | SellSystemTests | ~5 tests |
+
+**~24 tests directly simulate numeric/letter sub-menu selection.** The remaining ~54 tests using `FakeInputReader` use single-letter combat commands (`"A"`, `"F"`) — whether these are affected depends on whether the combat action menu also converts to arrow-key navigation.
+
+---
+
+## B. What Would FakeInputReader Need to Simulate Arrow-Key Navigation?
+
+Currently, `FakeInputReader` is:
+
+```csharp
+public class FakeInputReader : IInputReader
+{
+    private readonly Queue<string> _inputs;
+    public string? ReadLine() => _inputs.Count > 0 ? _inputs.Dequeue() : "quit";
+}
+```
+
+`IInputReader` has only `ReadLine()`. Arrow-key navigation requires `Console.ReadKey()` returning `ConsoleKeyInfo`, which `IInputReader` does not expose.
+
+**Option 1 — Extend `IInputReader` with `ReadKey()`:**
+```csharp
+public interface IInputReader
+{
+    string? ReadLine();
+    ConsoleKeyInfo ReadKey();  // new
+}
+```
+`FakeInputReader` would need a second queue: `Queue<ConsoleKey>`. Test setup becomes:
+```csharp
+new FakeInputReader(
+    keys: new[] { ConsoleKey.DownArrow, ConsoleKey.Enter },
+    lines: new[] { "quit" }
+);
+```
+- **Risk:** Adding a method to `IInputReader` is a breaking change — all existing `IInputReader` implementors (including `AlwaysAttackInputReader` in `CombatBalanceSimulationTests.cs`) must be updated.
+
+**Option 2 — New `IMenuNavigator` interface (preferred, additive):**
+```csharp
+public interface IMenuNavigator
+{
+    ConsoleKey ReadKey();
+}
+```
+New test helper `FakeMenuNavigator` with a `Queue<ConsoleKey>`. Interactive menus call `IMenuNavigator`; text-based menus continue using `IInputReader`. No existing tests break.
+
+**Key point:** Tests would need to queue navigation sequences like:
+```csharp
+// Select item at index 1 (navigate down once, then confirm)
+new FakeMenuNavigator(ConsoleKey.DownArrow, ConsoleKey.Enter)
+```
+versus the current:
+```csharp
+new FakeInputReader("B", "1", "F")
+```
+
+---
+
+## C. Would Any Tests Break Immediately If We Add a New `IMenuNavigator` Interface?
+
+**If `IMenuNavigator` is a new, separate interface (Option 2 above): zero tests break on interface introduction alone.** It is purely additive.
+
+**Tests that WILL break when menu logic is migrated** (the read-loop in `GameLoop`, `CombatEngine`, and `SellSystem` switches from `ReadLine()` to `ReadKey()`):
+
+- `CombatEngineTests.cs` — all 23 tests: currently drives combat via `"A"`/`"F"`/`"B"+"1"` strings. If combat menu becomes arrow-key, all 23 fail with no input consumed.
+- `Phase1DisplayTests.cs` — 8 tests
+- `Phase6ClassAbilityTests.cs` — 3 tests
+- `SellSystemTests.cs` — ~11 tests that invoke the sell flow via `"sell", "1", "Y"` sequences
+- `IntegrationTests.cs` — tests using `"A", "1"` would break (the `"1"` trait-selection is a sub-menu)
+- `Phase6ClassAbilityTests.cs` — `"B", "1", "B", "1", "B", "1", "B", "5"` sequences would all fail
+- `CombatBalanceSimulationTests.cs` — `AlwaysAttackInputReader` returns `"A"` from `ReadLine()`; combat action loop switch to `ReadKey()` would break all 5 simulation tests
+
+**Special case — `AlwaysAttackInputReader`:** This is an inline class in `CombatBalanceSimulationTests.cs` (line 273) that implements `IInputReader`. If `IInputReader` gets a `ReadKey()` method (Option 1), this class will fail to compile without modification. This is a concrete compilation break, not just a runtime failure.
+
+---
+
+## D. What New Test Patterns Would We Need for Interactive Menus?
+
+### 1. `FakeMenuNavigator` helper
+```csharp
+public class FakeMenuNavigator : IMenuNavigator
+{
+    private readonly Queue<ConsoleKey> _keys;
+    public FakeMenuNavigator(params ConsoleKey[] keys) => _keys = new Queue<ConsoleKey>(keys);
+    public ConsoleKey ReadKey() => _keys.Count > 0 ? _keys.Dequeue() : ConsoleKey.Escape;
+}
+```
+
+### 2. Menu rendering verification on `FakeDisplayService`
+Interactive menus need to re-render on each keystroke (showing cursor position). `FakeDisplayService` would need:
+```csharp
+public List<(string[] Options, int SelectedIndex)> MenuRenders { get; } = new();
+public void ShowInteractiveMenu(string[] options, int selectedIndex) 
+    => MenuRenders.Add((options, selectedIndex));
+```
+Tests can then assert that `MenuRenders.Last().SelectedIndex == 1` after pressing ↓.
+
+### 3. New test assertion pattern (replacing string-sequence assertions)
+**Old pattern:**
+```csharp
+var input = new FakeInputReader("B", "1", "F");
+// run combat...
+display.AllOutput.Should().Contain("used ability");
+```
+**New pattern:**
+```csharp
+var nav = new FakeMenuNavigator(
+    ConsoleKey.DownArrow,   // move to ability row
+    ConsoleKey.Enter,       // select Abilities submenu
+    ConsoleKey.Enter,       // select first ability (already highlighted)
+    ConsoleKey.UpArrow,     // navigate to Flee
+    ConsoleKey.Enter        // select Flee
+);
+// run combat...
+display.AllOutput.Should().Contain("used ability");
+```
+
+### 4. Sell/Shop menu pattern
+Current: `"sell", "1", "Y"` (command + index + confirm)  
+New: `nav(Enter[open sell], DownArrow, Enter[select item 2], Enter[confirm])` — or the confirm step may remain text ("Y"/"N"), depending on implementation.
+
+### 5. Hybrid approach (recommended for migration)
+If menus support **both** text fallback and arrow-key navigation (e.g., pressing Enter with no movement selects item 1, pressing a number still works), a large portion of existing tests could be kept as-is, limiting new test authoring to ~24 sub-menu tests only.
+
+---
+
+## E. Risk Level
+
+**MEDIUM-HIGH**
+
+| Factor | Assessment |
+|---|---|
+| Test files directly affected | 11 of ~48 test files |
+| Tests requiring rewrite if combat menu migrates | ~78 tests (all FakeInputReader-based tests) |
+| Tests requiring rewrite if only sub-menus migrate | ~24 tests (sub-menu numeric selection only) |
+| New test infrastructure required | `FakeMenuNavigator`, `IMenuNavigator`, new FakeDisplayService menu methods |
+| Compilation break risk | High if `IInputReader` is modified; zero if new `IMenuNavigator` interface is additive |
+| Existing precedent | `SelectDifficulty`/`SelectClass` already bypass `IInputReader` via `IDisplayService` — this pattern works |
+
+**Why not "High":** The `SelectDifficulty`/`SelectClass` pattern already demonstrates this architecture working in tests. `FakeDisplayService` handles those via configurable return values with no `FakeInputReader` involvement. If the same pattern is applied to shop/sell/combat menus (interactive selection is encapsulated in `IDisplayService` methods that return an index), the test infrastructure change is contained and manageable.
+
+**Why not "Low":** The `CombatEngine` test suite (23 tests, the largest single block) drives combat entirely through `FakeInputReader` string sequences including `"B"+"1"` ability sub-menus. Full combat menu conversion to arrow-key would require rewriting every one of those tests. `CombatBalanceSimulationTests.cs` has an inline `IInputReader` implementation that would fail to compile under interface extension.
+
+---
+
+## Summary & Recommendations
+
+1. **Use the `IDisplayService` encapsulation pattern** (like `SelectDifficulty`/`SelectClass`) for interactive menus: each interactive menu call returns the selected index directly. This keeps `IInputReader` unchanged and zero existing tests break.
+
+2. **Avoid extending `IInputReader` with `ReadKey()`** — it would force updates to `AlwaysAttackInputReader` and every other `IInputReader` implementation.
+
+3. **Create `FakeMenuNavigator : IMenuNavigator`** as a new test helper alongside `FakeInputReader`. Do not modify `FakeInputReader`.
+
+4. **The 24 sub-menu tests** (ability selection, sell item selection) will need to be rewritten regardless — they encode the old text-index protocol. Budget for this.
+
+5. **If combat action menu (A/F/B) also converts**, budget for rewriting ~78 additional tests across `CombatEngineTests`, `Phase1DisplayTests`, `RngDeterminismTests`, `Phase8ASetBonusCombatTests`, `ColorizeDamageTests`, `ShowEnemyArtTests`, `IntegrationTests`.
+
+**Recommended scope boundary:** Convert shop/sell/inventory/ability sub-menus to arrow-key (24 tests to rewrite). Keep top-level combat actions (A/F/B) as letter-key shortcuts for now. This limits the immediate test surface impact and avoids rewriting the entire combat test suite in one sprint.
+### 2026-02-27: Sell regression tests added
+**By:** Romanoff
+**What:** Added 5 new regression tests to SellSystemTests.cs
+**Why:** Guard against regressions in sell-to-merchant fix (issue #577)
+
+#### Tests added:
+1. `Sell_EquippedChestArmor_ShowsSellMenuWithArmorSlotItem` — verifies `BuildSellableList` includes armor-slot equipped items (not just EquippedWeapon)
+2. `Sell_MultipleInventoryItems_SellMenuShowsAllItems` — verifies sell menu appears with 3 Uncommon inventory items
+3. `Sell_EquippedWeaponAndInventoryItems_BothAppearInSellMenu` — verifies sell menu appears when player has both inventory items and an equipped weapon
+4. `Sell_SellFirstInventoryItem_ItemRemovedFromInventory` — verifies selling item 1 removes it from inventory and awards correct gold
+5. `Sell_EquippedItem_SellConfirmed_ItemUnequipped` — verifies selling an equipped weapon clears the equipment slot and awards gold
+
+All 5 tests implemented cleanly using existing infrastructure. Tests 4 and 5 were feasible because `HandleSell` follows the same "index → Y/N confirm" pattern as the existing happy-path tests.
+
+**Result:** All 17 SellSystem tests pass (12 pre-existing + 5 new).
+# Sell System Test Coverage Gap Analysis
+
+**Auditor:** Romanoff (Tester)  
+**Date:** 2026-02-27  
+**Scope:** Sell flow test coverage audit following game-breaking sell bug report
+
+---
+
+## Executive Summary
+
+The existing sell system tests (`SellSystemTests.cs`) provide **good coverage of the sell flow mechanics** (happy path, cancellation, equipped items, merchant presence checks) but have **critical gaps in real-world item scenarios**. Specifically:
+
+1. **No tests use items loaded from `item-stats.json`** — all tests use synthetic items created in-memory
+2. **No tests verify Floor 1 items specifically** (the reported bug context)
+3. **No integration tests combining item data loading + merchant inventory + sell flow**
+4. **Missing edge case: items with BOTH explicit SellPrice AND stat bonuses**
+
+---
+
+## Current Test Coverage (SellSystemTests.cs)
+
+### What EXISTS (9 tests total):
+
+#### 1. Formula Tests (5 tests)
+- `ComputeSellPrice_CommonItem_ReturnsFortyPercentOfBuyPrice` — Common item, no stats → 40% formula
+- `ComputeSellPrice_CommonItemWithStats_ReturnsFortyPercentOfBuyPrice` — Common item with AttackBonus=3, DefenseBonus=2 → 40% of (15 + 5*5) = 16g
+- `ComputeSellPrice_UncommonItem_ReturnsFortyPercentOfBuyPrice` — Uncommon item → 40% of buy price
+- `ComputeSellPrice_RareItem_ReturnsFortyPercentOfBuyPrice` — Rare item → 40% of buy price
+- `ComputeSellPrice_ExplicitSellPrice_UsesExplicitValueIgnoresFormula` — Item with `SellPrice = 75` → returns 75, ignores formula
+
+✅ **Verdict:** Formula logic is well-tested in isolation.
+
+#### 2. Flow Tests (4 tests)
+- `Sell_HappyPath_RemovesItemAndIncreasesGold` — Basic sell, item removed, gold awarded
+- `Sell_CancelWithN_ItemRemainsInInventoryGoldUnchanged` — Cancel sell, no changes
+- `Sell_NoMerchantInRoom_ShowsErrorAndInventoryUnchanged` — No merchant → error message
+- `Regression574_Sell_TypedInsideShop_OpensSellerNotExitShop` — SELL command inside shop works correctly
+
+✅ **Verdict:** Happy path and cancellation covered. Regression test for #574 in place.
+
+#### 3. Equipment Tests (2 tests)
+- `Sell_EquippedWeaponNotInInventory_OnlyUnequippedItemAppears` — Equipped weapon not in inventory, only unequipped items sellable
+- `Sell_OnlyEquippedWeapon_NoInventoryItems_ShowsNoSellNarration` — Empty inventory triggers "NoSell" narration
+
+✅ **Verdict:** Equipment slot exclusion logic covered.
+
+#### 4. Gold-Type Exclusion (1 test)
+- `Sell_OnlyGoldTypeItems_ShowsNoSellNarration` — Gold-type items not sellable
+
+✅ **Verdict:** ItemType.Gold exclusion covered.
+
+---
+
+## Coverage GAPS — What's MISSING
+
+### Gap 1: Real Item Data Loading
+**Problem:** All tests use synthetic items (`new Item { Name = "...", Tier = Common, AttackBonus = 3 }`).  
+**Why it matters:** Real items from `item-stats.json` have:
+- Explicit `SellPrice` values (e.g., Iron Sword = 15g, Leather Armor = 10g)
+- `Id` fields used by merchant inventory system
+- Complex stat combinations (AttackBonus, DefenseBonus, HealAmount, Weight, Slot)
+
+**Missing test:**
+```csharp
+[Fact]
+public void Sell_IronSwordFromItemStats_UsesExplicitSellPrice()
+{
+    // Load iron-sword from item-stats.json (SellPrice = 15)
+    // Sell it
+    // Assert player gets exactly 15g (not formula-computed 16g)
+}
+```
+
+### Gap 2: Floor 1 Merchant Inventory Integration
+**Problem:** No tests verify that Floor 1 items (from `merchant-inventory.json`) work correctly with the sell system.  
+**Why it matters:** The bug report mentions "Floor 1 item sell failure." We need to confirm:
+- Can Floor 1 guaranteed items (health-potion, iron-sword, leather-armor) be sold?
+- Do Floor 1 pool items work correctly?
+
+**Missing test:**
+```csharp
+[Fact]
+public void Sell_Floor1GuaranteedItems_AllSellableWithCorrectPrices()
+{
+    // Load floor 1 guaranteed: health-potion, iron-sword, leather-armor
+    // Player has all three in inventory
+    // Sell each, verify gold matches item-stats.json SellPrice values
+}
+```
+
+### Gap 3: Merchant Stock vs Player Inventory Sell
+**Problem:** No test verifies selling an item **purchased from a merchant** back to the merchant.  
+**Why it matters:** Real gameplay flow:
+1. Player buys Iron Sword from Floor 1 merchant (costs 40g per formula: 15 + 5*5)
+2. Player later wants to sell it back (should get 15g per explicit SellPrice)
+3. System should handle the cloned item correctly (merchant stock items are cloned on purchase)
+
+**Missing test:**
+```csharp
+[Fact]
+public void Sell_ItemBoughtFromMerchant_ClonedItemSellsForCorrectPrice()
+{
+    // Mock merchant stock with Floor 1 items
+    // Player buys Iron Sword (cloned from stock)
+    // Player sells the cloned Iron Sword
+    // Assert sell price matches original item's SellPrice (15g)
+}
+```
+
+### Gap 4: Items with Armor Slot Assignment
+**Problem:** No test covers selling armor with explicit `Slot` (Chest, Head, Hands, etc.).  
+**Why it matters:** 
+- Armor slots affect equipping behavior
+- Leather Armor (Floor 1) has `Slot: "Chest"`
+- `BuildSellableList()` iterates over `_player.AllEquippedArmor` — need to verify multi-slot armor sells correctly
+
+**Missing test:**
+```csharp
+[Fact]
+public void Sell_EquippedChestArmor_UnequipsAndSells()
+{
+    // Player has Leather Armor equipped in Chest slot
+    // Sell it (should be in sellable list with "(equipped)" tag)
+    // Assert EquippedChest = null after sell
+    // Assert player receives 10g
+}
+```
+
+### Gap 5: Boundary Case — Item with BOTH Explicit SellPrice AND Zero Stats
+**Problem:** Health Potion has `SellPrice = 5` but `AttackBonus = 0, DefenseBonus = 0`.  
+**Why it matters:** ComputeSellPrice logic:
+```csharp
+if (item.SellPrice > 0) return item.SellPrice;  // Takes this branch
+return Math.Max(1, ComputePrice(item) * 40 / 100);  // Never executes for health-potion
+```
+Formula would compute: `(15 + 20 HealAmount + 0) * 0.4 = 14g` but explicit SellPrice = 5g.
+
+**Missing test:**
+```csharp
+[Fact]
+public void Sell_HealthPotionWithLowExplicitSellPrice_IgnoresHigherFormulaPrice()
+{
+    // Health Potion: HealAmount=20, SellPrice=5 (formula would give 14g)
+    // Sell it
+    // Assert player gets 5g (explicit), not 14g (formula)
+}
+```
+
+### Gap 6: Multi-Item Sell Session (Stress Test)
+**Problem:** No test sells multiple different items in one merchant visit.  
+**Why it matters:** Edge cases in `BuildSellableList()` ordering:
+- Unequipped inventory items listed first
+- Then equipped items
+- Need to verify list indexing stays correct after each sell
+
+**Missing test:**
+```csharp
+[Fact]
+public void Sell_MultipleItemsInOneSession_IndexingRemainsCorrect()
+{
+    // Player has 3 items: potion (unequipped), sword (unequipped), armor (equipped)
+    // Sell potion (index 1) → gold += 5
+    // Re-enter sell menu → sword now at index 1, armor at index 2
+    // Sell armor (index 2) → gold += 10, EquippedChest = null
+}
+```
+
+---
+
+## Which Missing Test Would Have Caught the Bug?
+
+**Unknown — need bug details to confirm.** However, based on "Floor 1 item sell failure," the most likely culprit is:
+
+### **Hypothesis:** Item loading or cloning broke SellPrice propagation
+
+**Test that would catch it:**
+```csharp
+[Fact]
+public void Sell_RealFloor1Items_UseSellPriceFromJSON()
+{
+    var allItems = ItemConfig.Load();  // Load from item-stats.json
+    var ironSword = allItems.First(i => i.Id == "iron-sword");
+    var leatherArmor = allItems.First(i => i.Id == "leather-armor");
+    
+    var player = new Player();
+    player.Inventory.Add(ironSword);
+    player.Inventory.Add(leatherArmor);
+    
+    // Sell iron-sword
+    var price1 = MerchantInventoryConfig.ComputeSellPrice(ironSword);
+    price1.Should().Be(15, "iron-sword SellPrice in JSON is 15");
+    
+    // Sell leather-armor
+    var price2 = MerchantInventoryConfig.ComputeSellPrice(leatherArmor);
+    price2.Should().Be(10, "leather-armor SellPrice in JSON is 10");
+}
+```
+
+**Why this catches it:** If `ItemConfig.Load()` or `Item.Clone()` fails to propagate `SellPrice`, this test fails immediately. Current tests never touch the JSON data layer.
+
+---
+
+## Recommended Tests to Add (Priority Order)
+
+### P0 (Critical — should have caught the bug)
+1. **`Sell_Floor1ItemsFromJSON_UsesExplicitSellPrices`** — Load iron-sword, leather-armor, health-potion from JSON, verify SellPrice values
+2. **`Sell_ItemClonedFromMerchantStock_RetainsSellPrice`** — Buy item from merchant (cloned), sell it back, verify price matches original
+
+### P1 (High — closes obvious gaps)
+3. **`Sell_EquippedArmorWithSlot_UnequipsCorrectSlot`** — Sell equipped Chest armor, verify EquippedChest nulled
+4. **`Sell_MultipleFloor1Items_GoldAccumulatesCorrectly`** — Sell 3 Floor 1 items in sequence, verify total gold
+
+### P2 (Nice-to-have — stress/edge cases)
+5. **`Sell_HealthPotionExplicitPriceLowerThanFormula_PrefersExplicit`** — Verify explicit SellPrice wins over formula
+6. **`Sell_MultipleItemsWithReindexing_SelectionRemainsCorrect`** — Sell items, re-enter menu, verify list updates correctly
+
+---
+
+## Data-Driven Test Candidates
+
+Consider parameterized tests for Floor 1 items:
+
+```csharp
+[Theory]
+[InlineData("health-potion", 5)]
+[InlineData("iron-sword", 15)]
+[InlineData("leather-armor", 10)]
+[InlineData("rusty-sword", 12)]
+public void Sell_Floor1Item_MatchesJSONSellPrice(string itemId, int expectedSellPrice)
+{
+    var allItems = ItemConfig.Load();
+    var item = allItems.First(i => i.Id == itemId);
+    MerchantInventoryConfig.ComputeSellPrice(item).Should().Be(expectedSellPrice);
+}
+```
+
+---
+
+## Action Items
+
+**Before implementing new tests:**
+1. **Confirm the bug details** — What exactly failed? Item didn't sell? Wrong gold amount? Crash?
+2. **Reproduce the bug** — Manual playtest or reproduction script
+3. **Write failing test first** — TDD: test should fail before fix, pass after fix
+4. **Wait for Barton's fix** — Don't implement tests until fix is confirmed (avoid testing broken behavior)
+
+**After Barton fixes the bug:**
+1. Implement P0 tests (Floor 1 JSON loading, cloning)
+2. Run full test suite, verify fix didn't break existing tests
+3. Add P1 tests for armor slots and multi-item scenarios
+4. Consider data-driven test for all Floor 1 pool items
+
+---
+
+## Test Helper Recommendations
+
+**Needed:** `TestItemFactory.LoadRealItem(string itemId)` helper
+```csharp
+public static class TestItemFactory
+{
+    private static List<Item>? _cachedItems;
+    
+    public static Item LoadRealItem(string itemId)
+    {
+        _cachedItems ??= ItemConfig.Load();
+        return _cachedItems.First(i => i.Id == itemId).Clone();
+    }
+}
+```
+
+**Benefit:** Tests can easily load real items without boilerplate:
+```csharp
+var ironSword = TestItemFactory.LoadRealItem("iron-sword");
+player.Inventory.Add(ironSword);
+```
+
+---
+
+## Appendix: Floor 1 Items (from JSON)
+
+### Guaranteed Stock
+- **Health Potion:** HealAmount=20, SellPrice=5
+- **Iron Sword:** AttackBonus=5, SellPrice=15
+- **Leather Armor:** DefenseBonus=3, Slot=Chest, SellPrice=10
+
+### Pool Items (commonly found)
+- **Rusty Sword:** AttackBonus=3, SellPrice=12
+- **Large Health Potion:** HealAmount=50, SellPrice=8
+- **Padded Tunic:** DefenseBonus=2, Slot=Chest (SellPrice TBD — check JSON)
+- **Iron Helm:** DefenseBonus=2, Slot=Head (SellPrice TBD)
+
+**Note:** Not all pool items may have explicit SellPrice — some may rely on formula. This is a test coverage gap to explore.
+
+---
+
+## Conclusion
+
+The sell system has **solid flow coverage** (happy path, cancellation, equipment handling) but **zero real data coverage**. The missing tests are:
+
+1. Items loaded from JSON
+2. Floor 1 merchant stock integration
+3. Item cloning (merchant → player → sell back)
+4. Armor slot handling
+5. Multi-item sell sessions
+
+**Most likely bug cause:** `Item.Clone()` or `ItemConfig.Load()` not propagating `SellPrice` field from JSON to in-memory Item objects, causing formula to compute wrong values or items to fail selling entirely.
+
+**Next step:** Wait for bug details from Anthony or Coulson, then implement P0 tests to validate the fix.
