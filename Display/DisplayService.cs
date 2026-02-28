@@ -1494,4 +1494,75 @@ public class ConsoleDisplayService : IDisplayService
             .ToArray();
         return SelectFromMenu(options, _input, "=== CRAFTING — Choose a recipe ===");
     }
+
+    /// <summary>
+    /// Displays a choice between two trap options and a leave option.
+    /// </summary>
+    public int ShowTrapChoiceAndSelect(string header, string option1, string option2)
+    {
+        var options = new (string Label, int Value)[]
+        {
+            (option1, 1),
+            (option2, 2),
+            ("Leave", 0),
+        };
+        return SelectFromMenu(options.AsReadOnly(), _input, header);
+    }
+
+    /// <summary>
+    /// Displays the Forgotten Shrine menu with blessing options.
+    /// </summary>
+    public int ShowForgottenShrineMenuAndSelect()
+    {
+        var options = new (string Label, int Value)[]
+        {
+            ("Holy Strength   — +5 ATK (lasts until next floor)", 1),
+            ("Sacred Ground   — Auto-heal at shrines", 2),
+            ("Warding Veil    — 20% chance to deflect enemy attacks this floor", 3),
+            ("Leave", 0),
+        };
+        return SelectFromMenu(options.AsReadOnly(), _input, "🕯 [Forgotten Shrine] — choose a blessing:");
+    }
+
+    /// <summary>
+    /// Displays the Contested Armory menu with approach options based on player defense.
+    /// </summary>
+    public int ShowContestedArmoryMenuAndSelect(int playerDefense)
+    {
+        var options = new (string Label, int Value)[]
+        {
+            ($"Careful approach — disarm traps (requires DEF > 12, yours: {playerDefense})", 1),
+            ("Reckless grab   — take what you can (15-30 damage)", 2),
+            ("Leave", 0),
+        };
+        return SelectFromMenu(options.AsReadOnly(), _input, "⚔ [Contested Armory] — how do you approach?");
+    }
+
+    /// <summary>
+    /// Presents the ability menu with available abilities as selectable options
+    /// and unavailable abilities shown as informational lines above.
+    /// Returns the selected Ability, or null if the player cancels.
+    /// </summary>
+    public Ability? ShowAbilityMenuAndSelect(
+        IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities,
+        IEnumerable<Ability> availableAbilities)
+    {
+        // Show unavailable abilities as info lines (not selectable)
+        foreach (var (ability, onCooldown, cooldownTurns, notEnoughMana) in unavailableAbilities)
+        {
+            if (onCooldown)
+                ShowColoredMessage($"  ○ {ability.Name} — Cooldown: {cooldownTurns} turns (Cost: {ability.ManaCost} MP)", Systems.ColorCodes.Gray);
+            else if (notEnoughMana)
+                ShowColoredMessage($"  ○ {ability.Name} — Need {ability.ManaCost} MP (Cost: {ability.ManaCost} MP)", Systems.ColorCodes.Red);
+        }
+
+        // Build selectable options from available abilities + Cancel
+        var availList = availableAbilities.ToList();
+        var options = availList
+            .Select(a => ($"{a.Name} — {a.Description} (Cost: {a.ManaCost} MP)", (Ability?)a))
+            .Append(("Cancel", (Ability?)null))
+            .ToArray();
+
+        return SelectFromMenu(options, _input, "=== Abilities ===");
+    }
 }

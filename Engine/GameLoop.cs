@@ -848,37 +848,27 @@ public class GameLoop
 
     private void HandleForgottenShrine()
     {
-        _display.ShowColoredMessage("🕯 [Forgotten Shrine] — choose a blessing:", Systems.ColorCodes.Cyan);
-        _display.ShowMessage("[1] Holy Strength   — +5 ATK (lasts until next floor)");
-        _display.ShowMessage("[2] Sacred Ground   — Auto-heal at shrines");
-        _display.ShowMessage("[3] Warding Veil    — 20% chance to deflect enemy attacks this floor");
-        _display.ShowMessage("[L]eave");
-        _display.ShowCommandPrompt();
-
-        var choice = _input.ReadLine()?.Trim().ToUpperInvariant() ?? "";
+        var choice = _display.ShowForgottenShrineMenuAndSelect();
         switch (choice)
         {
-            case "1":
+            case 1:
                 _player.TempAttackBonus += 5;
                 _player.ModifyAttack(5);
                 _display.ShowMessage("Holy light surges through your arms. Attack +5 until next floor!");
                 _currentRoom.SpecialRoomUsed = true;
                 break;
-            case "2":
+            case 2:
                 _player.SacredGroundActive = true;
                 _display.ShowMessage("The shrine's blessing lingers — shrines will restore you fully.");
                 _currentRoom.SpecialRoomUsed = true;
                 break;
-            case "3":
+            case 3:
                 _player.WardingVeilActive = true;
                 _display.ShowMessage("A shimmering veil of protection wraps around you. Enemy attacks have a 20% chance to miss this floor.");
                 _currentRoom.SpecialRoomUsed = true;
                 break;
-            case "L":
+            case 0:
                 _display.ShowMessage("You leave the forgotten shrine.");
-                break;
-            default:
-                _display.ShowError("Invalid choice.");
                 break;
         }
     }
@@ -927,16 +917,10 @@ public class GameLoop
             return;
         }
 
-        _display.ShowColoredMessage("⚔ [Contested Armory] — how do you approach?", Systems.ColorCodes.Cyan);
-        _display.ShowMessage($"[1] Careful approach — disarm traps (requires DEF > 12, yours: {_player.Defense})");
-        _display.ShowMessage("[2] Reckless grab   — take what you can (15-30 damage)");
-        _display.ShowMessage("[L]eave");
-        _display.ShowCommandPrompt();
-
-        var armoryChoice = _input.ReadLine()?.Trim().ToUpperInvariant() ?? "";
+        var armoryChoice = _display.ShowContestedArmoryMenuAndSelect(_player.Defense);
         switch (armoryChoice)
         {
-            case "1":
+            case 1:
                 if (_player.Defense > 12)
                 {
                     _display.ShowMessage("You carefully disarm the traps and claim a fine weapon.");
@@ -948,7 +932,7 @@ public class GameLoop
                     _display.ShowMessage("You lack the fortitude to safely disarm the traps. Try a reckless grab or leave.");
                 }
                 break;
-            case "2":
+            case 2:
                 var dmg = _rng.Next(15, 31);
                 _player.TakeDamage(dmg);
                 _stats.DamageTaken += dmg;
@@ -958,11 +942,8 @@ public class GameLoop
                 if (_player.HP <= 0)
                     ExitRun("an armory trap");
                 break;
-            case "L":
+            case 0:
                 _display.ShowMessage("You leave the armory untouched.");
-                break;
-            default:
-                _display.ShowError("Invalid choice.");
                 break;
         }
     }
@@ -1005,11 +986,11 @@ public class GameLoop
         switch (variant)
         {
             case TrapVariant.ArrowVolley:
-                _display.ShowMessage("[1] Raise your shield — 70% chance to block (no damage); 30% chance to take 15 damage");
-                _display.ShowMessage("[2] Sprint through  — take 8 damage, but find a loot cache");
-                _display.ShowCommandPrompt();
-                var avChoice = _input.ReadLine()?.Trim() ?? "";
-                if (avChoice == "1")
+                var avChoice = _display.ShowTrapChoiceAndSelect(
+                    "⚠ [Trap Room: Arrow Volley]",
+                    "Raise your shield — 70% chance to block (no damage); 30% chance to take 15 damage",
+                    "Sprint through  — take 8 damage, but find a loot cache");
+                if (avChoice == 1)
                 {
                     if (rng.NextDouble() < 0.70)
                     {
@@ -1025,7 +1006,7 @@ public class GameLoop
                     GiveTrapLoot(rng.NextDouble() < 0.5 ? Models.ItemTier.Uncommon : Models.ItemTier.Common,
                         "You spot a small cache behind the arrow slits.");
                 }
-                else if (avChoice == "2")
+                else if (avChoice == 2)
                 {
                     _player.TakeDamage(8);
                     _stats.DamageTaken += 8;
@@ -1042,11 +1023,11 @@ public class GameLoop
                 break;
 
             case TrapVariant.PoisonGas:
-                _display.ShowMessage("[1] Hold your breath and sprint — 60% escape unharmed; 40% get Poisoned (3 turns)");
-                _display.ShowMessage("[2] Find a bypass route    — always safe; 80% chance to find an Uncommon item");
-                _display.ShowCommandPrompt();
-                var pgChoice = _input.ReadLine()?.Trim() ?? "";
-                if (pgChoice == "1")
+                var pgChoice = _display.ShowTrapChoiceAndSelect(
+                    "⚠ [Trap Room: Poison Gas]",
+                    "Hold your breath and sprint — 60% escape unharmed; 40% get Poisoned (3 turns)",
+                    "Find a bypass route    — always safe; 80% chance to find an Uncommon item");
+                if (pgChoice == 1)
                 {
                     if (rng.NextDouble() < 0.60)
                     {
@@ -1058,7 +1039,7 @@ public class GameLoop
                         _display.ShowMessage("The gas floods your lungs. You have been Poisoned for 3 turns!");
                     }
                 }
-                else if (pgChoice == "2")
+                else if (pgChoice == 2)
                 {
                     _display.ShowMessage("You take the long way round, tracing the walls for a safe passage.");
                     if (rng.NextDouble() < 0.80)
@@ -1075,11 +1056,11 @@ public class GameLoop
                 break;
 
             case TrapVariant.CollapsingFloor:
-                _display.ShowMessage("[1] Leap across quickly     — 75% cross safely and find a Rare item; 25% take 20 damage");
-                _display.ShowMessage("[2] Cross carefully, test each step — 100% safe, no loot, slow");
-                _display.ShowCommandPrompt();
-                var cfChoice = _input.ReadLine()?.Trim() ?? "";
-                if (cfChoice == "1")
+                var cfChoice = _display.ShowTrapChoiceAndSelect(
+                    "⚠ [Trap Room: Collapsing Floor]",
+                    "Leap across quickly     — 75% cross safely and find a Rare item; 25% take 20 damage",
+                    "Cross carefully, test each step — 100% safe, no loot, slow");
+                if (cfChoice == 1)
                 {
                     if (rng.NextDouble() < 0.75)
                     {
@@ -1094,13 +1075,13 @@ public class GameLoop
                         if (_player.HP <= 0) { ExitRun("a dungeon trap"); return; }
                     }
                 }
-                else if (cfChoice == "2")
+                else if (cfChoice == 2)
                 {
                     _display.ShowMessage("Inch by inch you test every stone. It takes an age, but you reach the other side safely.");
                 }
                 else
                 {
-                    _display.ShowMessage("You hesitate at the edge.");
+                    _display.ShowMessage("You hesitate — the floor creaks ominously.");
                     _currentRoom.SpecialRoomUsed = false;
                     return;
                 }
