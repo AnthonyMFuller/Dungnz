@@ -1016,3 +1016,32 @@ Converted bounded menu selection from typed-number input to arrow-key navigation
 **Key things confirmed clean:** CommandParser is fully null-safe; color-reset discipline is consistent across all display methods; cursor-up formula in menu renderers (`options.Count - 1`) is correct for the no-trailing-newline pattern; 1-item menus work correctly; `HandleGo`/`HandleTake`/`HandleExamine` all set `_turnConsumed = false` on every rejection path.
 
 **Pattern reinforced:** `PadRightVisible` should be used everywhere icon+name strings are constructed in box rows — raw `.Length` on icons is unreliable.
+
+## Learnings — #639, #641 (Migrate Regular Shrine, Shop, Sell to arrow-key menus)
+
+### Branch: squad/639-641-shrine-shop-sell-menus | PR: #645
+
+**Files changed:**
+- `Display/IDisplayService.cs` — Added 3 new methods: `ShowShrineMenuAndSelect`, `ShowShopWithSellAndSelect`, `ShowConfirmMenu`
+- `Display/DisplayService.cs` — Implemented the 3 new methods using existing `SelectFromMenu<T>` helper
+- `Engine/GameLoop.cs` — Migrated `HandleShrine()`, `HandleShop()`, `HandleSell()` from letter-key/number-entry to arrow-key menu calls
+- `Dungnz.Tests/Helpers/FakeDisplayService.cs` — Added test stubs with input reader fallback support
+- `Dungnz.Tests/Helpers/TestDisplayService.cs` — Added simple test stubs returning safe defaults
+
+**Pattern discovered — menu-driven interaction flow:**
+- Existing `ShowShopAndSelect` and `ShowSellMenuAndSelect` were already implemented but not wired to GameLoop
+- New `ShowShopWithSellAndSelect` extends shop menu to include a "Sell Items" option (returns -1) alongside item selections
+- `ShowConfirmMenu` provides a reusable Yes/No picker (returns bool) — avoids direct ReadLine + string compare in game logic
+- All menu methods use the private `SelectFromMenu<T>` helper which handles arrow-key navigation in interactive mode and falls back to numbered text input in test mode
+
+**The architecture benefit:**
+- Moving menu rendering AND selection to Display layer keeps GameLoop focused on game state changes
+- Numeric choice values (0 = cancel, 1-N = options, -1 = special action like "Sell") are cleaner than string parsing
+- Test helpers can now simulate menu choices by returning integers instead of mocking complex input sequences
+
+**Shop/Sell loop pattern:**
+- `HandleShop()` now loops until player chooses 0 (Leave) — on -1 it calls `HandleSell()` then continues
+- Buying an item decrements shop stock and continues the loop — player can buy multiple items in one visit
+- `HandleSell()` uses `ShowConfirmMenu` for the "Sell X for Yg?" prompt — no more Y/N text parsing
+
+**Test coverage maintained:** All existing tests pass with new stubs returning safe defaults (0 for menus, false for confirms).

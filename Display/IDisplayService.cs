@@ -298,6 +298,18 @@ public interface IDisplayService
     /// </summary>
     int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes);
 
+    /// <summary>Presents the Shrine blessing choices as an arrow-key menu and returns 1–4 or 0 (leave).</summary>
+    int ShowShrineMenuAndSelect(int playerGold);
+
+    /// <summary>
+    /// Presents the shop menu with merchant stock, a Sell Items option, and Leave.
+    /// Returns the selected item index (1-based for buying), -1 for Sell, or 0 to Leave.
+    /// </summary>
+    int ShowShopWithSellAndSelect(IEnumerable<(Dungnz.Models.Item item, int price)> stock, int playerGold);
+
+    /// <summary>Presents a Yes/No confirmation menu. Returns true if Yes selected.</summary>
+    bool ShowConfirmMenu(string prompt);
+
     /// <summary>Presents a two-option trap room choice as an arrow-key menu and returns 1, 2, or 0 (leave).</summary>
     int ShowTrapChoiceAndSelect(string header, string option1, string option2);
 

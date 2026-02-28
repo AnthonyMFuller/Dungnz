@@ -780,18 +780,10 @@ public class GameLoop
             _player.SacredGroundActive = false;
         }
 
-        _display.ShowColoredMessage("✨ [Shrine Menu] — press H/B/F/M or L to leave.", Systems.ColorCodes.Cyan);
-        _display.ShowMessage($"[H]eal fully       - 30g  (Your gold: {_player.Gold})");
-        _display.ShowMessage("[B]less            - 50g  (+2 ATK/DEF permanently)");
-        _display.ShowMessage("[F]ortify          - 75g  (MaxHP +10, permanent)");
-        _display.ShowMessage("[M]editate         - 75g  (MaxMana +10, permanent)");
-        _display.ShowMessage("[L]eave");
-        _display.ShowCommandPrompt();
-
-        var choice = _input.ReadLine()?.Trim().ToUpperInvariant() ?? "";
+        var choice = _display.ShowShrineMenuAndSelect(_player.Gold);
         switch (choice)
         {
-            case "H":
+            case 1: // Heal fully
                 if (_player.Gold < 30) { _display.ShowError("Not enough gold (need 30g)."); return; }
                 _player.SpendGold(30);
                 _player.Heal(_player.MaxHP);
@@ -799,7 +791,7 @@ public class GameLoop
                 _currentRoom.ShrineUsed = true;
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantHeal));
                 break;
-            case "B":
+            case 2: // Bless
                 if (_player.Gold < 50) { _display.ShowError("Not enough gold (need 50g)."); return; }
                 _player.SpendGold(50);
                 _player.ModifyAttack(2);
@@ -808,7 +800,7 @@ public class GameLoop
                 _currentRoom.ShrineUsed = true;
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantPower));
                 break;
-            case "F":
+            case 3: // Fortify
                 if (_player.Gold < 75) { _display.ShowError("Not enough gold (need 75g)."); return; }
                 _player.SpendGold(75);
                 _player.FortifyMaxHP(10);
@@ -816,7 +808,7 @@ public class GameLoop
                 _currentRoom.ShrineUsed = true;
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantProtection));
                 break;
-            case "M":
+            case 4: // Meditate
                 if (_player.Gold < 75) { _display.ShowError("Not enough gold (need 75g)."); return; }
                 _player.SpendGold(75);
                 _player.FortifyMaxMana(10);
@@ -824,12 +816,9 @@ public class GameLoop
                 _currentRoom.ShrineUsed = true;
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantWisdom));
                 break;
-            case "L":
+            case 0: // Leave
                 _display.ShowMessage("You leave the shrine.");
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantNothing));
-                break;
-            default:
-                _display.ShowError("Invalid choice.");
                 break;
         }
     }
@@ -1145,29 +1134,26 @@ public class GameLoop
         {
             _display.ShowMessage($"=== MERCHANT SHOP ({merchant.Name}) ===");
             _display.ShowMessage(Systems.MerchantNarration.GetFloorGreeting(_currentFloor));
-            _display.ShowShop(merchant.Stock.Select(mi => (mi.Item, mi.Price)), _player.Gold);
-            _display.ShowColoredMessage("  💰 Type SELL to sell items  |  X to leave", Systems.ColorCodes.Gray);
-            _display.ShowCommandPrompt();
+            var shopChoice = _display.ShowShopWithSellAndSelect(
+                merchant.Stock.Select(mi => (mi.Item, mi.Price)), _player.Gold);
 
-            var input = _input.ReadLine()?.Trim() ?? "";
-
-            if (input.Equals("x", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(input))
+            if (shopChoice == 0)  // Leave
             {
                 _display.ShowMessage("You leave the shop.");
                 _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.NoBuy));
                 return;
             }
 
-            // Fix #574: SELL typed inside the shop now opens the sell menu
-            if (input.Equals("sell", StringComparison.OrdinalIgnoreCase))
+            if (shopChoice == -1)  // Sell
             {
                 HandleSell();
-                continue; // re-display shop after selling
+                continue;
             }
 
-            if (int.TryParse(input, out var choice) && choice >= 1 && choice <= merchant.Stock.Count)
+            // shopChoice is 1-based item index
+            if (shopChoice >= 1 && shopChoice <= merchant.Stock.Count)
             {
-                var selected = merchant.Stock[choice - 1];
+                var selected = merchant.Stock[shopChoice - 1];
                 if (_player.Gold < selected.Price)
                 {
                     _display.ShowMessage(Systems.MerchantNarration.GetCantAfford());
@@ -1182,7 +1168,7 @@ public class GameLoop
                     }
                     else
                     {
-                        merchant.Stock.RemoveAt(choice - 1);
+                        merchant.Stock.RemoveAt(shopChoice - 1);
                         _display.ShowMessage($"You bought {selected.Item.Name} for {selected.Price}g. Gold remaining: {_player.Gold}g");
                         _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.AfterPurchase));
                     }
@@ -1190,10 +1176,6 @@ public class GameLoop
                 // Re-display shop after buying so player can continue shopping
                 continue;
             }
-
-            _display.ShowMessage("Leaving the shop.");
-            _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.NoBuy));
-            return;
         }
     }
 
@@ -1216,26 +1198,14 @@ public class GameLoop
             return;
         }
 
-        _display.ShowSellMenu(sellable.Select(i => (i, MerchantInventoryConfig.ComputeSellPrice(i))), _player.Gold);
-        _display.ShowCommandPrompt();
-
-        var input = _input.ReadLine()?.Trim() ?? "";
-        if (input.Equals("x", StringComparison.OrdinalIgnoreCase) || string.IsNullOrEmpty(input))
+        var idx = _display.ShowSellMenuAndSelect(sellable.Select(i => (i, MerchantInventoryConfig.ComputeSellPrice(i))), _player.Gold);
+        if (idx == 0)
             return;
-
-        if (!int.TryParse(input, out int idx) || idx < 1 || idx > sellable.Count)
-        {
-            _display.ShowError("Invalid selection.");
-            return;
-        }
 
         var item = sellable[idx - 1];
         int price = MerchantInventoryConfig.ComputeSellPrice(item);
 
-        _display.ShowMessage($"Sell {item.Name} for {price}g? [Y/N]");
-        var confirm = _input.ReadLine()?.Trim() ?? "";
-        if (!confirm.Equals("y", StringComparison.OrdinalIgnoreCase) &&
-            !confirm.Equals("yes", StringComparison.OrdinalIgnoreCase))
+        if (!_display.ShowConfirmMenu($"Sell {item.Name} for {price}g?"))
         {
             _display.ShowMessage("Changed your mind.");
             return;
