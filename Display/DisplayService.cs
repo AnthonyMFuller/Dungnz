@@ -301,7 +301,7 @@ public class ConsoleDisplayService : IDisplayService
     {
         var icon = ItemTypeIcon(item.Type);
         var stat = PrimaryStatLabel(item);
-        var namePad = new string(' ', Math.Max(0, 34 - (TruncateName(item.Name).Length)));
+
         var header = isElite ? $"✦ {Systems.ColorCodes.Yellow}ELITE LOOT DROP{Systems.ColorCodes.Reset}" : "✦ LOOT DROP";
         var tierLabel = item.Tier switch
         {
@@ -314,7 +314,8 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine("╔══════════════════════════════════════╗");
         Console.WriteLine($"║  {PadRightVisible(header, 36)}║");
         Console.WriteLine($"║  {PadRightVisible(tierLabel, 36)}║");
-        Console.WriteLine($"║  {icon} {ColorizeItemName(item)}{namePad}║");
+        var nameField = $"  {icon} {ColorizeItemName(item)}";
+        Console.WriteLine($"║{PadRightVisible(nameField, 38)}║");
 
         // Build stat line with optional "new best" indicator
         string statLine = stat;
@@ -1172,7 +1173,7 @@ public class ConsoleDisplayService : IDisplayService
         const int baseMana = 30;
 
         var classes = new[] {
-            (def: PlayerClassDefinition.Warrior,    icon: "⚔",  number: 1, iconWidth: 1),
+            (def: PlayerClassDefinition.Warrior,    icon: "⚔️", number: 1, iconWidth: 2),
             (def: PlayerClassDefinition.Mage,       icon: "🔮", number: 2, iconWidth: 2),
             (def: PlayerClassDefinition.Rogue,       icon: "🗡",  number: 3, iconWidth: 2),
             (def: PlayerClassDefinition.Paladin,    icon: "🛡",  number: 4, iconWidth: 2),
@@ -1256,9 +1257,9 @@ public class ConsoleDisplayService : IDisplayService
 
         var selectOptions = new (string Label, PlayerClassDefinition Value)[]
         {
-            ("⚔  Warrior",     PlayerClassDefinition.Warrior),
+            ("⚔️ Warrior",     PlayerClassDefinition.Warrior),
             ("🔮 Mage",         PlayerClassDefinition.Mage),
-            ("🗡  Rogue",        PlayerClassDefinition.Rogue),
+            ("🗡 Rogue",        PlayerClassDefinition.Rogue),
             ("🛡 Paladin",      PlayerClassDefinition.Paladin),
             ("💀 Necromancer",  PlayerClassDefinition.Necromancer),
             ("🏹 Ranger",       PlayerClassDefinition.Ranger),
