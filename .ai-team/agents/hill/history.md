@@ -949,3 +949,48 @@ Converted bounded menu selection from typed-number input to arrow-key navigation
 - The branch already had a constructor (`IInputReader`, `IMenuNavigator`) and WI-6/7/8 implementations from Barton's commit. Multiple agents working the same branch required careful diff inspection.
 - `CombatEngineTests` and `CombatBalanceSimulationTests` time out — this is a pre-existing issue from Barton's combat menu work, unrelated to my changes.
 - `IDisplayService` did NOT have `ShowShopAndSelect`/`ShowSellMenuAndSelect` until I added them — test helpers had them already (Barton added stubs), but the interface itself was missing.
+
+---
+
+## Learnings — #591, #592, #594 (UI Consistency Fixes)
+
+### Branch: fix/ui-consistency-class-card | PR: #595
+
+**Where class icon/label definitions live in DisplayService.cs:**
+- **Class card icons (iconWidth tuples):** `var classes = new[] { ... }` array around line 1175 inside the `SelectClass()` method. Each entry is `(def, icon, number, iconWidth)`. `iconWidth` drives padding calculation at line 1230: `int nameColWidth = 39 - (iconWidth - 1)`.
+- **Select menu labels:** `var selectOptions = new (string Label, PlayerClassDefinition Value)[]` array around line 1258, also inside `SelectClass()`. These are the strings shown in the arrow-key menu after the card rendering.
+- Both locations must be updated together when changing an icon — the card tuple and the select label.
+
+**The PadRightVisible pattern for card border alignment:**
+- `PadRightVisible(string s, int totalWidth)` pads to `totalWidth` *visible* characters, stripping ANSI codes before measuring. This handles colored strings and multi-byte emoji correctly.
+- For box-drawn cards the pattern is: `$"║{PadRightVisible(field, 38)}║"` where the field string includes leading spaces and the icon. Total inner width is 38 (card is `╔══════════════════════════════════════╗` = 38 inner cells).
+- **Don't manually compute `namePad`** with `34 - name.Length` — that hardcodes icon cell width as 1 and breaks for 2-cell emoji. Always use `PadRightVisible`.
+
+**Unicode variation selectors for emoji rendering:**
+- `⚔` (U+2694) is a text-presentation codepoint — terminals render it as a text symbol (1 cell wide).
+- Appending U+FE0F (variation selector-16) forces emoji presentation: `⚔️` = `⚔` + `️`. Now renders as a 2-cell emoji.
+- `iconWidth` must match the rendered cell width: text symbol = 1, emoji = 2.
+- Other class icons (🔮, 🗡, 🛡, 💀, 🏹) are already inherently emoji-presentation codepoints with `iconWidth: 2`.
+
+## Learnings — #597, #598, #599 (UI Consistency Fixes — Icons, Rogue Indent, Card Border)
+
+### Branch: squad/ui-consistency-fixes | PR: #600
+
+**Which files control class selection display:**
+- `Display/DisplayService.cs` is the sole owner. Inside `SelectClass()`:
+  - `var classes = new[] {...}` (~line 1175): drives the per-class card rendering (icon, number, def).
+  - `var selectOptions = new (string Label, PlayerClassDefinition Value)[] {...}` (~line 1258): drives the arrow-key selection menu displayed below the cards.
+
+**How card/border rendering works for the class cards:**
+- Each class card is a `┌──┐` / `└──┘` box (48 inner chars). The header line uses:  
+  `$"│ [{number}] {icon}  {def.Name.PadRight(nameColWidth)} │"`  
+  where `nameColWidth = 39 - (icon.Length - 1)` to keep total inner chars = 48 regardless of icon C# string length.
+- Stat lines (HP, Attack, Defense, Mana) use ANSI-aware padding via `boxInner - StripAnsiCodes(line).Length` to handle color codes.
+- The key insight: `icon.Length` (C# .Length) must be used, not a hardcoded `iconWidth`, because BMP characters have `.Length=1` while emoji have `.Length=2` (surrogate pairs).
+
+**The pattern for UI box drawing and alignment:**
+- Box borders use `╔═╗`, `║`, `╚═╝` (double-line) or `┌─┐`, `│`, `└─┘` (single-line).
+- Item cards use `PadRightVisible()` for ANSI-aware padding; class cards use `StripAnsiCodes()` + manual padding.
+- The selection menu (`SelectFromMenu<T>`) uses `PadRight(maxLabelLen)` which only works correctly when all labels have consistent `.Length` vs visual width relationships. Mixing BMP chars (`.Length=1`) and emoji (`.Length=2`) causes misalignment because emoji display 2 columns wide but may count as 2 chars in `.Length`, while the terminal renders them at 2 columns. Plain text labels (no icons) are always safe with `PadRight`.
+
+**Decision:** Selection menu labels now use plain class names only (no icons). The class cards above the menu already show all icons prominently. This avoids all Unicode display-width concerns in the menu renderer.
