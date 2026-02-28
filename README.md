@@ -530,7 +530,7 @@ Dungnz/
 ├── Program.cs                   # Entry point — wires dependencies and starts game
 ├── Engine/
 │   ├── GameLoop.cs              # Main state machine; all command dispatch and win/loss logic
-│   ├── CombatEngine.cs          # Turn-based combat, XP award, level-up flow
+│   ├── CombatEngine.cs          # Turn-based combat, item use in combat, XP award, level-up flow
 │   ├── ICombatEngine.cs         # Interface enabling test doubles
 │   ├── StubCombatEngine.cs      # Deterministic test stub
 │   ├── CommandParser.cs         # Maps raw text input → ParsedCommand (verb + argument)
@@ -574,13 +574,13 @@ Dungnz/
 
 ## Testing
 
-**600+ tests** across **20+ test files** in `Dungnz.Tests/`.
+**1,279 passing tests** across **68 test files** in `Dungnz.Tests/`.
 
 ```bash
 dotnet test Dungnz.Tests
 ```
 
-Coverage includes: `CombatEngine`, `CommandParser`, `CraftingSystem`, `SkillTree`, `PrestigeSystem`, `AchievementSystem`, `StatusEffectManager`, `EquipmentSystem`, `InventoryManager`, `SaveSystem`, `GameLoop` (integration), `DungeonGenerator`, `EnemyFactory`, `LootTable`, `Player`, `DisplayService`, `NarrationService`, and stub combat engine.
+Coverage includes: `CombatEngine`, `CommandParser`, `CraftingSystem`, `SkillTree`, `PrestigeSystem`, `AchievementSystem`, `StatusEffectManager`, `EquipmentSystem`, `InventoryManager`, `SaveSystem`, `GameLoop` (integration), `DungeonGenerator`, `EnemyFactory`, `LootTable`, `Player`, `DisplayService`, `NarrationService`, `CombatItemUse`, and stub combat engine. Major test suites: Combat variants, enemy factory coverage, integration tests, phase-specific testing, loot distribution, balance simulations, and regression tests.
 
 ---
 
