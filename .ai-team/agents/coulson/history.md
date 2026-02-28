@@ -1559,3 +1559,35 @@ Detailed assessment written to `.ai-team/decisions/inbox/coulson-ascii-art-feasi
 
 **Files Written:**
 - `.ai-team/decisions/inbox/coulson-pr366-review.md`
+
+---
+
+## 2026-02-24: UI Consistency Bug Investigation
+
+**Task:** Investigated three UI consistency issues reported by Anthony Fuller.
+
+### Learnings
+
+#### Class Icon / Name Definitions
+- Class icons are defined inline in `Display/DisplayService.cs` inside `SelectClass()` (lines 1174–1180), not in `PlayerClassDefinition` or any data file.
+- The `PlayerClassDefinition` model (`Models/PlayerClass.cs`) holds only a plain text `Name` (e.g., "Warrior"). Icons are a display concern only.
+- The class cards loop (line 1183) and the select menu labels (lines 1257–1265) are the two rendering contexts for class icons.
+- **Key finding:** Warrior uses `⚔` (U+2694, BMP Miscellaneous Symbol, `iconWidth: 1`) while all 5 other classes use supplementary emoji (`iconWidth: 2`). This is the root of issue #591.
+
+#### Card Border Rendering
+- Box-drawing cards exist in: `ShowLootDrop` (38-wide inner box), `ShowItemDetail` (W=36), `ShowShop` (Inner=40), `ShowCraftRecipe` (W=40), and the combat/floor reveal cards.
+- `PadRightVisible` (line 1459) is the correct ANSI-safe padding helper — it calls `VisibleLength` which strips ANSI then uses `.Length`. Since emoji `.Length == terminal display width` (surrogate pairs = 2 chars = 2 cells), this helper correctly handles emoji widths.
+- `ShowLootDrop` line 304 has a bug: `namePad = 34 - name.Length` does NOT subtract the icon's display width. All other rows in the same method use `PadRightVisible` correctly. Fix: use `PadRightVisible` for the name row (issue #594).
+
+#### Rogue Indentation Root Cause
+- File: `Display/DisplayService.cs`, line 1261.
+- Label `"🗡  Rogue"` uses 2 spaces after `🗡` (which is a 2-cell-wide emoji, U+1F5E1).
+- Warrior (`"⚔  Warrior"`) uses 2 spaces after `⚔` (1-cell wide) — intentionally matching alignment.
+- Rogue incorrectly copies Warrior's 2-space pattern despite using a 2-wide emoji, pushing "Rogue" 1 column right of all other class names.
+- Fix: `"🗡 Rogue"` (1 space) — issue #592.
+
+### GitHub Issues Created
+- #591 — Warrior icon inconsistency (⚔ vs emoji icons)
+- #592 — Rogue indentation (extra space after 2-wide emoji in select menu)  
+- #594 — Loot drop card right border misalignment (namePad ignores icon width)
+
