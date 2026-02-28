@@ -12826,3 +12826,11 @@ The sell system has **solid flow coverage** (happy path, cancellation, equipment
 **Most likely bug cause:** `Item.Clone()` or `ItemConfig.Load()` not propagating `SellPrice` field from JSON to in-memory Item objects, causing formula to compute wrong values or items to fail selling entirely.
 
 **Next step:** Wait for bug details from Anthony or Coulson, then implement P0 tests to validate the fix.
+
+---
+
+### 2026-02-28: User directive — work is not complete until all related issues and PRs are resolved
+
+**By:** Anthony (via Copilot)
+**What:** Implementation work is never considered complete if there are open GitHub Issues or open Pull Requests that relate to the work being done. Before marking any task done or calling task_complete, the team must verify that all related issues are closed and all related PRs are merged (or explicitly closed as not needed).
+**Why:** User request — captured for team memory. Prevents the recurring pattern where the squad marks tasks complete while leaving open issues and stale PRs behind.
