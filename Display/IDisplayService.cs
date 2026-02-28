@@ -297,4 +297,21 @@ public interface IDisplayService
     /// Falls back to numbered text input when arrow-key input is unavailable.
     /// </summary>
     int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes);
+
+    /// <summary>Presents a two-option trap room choice as an arrow-key menu and returns 1, 2, or 0 (leave).</summary>
+    int ShowTrapChoiceAndSelect(string header, string option1, string option2);
+
+    /// <summary>Presents the Forgotten Shrine blessing choices and returns 1–3 or 0 (leave).</summary>
+    int ShowForgottenShrineMenuAndSelect();
+
+    /// <summary>Presents the Contested Armory approach choices and returns 1, 2, or 0 (leave).</summary>
+    int ShowContestedArmoryMenuAndSelect(int playerDefense);
+
+    /// <summary>
+    /// Presents the ability menu. Unavailable abilities shown as info lines.
+    /// Returns selected Ability, or null for cancel.
+    /// </summary>
+    Ability? ShowAbilityMenuAndSelect(
+        IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities,
+        IEnumerable<Ability> availableAbilities);
 }
