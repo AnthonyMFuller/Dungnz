@@ -35,10 +35,12 @@ public sealed class ConsoleMenuNavigator : IMenuNavigator
             switch (key.Key)
             {
                 case ConsoleKey.UpArrow:
-                    if (selected > 0) { selected--; RenderOptions(options, selected, ref firstRender); }
+                    selected = (selected - 1 + options.Count) % options.Count;
+                    RenderOptions(options, selected, ref firstRender);
                     break;
                 case ConsoleKey.DownArrow:
-                    if (selected < options.Count - 1) { selected++; RenderOptions(options, selected, ref firstRender); }
+                    selected = (selected + 1) % options.Count;
+                    RenderOptions(options, selected, ref firstRender);
                     break;
                 case ConsoleKey.Enter:
                     Console.WriteLine();
@@ -64,7 +66,7 @@ public sealed class ConsoleMenuNavigator : IMenuNavigator
         // Move cursor up to start of menu using ANSI relative positioning
         // (avoids stale absolute row when terminal scrolls or lines wrap)
         if (!firstRender)
-            Console.Write($"\x1b[{options.Count}A");
+            Console.Write($"\x1b[{options.Count - 1}A");
         firstRender = false;
 
         for (int i = 0; i < options.Count; i++)
