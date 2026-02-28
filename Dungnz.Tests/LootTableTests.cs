@@ -99,4 +99,35 @@ public class LootTableTests
         var r2 = table2.RollDrop(null!);
         r1.Gold.Should().Be(r2.Gold);
     }
+
+    // ── Bug #612: empty tier pool crash ───────────────────────────────────
+
+    [Fact]
+    public void RollDrop_EmptyTierPools_DoesNotThrow_ReturnsGoldOnly()
+    {
+        // Arrange: set all shared tier pools to empty lists (not null)
+        // Before fix, _rng.Next(0) would throw ArgumentOutOfRangeException when pool.Count == 0
+        var empty = Array.Empty<Item>().ToList().AsReadOnly();
+        LootTable.SetTierPools(empty, empty, empty);
+
+        // Force the 30% tiered drop path by returning a low double value
+        var rng = new ControlledRandom(defaultDouble: 0.1);
+        var table = new LootTable(rng, minGold: 5, maxGold: 5);
+
+        try
+        {
+            // Act + Assert: must not throw
+            LootResult result = default!;
+            var act = () => { result = table.RollDrop(null!); };
+            act.Should().NotThrow("empty tier pool should be skipped, not crash");
+            result.Gold.Should().Be(5);
+            result.Item.Should().BeNull("no items available in any pool");
+        }
+        finally
+        {
+            // Restore shared pools so this static mutation doesn't affect other tests
+            var placeholder = new List<Item> { new Item { Name = "Restore" } }.AsReadOnly();
+            LootTable.SetTierPools(placeholder, placeholder, placeholder);
+        }
+    }
 }
