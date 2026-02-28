@@ -1172,15 +1172,15 @@ public class ConsoleDisplayService : IDisplayService
         const int baseMana = 30;
 
         var classes = new[] {
-            (def: PlayerClassDefinition.Warrior,    icon: "⚔",  number: 1, iconWidth: 2),
-            (def: PlayerClassDefinition.Mage,       icon: "🔮", number: 2, iconWidth: 2),
-            (def: PlayerClassDefinition.Rogue,       icon: "🗡",  number: 3, iconWidth: 2),
-            (def: PlayerClassDefinition.Paladin,    icon: "🛡",  number: 4, iconWidth: 2),
-            (def: PlayerClassDefinition.Necromancer,icon: "💀", number: 5, iconWidth: 2),
-            (def: PlayerClassDefinition.Ranger,     icon: "🏹", number: 6, iconWidth: 2)
+            (def: PlayerClassDefinition.Warrior,    icon: "⚔",  number: 1),
+            (def: PlayerClassDefinition.Mage,       icon: "🔮", number: 2),
+            (def: PlayerClassDefinition.Rogue,      icon: "🗡",  number: 3),
+            (def: PlayerClassDefinition.Paladin,    icon: "🛡",  number: 4),
+            (def: PlayerClassDefinition.Necromancer,icon: "💀", number: 5),
+            (def: PlayerClassDefinition.Ranger,     icon: "🏹", number: 6)
         };
 
-        foreach (var (def, icon, number, iconWidth) in classes)
+        foreach (var (def, icon, number) in classes)
         {
             // Calculate effective stats
             int effectiveHP = baseHP + def.BonusMaxHP;
@@ -1227,7 +1227,7 @@ public class ConsoleDisplayService : IDisplayService
 
             const int boxInner = 48;
             Console.WriteLine($"{cyan}┌────────────────────────────────────────────────┐{reset}");
-            int nameColWidth = 39 - (iconWidth - 1); // reduce padding for 2-wide emoji
+            int nameColWidth = 39 - (icon.Length - 1); // adjust padding based on actual icon char width
             Console.WriteLine($"{cyan}│{reset} [{number}] {icon}  {def.Name.ToUpper().PadRight(nameColWidth)} {cyan}│{reset}");
             
             // HP line with ANSI-aware padding (clamped to handle prestige overflow-safe)
@@ -1256,12 +1256,12 @@ public class ConsoleDisplayService : IDisplayService
 
         var selectOptions = new (string Label, PlayerClassDefinition Value)[]
         {
-            ("⚔ Warrior",      PlayerClassDefinition.Warrior),
-            ("🔮 Mage",         PlayerClassDefinition.Mage),
-            ("🗡 Rogue",         PlayerClassDefinition.Rogue),
-            ("🛡 Paladin",      PlayerClassDefinition.Paladin),
-            ("💀 Necromancer",  PlayerClassDefinition.Necromancer),
-            ("🏹 Ranger",       PlayerClassDefinition.Ranger),
+            ("Warrior",         PlayerClassDefinition.Warrior),
+            ("Mage",            PlayerClassDefinition.Mage),
+            ("Rogue",           PlayerClassDefinition.Rogue),
+            ("Paladin",         PlayerClassDefinition.Paladin),
+            ("Necromancer",     PlayerClassDefinition.Necromancer),
+            ("Ranger",          PlayerClassDefinition.Ranger),
         };
         return SelectFromMenu(selectOptions, _input, "Choose your class:");
     }
