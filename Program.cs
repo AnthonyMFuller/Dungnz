@@ -3,6 +3,9 @@ using Dungnz.Engine;
 using Dungnz.Models;
 using Dungnz.Systems;
 
+Console.OutputEncoding = System.Text.Encoding.UTF8;
+Console.InputEncoding  = System.Text.Encoding.UTF8;
+
 var prestige = PrestigeSystem.Load();
 var inputReader = new ConsoleInputReader();
 var navigator = new ConsoleMenuNavigator();
