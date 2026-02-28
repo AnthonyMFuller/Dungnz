@@ -1398,11 +1398,27 @@ public class ConsoleDisplayService : IDisplayService
         => Systems.ColorCodes.StripAnsiCodes(s).Length;
 
     /// <summary>
+    /// Wide BMP characters (U+0000–U+FFFF) that render as 2 terminal columns.
+    /// Surrogate-pair emoji (U+10000+) have .Length == 2 and need no adjustment.
+    /// </summary>
+    private static readonly HashSet<char> _wideBmpChars =
+    [
+        '⭐', // U+2B50 WHITE MEDIUM STAR
+        '⚔',  // U+2694 CROSSED SWORDS
+        '⚡',  // U+26A1 HIGH VOLTAGE SIGN
+        '✅',  // U+2705 WHITE HEAVY CHECK MARK
+        '❌',  // U+274C CROSS MARK
+        '✨',  // U+2728 SPARKLES
+        '☠',  // U+2620 SKULL AND CROSSBONES
+    ];
+
+    /// <summary>
     /// Returns the visual column width of a string, accounting for BMP emoji that
-    /// render as 2 columns in modern terminals (⭐ U+2B50, ⚔ U+2694).
+    /// render as 2 columns in modern terminals. Surrogate-pair emoji (U+10000+)
+    /// already contribute 2 to <see cref="string.Length"/> and need no adjustment.
     /// </summary>
     private static int VisualWidth(string s)
-        => s.Length + s.Count(c => c == '⭐' || c == '⚔');
+        => s.Length + s.Count(c => _wideBmpChars.Contains(c));
 
     private static string PadRightVisible(string s, int totalWidth)
         => s + new string(' ', Math.Max(0, totalWidth - VisibleLength(s)));
