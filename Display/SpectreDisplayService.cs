@@ -197,28 +197,189 @@ public sealed class SpectreDisplayService : IDisplayService
         AnsiConsole.MarkupLine($"  [white]{Markup.Escape(message)}[/]");
 
     /// <inheritdoc/>
-    public void ShowPlayerStats(Player player) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowPlayerStats not yet implemented");
+    public void ShowPlayerStats(Player player)
+    {
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Grey)
+            .AddColumn(new TableColumn("[bold grey]Stat[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold grey]Value[/]"));
+
+        table.AddRow("Name",   Markup.Escape(player.Name));
+        table.AddRow("Level",  player.Level.ToString());
+        table.AddRow("Class",  Markup.Escape(player.Class.ToString()));
+
+        double hpPct = player.MaxHP > 0 ? (double)player.HP / player.MaxHP : 0;
+        var hpColor  = hpPct > 0.5 ? "green" : hpPct >= 0.25 ? "yellow" : "red";
+        table.AddRow("HP",     $"[{hpColor}]{player.HP}/{player.MaxHP}[/]");
+
+        if (player.MaxMana > 0)
+        {
+            double mpPct = (double)player.Mana / player.MaxMana;
+            var mpColor  = mpPct > 0.5 ? "blue" : mpPct >= 0.25 ? "cyan" : "grey";
+            table.AddRow("MP",  $"[{mpColor}]{player.Mana}/{player.MaxMana}[/]");
+        }
+
+        table.AddRow("Attack",  $"[red]{player.Attack}[/]");
+        table.AddRow("Defense", $"[cyan]{player.Defense}[/]");
+        table.AddRow("Gold",    $"[yellow]{player.Gold}g[/]");
+        var xpToNext = 100 * player.Level;
+        table.AddRow("XP",     $"[green]{player.XP}/{xpToNext}[/]");
+
+        if (player.Class == PlayerClass.Rogue && player.ComboPoints > 0)
+        {
+            var dots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
+            table.AddRow("⚡ Combo", $"[yellow]{dots}[/]");
+        }
+
+        var classDef = PlayerClassDefinition.All.FirstOrDefault(c => c.Class == player.Class);
+        if (classDef != null && !string.IsNullOrEmpty(classDef.TraitDescription))
+            table.AddRow("Trait", Markup.Escape(classDef.TraitDescription));
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
-    public void ShowInventory(Player player) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowInventory not yet implemented");
+    public void ShowInventory(Player player)
+    {
+        AnsiConsole.WriteLine();
+
+        if (player.Inventory.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[grey]  (inventory empty)[/]");
+            AnsiConsole.WriteLine();
+            return;
+        }
+
+        int currentWeight = player.Inventory.Sum(i => i.Weight);
+        int maxWeight     = Systems.InventoryManager.MaxWeight;
+        var wtColor       = currentWeight > maxWeight * 0.95 ? "red"
+                          : currentWeight > maxWeight * 0.80 ? "yellow" : "green";
+        var slotColor     = player.Inventory.Count >= Player.MaxInventorySize ? "red" : "green";
+
+        AnsiConsole.MarkupLine($"[grey]Slots:[/] [{slotColor}]{player.Inventory.Count}/{Player.MaxInventorySize}[/]  [grey]│  Weight:[/] [{wtColor}]{currentWeight}/{maxWeight}[/]");
+        AnsiConsole.WriteLine();
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Grey)
+            .AddColumn(new TableColumn("[bold grey]#[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold grey]Name[/]"))
+            .AddColumn(new TableColumn("[bold grey]Type[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold grey]Tier[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold grey]E[/]").NoWrap());
+
+        int idx = 1;
+        foreach (var group in player.Inventory.GroupBy(i => i.Name))
+        {
+            var item      = group.First();
+            var count     = group.Count();
+            var isEquipped = item == player.EquippedWeapon
+                          || item == player.EquippedAccessory
+                          || player.AllEquippedArmor.Contains(item);
+            var tc        = TierColor(item.Tier);
+            var nameMk    = $"[{tc}]{Markup.Escape(item.Name)}[/]" + (count > 1 ? $" [grey]×{count}[/]" : "");
+            var equip     = isEquipped ? "[green]✓[/]" : "";
+            table.AddRow(idx.ToString(), nameMk, Markup.Escape(item.Type.ToString()), $"[{tc}]{item.Tier}[/]", equip);
+            idx++;
+        }
+
+        AnsiConsole.Write(table);
+        AnsiConsole.MarkupLine($"  [yellow]💰 {player.Gold}g[/]");
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
-    public void ShowLootDrop(Item item, Player player, bool isElite = false) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowLootDrop not yet implemented");
+    public void ShowLootDrop(Item item, Player player, bool isElite = false)
+    {
+        var tc        = TierColor(item.Tier);
+        var header    = isElite ? "[bold yellow]✦ ELITE LOOT DROP[/]" : "[bold yellow]✦ LOOT DROP[/]";
+        var stat      = PrimaryStatLabel(item);
+
+        // Build optional upgrade hint
+        string statLine = $"[cyan]{Markup.Escape(stat)}[/]";
+        if (item.AttackBonus > 0 && player.EquippedWeapon != null)
+        {
+            int delta = item.AttackBonus - player.EquippedWeapon.AttackBonus;
+            if (delta > 0) statLine += $"  [green](+{delta} vs equipped!)[/]";
+        }
+        else if (item.DefenseBonus > 0 && player.EquippedChest != null)
+        {
+            int delta = item.DefenseBonus - player.EquippedChest.DefenseBonus;
+            if (delta > 0) statLine += $"  [green](+{delta} vs equipped!)[/]";
+        }
+
+        var content = new Markup(
+            $"{header}\n" +
+            $"[{tc}]{item.Tier}[/]\n" +
+            $"{ItemTypeIcon(item.Type)} [{tc}]{Markup.Escape(item.Name)}[/]\n" +
+            $"{statLine}  [grey]{item.Weight} wt[/]");
+
+        AnsiConsole.Write(new Panel(content)
+        {
+            Border    = BoxBorder.Rounded,
+            BorderStyle = Style.Parse(tc),
+        });
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
     public void ShowGoldPickup(int amount, int newTotal) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowGoldPickup not yet implemented");
+        AnsiConsole.MarkupLine($"  [yellow]💰 +{amount} gold[/]  [grey](Total: {newTotal}g)[/]");
 
     /// <inheritdoc/>
-    public void ShowItemPickup(Item item, int slotsCurrent, int slotsMax, int weightCurrent, int weightMax) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowItemPickup not yet implemented");
+    public void ShowItemPickup(Item item, int slotsCurrent, int slotsMax, int weightCurrent, int weightMax)
+    {
+        var tc = TierColor(item.Tier);
+        AnsiConsole.MarkupLine($"  {ItemTypeIcon(item.Type)} Picked up: [{tc}]{Markup.Escape(item.Name)}[/]  [grey]({Markup.Escape(PrimaryStatLabel(item))})[/]");
+
+        var slotColor = slotsCurrent >= slotsMax         ? "red"
+                      : slotsCurrent >= slotsMax * 0.95  ? "yellow" : "green";
+        var wtColor   = weightCurrent > weightMax * 0.95 ? "red"
+                      : weightCurrent > weightMax * 0.80 ? "yellow" : "green";
+        AnsiConsole.MarkupLine($"  [grey]Slots:[/] [{slotColor}]{slotsCurrent}/{slotsMax}[/]  [grey]·  Weight:[/] [{wtColor}]{weightCurrent}/{weightMax}[/]");
+
+        if (weightCurrent > weightMax * 0.8)
+            AnsiConsole.MarkupLine($"  [yellow]⚠ Inventory nearly full![/]");
+    }
 
     /// <inheritdoc/>
-    public void ShowItemDetail(Item item) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowItemDetail not yet implemented");
+    public void ShowItemDetail(Item item)
+    {
+        var tc = TierColor(item.Tier);
+        var stats = new System.Text.StringBuilder();
+        stats.AppendLine($"[grey]Type:[/]    {Markup.Escape(item.Type.ToString())}");
+        stats.AppendLine($"[grey]Tier:[/]    [{tc}]{item.Tier}[/]");
+        stats.AppendLine($"[grey]Weight:[/]  {item.Weight}");
+        if (item.AttackBonus  != 0) stats.AppendLine($"[grey]Attack:[/]  [red]+{item.AttackBonus}[/]");
+        if (item.DefenseBonus != 0) stats.AppendLine($"[grey]Defense:[/] [cyan]+{item.DefenseBonus}[/]");
+        if (item.HealAmount   != 0) stats.AppendLine($"[grey]Heal:[/]    [green]+{item.HealAmount} HP[/]");
+        if (item.ManaRestore  != 0) stats.AppendLine($"[grey]Mana:[/]    [blue]+{item.ManaRestore}[/]");
+        if (item.MaxManaBonus != 0) stats.AppendLine($"[grey]Max Mana:[/][blue]+{item.MaxManaBonus}[/]");
+        if (item.DodgeBonus   >  0) stats.AppendLine($"[grey]Dodge:[/]   +{item.DodgeBonus:P0}");
+        if (item.CritChance   >  0) stats.AppendLine($"[grey]Crit:[/]    +{item.CritChance:P0}");
+        if (item.HPOnHit      != 0) stats.AppendLine($"[grey]HP on Hit:[/][green]+{item.HPOnHit}[/]");
+        if (item.AppliesBleedOnHit) stats.AppendLine("[grey]Special:[/] [red]Bleed on hit[/]");
+        if (item.PoisonImmunity)    stats.AppendLine("[grey]Special:[/] [green]Poison immune[/]");
+        if (!string.IsNullOrEmpty(item.Description))
+        {
+            stats.AppendLine();
+            stats.Append($"[grey]{Markup.Escape(item.Description)}[/]");
+        }
+
+        var panel = new Panel(new Markup(stats.ToString().TrimEnd()))
+        {
+            Border      = BoxBorder.Rounded,
+            BorderStyle = Style.Parse(tc),
+            Header      = new PanelHeader($"[{tc} bold]{ItemTypeIcon(item.Type)} {Markup.Escape(item.Name)}[/]"),
+        };
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(panel);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
     public void ShowMessage(string message) =>
@@ -436,8 +597,45 @@ public sealed class SpectreDisplayService : IDisplayService
     };
 
     /// <inheritdoc/>
-    public void ShowEquipmentComparison(Player player, Item? oldItem, Item newItem) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowEquipmentComparison not yet implemented");
+    public void ShowEquipmentComparison(Player player, Item? oldItem, Item newItem)
+    {
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Yellow)
+            .Title("[bold yellow]Equipment Comparison[/]")
+            .AddColumn(new TableColumn("[bold grey]Stat[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold grey]Current[/]").Centered())
+            .AddColumn(new TableColumn("[bold grey]New[/]").Centered())
+            .AddColumn(new TableColumn("[bold grey]Delta[/]").Centered());
+
+        // Item names row
+        var oldName = oldItem != null ? $"[grey]{Markup.Escape(oldItem.Name)}[/]" : "[grey](none)[/]";
+        var tcNew   = TierColor(newItem.Tier);
+        table.AddRow("[grey]Item[/]", oldName, $"[{tcNew}]{Markup.Escape(newItem.Name)}[/]", "");
+
+        // Stat delta helper
+        void AddStatRow(string label, int oldVal, int newVal)
+        {
+            int delta = newVal - oldVal;
+            var deltaStr = delta == 0 ? "[grey]—[/]"
+                         : delta > 0  ? $"[green]+{delta}[/]"
+                         : $"[red]{delta}[/]";
+            table.AddRow(label, oldVal.ToString(), newVal.ToString(), deltaStr);
+        }
+
+        AddStatRow("Attack",   oldItem?.AttackBonus  ?? 0, newItem.AttackBonus);
+        AddStatRow("Defense",  oldItem?.DefenseBonus ?? 0, newItem.DefenseBonus);
+        if (newItem.HealAmount   != 0 || (oldItem?.HealAmount ?? 0) != 0)
+            AddStatRow("Heal HP",  oldItem?.HealAmount   ?? 0, newItem.HealAmount);
+        if (newItem.MaxManaBonus != 0 || (oldItem?.MaxManaBonus ?? 0) != 0)
+            AddStatRow("Max Mana", oldItem?.MaxManaBonus ?? 0, newItem.MaxManaBonus);
+        if (newItem.StatModifier != 0 || (oldItem?.StatModifier ?? 0) != 0)
+            AddStatRow("HP Mod",   oldItem?.StatModifier ?? 0, newItem.StatModifier);
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
     public void ShowEnhancedTitle()
@@ -514,8 +712,43 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     /// <inheritdoc/>
-    public void ShowShop(IEnumerable<(Item item, int price)> stock, int playerGold) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowShop not yet implemented");
+    public void ShowShop(IEnumerable<(Item item, int price)> stock, int playerGold)
+    {
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine($"  [bold yellow]🏪 Merchant[/]  [grey]Your gold:[/] [yellow]{playerGold}g[/]");
+        AnsiConsole.WriteLine();
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Yellow)
+            .AddColumn(new TableColumn("[bold grey]#[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold grey]Name[/]"))
+            .AddColumn(new TableColumn("[bold grey]Type[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold grey]Tier[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold grey]Cost[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold grey]Stats[/]"));
+
+        int idx = 1;
+        foreach (var (item, price) in stock)
+        {
+            var tc         = TierColor(item.Tier);
+            var canAfford  = playerGold >= price;
+            var priceStr   = canAfford ? $"[green]{price}g[/]" : $"[grey]{price}g[/]";
+            var nameMk     = canAfford ? $"[{tc}]{Markup.Escape(item.Name)}[/]"
+                                       : $"[grey]{Markup.Escape(item.Name)}[/]";
+            table.AddRow(
+                idx.ToString(),
+                nameMk,
+                Markup.Escape(item.Type.ToString()),
+                $"[{tc}]{item.Tier}[/]",
+                priceStr,
+                $"[grey]{Markup.Escape(PrimaryStatLabel(item))}[/]");
+            idx++;
+        }
+
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
     public int ShowShopAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold)
@@ -530,8 +763,31 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     /// <inheritdoc/>
-    public void ShowSellMenu(IEnumerable<(Item item, int sellPrice)> items, int playerGold) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowSellMenu not yet implemented");
+    public void ShowSellMenu(IEnumerable<(Item item, int sellPrice)> items, int playerGold)
+    {
+        AnsiConsole.WriteLine();
+        AnsiConsole.MarkupLine($"  [bold yellow]💰 Sell Items[/]  [grey]Your gold:[/] [yellow]{playerGold}g[/]");
+        AnsiConsole.WriteLine();
+
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Grey)
+            .AddColumn(new TableColumn("[bold grey]#[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold grey]Name[/]"))
+            .AddColumn(new TableColumn("[bold grey]Tier[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold grey]Sell Price[/]").NoWrap());
+
+        int idx = 1;
+        foreach (var (item, price) in items)
+        {
+            var tc = TierColor(item.Tier);
+            table.AddRow(idx.ToString(), $"[{tc}]{Markup.Escape(item.Name)}[/]", $"[{tc}]{item.Tier}[/]", $"[green]+{price}g[/]");
+            idx++;
+        }
+
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
     public int ShowSellMenuAndSelect(IEnumerable<(Item item, int sellPrice)> items, int playerGold)
@@ -546,8 +802,32 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     /// <inheritdoc/>
-    public void ShowCraftRecipe(string recipeName, Item result, List<(string ingredient, bool playerHasIt)> ingredients) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowCraftRecipe not yet implemented");
+    public void ShowCraftRecipe(string recipeName, Item result, List<(string ingredient, bool playerHasIt)> ingredients)
+    {
+        var tc = TierColor(result.Tier);
+        var content = new System.Text.StringBuilder();
+        content.AppendLine($"[grey]Result:[/]  {ItemTypeIcon(result.Type)} [{tc}]{Markup.Escape(result.Name)}[/]  [grey]({Markup.Escape(PrimaryStatLabel(result))})[/]");
+        content.AppendLine($"[grey]Stats:[/]   [cyan]{Markup.Escape(PrimaryStatLabel(result))}[/]");
+        content.AppendLine();
+        content.AppendLine("[grey]Ingredients:[/]");
+        foreach (var (ingredient, hasIt) in ingredients)
+        {
+            var check     = hasIt ? "[green]✅[/]" : "[red]❌[/]";
+            var ingColor  = hasIt ? "white" : "grey";
+            content.AppendLine($"  {check} [{ingColor}]{Markup.Escape(ingredient)}[/]");
+        }
+
+        var panel = new Panel(new Markup(content.ToString().TrimEnd()))
+        {
+            Border      = BoxBorder.Rounded,
+            BorderStyle = Style.Parse("yellow"),
+            Header      = new PanelHeader($"[yellow bold]🔨 {Markup.Escape(recipeName)}[/]"),
+        };
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(panel);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
     public void ShowCombatStart(Enemy enemy)
@@ -868,6 +1148,15 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
+
+    private static string TierColor(ItemTier tier) => tier switch
+    {
+        ItemTier.Uncommon  => "green",
+        ItemTier.Rare      => "blue",
+        ItemTier.Epic      => "purple",
+        ItemTier.Legendary => "gold1",
+        _                  => "grey",
+    };
 
     private static T PromptFromMenu<T>(string title, IEnumerable<(string Label, T Value)> options)
     {
