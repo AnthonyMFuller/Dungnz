@@ -1258,7 +1258,7 @@ public sealed class SpectreDisplayService : IDisplayService
 
     // Wide emoji occupy 2 terminal columns; narrow symbols occupy 1.
     // Pad with 1 space (wide) or 2 spaces (narrow) so text always starts at visual column 3.
-    private static readonly HashSet<string> NarrowEmoji = ["⚔", "⛨", "⚡", "⚗", "☠", "★", "↩", "•"];
+    private static readonly HashSet<string> NarrowEmoji = ["⚔", "⛨", "⚗", "☠", "★", "↩", "•"];
     private static string EL(string emoji, string text) =>
         NarrowEmoji.Contains(emoji) ? $"{emoji}  {text}" : $"{emoji} {text}";
 
