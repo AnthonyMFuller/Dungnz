@@ -4,7 +4,7 @@ using Dungnz.Systems;
 
 /// <summary>Defines an HP-threshold phase for a boss, triggering a named ability once.</summary>
 /// <param name="HpPercent">Fraction of max HP (0.0–1.0) at or below which the ability fires.</param>
-/// <param name="AbilityName">The ability identifier passed to <see cref="CombatEngine.ExecuteBossPhaseAbility"/>.</param>
+/// <param name="AbilityName">The ability identifier passed to the boss phase ability handler in <see cref="Dungnz.Engine.CombatEngine"/>.</param>
 public record BossPhase(double HpPercent, string AbilityName);
 
 /// <summary>
@@ -48,7 +48,7 @@ public class DungeonBoss : Enemy
 
     /// <summary>
     /// Periodic turn-based abilities. Key = turn interval (fires when <c>TurnCount % key == 0</c>),
-    /// value = ability name passed to <see cref="Engine.CombatEngine.ExecuteBossPhaseAbility"/>.
+    /// value = ability name passed to the boss phase ability handler in <see cref="Engine.CombatEngine"/>.
     /// </summary>
     public Dictionary<int, string> TurnActions { get; } = new();
 
@@ -59,14 +59,6 @@ public class DungeonBoss : Enemy
     /// or built-in fallback defaults. Optionally populates the loot table with a Boss Key
     /// item from the item configuration.
     /// </summary>
-    /// <param name="stats">
-    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
-    /// hard-coded defaults (100 HP, 22 ATK, 15 DEF, 100 XP, 50–100 gold).
-    /// </param>
-    /// <param name="itemConfig">
-    /// The loaded item configuration used to source the Boss Key drop,
-    /// or <see langword="null"/> to create a fallback inline item.
-    /// </param>
     [System.Text.Json.Serialization.JsonConstructor]
     private DungeonBoss() { }
 

@@ -15,11 +15,6 @@ public class Mimic : Enemy
     /// or built-in fallback defaults. Sets <see cref="Enemy.IsAmbush"/> to <see langword="true"/>
     /// so the player cannot act during the first turn of the encounter.
     /// </summary>
-    /// <param name="stats">
-    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
-    /// hard-coded defaults (40 HP, 14 ATK, 8 DEF, 40 XP, 10–25 gold).
-    /// </param>
-    /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
     [System.Text.Json.Serialization.JsonConstructor]
     private Mimic() { _rng = new Random(); } // RNG-ok: JsonConstructor (deserialization only)
 
