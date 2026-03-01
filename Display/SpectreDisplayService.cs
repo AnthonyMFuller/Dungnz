@@ -545,7 +545,7 @@ public sealed class SpectreDisplayService : IDisplayService
 
     private static string GetMapRoomSymbol(Room r, Room currentRoom)
     {
-        if (r == currentRoom)                               return "[bold yellow][@][/]";
+        if (r == currentRoom)                               return "[bold yellow][[@]][/]";
         if (!r.Visited)                                     return "[grey][[?]][/]";
         if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0) return "[bold red][[B]][/]";
         if (r.IsExit)                                       return "[white][[E]][/]";
