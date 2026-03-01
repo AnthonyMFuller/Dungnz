@@ -1064,3 +1064,41 @@ Converted bounded menu selection from typed-number input to arrow-key navigation
 - In interactive mode (`input.IsInteractive == true`), `SelectFromMenu` converts options to `MenuOption<T>` and calls `_navigator.Select(menuOptions)` which handles arrow-key navigation and returns the selected value.
 - In non-interactive mode (tests/redirected input), `SelectFromMenu` falls back to numbered text input via `input.ReadLine()`.
 - `IMenuNavigator` is **never** injected into game logic classes (EquipmentManager, CombatEngine, etc.) — all menu presentation is owned by `IDisplayService`. Game logic classes call a typed `ShowXxxAndSelect` method and receive a typed result back.
+
+## Learnings — #674, #679 (Difficulty Balance Overhaul — Phase 1)
+
+### Branch: squad/674-679-difficulty-settings-expanded | PR: TBD
+
+**Files changed:**
+- `Models/Difficulty.cs` — Added 9 new properties to `DifficultySettings`: `PlayerDamageMultiplier`, `EnemyDamageMultiplier`, `HealingMultiplier`, `MerchantPriceMultiplier`, `XPMultiplier`, `StartingGold`, `StartingPotions`, `ShrineSpawnMultiplier`, `MerchantSpawnMultiplier`. Updated `For()` method to return fully populated object initializers for all three difficulties (Casual, Normal, Hard) with explicit values for all properties.
+- `Engine/IntroSequence.cs` — Modified `BuildPlayer()` to accept `DifficultySettings settings` parameter and apply `StartingGold` and `StartingPotions` to the new player. Updated `Run()` to call `DifficultySettings.For(difficulty)` and pass settings to `BuildPlayer()`.
+
+**Why this matters:**
+- Previous `DifficultySettings` only had 4 properties (EnemyStatMultiplier, LootDropMultiplier, GoldMultiplier, Permadeath). `LootDropMultiplier` and `GoldMultiplier` were dead code — no systems were reading them.
+- Phase 1 (this change): Expand the model and wire up starting conditions. Phase 2 (future): Wire up the multipliers in CombatEngine, LootManager, MerchantManager, etc.
+- The new properties provide fine-grained control over difficulty balance: player damage vs enemy damage, healing effectiveness, merchant prices, XP gains, shrine/merchant spawn rates, and starting resources.
+
+**Design patterns used:**
+- Starting potions are added to `player.Inventory` as `Item` objects with `Type = ItemType.Consumable`, `Name = "Health Potion"`, `HealAmount = 20`, `Tier = ItemTier.Common`.
+- The `For()` method now uses explicit multi-line object initializers for all three difficulty cases instead of inline initializers, making the values easy to read and modify.
+- All properties are set explicitly in all three cases — no reliance on default values in the `For()` return.
+
+**Difficulty values chosen:**
+
+| Property                  | Casual | Normal | Hard   |
+|---------------------------|--------|--------|--------|
+| EnemyStatMultiplier       | 0.65f  | 1.00f  | 1.35f  |
+| EnemyDamageMultiplier     | 0.70f  | 1.00f  | 1.25f  |
+| PlayerDamageMultiplier    | 1.20f  | 1.00f  | 0.90f  |
+| LootDropMultiplier        | 1.60f  | 1.00f  | 0.65f  |
+| GoldMultiplier            | 1.80f  | 1.00f  | 0.60f  |
+| HealingMultiplier         | 1.50f  | 1.00f  | 0.75f  |
+| MerchantPriceMultiplier   | 0.65f  | 1.00f  | 1.40f  |
+| XPMultiplier              | 1.40f  | 1.00f  | 0.80f  |
+| StartingGold              | 50     | 15     | 0      |
+| StartingPotions           | 3      | 1      | 0      |
+| ShrineSpawnMultiplier     | 1.50f  | 1.00f  | 0.70f  |
+| MerchantSpawnMultiplier   | 1.40f  | 1.00f  | 0.70f  |
+| Permadeath                | false  | false  | true   |
+
+**Key insight:** Normal mode values are all 1.0f (or neutral defaults) — this is the baseline. Casual makes the game easier across all dimensions (cheaper items, more healing, more XP, more resources). Hard makes the game harder across all dimensions (tougher enemies, less healing, less XP, fewer resources, permadeath).

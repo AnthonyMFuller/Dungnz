@@ -901,3 +901,150 @@ Adding ASCII art for enemies is **highly feasible**. The project's existing data
 - `Models/LootTable.cs` (#612)
 
 **Test Results:** 684/684 passed ✅
+
+
+## 2026-03-01: Balance Systems Deep Analysis
+
+**Task:** Comprehensive balance audit for Casual difficulty (playtesting revealed excessive damage, insufficient healing access).
+
+**Analysis Scope:**
+- All enemy stats from `Data/enemy-stats.json` (27 enemy types)
+- All healing items from `Data/item-stats.json` (13 consumables)
+- Merchant pricing logic in `Systems/MerchantInventoryConfig.cs`
+- Combat damage formula in `Engine/CombatEngine.cs`
+- Difficulty multiplier application in `Models/Difficulty.cs` and `Engine/EnemyFactory.cs`
+- Loot drop mechanics in `Models/LootTable.cs`
+
+**Key Files Controlling Balance:**
+
+| System              | File                                | Critical Lines      |
+|---------------------|-------------------------------------|---------------------|
+| Difficulty values   | `Models/Difficulty.cs`              | 57-62               |
+| Enemy base stats    | `Data/enemy-stats.json`             | entire file         |
+| Enemy scaling       | `Engine/EnemyFactory.cs`            | 141, 183-191        |
+| Combat damage calc  | `Engine/CombatEngine.cs`            | 747, 1110, 1138     |
+| Loot system         | `Models/LootTable.cs`               | 149-198 (RollDrop)  |
+| Merchant prices     | `Systems/MerchantInventoryConfig.cs`| 51-69, 101          |
+| Merchant stock      | `Data/merchant-inventory.json`      | floors[].pool       |
+| Item heal values    | `Data/item-stats.json`              | Items[].HealAmount  |
+
+**Combat Damage Formula:** `Math.Max(1, attacker.Attack - defender.Defense)` — minimum 1 damage per hit always guaranteed.
+
+**Current Difficulty Multipliers (Casual):**
+- Enemy stats: 0.7× (HP, ATK, DEF)
+- Gold drops: 1.5×
+- Loot drop rate: 1.5× (DEFINED BUT NOT IMPLEMENTED — critical bug)
+
+**Floor 1 Damage Analysis (Casual):**
+- Goblin (14 HP, 5 ATK, 1 DEF): deals 1 dmg/turn × 2 turns = 2 HP total
+- Skeleton (21 HP, 8 ATK, 3 DEF): deals 3 dmg/turn × 3 turns = 9 HP total
+- Troll (42 HP, 7 ATK, 5 DEF): deals 2 dmg/turn × 9 turns = 18 HP total
+- **Mixed floor (2 Goblins, 1 Skeleton, 2 Trolls): 49 damage taken, 81 gold earned**
+
+**Healing Economics:**
+- Health Potion: 20 HP for 35g (0.57 HP/gold)
+- Large Health Potion: 50 HP for 65g (0.77 HP/gold)
+- **Problem:** Floor 1 damage (49 HP) requires 2 Health Potions (70g) but only earn ~81g, leaving no buffer
+
+**Critical Finding: `LootDropMultiplier` Not Wired**
+`DifficultySettings.LootDropMultiplier` exists but is never referenced in `LootTable.RollDrop()`. The hardcoded 30% drop rate (line 184) ignores difficulty entirely. Casual players receive 1.5× gold but still 30% loot chance like Normal/Hard.
+
+**Identified Balance Levers:**
+
+| Lever                    | Current State           | Difficulty-Aware? | Issue                      |
+|--------------------------|-------------------------|-------------------|----------------------------|
+| Enemy stat multiplier    | 0.7× (Casual)           | ✅ Yes            | Working correctly          |
+| Gold multiplier          | 1.5× (Casual)           | ✅ Yes            | Too weak (need 2.0–2.5×)   |
+| Loot drop multiplier     | 1.5× (Casual)           | ❌ **NOT USED**   | Must implement             |
+| Merchant healing prices  | Tier formula (static)   | ❌ No             | Should scale by difficulty |
+| Starting gold            | 0                       | ❌ No             | Should grant 50g (Casual)  |
+| Player starting HP       | 100                     | ❌ No             | Could scale (120 Casual)   |
+| Floor enemy scaling      | 1+(level-1)×0.12        | ❌ No             | Could adjust by difficulty |
+
+**Recommendations (Full report in `.ai-team/decisions/inbox/barton-balance-analysis.md`):**
+1. Wire `LootDropMultiplier` into `LootTable.cs:184` (45% for Casual vs 30% Normal)
+2. Increase Casual `GoldMultiplier` from 1.5× to 2.5× in `Difficulty.cs:59`
+3. Add difficulty-aware merchant pricing discount (0.7× on Casual → Health Potion becomes 25g)
+4. Grant 50g starting gold when Casual selected (`IntroSequence.cs`)
+5. Add "bandage" to floor 1 guaranteed merchant stock (cheap 10 HP option)
+
+**What I Learned:**
+- The difficulty system has 3 multipliers (enemy stats, loot rate, gold) but only 2 are actually implemented
+- Merchant pricing is tier-based but completely static — ignores difficulty setting
+- Floor 1 enemy distribution (Goblin/Skeleton/Troll) creates high damage variance (2-18 HP per combat)
+- Healing efficiency is poor (0.57-0.77 HP/gold) compared to damage accumulation rate
+- The `EnemyFactory.CreateScaled()` applies player-level scaling (1 + (level-1) × 0.12) but ignores difficulty after the multiplier is passed in — all scaling happens in `DungeonGenerator.Generate()` which multiplies floorMultiplier × difficultyMultiplier
+- Starting gold = 0 creates bad early RNG experience when no loot drops in first 2 combats
+
+### 2026-03-01: Phase 2 — Wire Difficulty Multipliers Into Game Systems
+
+**Context:** Hill completed Phase 1 (adding all multiplier properties to DifficultySettings). Barton implementing Phase 2: wire the multipliers into combat, loot, healing, merchants, XP, and spawns.
+
+**Files Changed:**
+1. **Engine/CombatEngine.cs**:
+   - Added `DifficultySettings? difficulty = null` parameter to constructor (optional, defaults to Normal)
+   - Stored as `_difficulty` field
+   - Applied `PlayerDamageMultiplier` to player damage (line ~820, before `enemy.HP -= playerDmg`)
+   - Applied `EnemyDamageMultiplier` to enemy damage (line ~1176, after `var enemyDmgFinal = enemyDmg`)
+   - Applied `HealingMultiplier` to Paladin Divine Favor passive heal (line ~1255)
+   - Applied `GoldMultiplier` to gold drops in HandleLootAndXP (line ~1490)
+   - Applied `XPMultiplier` to XP gains in HandleLootAndXP (line ~1505)
+   - Passed `LootDropMultiplier` to LootTable.RollDrop call (line ~1489)
+
+2. **Models/LootTable.cs**:
+   - Added `float lootDropMultiplier = 1.0f` parameter to RollDrop method
+   - Applied multiplier to 30% base drop chance: `_rng.NextDouble() < 0.30 * lootDropMultiplier` (line ~184)
+
+3. **Engine/GameLoop.cs**:
+   - Applied `HealingMultiplier` to consumable healing (line ~572)
+   - Scaled shrine costs inversely by HealingMultiplier (higher healing = cheaper shrines):
+     - Heal: 30g → 5-30g based on multiplier
+     - Bless: 50g → 10-50g
+     - Fortify/Meditate: 75g → 15-75g
+   - Updated all gold checks and error messages to use scaled costs
+
+4. **Display/IDisplayService.cs** & **Display/DisplayService.cs**:
+   - Updated `ShowShrineMenuAndSelect` signature to accept cost parameters: `(int playerGold, int healCost = 30, int blessCost = 50, int fortifyCost = 75, int meditateCost = 75)`
+   - Display now shows dynamic costs in menu
+
+5. **Dungnz.Tests/Helpers/TestDisplayService.cs** & **Dungnz.Tests/Helpers/FakeDisplayService.cs**:
+   - Updated test stubs to match new signature
+
+6. **Systems/MerchantInventoryConfig.cs**:
+   - Added `DifficultySettings? difficulty = null` parameter to GetStockForFloor
+   - Applied `MerchantPriceMultiplier` to all computed prices: `Math.Max(1, (int)(ComputePrice(item) * (difficulty?.MerchantPriceMultiplier ?? 1.0f)))`
+
+7. **Models/Merchant.cs**:
+   - Added `DifficultySettings? difficulty = null` parameter to CreateRandom
+   - Passed difficulty through to MerchantInventoryConfig.GetStockForFloor
+   - Applied multiplier to fallback stock prices
+
+8. **Engine/DungeonGenerator.cs**:
+   - Applied `MerchantSpawnMultiplier` to merchant spawn rate: `Math.Min(35, (int)(20 * multiplier))` with 35% cap (line ~143)
+   - Applied `ShrineSpawnMultiplier` to shrine spawn rate: `Math.Min(0.35, 0.15 * multiplier)` with 35% cap (line ~177)
+
+9. **Program.cs**:
+   - Already had correct call: `new CombatEngine(display, inputReader, navigator: navigator, difficulty: difficultySettings)`
+
+**Implementation Approach:**
+- All multipliers applied at the point of use (combat damage, loot rolls, healing, pricing, spawns)
+- Used `Math.Max(1, ...)` to ensure minimum values of 1 for damage, healing, gold, XP
+- Shrine costs scale inversely (higher HealingMultiplier = cheaper shrines) to maintain consistency
+- Merchant/shrine spawn rates capped at 35% to prevent over-saturation
+- All parameters are optional with sensible defaults to maintain backward compatibility
+
+**Difficulty Values (from DifficultySettings.For()):**
+- **Casual**: EnemyDmg=0.70, PlayerDmg=1.20, Loot=1.60, Gold=1.80, Healing=1.50, MerchantPrice=0.65, XP=1.40, Shrine=1.50, Merchant=1.40
+- **Normal**: All 1.0f (baseline)
+- **Hard**: EnemyDmg=1.25, PlayerDmg=0.90, Loot=0.65, Gold=0.60, Healing=0.75, MerchantPrice=1.40, XP=0.80, Shrine=0.70, Merchant=0.70, Permadeath=true
+
+**Build Status:** ✅ Build succeeded with 38 warnings (all pre-existing XML doc warnings, unrelated to changes)
+**Test Status:** ✅ 1297 of 1302 tests pass. 5 failures are pre-existing (2 from Hill's Phase 1 multiplier value changes, 3 unrelated test infrastructure issues)
+
+**What I Learned:**
+- The display method `ShowShrineMenuAndSelect` had hardcoded prices, requiring interface/implementation updates
+- CombatEngine constructor already had many optional parameters; added difficulty at the end to minimize disruption
+- The LootDropMultiplier only affects the 30% base chance, not the special boss/epic/legendary drops (intentional design)
+- Shrine cost scaling is inverse (divide by multiplier) to make healing more accessible on easier difficulties
+- Spawn rate multipliers are capped at 35% to prevent excessive merchant/shrine density
+- All test display service stubs needed signature updates to match the new interface

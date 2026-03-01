@@ -131,7 +131,7 @@ public class TestDisplayService : IDisplayService
     public int ShowTrapChoiceAndSelect(string header, string option1, string option2) { AllOutput.Add("trap_choice"); return 0; }
     public int ShowForgottenShrineMenuAndSelect() { AllOutput.Add("shrine_menu"); return 0; }
     public int ShowContestedArmoryMenuAndSelect(int playerDefense) { AllOutput.Add("armory_menu"); return 0; }
-    public int ShowShrineMenuAndSelect(int playerGold) { AllOutput.Add("shrine_regular"); return 0; }
+    public int ShowShrineMenuAndSelect(int playerGold, int healCost = 30, int blessCost = 50, int fortifyCost = 75, int meditateCost = 75) { AllOutput.Add("shrine_regular"); return 0; }
     public int ShowShopWithSellAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold) { AllOutput.Add($"shop_with_sell:{playerGold}g"); return 0; }
     public bool ShowConfirmMenu(string prompt) { AllOutput.Add($"confirm:{prompt}"); return false; }
     public Ability? ShowAbilityMenuAndSelect(IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities, IEnumerable<Ability> availableAbilities) 

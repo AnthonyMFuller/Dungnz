@@ -77,8 +77,9 @@ public static class MerchantInventoryConfig
     /// <param name="floor">The dungeon floor number (1–5).</param>
     /// <param name="allItems">All available items, used to resolve IDs to <see cref="Item"/> instances.</param>
     /// <param name="rng">Random number generator for pool selection.</param>
+    /// <param name="difficulty">Optional DifficultySettings for applying merchant price multiplier.</param>
     /// <returns>A list of <see cref="MerchantItem"/> instances ready to stock a <see cref="Merchant"/>.</returns>
-    public static List<MerchantItem> GetStockForFloor(int floor, IReadOnlyList<Item> allItems, Random rng)
+    public static List<MerchantItem> GetStockForFloor(int floor, IReadOnlyList<Item> allItems, Random rng, DifficultySettings? difficulty = null)
     {
         var data = LoadData();
         if (data == null) return new List<MerchantItem>();
@@ -98,7 +99,7 @@ public static class MerchantInventoryConfig
         foreach (var id in config.Guaranteed)
         {
             if (byId.TryGetValue(id, out var item))
-                stock.Add(new MerchantItem { Item = item.Clone(), Price = ComputePrice(item) });
+                stock.Add(new MerchantItem { Item = item.Clone(), Price = Math.Max(1, (int)(ComputePrice(item) * (difficulty?.MerchantPriceMultiplier ?? 1.0f))) });
         }
 
         // Fill remaining slots from pool (exclude already-stocked IDs)
@@ -112,7 +113,7 @@ public static class MerchantInventoryConfig
         foreach (var id in available.Take(remaining))
         {
             if (byId.TryGetValue(id, out var item))
-                stock.Add(new MerchantItem { Item = item.Clone(), Price = ComputePrice(item) });
+                stock.Add(new MerchantItem { Item = item.Clone(), Price = Math.Max(1, (int)(ComputePrice(item) * (difficulty?.MerchantPriceMultiplier ?? 1.0f))) });
         }
 
         return stock;

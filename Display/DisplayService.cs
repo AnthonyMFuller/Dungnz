@@ -577,14 +577,14 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <summary>Presents the Shrine blessing choices as an arrow-key menu and returns 1–4 or 0 (leave).</summary>
-    public int ShowShrineMenuAndSelect(int playerGold)
+    public int ShowShrineMenuAndSelect(int playerGold, int healCost = 30, int blessCost = 50, int fortifyCost = 75, int meditateCost = 75)
     {
         var options = new (string Label, int Value)[]
         {
-            ($"Heal fully        — 30g  (Your gold: {playerGold}g)", 1),
-            ("Bless             — 50g  (+2 ATK/DEF permanently)", 2),
-            ("Fortify           — 75g  (MaxHP +10, permanent)", 3),
-            ("Meditate          — 75g  (MaxMana +10, permanent)", 4),
+            ($"Heal fully        — {healCost}g  (Your gold: {playerGold}g)", 1),
+            ($"Bless             — {blessCost}g  (+2 ATK/DEF permanently)", 2),
+            ($"Fortify           — {fortifyCost}g  (MaxHP +10, permanent)", 3),
+            ($"Meditate          — {meditateCost}g  (MaxMana +10, permanent)", 4),
             ("Leave", 0),
         };
         return SelectFromMenu(options.AsReadOnly(), _input, "✨ [Shrine Menu]");
@@ -1130,9 +1130,9 @@ public class ConsoleDisplayService : IDisplayService
 
         var options = new (string Label, Difficulty Value)[]
         {
-            ($"{green}CASUAL{reset}     (Enemy Power ×0.7 | Loot ×1.5 | Gold ×1.5)", Difficulty.Casual),
-            ($"{yellow}NORMAL{reset}     (Enemy Power ×1.0 | Balanced)",               Difficulty.Normal),
-            ($"{red}HARD{reset}       (Enemy Power ×1.3 | Loot ×0.7 | Gold ×0.7)",   Difficulty.Hard),
+            ($"{green}CASUAL{reset}     Weaker enemies · Cheap shops · Start with 50g + 3 potions", Difficulty.Casual),
+            ($"{yellow}NORMAL{reset}     Balanced challenge · The intended experience · Start with 15g + 1 potion", Difficulty.Normal),
+            ($"{red}HARD{reset}       Stronger enemies · Scarce rewards · No starting supplies · ☠ Permadeath", Difficulty.Hard),
         };
         return SelectFromMenu(options, _input, "Choose your difficulty:");
     }

@@ -21,6 +21,7 @@ public class CombatEngine : ICombatEngine
     private readonly InventoryManager _inventoryManager;
     private readonly IMenuNavigator? _navigator;
     private readonly PassiveEffectProcessor _passives;
+    private readonly DifficultySettings _difficulty;
     private readonly List<CombatTurn> _turnLog = new();
     private RunStats _stats = new();
     private int _baseEliteAttack;
@@ -192,7 +193,7 @@ public class CombatEngine : ICombatEngine
     /// Optional narration service used to pick varied combat messages; a default instance
     /// sharing <paramref name="rng"/> is created when <see langword="null"/>.
     /// </param>
-    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null, NarrationService? narration = null, InventoryManager? inventoryManager = null, IMenuNavigator? navigator = null)
+    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null, NarrationService? narration = null, InventoryManager? inventoryManager = null, IMenuNavigator? navigator = null, DifficultySettings? difficulty = null)
     {
         _display = display;
         _input = input ?? new ConsoleInputReader();
@@ -203,6 +204,7 @@ public class CombatEngine : ICombatEngine
         _narration = narration ?? new NarrationService(_rng);
         _inventoryManager = inventoryManager ?? new InventoryManager(display);
         _navigator = navigator;
+        _difficulty = difficulty ?? DifficultySettings.For(Difficulty.Normal);
         _passives = new PassiveEffectProcessor(_display, _rng, _statusEffects);
     }
 
@@ -817,6 +819,7 @@ public class CombatEngine : ICombatEngine
             if (enemy is IronSentinel sentinel)
                 playerDmg = Math.Max(1, (int)(playerDmg * (1.0 - sentinel.ProtectionDR)));
 
+            playerDmg = Math.Max(1, (int)(playerDmg * _difficulty.PlayerDamageMultiplier));
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
 
@@ -1174,6 +1177,7 @@ public class CombatEngine : ICombatEngine
 
             // Replace the placeholder to keep the original variable name used below
             var enemyDmgFinal = enemyDmg;
+            enemyDmgFinal = Math.Max(1, (int)(enemyDmgFinal * _difficulty.EnemyDamageMultiplier));
 
             // Apply charge multiplier (3x)
             if (wasCharged)
@@ -1248,7 +1252,7 @@ public class CombatEngine : ICombatEngine
                 && player.HP > 0 && player.HP <= player.MaxHP * 0.30f)
             {
                 player.DivineHealUsedThisCombat = true;
-                var divineHeal = (int)(player.MaxHP * 0.10);
+                var divineHeal = Math.Max(1, (int)((player.MaxHP * 0.10) * _difficulty.HealingMultiplier));
                 player.Heal(divineHeal);
                 _display.ShowCombatMessage($"✨ Divine Favor! You are healed for {divineHeal} HP!");
             }
@@ -1486,12 +1490,13 @@ public class CombatEngine : ICombatEngine
 
         if (enemy.LootTable != null)
         {
-        var loot = enemy.LootTable.RollDrop(enemy, player.Level);
+        var loot = enemy.LootTable.RollDrop(enemy, player.Level, lootDropMultiplier: _difficulty.LootDropMultiplier);
         if (loot.Gold > 0)
         {
-            player.AddGold(loot.Gold);
-            _stats.GoldCollected += loot.Gold;
-            _display.ShowGoldPickup(loot.Gold, player.Gold);
+            var scaledGold = (int)(loot.Gold * _difficulty.GoldMultiplier);
+            player.AddGold(scaledGold);
+            _stats.GoldCollected += scaledGold;
+            _display.ShowGoldPickup(scaledGold, player.Gold);
         }
         if (loot.Item != null)
         {
@@ -1502,10 +1507,11 @@ public class CombatEngine : ICombatEngine
         }
         }
         
-        player.AddXP(enemy.XPValue);
+        var xpGained = Math.Max(1, (int)(enemy.XPValue * _difficulty.XPMultiplier));
+        player.AddXP(xpGained);
         CheckLevelUp(player); // Fix #616: level up first so xpToNext reflects new level threshold
         var xpToNext = 100 * player.Level;
-        _display.ShowMessage($"You gained {enemy.XPValue} XP. (Total: {player.XP}/{xpToNext} to next level)");
+        _display.ShowMessage($"You gained {xpGained} XP. (Total: {player.XP}/{xpToNext} to next level)");
         
         _stats.EnemiesDefeated++;
         

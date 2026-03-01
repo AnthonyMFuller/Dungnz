@@ -299,7 +299,7 @@ public interface IDisplayService
     int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes);
 
     /// <summary>Presents the Shrine blessing choices as an arrow-key menu and returns 1–4 or 0 (leave).</summary>
-    int ShowShrineMenuAndSelect(int playerGold);
+    int ShowShrineMenuAndSelect(int playerGold, int healCost = 30, int blessCost = 50, int fortifyCost = 75, int meditateCost = 75);
 
     /// <summary>
     /// Presents the shop menu with merchant stock, a Sell Items option, and Leave.
