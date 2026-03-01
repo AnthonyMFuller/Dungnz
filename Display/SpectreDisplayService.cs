@@ -505,8 +505,10 @@ public sealed class SpectreDisplayService : IDisplayService
             grid[pos] = room;
 
         var mapSb = new System.Text.StringBuilder();
-        mapSb.AppendLine("[bold white]═══ MAP ═══[/]   N");
-        mapSb.AppendLine("              ↑");
+        mapSb.AppendLine("[bold white]═══ MAP ═══[/]");
+        mapSb.AppendLine("      N");
+        mapSb.AppendLine("    W ✦ E");
+        mapSb.AppendLine("      S");
 
         for (int y = minY; y <= maxY; y++)
         {
@@ -525,7 +527,7 @@ public sealed class SpectreDisplayService : IDisplayService
                 if (x < maxX)
                 {
                     bool hasConnector = r.Exits.ContainsKey(Direction.East) && grid.ContainsKey((x + 1, y));
-                    mapSb.Append(hasConnector ? "-" : " ");
+                    mapSb.Append(hasConnector ? "─" : " ");
                 }
             }
             mapSb.AppendLine();
@@ -538,7 +540,7 @@ public sealed class SpectreDisplayService : IDisplayService
                     bool hasSouth = grid.TryGetValue((x, y), out var rS)
                         && rS.Exits.ContainsKey(Direction.South)
                         && grid.ContainsKey((x, y + 1));
-                    mapSb.Append(hasSouth ? " | " : "   ");
+                    mapSb.Append(hasSouth ? " │ " : "   ");
                     if (x < maxX) mapSb.Append(" ");
                 }
                 mapSb.AppendLine();
