@@ -1,3 +1,4 @@
+using System.Text.RegularExpressions;
 using Dungnz.Models;
 using Dungnz.Systems;
 using Spectre.Console;
@@ -194,7 +195,7 @@ public sealed class SpectreDisplayService : IDisplayService
 
     /// <inheritdoc/>
     public void ShowCombatMessage(string message) =>
-        AnsiConsole.MarkupLine($"  [white]{Markup.Escape(message)}[/]");
+        AnsiConsole.MarkupLine($"  [white]{Markup.Escape(StripAnsiCodes(message))}[/]");
 
     /// <inheritdoc/>
     public void ShowPlayerStats(Player player)
@@ -383,7 +384,7 @@ public sealed class SpectreDisplayService : IDisplayService
 
     /// <inheritdoc/>
     public void ShowMessage(string message) =>
-        AnsiConsole.MarkupLine(Markup.Escape(message));
+        AnsiConsole.MarkupLine(Markup.Escape(StripAnsiCodes(message)));
 
     /// <inheritdoc/>
     public void ShowError(string message) =>
@@ -567,14 +568,14 @@ public sealed class SpectreDisplayService : IDisplayService
     {
         // Map legacy ANSI color codes to Spectre color names where recognisable; fallback to white
         var spectreColor = MapAnsiToSpectre(color);
-        AnsiConsole.MarkupLine($"[{spectreColor}]{Markup.Escape(message)}[/]");
+        AnsiConsole.MarkupLine($"[{spectreColor}]{Markup.Escape(StripAnsiCodes(message))}[/]");
     }
 
     /// <inheritdoc/>
     public void ShowColoredCombatMessage(string message, string color)
     {
         var spectreColor = MapAnsiToSpectre(color);
-        AnsiConsole.MarkupLine($"  [{spectreColor}]{Markup.Escape(message)}[/]");
+        AnsiConsole.MarkupLine($"  [{spectreColor}]{Markup.Escape(StripAnsiCodes(message))}[/]");
     }
 
     /// <inheritdoc/>
@@ -583,6 +584,11 @@ public sealed class SpectreDisplayService : IDisplayService
         var spectreColor = MapAnsiToSpectre(color);
         AnsiConsole.MarkupLine($"{Markup.Escape(label),-8} [{spectreColor}]{Markup.Escape(value)}[/]");
     }
+
+    private static readonly Regex AnsiEscapePattern = new(@"\x1B\[[0-9;]*m", RegexOptions.Compiled);
+
+    private static string StripAnsiCodes(string input) =>
+        AnsiEscapePattern.Replace(input, string.Empty);
 
     private static string MapAnsiToSpectre(string ansiCode) => ansiCode switch
     {
