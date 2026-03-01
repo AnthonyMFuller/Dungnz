@@ -156,10 +156,14 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <summary>
-    /// Prints a one-line HP status comparison with color-coded HP values and mana display.
+    /// Prints a multi-line combat status block: a player row (HP bar + mana bar + active
+    /// effect badges) followed by an enemy row (HP bar + active effect badges). The number
+    /// of lines rendered varies from 3 to 5 depending on how many effects are active.
     /// </summary>
-    /// <param name="player">The player whose HP is shown on the left side.</param>
-    /// <param name="enemy">The enemy whose HP is shown on the right side.</param>
+    /// <param name="player">The player whose HP and mana are shown on the player row.</param>
+    /// <param name="enemy">The enemy whose HP is shown on the enemy row.</param>
+    /// <param name="playerEffects">Active status effects on the player, displayed as inline badges.</param>
+    /// <param name="enemyEffects">Active status effects on the enemy, displayed as inline badges.</param>
     public void ShowCombatStatus(Player player, Enemy enemy, 
         IReadOnlyList<ActiveEffect> playerEffects, 
         IReadOnlyList<ActiveEffect> enemyEffects)
@@ -1258,7 +1262,7 @@ public class ConsoleDisplayService : IDisplayService
         return $"{fillColor}{new string('█', filled)}{resetColor}{new string('░', width - filled)}";
     }
 
-    /// <summary>Stub implementation — displays combat start banner.</summary>
+    /// <summary>Renders the ANSI-styled combat start banner showing the enemy's name.</summary>
     public void ShowCombatStart(Enemy enemy)
     {
         var line = new string('═', 44);
@@ -1272,7 +1276,7 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine();
     }
     
-    /// <summary>Stub implementation — displays combat entry flags.</summary>
+    /// <summary>Displays one-line flag annotations for the enemy (Elite badge, Enraged state, etc.).</summary>
     public void ShowCombatEntryFlags(Enemy enemy)
     {
         if (enemy.IsElite)
@@ -1282,7 +1286,7 @@ public class ConsoleDisplayService : IDisplayService
             Console.WriteLine($"  {Systems.ColorCodes.BrightRed}{Systems.ColorCodes.Bold}⚡ ENRAGED{Systems.ColorCodes.Reset}");
     }
     
-    /// <summary>Stub implementation — displays level-up choice menu.</summary>
+    /// <summary>Renders a box-drawn level-up choice menu showing current and projected values for HP, Attack, and Defense.</summary>
     public void ShowLevelUpChoice(Player player)
     {
         const int W = 38;
@@ -1298,7 +1302,7 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine();
     }
     
-    /// <summary>Stub implementation — displays floor banner.</summary>
+    /// <summary>Renders a box-drawn floor banner with floor number, dungeon variant name, and color-coded danger level.</summary>
     public void ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant)
     {
         var threatColor = floor <= 2 ? Systems.ColorCodes.Green 
@@ -1321,7 +1325,7 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine();
     }
     
-    /// <summary>Stub implementation — displays enemy detail card.</summary>
+    /// <summary>Renders a box-drawn enemy detail card showing name, HP bar, Attack, Defense, XP value, and Elite badge if applicable.</summary>
     public void ShowEnemyDetail(Enemy enemy)
     {
         const int W = 36;
@@ -1343,7 +1347,7 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine($"╚{border}╝");
     }
     
-    /// <summary>Stub implementation — displays victory screen.</summary>
+    /// <summary>Renders the box-drawn victory screen with player name, level, floors conquered, and run statistics.</summary>
     public void ShowVictory(Player player, int floorsCleared, Systems.RunStats stats)
     {
         const int W = 42;
@@ -1364,7 +1368,7 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine();
     }
     
-    /// <summary>Stub implementation — displays game over screen.</summary>
+    /// <summary>Renders the box-drawn game over screen with player name, level, cause of death, and run statistics.</summary>
     public void ShowGameOver(Player player, string? killedBy, Systems.RunStats stats)
     {
         const int W = 42;
