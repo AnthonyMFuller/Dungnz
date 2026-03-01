@@ -50,3 +50,7 @@
 - Label structure: `$"{color}NAME{reset}     [description]"`
 - Must preserve color codes exactly; only update descriptive text after the difficulty name
 - Terminal rendering requires ~75 character limit per label for clean display
+
+---
+
+📌 **Team update (2026-03-01):** Retro action items adopted by team — content review in PR flow: Fury must be CC'd on any PR that touches player-facing strings (command names, UI labels, display text) for lightweight review pass before merge. — decided by Coulson (Retrospective)

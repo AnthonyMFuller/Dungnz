@@ -14194,3 +14194,16 @@ Each batch creates a GitHub issue with testable deliverable. Methods use Spectre
 **D-SPECTRE-003: Blazor compatibility preserved** — A future `BlazorDisplayService : IDisplayService` remains viable. The interface uses only CLR primitives and model types — no Console or Spectre types in signatures.
 
 **D-SPECTRE-004: ConsoleMenuNavigator deprecation** — Once SpectreDisplayService is default, `IMenuNavigator` and `ConsoleMenuNavigator` are obsolete. Menu navigation is an internal implementation detail of each display service.
+
+---
+
+### 2026-03-01: Retro action items
+**By:** Coulson (Retrospective)
+**What:**
+- **Same-day push rule:** Completed local work must be pushed and have a draft PR open by end of session. Work that lives only locally is invisible to CI, reviewers, and teammates.
+- **Stub-gap policy:** Any new `IDisplayService` method must have same-day stubs in both `FakeDisplayService` and `TestDisplayService` before the implementing PR is merged. This is a PR checklist item, not optional.
+- **Content review in PR flow:** Fury must be CC'd on any PR that touches player-facing strings (command names, UI labels, display text) for a lightweight review pass before merge.
+- **Cross-layer sync:** Any feature that spans display layer + game loop + systems must have a 15-minute upfront domain sync before work begins and before PRs are opened.
+- **Pre-existing red tests are P0:** A failing test must be triaged and assigned within the same iteration it is discovered. Carrying a known-red test into the next sprint is not acceptable.
+- **`IDisplayService` menu return types:** Sentinel/magic-string patterns (e.g., `__TAKE_ALL__`) are disallowed for future menu returns. Use typed discriminated records or result enums. Existing `__TAKE_ALL__` sentinel to be replaced by Barton (P1).
+**Why:** Team retrospective — improving iteration quality, reducing invisible work, hardening test infrastructure, and establishing content workflow

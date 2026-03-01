@@ -1069,3 +1069,7 @@ Adding ASCII art for enemies is **highly feasible**. The project's existing data
 - The `ShowEquipMenuAndSelect`/`ShowUseMenuAndSelect` pattern (Select → Append Cancel) extended cleanly with Prepend for the "Take All" option
 - `LevenshteinDistance` is only in `EquipmentManager`; no need to copy — just reference it as a static method
 - FakeDisplayService stubs for new menu methods should return null to keep existing tests passing without test-breaking side effects
+
+---
+
+📌 **Team update (2026-03-01):** Retro action items adopted by team — stub-gap policy (new IDisplayService methods must have same-day stubs in FakeDisplayService and TestDisplayService before merge); sentinel pattern ban (use typed discriminated records or result enums; replace existing __TAKE_ALL__ sentinel, P1); cross-layer domain sync required (15-min upfront sync before work on features spanning display + game loop + systems); same-day push rule (completed work must be pushed with draft PR by end of session); pre-existing red tests are P0 (triage within same iteration); content review for player-facing strings. — decided by Coulson (Retrospective)
