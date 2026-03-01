@@ -860,3 +860,35 @@ Created comprehensive regression test suite for difficulty balance overhaul with
 
 **Key Pattern:**
 - `file class BalanceTestEnemy : Enemy` — file-scoped class restricts visibility to test file only (C# 11+ feature), cleaner than `internal class`
+
+### 2026-03-01: TakeCommandTests — TAKE Command Enhancements
+
+**Task:** Write tests for the enhanced TAKE command (no-arg menu, Take All sentinel, fuzzy matching).
+
+**Findings on entry:**
+- Barton had already added `ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems)` to `IDisplayService` and `FakeDisplayService`, and fully implemented the new `HandleTake` in `GameLoop.cs`.
+- `TestDisplayService` was missing the stub — pre-existing build breakage I fixed with a one-line null-returning stub.
+- 1 pre-existing test failure (`CraftRecipeDisplayTests.ShowCraftRecipe_PlayerHasAllIngredients_OutputContainsCheckmark`) unrelated to TAKE work. Did not touch it.
+
+**Tests Written (`Dungnz.Tests/TakeCommandTests.cs` — 10 tests, all passing):**
+1. `HandleTake_NoArgument_EmptyRoom_ShowsError` — empty room, no arg → error, no menu
+2. `HandleTake_NoArgument_ItemsInRoom_ShowsMenu` — items in room, no arg → menu called
+3. `HandleTake_NoArgument_UserCancels_NoItemTaken` — null return → nothing taken
+4. `HandleTake_NoArgument_UserSelectsItem_ItemMovedToInventory` — selected item → inventory
+5. `HandleTake_TakeAll_AllItemsTaken` — `__TAKE_ALL__` sentinel → all items taken
+6. `HandleTake_TakeAll_InventoryFull_StopsGracefully` — full inventory + take all → graceful stop
+7. `HandleTake_WithArgument_ExactMatch_ItemTaken` — "take potion" exact match
+8. `HandleTake_WithArgument_FuzzyMatch_ItemTaken` — "take potoin" (1 transposition) → fuzzy match
+9. `HandleTake_WithArgument_NoMatch_ShowsError` — "take axe" → no match → error
+10. `HandleTake_InventoryFull_ShowsError` — single take, full inventory → error, item stays
+
+**Test infrastructure approach:**
+- `TakeFakeDisplay : FakeDisplayService, IDisplayService` — re-implements `IDisplayService` so the `new ShowTakeMenuAndSelect` takes precedence in interface dispatch (C# re-implementation pattern, no `virtual`/`override` needed on the base).
+- `ShowTakeMenuCalled` bool + `ShowTakeMenuResult` property provide full test control.
+- Inventory-full assertions use `display.AllOutput.Should().Contain(s => s.Contains("full"))` to be implementation-agnostic.
+
+**Fuzzy match note:**
+- Barton used `tolerance = Math.Max(2, length/2)` (slightly tighter than EquipmentManager's `Max(3, length/2)`).
+- "potoin" vs "Potion": Levenshtein = 1, tolerance = Max(2, 3) = 3 → within range. ✓
+
+**Test count:** 1346 baseline → 1347 – 10 pre-existing passes = 10 new tests added. All 1347 pass (1 pre-existing unrelated failure unchanged).
