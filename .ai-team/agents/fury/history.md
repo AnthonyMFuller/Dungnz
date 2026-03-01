@@ -43,4 +43,10 @@
 
 ## Learnings
 
-_To be updated as work progresses._
+### SelectDifficulty() Location & Structure
+- Located in `Display/DisplayService.cs` around line 1124-1138
+- Method returns a Difficulty enum value from a SelectFromMenu() prompt
+- Wraps color codes around difficulty names: `{colorCode}NAME{reset}`
+- Label structure: `$"{color}NAME{reset}     [description]"`
+- Must preserve color codes exactly; only update descriptive text after the difficulty name
+- Terminal rendering requires ~75 character limit per label for clean display

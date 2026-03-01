@@ -140,7 +140,7 @@ public class DungeonGenerator
                     }
                 }
 
-                if (_rng.Next(100) < 20) room.Merchant = Merchant.CreateRandom(_rng, floor, _allItems);
+                if (_rng.Next(100) < Math.Min(35, (int)(20 * (difficulty?.MerchantSpawnMultiplier ?? 1.0f)))) room.Merchant = Merchant.CreateRandom(_rng, floor, _allItems, difficulty);
                 if (_rng.Next(100) < 15) room.Hazard = (HazardType)(_rng.Next(3) + 1); // 1-3 = Spike/Poison/Fire
 
                 // Assign per-action environmental hazards by floor range
@@ -174,7 +174,7 @@ public class DungeonGenerator
             {
                 var room = grid[y, x];
                 if (room == startRoom || room == exitRoom) continue;
-                if (_rng.NextDouble() < 0.15)
+                if (_rng.NextDouble() < Math.Min(0.35, 0.15 * (difficulty?.ShrineSpawnMultiplier ?? 1.0f)))
                     room.HasShrine = true;
             }
         }

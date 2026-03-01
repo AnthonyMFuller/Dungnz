@@ -41,14 +41,15 @@ public class IntroSequence
         var name = _display.ReadPlayerName();
         var classDef = _display.SelectClass(prestige);
         var difficulty = _display.SelectDifficulty();
+        var settings = DifficultySettings.For(difficulty);
 
-        var player = BuildPlayer(name, classDef, prestige);
+        var player = BuildPlayer(name, classDef, prestige, settings);
         var seed = new Random().Next(100000, 999999);
 
         return (player, seed, difficulty);
     }
 
-    private static Player BuildPlayer(string name, PlayerClassDefinition classDef, PrestigeData prestige)
+    private static Player BuildPlayer(string name, PlayerClassDefinition classDef, PrestigeData prestige, DifficultySettings settings)
     {
         var player = new Player { Name = name };
         player.Class = classDef.Class;
@@ -68,6 +69,20 @@ public class IntroSequence
             player.Defense += prestige.BonusStartDefense;
             player.MaxHP += prestige.BonusStartHP;
             player.HP = player.MaxHP;
+        }
+
+        player.Gold = settings.StartingGold;
+
+        for (int i = 0; i < settings.StartingPotions; i++)
+        {
+            player.Inventory.Add(new Item
+            {
+                Name = "Health Potion",
+                Type = ItemType.Consumable,
+                HealAmount = 20,
+                Description = "Restores 20 HP.",
+                Tier = ItemTier.Common
+            });
         }
 
         return player;

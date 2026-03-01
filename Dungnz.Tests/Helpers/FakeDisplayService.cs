@@ -153,7 +153,7 @@ public class FakeDisplayService : IDisplayService
     public int ShowTrapChoiceAndSelect(string header, string option1, string option2) { AllOutput.Add("trap_choice"); return 0; }
     public int ShowForgottenShrineMenuAndSelect() { AllOutput.Add("shrine_menu"); return 0; }
     public int ShowContestedArmoryMenuAndSelect(int playerDefense) { AllOutput.Add("armory_menu"); return 0; }
-    public int ShowShrineMenuAndSelect(int playerGold) 
+    public int ShowShrineMenuAndSelect(int playerGold, int healCost = 30, int blessCost = 50, int fortifyCost = 75, int meditateCost = 75) 
     { 
         AllOutput.Add("shrine_regular"); 
         if (_input is not null)

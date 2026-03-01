@@ -571,8 +571,9 @@ public class GameLoop
                     _display.ShowMessage(item.Description);
                 if (item.HealAmount > 0)
                 {
+                    var healAmt = Math.Max(1, (int)(item.HealAmount * _difficulty.HealingMultiplier));
                     var oldHP = _player.HP;
-                    _player.Heal(item.HealAmount);
+                    _player.Heal(healAmt);
                     var healedAmount = _player.HP - oldHP;
                     _player.Inventory.Remove(item);
                     _display.ShowMessage($"You use {item.Name} and restore {healedAmount} HP. Current HP: {_player.HP}/{_player.MaxHP}");
@@ -816,20 +817,26 @@ public class GameLoop
             _player.SacredGroundActive = false;
         }
 
-        var choice = _display.ShowShrineMenuAndSelect(_player.Gold);
+        // Scale shrine costs inversely by HealingMultiplier (higher healing = cheaper shrines)
+        var shrineHealCost = Math.Max(5, (int)(30 / _difficulty.HealingMultiplier));
+        var shrineBlessCost = Math.Max(10, (int)(50 / _difficulty.HealingMultiplier));
+        var shrineMaxHPCost = Math.Max(15, (int)(75 / _difficulty.HealingMultiplier));
+        var shrineMeditateCost = Math.Max(15, (int)(75 / _difficulty.HealingMultiplier));
+
+        var choice = _display.ShowShrineMenuAndSelect(_player.Gold, shrineHealCost, shrineBlessCost, shrineMaxHPCost, shrineMeditateCost);
         switch (choice)
         {
             case 1: // Heal fully
-                if (_player.Gold < 30) { _display.ShowError("Not enough gold (need 30g)."); return; }
-                _player.SpendGold(30);
+                if (_player.Gold < shrineHealCost) { _display.ShowError($"Not enough gold (need {shrineHealCost}g)."); return; }
+                _player.SpendGold(shrineHealCost);
                 _player.Heal(_player.MaxHP);
                 _display.ShowMessage($"The shrine heals you fully! HP: {_player.HP}/{_player.MaxHP}");
                 _currentRoom.ShrineUsed = true;
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantHeal));
                 break;
             case 2: // Bless
-                if (_player.Gold < 50) { _display.ShowError("Not enough gold (need 50g)."); return; }
-                _player.SpendGold(50);
+                if (_player.Gold < shrineBlessCost) { _display.ShowError($"Not enough gold (need {shrineBlessCost}g)."); return; }
+                _player.SpendGold(shrineBlessCost);
                 _player.ModifyAttack(2);
                 _player.ModifyDefense(2);
                 _display.ShowMessage("The shrine blesses you! +2 ATK/DEF.");
@@ -837,16 +844,16 @@ public class GameLoop
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantPower));
                 break;
             case 3: // Fortify
-                if (_player.Gold < 75) { _display.ShowError("Not enough gold (need 75g)."); return; }
-                _player.SpendGold(75);
+                if (_player.Gold < shrineMaxHPCost) { _display.ShowError($"Not enough gold (need {shrineMaxHPCost}g)."); return; }
+                _player.SpendGold(shrineMaxHPCost);
                 _player.FortifyMaxHP(10);
                 _display.ShowMessage($"The shrine fortifies you! MaxHP permanently +10. ({_player.MaxHP} MaxHP)");
                 _currentRoom.ShrineUsed = true;
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantProtection));
                 break;
             case 4: // Meditate
-                if (_player.Gold < 75) { _display.ShowError("Not enough gold (need 75g)."); return; }
-                _player.SpendGold(75);
+                if (_player.Gold < shrineMeditateCost) { _display.ShowError($"Not enough gold (need {shrineMeditateCost}g)."); return; }
+                _player.SpendGold(shrineMeditateCost);
                 _player.FortifyMaxMana(10);
                 _display.ShowMessage($"The shrine expands your mind! MaxMana permanently +10. ({_player.MaxMana} MaxMana)");
                 _currentRoom.ShrineUsed = true;
