@@ -2120,3 +2120,16 @@ Both PRs reviewed and merged in Round 3 (see below).
 - Final test run on master: **1394 total, 1389 passed, 5 pre-existing failures, 0 regressions.**
 
 **Decisions:** See `.ai-team/decisions/inbox/coulson-cleanup-round.md`.
+### 2026-03-01: Housekeeping — Close Stale Issues + Fix Bug #745
+
+**Context:** Anthony requested closing two stale issues already resolved by prior PRs, plus fixing bug #745 (raw ANSI escape codes in Spectre Console context).
+
+**Stale Issues Closed:**
+- ✅ Issue #755 (HP encapsulation) — closed, resolved by PR #789
+- ✅ Issue #766 (dotnet tool manifest) — closed, resolved by PR #785
+
+**Bug #745 Fix (PR #809):**
+- **Problem:** Callers in CombatEngine pass strings with raw ANSI escape codes (`\x1B[31m` etc.) to `ShowMessage` and `ShowCombatMessage`. `Markup.Escape()` only escapes `[`/`]` — it does NOT strip raw ANSI sequences, causing rendering corruption.
+- **Fix:** Added compiled `Regex` helper `StripAnsiCodes` to `SpectreDisplayService` that strips `\x1B[...m` patterns. Applied defensively in `ShowMessage`, `ShowCombatMessage`, `ShowColoredMessage`, and `ShowColoredCombatMessage`.
+- **Branch:** `squad/745-strip-ansi-codes` → PR #809
+- **Tests:** All 15 DisplayServiceTests pass. No regressions (4 pre-existing failures unrelated).
