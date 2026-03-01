@@ -505,8 +505,15 @@ public class GameLoop
         if (string.IsNullOrWhiteSpace(itemName))
         {
             _turnConsumed = false;
-            _display.ShowError("Use what?");
-            return;
+            var usable = _player.Inventory.Where(i => i.Type == ItemType.Consumable).ToList();
+            if (usable.Count == 0)
+            {
+                _display.ShowError("You have no usable items in your inventory.");
+                return;
+            }
+            var selected = _display.ShowUseMenuAndSelect(usable.AsReadOnly());
+            if (selected == null) return;
+            itemName = selected.Name;
         }
 
         // Special: USE SHRINE
@@ -528,9 +535,33 @@ public class GameLoop
 
         if (item == null)
         {
-            _turnConsumed = false;
-            _display.ShowError($"You don't have '{itemName}'.");
-            return;
+            // Pass 2: fuzzy Levenshtein distance match
+            int tolerance = Math.Max(3, itemNameLower.Length / 2);
+            var candidates = _player.Inventory
+                .Select(i => (Item: i, Distance: Systems.EquipmentManager.LevenshteinDistance(itemNameLower, i.Name.ToLowerInvariant())))
+                .Where(x => x.Distance <= tolerance)
+                .ToList();
+
+            if (candidates.Count == 0)
+            {
+                _turnConsumed = false;
+                _display.ShowError($"You don't have '{itemName}'.");
+                return;
+            }
+
+            int bestDistance = candidates.Min(x => x.Distance);
+            var bestCandidates = candidates.Where(x => x.Distance == bestDistance).ToList();
+
+            if (bestCandidates.Count > 1)
+            {
+                _turnConsumed = false;
+                var names = string.Join(", ", bestCandidates.Select(x => x.Item.Name));
+                _display.ShowError($"Did you mean one of: {names}? Please be more specific.");
+                return;
+            }
+
+            item = bestCandidates[0].Item;
+            _display.ShowMessage($"(Did you mean \"{item.Name}\"?)");
         }
 
         switch (item.Type)

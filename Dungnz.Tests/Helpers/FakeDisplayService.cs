@@ -217,6 +217,19 @@ public class FakeDisplayService : IDisplayService
         }
         return null;
     }
+
+    public Item? ShowUseMenuAndSelect(IReadOnlyList<Item> usable)
+    {
+        AllOutput.Add("use_menu");
+        if (_input != null)
+        {
+            var line = _input.ReadLine()?.Trim() ?? "";
+            var available = usable.ToList();
+            if (int.TryParse(line, out int idx) && idx >= 1 && idx <= available.Count)
+                return available[idx - 1];
+        }
+        return null;
+    }
     
     public void ShowCombatStart(Enemy enemy) { AllOutput.Add($"combat_start:{enemy.Name}"); }
     public void ShowCombatEntryFlags(Enemy enemy) { AllOutput.Add($"combat_flags:{enemy.Name}"); }
