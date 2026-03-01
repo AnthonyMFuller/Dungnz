@@ -696,16 +696,16 @@ public sealed class SpectreDisplayService : IDisplayService
             table.AddRow(slotLabel, name, statsStr);
         }
 
-        AddSlot("⚔  Weapon",    player.EquippedWeapon,    isWeapon: true);
-        AddSlot("💍 Accessory", player.EquippedAccessory, isAccessory: true);
-        AddSlot("🪖 Head",      player.EquippedHead);
-        AddSlot("🥋 Shoulders", player.EquippedShoulders);
-        AddSlot("🛡  Chest",    player.EquippedChest);
-        AddSlot("🧤 Hands",     player.EquippedHands);
-        AddSlot("👖 Legs",      player.EquippedLegs);
-        AddSlot("👟 Feet",      player.EquippedFeet);
-        AddSlot("🧥 Back",      player.EquippedBack);
-        AddSlot("⛨  Off-Hand",  player.EquippedOffHand);
+        AddSlot(EL("⚔", "Weapon"),    player.EquippedWeapon,    isWeapon: true);
+        AddSlot(EL("💍", "Accessory"), player.EquippedAccessory, isAccessory: true);
+        AddSlot(EL("🪖", "Head"),      player.EquippedHead);
+        AddSlot(EL("🥋", "Shoulders"), player.EquippedShoulders);
+        AddSlot(EL("🛡", "Chest"),     player.EquippedChest);
+        AddSlot(EL("🧤", "Hands"),     player.EquippedHands);
+        AddSlot(EL("👖", "Legs"),      player.EquippedLegs);
+        AddSlot(EL("👟", "Feet"),      player.EquippedFeet);
+        AddSlot(EL("🧥", "Back"),      player.EquippedBack);
+        AddSlot(EL("⛨", "Off-Hand"),  player.EquippedOffHand);
 
         AnsiConsole.WriteLine();
         AnsiConsole.Write(table);
@@ -1079,10 +1079,10 @@ public sealed class SpectreDisplayService : IDisplayService
         return PromptFromMenu("[bold yellow]Choose your action:[/]",
             new (string, string)[]
             {
-                ("⚔  Attack",  "A"),
-                ("✨ Ability", "B"),
-                ("🏃 Flee",    "F"),
-                ("🧪 Use Item","I"),
+                (EL("⚔", "Attack"),   "A"),
+                (EL("✨", "Ability"),  "B"),
+                (EL("🏃", "Flee"),     "F"),
+                (EL("🧪", "Use Item"), "I"),
             });
     }
 
@@ -1255,6 +1255,12 @@ public sealed class SpectreDisplayService : IDisplayService
                 .AddChoices(optList));
         return selected.Value;
     }
+
+    // Wide emoji occupy 2 terminal columns; narrow symbols occupy 1.
+    // Pad with 1 space (wide) or 2 spaces (narrow) so text always starts at visual column 3.
+    private static readonly HashSet<string> NarrowEmoji = ["⚔", "⛨", "⚡", "⚗", "☠", "★", "↩", "•"];
+    private static string EL(string emoji, string text) =>
+        NarrowEmoji.Contains(emoji) ? $"{emoji}  {text}" : $"{emoji} {text}";
 
     private static string ItemTypeIcon(ItemType type) => type switch
     {
