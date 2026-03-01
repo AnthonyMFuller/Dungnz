@@ -11,14 +11,13 @@ namespace Dungnz.Display;
 public class ConsoleDisplayService : IDisplayService
 {
     private readonly IInputReader _input;
-    // TODO: wire up navigator call-sites (issue #586)
-    private readonly IMenuNavigator _navigator;
+    private readonly IMenuNavigator? _navigator;
 
     /// <summary>Initialises the display service with the given input and menu navigator.</summary>
     public ConsoleDisplayService(IInputReader? input = null, IMenuNavigator? navigator = null)
     {
         _input = input ?? new ConsoleInputReader();
-        _navigator = navigator ?? new ConsoleMenuNavigator();
+        _navigator = navigator;
     }
 
     /// <summary>
@@ -662,7 +661,7 @@ public class ConsoleDisplayService : IDisplayService
             .Select(o => new MenuOption<T>(o.Label, o.Value))
             .ToList()
             .AsReadOnly();
-        return _navigator.Select(menuOptions);
+        return _navigator!.Select(menuOptions);
     }
 
     private static string ItemTypeIcon(ItemType type) => type switch
