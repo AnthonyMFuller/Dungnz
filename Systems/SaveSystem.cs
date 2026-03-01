@@ -76,6 +76,10 @@ public static class SaveSystem
                 Merchant = r.Merchant,
                 Hazard = r.Hazard,
                 RoomType = r.Type,
+                SpecialRoomUsed = r.SpecialRoomUsed,
+                BlessedHealApplied = r.BlessedHealApplied,
+                EnvironmentalHazard = r.EnvironmentalHazard,
+                Trap = r.Trap,
                 BossState = r.Enemy is Dungnz.Systems.Enemies.DungeonBoss boss
                     ? new BossSaveState
                     {
@@ -155,7 +159,11 @@ public static class SaveSystem
                     ShrineUsed = roomData.ShrineUsed,
                     Merchant = roomData.Merchant,
                     Hazard = roomData.Hazard,
-                    Type = roomData.RoomType
+                    Type = roomData.RoomType,
+                    SpecialRoomUsed = roomData.SpecialRoomUsed,
+                    BlessedHealApplied = roomData.BlessedHealApplied,
+                    EnvironmentalHazard = roomData.EnvironmentalHazard,
+                    Trap = roomData.Trap
                 };
                 if (roomData.BossState is { } bossState &&
                     room.Enemy is Dungnz.Systems.Enemies.DungeonBoss dungeonBoss)
