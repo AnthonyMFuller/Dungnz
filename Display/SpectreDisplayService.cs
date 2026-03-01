@@ -110,27 +110,59 @@ public sealed class SpectreDisplayService : IDisplayService
 
     /// <inheritdoc/>
     public Difficulty SelectDifficulty() =>
-        throw new NotImplementedException("SpectreDisplayService.SelectDifficulty not yet implemented");
+        PromptFromMenu("[bold yellow]Choose your difficulty:[/]",
+            new (string, Difficulty)[]
+            {
+                ("[green]CASUAL[/]     Weaker enemies · Cheap shops · Start with 50g + 3 potions", Difficulty.Casual),
+                ("[yellow]NORMAL[/]     Balanced challenge · The intended experience · Start with 15g + 1 potion", Difficulty.Normal),
+                ("[red]HARD[/]       Stronger enemies · Scarce rewards · No starting supplies · ☠ Permadeath", Difficulty.Hard),
+            });
 
     /// <inheritdoc/>
-    public PlayerClassDefinition SelectClass(PrestigeData? prestige) =>
-        throw new NotImplementedException("SpectreDisplayService.SelectClass not yet implemented");
+    public PlayerClassDefinition SelectClass(PrestigeData? prestige)
+    {
+        var choices = PlayerClassDefinition.All.Select(def =>
+        {
+            var presBonus = prestige != null && prestige.PrestigeLevel > 0
+                ? $" [yellow](+{prestige.BonusStartHP} HP, +{prestige.BonusStartAttack} ATK, +{prestige.BonusStartDefense} DEF prestige)[/]"
+                : "";
+            var label = $"{ClassIcon(def)} [bold]{Markup.Escape(def.Name),-12}[/] — {Markup.Escape(def.Description)}{presBonus}";
+            return (label, def);
+        });
+        return PromptFromMenu("[bold yellow]Choose your class:[/]", choices);
+    }
 
     /// <inheritdoc/>
     public void ShowShop(IEnumerable<(Item item, int price)> stock, int playerGold) =>
         throw new NotImplementedException("SpectreDisplayService.ShowShop not yet implemented");
 
     /// <inheritdoc/>
-    public int ShowShopAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowShopAndSelect not yet implemented");
+    public int ShowShopAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold)
+    {
+        var stockList = stock.ToList();
+        var options = stockList
+            .Select((s, i) => (
+                $"{ItemTypeIcon(s.item.Type)} {Markup.Escape(s.item.Name)}  [grey]{Markup.Escape(PrimaryStatLabel(s.item))}[/]  [yellow]{s.price}g[/]",
+                i + 1))
+            .Append(("[grey]Cancel[/]", 0));
+        return PromptFromMenu("[bold yellow]Buy an item:[/]", options);
+    }
 
     /// <inheritdoc/>
     public void ShowSellMenu(IEnumerable<(Item item, int sellPrice)> items, int playerGold) =>
         throw new NotImplementedException("SpectreDisplayService.ShowSellMenu not yet implemented");
 
     /// <inheritdoc/>
-    public int ShowSellMenuAndSelect(IEnumerable<(Item item, int sellPrice)> items, int playerGold) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowSellMenuAndSelect not yet implemented");
+    public int ShowSellMenuAndSelect(IEnumerable<(Item item, int sellPrice)> items, int playerGold)
+    {
+        var itemList = items.ToList();
+        var options = itemList
+            .Select((s, i) => (
+                $"{ItemTypeIcon(s.item.Type)} {Markup.Escape(s.item.Name)}  [grey]{Markup.Escape(PrimaryStatLabel(s.item))}[/]  [green]+{s.sellPrice}g[/]",
+                i + 1))
+            .Append(("[grey]Cancel[/]", 0));
+        return PromptFromMenu("[bold yellow]Sell an item:[/]", options);
+    }
 
     /// <inheritdoc/>
     public void ShowCraftRecipe(string recipeName, Item result, List<(string ingredient, bool playerHasIt)> ingredients) =>
@@ -170,59 +202,229 @@ public sealed class SpectreDisplayService : IDisplayService
 
     /// <inheritdoc/>
     public int ShowLevelUpChoiceAndSelect(Player player) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowLevelUpChoiceAndSelect not yet implemented");
+        PromptFromMenu("[bold yellow]★ Choose a stat bonus:[/]",
+            new (string, int)[]
+            {
+                ($"+5 Max HP     [grey]({player.MaxHP} → {player.MaxHP + 5})[/]", 1),
+                ($"+2 Attack     [grey]({player.Attack} → {player.Attack + 2})[/]", 2),
+                ($"+2 Defense    [grey]({player.Defense} → {player.Defense + 2})[/]", 3),
+            });
 
     /// <inheritdoc/>
-    public string ShowCombatMenuAndSelect(Player player, Enemy enemy) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowCombatMenuAndSelect not yet implemented");
+    public string ShowCombatMenuAndSelect(Player player, Enemy enemy)
+    {
+        var ctx = new System.Text.StringBuilder($"Mana: {player.Mana}/{player.MaxMana}");
+        if (player.Class == PlayerClass.Rogue)
+        {
+            var dots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
+            ctx.Append($"  ⚡ Combo: {dots}");
+        }
+        if (player.Class == PlayerClass.Mage && player.IsManaShieldActive)
+            ctx.Append(" [SHIELD ACTIVE]");
+        if (player.Class == PlayerClass.Paladin && player.DivineShieldTurnsRemaining > 0)
+            ctx.Append($" [DIVINE SHIELD: {player.DivineShieldTurnsRemaining}T]");
+        AnsiConsole.MarkupLine($"[grey]{Markup.Escape(ctx.ToString())}[/]");
+        return PromptFromMenu("[bold yellow]Choose your action:[/]",
+            new (string, string)[]
+            {
+                ("⚔  Attack",  "A"),
+                ("✨ Ability", "B"),
+                ("🏃 Flee",    "F"),
+                ("🧪 Use Item","I"),
+            });
+    }
 
     /// <inheritdoc/>
-    public int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowCraftMenuAndSelect not yet implemented");
+    public int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes)
+    {
+        var recipeList = recipes.ToList();
+        var options = recipeList
+            .Select((r, i) => (
+                r.canCraft
+                    ? $"[green]✅ {Markup.Escape(r.recipeName)}[/]"
+                    : $"[red]❌ {Markup.Escape(r.recipeName)}[/]",
+                i + 1))
+            .Append(("[grey]↩  Cancel[/]", 0));
+        return PromptFromMenu("[bold yellow]=== CRAFTING — Choose a recipe ===[/]", options);
+    }
 
     /// <inheritdoc/>
     public int ShowShrineMenuAndSelect(int playerGold, int healCost = 30, int blessCost = 50, int fortifyCost = 75, int meditateCost = 75) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowShrineMenuAndSelect not yet implemented");
+        PromptFromMenu("[bold yellow]✨ [[Shrine Menu]][/]",
+            new (string, int)[]
+            {
+                ($"Heal fully        — [yellow]{healCost}g[/]  [grey](Your gold: {playerGold}g)[/]", 1),
+                ($"Bless             — [yellow]{blessCost}g[/]  [grey](+2 ATK/DEF permanently)[/]", 2),
+                ($"Fortify           — [yellow]{fortifyCost}g[/]  [grey](MaxHP +10, permanent)[/]", 3),
+                ($"Meditate          — [yellow]{meditateCost}g[/]  [grey](MaxMana +10, permanent)[/]", 4),
+                ("[grey]Leave[/]", 0),
+            });
 
     /// <inheritdoc/>
-    public int ShowShopWithSellAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowShopWithSellAndSelect not yet implemented");
+    public int ShowShopWithSellAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold)
+    {
+        var stockList = stock.ToList();
+        var options = stockList
+            .Select((s, i) => (
+                $"{ItemTypeIcon(s.item.Type)} {Markup.Escape(s.item.Name)}  [grey]{Markup.Escape(PrimaryStatLabel(s.item))}[/]  [yellow]{s.price}g[/]",
+                i + 1))
+            .Append(("[yellow]💰 Sell Items[/]", -1))
+            .Append(("[grey]Leave[/]", 0));
+        return PromptFromMenu("[bold yellow]Merchant — what would you like?[/]", options);
+    }
 
     /// <inheritdoc/>
     public bool ShowConfirmMenu(string prompt) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowConfirmMenu not yet implemented");
+        PromptFromMenu($"[bold yellow]{Markup.Escape(prompt)}[/]",
+            new (string, bool)[]
+            {
+                ("[green]Yes[/]", true),
+                ("[grey]No[/]", false),
+            });
 
     /// <inheritdoc/>
     public int ShowTrapChoiceAndSelect(string header, string option1, string option2) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowTrapChoiceAndSelect not yet implemented");
+        PromptFromMenu($"[bold yellow]{Markup.Escape(header)}[/]",
+            new (string, int)[]
+            {
+                (Markup.Escape(option1), 1),
+                (Markup.Escape(option2), 2),
+                ("[grey]Leave[/]", 0),
+            });
 
     /// <inheritdoc/>
     public int ShowForgottenShrineMenuAndSelect() =>
-        throw new NotImplementedException("SpectreDisplayService.ShowForgottenShrineMenuAndSelect not yet implemented");
+        PromptFromMenu("[bold yellow]🕯 [[Forgotten Shrine]] — choose a blessing:[/]",
+            new (string, int)[]
+            {
+                ("Holy Strength   — [grey]+5 ATK (lasts until next floor)[/]", 1),
+                ("Sacred Ground   — [grey]Auto-heal at shrines[/]", 2),
+                ("Warding Veil    — [grey]20% chance to deflect enemy attacks this floor[/]", 3),
+                ("[grey]Leave[/]", 0),
+            });
 
     /// <inheritdoc/>
     public int ShowContestedArmoryMenuAndSelect(int playerDefense) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowContestedArmoryMenuAndSelect not yet implemented");
+        PromptFromMenu("[bold yellow]⚔ [[Contested Armory]] — how do you approach?[/]",
+            new (string, int)[]
+            {
+                ($"Careful approach — [grey]disarm traps (requires DEF > 12, yours: {playerDefense})[/]", 1),
+                ("Reckless grab   — [grey]take what you can (15-30 damage)[/]", 2),
+                ("[grey]Leave[/]", 0),
+            });
 
     /// <inheritdoc/>
     public Ability? ShowAbilityMenuAndSelect(
         IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities,
-        IEnumerable<Ability> availableAbilities) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowAbilityMenuAndSelect not yet implemented");
+        IEnumerable<Ability> availableAbilities)
+    {
+        foreach (var (ability, onCooldown, cooldownTurns, notEnoughMana) in unavailableAbilities)
+        {
+            if (onCooldown)
+                AnsiConsole.MarkupLine($"  [grey]○ {Markup.Escape(ability.Name)} — Cooldown: {cooldownTurns} turns (Cost: {ability.ManaCost} MP)[/]");
+            else if (notEnoughMana)
+                AnsiConsole.MarkupLine($"  [red]○ {Markup.Escape(ability.Name)} — Need {ability.ManaCost} MP (Cost: {ability.ManaCost} MP)[/]");
+        }
+        var availList = availableAbilities.ToList();
+        var options = availList
+            .Select(a => (
+                $"{Markup.Escape(a.Name)} — [grey]{Markup.Escape(a.Description)} (Cost: {a.ManaCost} MP)[/]",
+                (Ability?)a))
+            .Append(("[grey]Cancel[/]", (Ability?)null));
+        return PromptFromMenu("[bold yellow]=== Abilities ===[/]", options);
+    }
 
     /// <inheritdoc/>
-    public Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowCombatItemMenuAndSelect not yet implemented");
+    public Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables)
+    {
+        var options = consumables
+            .Select(item =>
+            {
+                var manaStr = item.ManaRestore > 0 ? $" [blue]+{item.ManaRestore} MP[/]" : "";
+                return ($"🧪 {Markup.Escape(item.Name)} [green](+{item.HealAmount} HP)[/]{manaStr}", (Item?)item);
+            })
+            .Append(("[grey]↩  Cancel[/]", (Item?)null));
+        return PromptFromMenu("[bold yellow]=== USE ITEM — Choose a consumable ===[/]", options);
+    }
 
     /// <inheritdoc/>
-    public Item? ShowEquipMenuAndSelect(IReadOnlyList<Item> equippable) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowEquipMenuAndSelect not yet implemented");
+    public Item? ShowEquipMenuAndSelect(IReadOnlyList<Item> equippable)
+    {
+        var options = equippable
+            .Select(item => (
+                $"{ItemTypeIcon(item.Type)} {Markup.Escape(item.Name)}  [grey][[{Markup.Escape(PrimaryStatLabel(item))}]][/]",
+                (Item?)item))
+            .Append(("[grey]↩  Cancel[/]", (Item?)null));
+        return PromptFromMenu("[bold yellow]=== EQUIP — Choose an item ===[/]", options);
+    }
 
     /// <inheritdoc/>
-    public Item? ShowUseMenuAndSelect(IReadOnlyList<Item> usable) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowUseMenuAndSelect not yet implemented");
+    public Item? ShowUseMenuAndSelect(IReadOnlyList<Item> usable)
+    {
+        var options = usable
+            .Select(item => (
+                $"{ItemTypeIcon(item.Type)} {Markup.Escape(item.Name)}  [grey][[{Markup.Escape(PrimaryStatLabel(item))}]][/]",
+                (Item?)item))
+            .Append(("[grey]↩  Cancel[/]", (Item?)null));
+        return PromptFromMenu("[bold yellow]=== Use which item? ===[/]", options);
+    }
 
     /// <inheritdoc/>
-    public Item? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowTakeMenuAndSelect not yet implemented");
+    public Item? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems)
+    {
+        var sentinel = new Item { Name = "__TAKE_ALL__" };
+        var options = roomItems
+            .Select(item => (
+                $"{ItemTypeIcon(item.Type)} {Markup.Escape(item.Name)}  [grey][[{Markup.Escape(PrimaryStatLabel(item))}]][/]",
+                (Item?)item))
+            .Prepend(("[yellow]📦 Take All[/]", (Item?)sentinel))
+            .Append(("[grey]↩  Cancel[/]", (Item?)null));
+        return PromptFromMenu("[bold yellow]=== TAKE — Choose an item ===[/]", options);
+    }
+
+    // ── Private helpers ───────────────────────────────────────────────────────
+
+    private static T PromptFromMenu<T>(string title, IEnumerable<(string Label, T Value)> options)
+    {
+        var optList = options.ToList();
+        var selected = AnsiConsole.Prompt(
+            new SelectionPrompt<(string Label, T Value)>()
+                .Title(title)
+                .UseConverter(o => o.Label)
+                .AddChoices(optList));
+        return selected.Value;
+    }
+
+    private static string ItemTypeIcon(ItemType type) => type switch
+    {
+        ItemType.Weapon           => "⚔",
+        ItemType.Armor            => "🛡",
+        ItemType.Consumable       => "🧪",
+        ItemType.Accessory        => "💍",
+        ItemType.CraftingMaterial => "⚗",
+        _                         => "•"
+    };
+
+    private static string PrimaryStatLabel(Item item)
+    {
+        if (item.AttackBonus  != 0) return $"Attack +{item.AttackBonus}";
+        if (item.DefenseBonus != 0) return $"Defense +{item.DefenseBonus}";
+        if (item.HealAmount   != 0) return $"Heals {item.HealAmount} HP";
+        if (item.ManaRestore  != 0) return $"Mana +{item.ManaRestore}";
+        if (item.MaxManaBonus != 0) return $"Max Mana +{item.MaxManaBonus}";
+        if (item.DodgeBonus   >  0) return $"Dodge +{item.DodgeBonus:P0}";
+        if (item.StatModifier != 0) return $"HP +{item.StatModifier}";
+        return item.Type.ToString();
+    }
+
+    private static string ClassIcon(PlayerClassDefinition def) => def.Class switch
+    {
+        PlayerClass.Warrior     => "⚔",
+        PlayerClass.Mage        => "🔮",
+        PlayerClass.Rogue       => "🗡",
+        PlayerClass.Paladin     => "🛡",
+        PlayerClass.Necromancer => "💀",
+        PlayerClass.Ranger      => "🏹",
+        _                       => "•"
+    };
 }
