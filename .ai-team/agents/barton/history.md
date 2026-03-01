@@ -1048,3 +1048,24 @@ Adding ASCII art for enemies is **highly feasible**. The project's existing data
 - Shrine cost scaling is inverse (divide by multiplier) to make healing more accessible on easier difficulties
 - Spawn rate multipliers are capped at 35% to prevent excessive merchant/shrine density
 - All test display service stubs needed signature updates to match the new interface
+
+## TAKE Command Interactive Menu (squad/take-command-menu)
+
+**Task:** Upgrade the TAKE command to use the same arrow-key menu treatment as USE and EQUIP, plus add "Take All" support.
+
+**Files Changed:**
+1. **Display/IDisplayService.cs** — Added `ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems)` to interface
+2. **Display/DisplayService.cs** — Implemented `ShowTakeMenuAndSelect` with Prepend "📦 Take All" sentinel and Append "↩ Cancel" pattern matching the other menu methods
+3. **Engine/GameLoop.cs** — Rewrote `HandleTake` to show menu when no arg given; extracted `TakeSingleItem` and `TakeAllItems` helpers; added fuzzy Levenshtein match for typed arguments using existing `Systems.EquipmentManager.LevenshteinDistance`
+4. **Dungnz.Tests/Helpers/FakeDisplayService.cs** — Added stub `ShowTakeMenuAndSelect` returning null
+
+**Implementation Details:**
+- `LevenshteinDistance` lives in `EquipmentManager` as `internal static` and is already referenced via `Systems.EquipmentManager.LevenshteinDistance` elsewhere in GameLoop — reused that pattern
+- "Take All" sentinel is `new Item { Name = "__TAKE_ALL__" }` detected by name check in HandleTake
+- Fuzzy match tolerance: `Math.Max(2, inputLength / 2)` — same as HandleEquip
+- `TakeAllItems` stops on first inventory-full hit and shows item-left-behind message; narration line shown once at end
+
+## Learnings
+- The `ShowEquipMenuAndSelect`/`ShowUseMenuAndSelect` pattern (Select → Append Cancel) extended cleanly with Prepend for the "Take All" option
+- `LevenshteinDistance` is only in `EquipmentManager`; no need to copy — just reference it as a static method
+- FakeDisplayService stubs for new menu methods should return null to keep existing tests passing without test-breaking side effects

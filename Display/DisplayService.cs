@@ -1655,4 +1655,20 @@ public class ConsoleDisplayService : IDisplayService
             .ToArray();
         return SelectFromMenu(options, _input, "=== Use which item? ===");
     }
+
+    /// <inheritdoc />
+    public Item? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems)
+    {
+        var options = roomItems
+            .Select(item =>
+            {
+                var icon = ItemTypeIcon(item.Type);
+                var stat = PrimaryStatLabel(item);
+                return ($"{icon} {item.Name}  [{stat}]", (Item?)item);
+            })
+            .Prepend(("📦 Take All", (Item?)new Item { Name = "__TAKE_ALL__" }))
+            .Append(("↩  Cancel", (Item?)null))
+            .ToArray();
+        return SelectFromMenu(options, _input, "=== TAKE — Choose an item ===");
+    }
 }
