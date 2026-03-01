@@ -48,9 +48,12 @@ public static class EnemyFactory
     }
 
     /// <summary>
-    /// Creates a randomly chosen enemy from the full pool of available types, with a
-    /// 5 % chance that the selected enemy is promoted to an Elite variant (1.5× stats,
+    /// Creates a randomly chosen enemy from a hardcoded set of nine base types (Goblin,
+    /// Skeleton, Troll, DarkKnight, GoblinShaman, StoneGolem, Wraith, VampireLord, Mimic),
+    /// with a 5 % chance that the selected enemy is promoted to an Elite variant (1.5× stats,
     /// "Elite" name prefix, and <see cref="Enemy.IsElite"/> flag set).
+    /// Note: the dungeon generator uses <see cref="CreateScaled"/> with floor-specific pools
+    /// from <see cref="FloorSpawnPools"/> rather than this method.
     /// </summary>
     /// <param name="rng">
     /// The random-number generator used to pick the enemy type and decide elite status.

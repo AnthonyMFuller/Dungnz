@@ -57,7 +57,7 @@ public class DungeonGenerator
     /// Defaults to <see langword="null"/> (treated as Normal, multiplier = 1.0).
     /// </param>
     /// <param name="floor">
-    /// The dungeon floor number (1–5), used to select the appropriate themed description pool
+    /// The dungeon floor number (1–8), used to select the appropriate themed description pool
     /// via <see cref="RoomDescriptions.ForFloor"/>. Defaults to 1.
     /// </param>
     /// <returns>

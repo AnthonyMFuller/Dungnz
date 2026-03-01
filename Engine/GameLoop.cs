@@ -1434,18 +1434,10 @@ public class GameLoop
     }
 
     /// <summary>
-    /// Displays a contextual death banner, a floor-specific opening line, a cause-of-death
-    /// line (trap or named killer), and a class-specific epitaph. Stats and achievements
-    /// should be displayed by the caller after this method returns.
-    /// </summary>
-    /// <param name="killedBy">Name of the enemy that killed the player, or <see langword="null"/> for non-combat deaths.</param>
-    /// <param name="byTrap">
-    /// <see langword="true"/> when the player was killed by an environmental hazard rather than a monster.
-    /// </param>
-    /// <summary>
     /// Single chokepoint for all player-death paths. Records stats, shows the game-over screen,
     /// and sets <see cref="_gameOver"/>. Every death path must call this instead of duplicating the sequence.
     /// </summary>
+    /// <param name="killedBy">Name of the enemy or hazard that killed the player.</param>
     private void ExitRun(string killedBy)
     {
         _stats.FinalLevel = _player.Level;
@@ -1458,6 +1450,13 @@ public class GameLoop
         _gameOver = true;
     }
 
+    /// <summary>
+    /// Delegates to <see cref="IDisplayService.ShowGameOver"/> to render the death screen.
+    /// </summary>
+    /// <param name="killedBy">Name of the enemy that killed the player, or <see langword="null"/> for non-combat deaths.</param>
+    /// <param name="byTrap">
+    /// <see langword="true"/> when the player was killed by an environmental hazard rather than a monster.
+    /// </param>
     private void ShowGameOver(string? killedBy = null, bool byTrap = false)
     {
         _display.ShowGameOver(_player, killedBy, _stats);
