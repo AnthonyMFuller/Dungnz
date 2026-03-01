@@ -34,7 +34,7 @@ public class Phase6IntegrationTests
         var player = new Player { Name = "TestHero", Class = playerClass };
         for (int i = 1; i < level; i++) player.LevelUp();
         player.MaxHP = maxHp;
-        player.HP = hp;
+        player.SetHPDirect(hp);
         player.Attack = atk;
         player.Defense = def;
         player.MaxMana = maxMana;

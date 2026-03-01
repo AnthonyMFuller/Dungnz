@@ -216,7 +216,7 @@ public class GameLoopCommandTests
     public void UseCommand_ForgottenShrine_HealsPlayer()
     {
         var (player, room, display, combat) = MakeSetup();
-        player.HP = 30;
+        player.SetHPDirect(30);
         room.HasShrine = true;
         room.Type = RoomType.ForgottenShrine;
         // Use shrine — ForgottenShrine reads input for choice
@@ -231,7 +231,7 @@ public class GameLoopCommandTests
     public void ShrineHeal_WithEnoughGold_HealsPlayer()
     {
         var (player, room, display, combat) = MakeSetup();
-        player.HP = 50;
+        player.SetHPDirect(50);
         player.MaxHP = 100;
         player.AddGold(50);
         room.HasShrine = true;
@@ -244,7 +244,7 @@ public class GameLoopCommandTests
     public void ShrineHeal_NotEnoughGold_ShowsError()
     {
         var (player, room, display, combat) = MakeSetup();
-        player.HP = 50;
+        player.SetHPDirect(50);
         player.AddGold(10); // only 10g, need 30g
         room.HasShrine = true;
         var loop = MakeLoop(display, combat.Object, "use shrine", "1", "quit");
@@ -346,7 +346,7 @@ public class GameLoopCommandTests
     public void Use_FuzzyMatch_SingleCandidate_UsesItem()
     {
         var (player, room, display, combat) = MakeSetup();
-        player.HP = 50;
+        player.SetHPDirect(50);
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 20 };
         player.Inventory.Add(potion);
         var loop = MakeLoop(display, combat.Object, "use Helth Potion", "quit");
@@ -385,7 +385,7 @@ public class GameLoopCommandTests
     public void Use_NoArg_ShowsUseMenu_ConsumablesOnly()
     {
         var (player, room, display, combat) = MakeSetup();
-        player.HP = 50;
+        player.SetHPDirect(50);
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 20 };
         player.Inventory.Add(potion);
         // "1" selects first item from menu; "quit" ends the loop

@@ -190,7 +190,7 @@ public class PassiveEffectProcessor
         if (player.AegisUsedThisCombat) return 0;
 
         player.AegisUsedThisCombat = true;
-        player.HP = 1;
+        player.SetHPDirect(1);
         _display.ShowColoredCombatMessage("🛡 Aegis of the Immortal — the shield refuses to let you fall!", ColorCodes.Yellow);
         return 0;
     }
@@ -221,7 +221,7 @@ public class PassiveEffectProcessor
 
         player.PhoenixUsedThisRun = true;
         var reviveHp = Math.Max(1, (int)(player.MaxHP * 0.30));
-        player.HP = reviveHp;
+        player.SetHPDirect(reviveHp);
         _display.ShowColoredCombatMessage($"🔥 Amulet of the Phoenix — you are reborn from the ashes at {reviveHp} HP!", ColorCodes.Yellow);
         return 0;
     }

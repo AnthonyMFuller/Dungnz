@@ -30,7 +30,7 @@ public class PlayerTests
     public void Stats_CanBeModified()
     {
         var player = new Player();
-        player.HP = 50;
+        player.SetHPDirect(50);
         player.Attack = 20;
         player.Defense = 15;
         player.HP.Should().Be(50);

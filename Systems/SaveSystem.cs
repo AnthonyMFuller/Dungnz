@@ -61,7 +61,7 @@ public static class SaveSystem
             Seed = state.Seed,
             UnlockedSkills = state.Player.Skills.UnlockedSkills.Select(s => s.ToString()).ToList(),
             StatusEffects = state.Player.ActiveEffects.ToList(),
-            Version = 1,
+            Version = SaveData.CurrentVersion,
             Rooms = roomMap.Values.Select(r => new RoomSaveData
             {
                 Id = r.Id,
@@ -135,14 +135,8 @@ public static class SaveSystem
             if (saveData == null)
                 throw new InvalidDataException("Save file is corrupt or empty");
 
-            // v2 → v3 migration: Version 0 means an old save without the Version field.
-            // Apply safe defaults so old saves don't break on load.
-            if (saveData.Version == 0)
-            {
-                // CurrentFloor defaults to 1 (already the field default).
-                // UnlockedSkills defaults to empty (already the field default).
-                // StatusEffects defaults to empty (already the field default).
-            }
+            // Apply migrations to bring old saves up to current version
+            saveData = MigrateToLatest(saveData);
 
             var roomDict = new Dictionary<Guid, Room>();
             foreach (var roomData in saveData.Rooms)
@@ -248,6 +242,35 @@ public static class SaveSystem
 
         return visited;
     }
+
+    /// <summary>
+    /// Recursively migrates a SaveData object from any old version to the latest version.
+    /// Throws <see cref="InvalidDataException"/> if the save version is unknown or unsupported.
+    /// </summary>
+    private static SaveData MigrateToLatest(SaveData data)
+    {
+        return data.Version switch
+        {
+            SaveData.CurrentVersion => data,
+            0 => MigrateToLatest(MigrateV0ToV1(data)),
+            _ => throw new InvalidDataException($"Unknown save version {data.Version}. Expected {SaveData.CurrentVersion} or earlier.")
+        };
+    }
+
+    /// <summary>
+    /// Migrates a Version 0 (legacy) save to Version 1.
+    /// Currently a no-op because V0 and V1 are compatible, but this establishes
+    /// the pattern for when we add Version 2.
+    /// </summary>
+    private static SaveData MigrateV0ToV1(SaveData data)
+    {
+        // V0 -> V1: No structural changes.
+        // CurrentFloor defaults to 1 (already the field default).
+        // UnlockedSkills defaults to empty (already the field default).
+        // StatusEffects defaults to empty (already the field default).
+        data.Version = 1;
+        return data;
+    }
 }
 
 /// <summary>
@@ -287,6 +310,9 @@ public class GameState
 
 internal class SaveData
 {
+    /// <summary>Current save format version.</summary>
+    public const int CurrentVersion = 1;
+
     public required Player Player { get; init; }
     public required Guid CurrentRoomId { get; init; }
     public required List<RoomSaveData> Rooms { get; init; }
@@ -305,7 +331,7 @@ internal class SaveData
 
     /// <summary>Save format version. 0 = pre-v3 legacy save; 1 = v3+.</summary>
     [System.Text.Json.Serialization.JsonPropertyName("version")]
-    public int Version { get; init; }
+    public int Version { get; set; }
 }
 
 internal class RoomSaveData

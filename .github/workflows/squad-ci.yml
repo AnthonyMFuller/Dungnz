@@ -16,6 +16,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Cache NuGet packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.nuget/packages
+          key: ${{ runner.os }}-nuget-${{ hashFiles('**/*.csproj') }}
+          restore-keys: |
+            ${{ runner.os }}-nuget-
+
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
         with:
@@ -26,9 +34,6 @@ jobs:
 
       - name: Build
         run: dotnet build --no-restore
-
-      - name: Enforce XML documentation
-        run: dotnet build Dungnz.csproj --no-restore
 
       - name: Run tests with coverage
         # TARGET GATE: 80% line coverage required (Anthony directive).
