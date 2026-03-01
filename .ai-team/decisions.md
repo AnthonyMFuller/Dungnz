@@ -14148,3 +14148,470 @@ Each test:
 
 **Review outcome:** All doc changes verified accurate against running code. No typos, broken crefs, or missed fixes detected. Merged in order (707, 708, 709) with squash commits.
 
+# Decision: Define Balance Budget Before Enemy Content
+
+**Status:** Proposed  
+**Owner:** Coulson  
+**Date:** 2026-02-22  
+**Context:** Retrospective finding
+
+## Problem
+Combat balance tests in Phase 3 caught the Lich King imbalance, but those tests were written *after* 8 enemies were tuned by hand. Balance tests should assert a spec, not discover one.
+
+## Proposal
+For future enemy content phases, define a balance budget upfront:
+- Damage ranges per enemy tier (e.g., Lvl 1-3: 5-8 ATK, Lvl 4-6: 10-15 ATK)
+- HP tiers per zone (e.g., Zone 1: 20-40 HP, Zone 2: 50-80 HP)
+- Win rate boundaries at target level ranges (e.g., Lvl 12 vs. Lich King: 40-60% win rate)
+
+Balance tests then assert conformance to the budget. Enemy tuning becomes spec-driven, not ad-hoc.
+
+## Impact
+- Tests become validators, not explorers
+- Enemy design has clear constraints
+- Balance issues surface during design, not after implementation
+
+## Open Questions
+- Who owns the balance budget definition? (Coulson? Barton? Anthony?)
+- Should we retrofit a budget for existing enemies?
+# Decision: No Enemy Ships Without Balance Test
+
+**Status:** Proposed  
+**Owner:** Romanoff (enforcer), Barton (implementer)  
+**Date:** 2026-02-22  
+**Context:** Retrospective finding
+
+## Problem
+Phase 2 added 8 enemies before Phase 3 added balance tests. Those 8 enemies were tuned blind. The Lich King imbalance was caught retroactively by tests that should have been gates, not validators.
+
+## Proposal
+Establish a policy: **No enemy ships without at least a win-rate boundary test at its target level range.**
+
+Example:
+- Enemy: Lich King (Lvl 10-12 content)
+- Required test: Assert 40-60% win rate for Lvl 12 player with median gear
+
+This test must exist and pass before the enemy is merged. Balance tests gate content, not validate it after the fact.
+
+## Impact
+- Balance issues surface during design, not after merge
+- Romanoff has clear acceptance criteria for enemy PRs
+- Reduces balance rework and post-merge tuning
+
+## Consequences
+- Slower enemy addition initially (tests must be written first)
+- Requires stat ranges to be defined upfront (see balance budget decision)
+
+## Open Questions
+- What's the minimum acceptable test? (just win rate? damage variance? duration?)
+- Who writes the test? (Barton with the enemy? Romanoff before merge?)
+# Decision: Repo Setup Checklist Before Agent Work
+
+**Status:** Proposed  
+**Owner:** Coulson  
+**Date:** 2026-02-22  
+**Context:** Retrospective finding
+
+## Problem
+Two direct master commits occurred before pre-push hook enforcement. The hook was added reactively after violations, not proactively as a setup step. Guardrails should precede agent work, not follow mistakes.
+
+## Proposal
+Define a repo setup checklist that must be completed before any agent begins feature work:
+
+**Guardrails:**
+- [ ] Pre-push hook installed (prevents direct master commits)
+- [ ] Branch protection rules configured (if using hosted Git)
+- [ ] Linting enforcement at pre-commit (if applicable)
+- [ ] CI pipeline validates on all branches
+
+**Tooling:**
+- [ ] Test runner configured and passing baseline
+- [ ] Build scripts tested and documented
+- [ ] Agent model assignments documented (who uses which model)
+
+**Documentation:**
+- [ ] README reflects current architecture
+- [ ] Team charter and agent roles defined
+- [ ] Decisions log initialized
+
+## Impact
+- Prevents process violations before they happen
+- Makes onboarding deterministic (checklist, not tribal knowledge)
+- Shifts quality enforcement left (setup, not cleanup)
+
+## Open Questions
+- Who owns checklist execution? (Coulson? Anthony?)
+- Should this be a script that validates the repo state?
+# Decision: Agent Stall Escalation Policy
+
+**Status:** Proposed  
+**Owner:** Coulson  
+**Date:** 2026-02-22  
+**Context:** Retrospective finding
+
+## Problem
+gemini-3-pro-preview stalled twice during this session with no immediate escalation. Each stall burned time that could have been reallocated. Currently there's no defined policy on when to escalate vs. retry.
+
+## Proposal
+Establish a stall policy:
+- **Stall definition:** No meaningful diff output for 20 consecutive minutes
+- **Action:** Immediate escalation to Lead (Coulson)
+- **Lead response:** Reassign work to a different agent/model or break the task into smaller chunks
+- **No retries without change:** If the same agent stalls twice on the same task, the task is too large or the model is unsuitable
+
+## Impact
+- Reduces time waste from unproductive agent loops
+- Makes stalls a first-class signal, not a "wait and see" situation
+- Creates a clear handoff protocol
+
+## Open Questions
+- Should the 20-minute threshold be configurable per task type? (e.g., longer for complex refactors)
+- Who monitors for stalls? (manual observation? automated timeout?)
+# Decision: Systems Spec Before Content Spec
+
+**Status:** Proposed  
+**Owner:** Coulson  
+**Date:** 2026-02-22  
+**Context:** Retrospective finding
+
+## Problem
+Phase 4 (map UI overhaul) came after Phase 2 (enemy/item content). This created retrofit work — Barton had to untangle draw-order assumptions and room population logic that Phase 2 had already hardcoded. Content defined the box instead of filling it.
+
+## Proposal
+For future roadmaps, enforce sequencing:
+1. **Systems primitives first:** Lock map rendering layers, combat stat ranges, inventory constraints
+2. **Content second:** Add enemies, items, rooms within the system constraints
+3. **Polish third:** UI/UX refinements, balance tuning, test expansion
+
+Content should fill the box; it should not define the box.
+
+## Impact
+- Reduces retrofit work and dependency inversions
+- Makes content addition more mechanical and parallelizable
+- Systems changes become less risky (no content to break)
+
+## Consequences
+- Requires upfront systems design before content work begins
+- May feel slower initially (more planning phase) but faster overall (less rework)
+
+## Open Questions
+- How much systems design is "enough" before content can start?
+- Can content and systems run in parallel if seams are well-defined?
+### 2025-03-01: Spectre.Console migration architecture
+**By:** Coulson
+**What:** Side-by-side SpectreDisplayService implementation swappable via constructor DI; IDisplayService remains the stable contract for future Blazor compatibility.
+**Why:** Boss approved Option 1 Spectre.Console upgrade; future Option 3 (Blazor) must remain viable.
+
+---
+
+## Section 1: Architecture Decisions
+
+1. **Side-by-side implementation, not direct replacement**: Create `SpectreDisplayService : IDisplayService` alongside existing `ConsoleDisplayService`. DI registration in `Program.cs` determines which implementation is used. This allows rollback and A/B testing.
+
+2. **IDisplayService is the seam — no Spectre leakage**: All Spectre.Console calls stay inside `SpectreDisplayService`. Game logic (GameLoop, CombatEngine, etc.) continues to depend only on `IDisplayService`. This preserves Blazor viability.
+
+3. **IMenuNavigator replaced by Spectre SelectionPrompt internally**: `SpectreDisplayService` does NOT use `ConsoleMenuNavigator`. Instead, interactive menus (`Show*AndSelect` methods) delegate to `SelectionPrompt<T>`. The `IMenuNavigator` abstraction can be phased out once migration is complete.
+
+4. **NuGet reference added to main csproj only**: Add `Spectre.Console` (latest stable, currently 0.50.0) to `Dungnz.csproj`. No separate Display project needed — the csproj already contains the Display layer.
+
+5. **Feature flags for gradual rollout**: Add `bool UseSpectreConsole` app setting (default `false` initially) to swap implementations without code changes. Can be deleted post-migration.
+
+---
+
+## Section 2: Migration Strategy
+
+### Approach: Incremental method-by-method migration
+
+1. **Create SpectreDisplayService skeleton** implementing `IDisplayService` with all methods throwing `NotImplementedException`.
+
+2. **Migrate methods in visual-category batches** — each batch is one issue, each results in a testable deliverable:
+   - Batch A: Title/Intro screens (low risk, high visibility)
+   - Batch B: Menus/Selection prompts (high value — replaces ConsoleMenuNavigator)
+   - Batch C: Combat UI (stat bars, HP displays)
+   - Batch D: Room/Map navigation
+   - Batch E: Inventory/Shop/Loot cards
+   - Batch F: Endgame screens (Victory/GameOver)
+
+3. **Each method implementation**:
+   - Use Spectre primitives (`Table`, `Panel`, `Rule`, `Markup`, `BarChart`, `SelectionPrompt`)
+   - Preserve visual intent (colors, layout, box-drawing feel)
+   - Run manual smoke test after each batch
+
+4. **Swap default implementation** once all methods pass smoke tests.
+
+5. **Deprecate ConsoleDisplayService** (keep for reference; mark obsolete).
+
+---
+
+## Section 3: GitHub Issue Breakdown
+
+### Issue 1: Add Spectre.Console NuGet reference and SpectreDisplayService skeleton
+**Assigned:** Hill
+**Labels:** `enhancement`, `display`, `spectre-migration`
+
+```markdown
+## Summary
+Add the Spectre.Console NuGet package and create the initial `SpectreDisplayService` skeleton.
+
+## Tasks
+- [ ] Add `Spectre.Console` (latest stable) to `Dungnz.csproj`
+- [ ] Create `Display/SpectreDisplayService.cs` implementing `IDisplayService`
+- [ ] All methods throw `NotImplementedException` initially
+- [ ] Add DI registration in `Program.cs` with feature-flag switch (`--use-spectre` CLI arg or env var)
+- [ ] Ensure project builds with no warnings
+
+## Acceptance Criteria
+- `dotnet build` succeeds
+- Running with `--use-spectre` instantiates `SpectreDisplayService`
+- Running without flag uses existing `ConsoleDisplayService`
+```
+
+---
+
+### Issue 2: Migrate Title/Intro screens to Spectre
+**Assigned:** Hill
+**Labels:** `enhancement`, `display`, `spectre-migration`
+
+```markdown
+## Summary
+Implement Spectre versions of title and introduction display methods.
+
+## Methods to migrate
+- `ShowTitle()`
+- `ShowEnhancedTitle()`
+- `ShowIntroNarrative()`
+- `ShowPrestigeInfo(PrestigeData)`
+
+## Implementation notes
+- Use `FigletText` for title banner
+- Use `Panel` with border styles for prestige info box
+- Use `Markup` for colored narrative text
+
+## Acceptance Criteria
+- All four methods render without exception
+- Visual appearance matches or improves on current output
+- No ANSI escape codes in SpectreDisplayService (use Spectre markup only)
+```
+
+---
+
+### Issue 3: Migrate selection menus to Spectre SelectionPrompt
+**Assigned:** Hill
+**Labels:** `enhancement`, `display`, `spectre-migration`, `priority:high`
+
+```markdown
+## Summary
+Replace arrow-key menu logic with Spectre's `SelectionPrompt<T>`. This is the highest-value migration item.
+
+## Methods to migrate
+- `SelectDifficulty()`
+- `SelectClass(PrestigeData?)`
+- `ShowConfirmMenu(string)`
+- `ShowLevelUpChoiceAndSelect(Player)`
+- `ShowCombatMenuAndSelect(Player, Enemy)`
+- `ShowCraftMenuAndSelect(IEnumerable<...>)`
+- `ShowShrineMenuAndSelect(...)`
+- `ShowForgottenShrineMenuAndSelect()`
+- `ShowContestedArmoryMenuAndSelect(int)`
+- `ShowTrapChoiceAndSelect(...)`
+- `ShowAbilityMenuAndSelect(...)`
+
+## Implementation notes
+- Use `SelectionPrompt<T>` with custom formatters
+- Preserve color coding in selection labels using Spectre markup `[red]...[/]`
+- Handle fallback for redirected stdin (Spectre handles this natively)
+
+## Acceptance Criteria
+- All menu methods work with arrow-key navigation
+- Menu renders with proper colors and labels
+- Enter confirms, Escape/Ctrl+C cancels where applicable
+```
+
+---
+
+### Issue 4: Migrate Combat UI to Spectre
+**Assigned:** Hill
+**Labels:** `enhancement`, `display`, `spectre-migration`
+
+```markdown
+## Summary
+Implement combat display methods using Spectre Tables and Markup.
+
+## Methods to migrate
+- `ShowCombat(string)`
+- `ShowCombatStatus(Player, Enemy, ...)`
+- `ShowCombatMessage(string)`
+- `ShowColoredCombatMessage(string, string)`
+- `ShowCombatStart(Enemy)`
+- `ShowCombatEntryFlags(Enemy)`
+- `ShowEnemyArt(Enemy)`
+- `ShowEnemyDetail(Enemy)`
+
+## Implementation notes
+- Use `Table` for side-by-side HP bars
+- Use `Panel` for enemy art display
+- Use `BarChart` or custom progress bar for HP visualization
+- Use `Rule` for combat start divider
+
+## Acceptance Criteria
+- Combat sequence renders correctly
+- HP bars update visually
+- Enemy art displays in bordered panel
+```
+
+---
+
+### Issue 5: Migrate Room/Map/Navigation UI to Spectre
+**Assigned:** Hill
+**Labels:** `enhancement`, `display`, `spectre-migration`
+
+```markdown
+## Summary
+Implement room description and map display using Spectre primitives.
+
+## Methods to migrate
+- `ShowRoom(Room)`
+- `ShowMap(Room)`
+- `ShowFloorBanner(int, int, DungeonVariant)`
+- `ShowCommandPrompt(Player?)`
+- `ShowMessage(string)`
+- `ShowError(string)`
+- `ShowColoredMessage(string, string)`
+- `ShowHelp()`
+- `ReadPlayerName()`
+
+## Implementation notes
+- Use `TextPrompt<string>` for name input
+- Use `Markup` for room descriptions
+- Use `Table` or `Canvas` for ASCII map (preserve existing BFS logic)
+- Use `Panel` for floor banner
+
+## Acceptance Criteria
+- Room navigation works end-to-end
+- Map renders correctly with fog-of-war
+- Error messages display in red
+```
+
+---
+
+### Issue 6: Migrate Inventory/Shop/Loot UI to Spectre
+**Assigned:** Hill
+**Labels:** `enhancement`, `display`, `spectre-migration`
+
+```markdown
+## Summary
+Implement inventory, shop, and loot displays using Spectre Tables and Panels.
+
+## Methods to migrate
+- `ShowPlayerStats(Player)`
+- `ShowInventory(Player)`
+- `ShowLootDrop(Item, Player, bool)`
+- `ShowGoldPickup(int, int)`
+- `ShowItemPickup(Item, ...)`
+- `ShowItemDetail(Item)`
+- `ShowEquipmentComparison(Player, Item?, Item)`
+- `ShowColoredStat(string, string, string)`
+- `ShowShop(IEnumerable<...>, int)`
+- `ShowShopAndSelect(...)`
+- `ShowShopWithSellAndSelect(...)`
+- `ShowSellMenu(...)`
+- `ShowSellMenuAndSelect(...)`
+- `ShowCraftRecipe(...)`
+- `ShowCombatItemMenuAndSelect(...)`
+- `ShowEquipMenuAndSelect(...)`
+- `ShowUseMenuAndSelect(...)`
+- `ShowTakeMenuAndSelect(...)`
+
+## Implementation notes
+- Use `Table` for inventory grid
+- Use `Panel` for item cards
+- Use `SelectionPrompt<Item>` for item selection menus
+- Color-code prices (green = affordable, red = too expensive)
+
+## Acceptance Criteria
+- Inventory displays correctly
+- Shop buying/selling works
+- Loot drops render with tier colors
+```
+
+---
+
+### Issue 7: Migrate Endgame screens and finalize swap
+**Assigned:** Hill
+**Labels:** `enhancement`, `display`, `spectre-migration`
+
+```markdown
+## Summary
+Implement victory/game-over screens and make SpectreDisplayService the default.
+
+## Methods to migrate
+- `ShowVictory(Player, int, RunStats)`
+- `ShowGameOver(Player, string?, RunStats)`
+- `ShowLevelUpChoice(Player)` (display-only version)
+
+## Final tasks
+- [ ] Remove all `NotImplementedException` calls
+- [ ] Set `--use-spectre` as default (or remove flag)
+- [ ] Mark `ConsoleDisplayService` as `[Obsolete]`
+- [ ] Update README with Spectre.Console dependency note
+
+## Acceptance Criteria
+- Full game playable with SpectreDisplayService
+- No regressions in visual output
+- ConsoleDisplayService still available for fallback
+```
+
+---
+
+## Section 4: Architectural Notes for decisions.md
+
+### New decisions to capture:
+
+1. **D-SPECTRE-001: SpectreDisplayService is the Spectre.Console adapter** — All Spectre.Console usage is encapsulated in `SpectreDisplayService`. No other class may reference Spectre directly.
+
+2. **D-SPECTRE-002: IDisplayService is version-stable** — The interface signature is frozen during migration. Any new display needs must be additive (new methods), not breaking changes.
+
+3. **D-SPECTRE-003: Blazor compatibility preserved** — A future `BlazorDisplayService : IDisplayService` remains viable. The interface uses only CLR primitives and model types — no Console or Spectre types in signatures.
+
+4. **D-SPECTRE-004: ConsoleMenuNavigator deprecation** — Once SpectreDisplayService is default, `IMenuNavigator` and `ConsoleMenuNavigator` are obsolete. Menu navigation is an internal implementation detail of each display service.
+### 2026-03-01: PR #719 Review — Spectre.Console NuGet + SpectreDisplayService Skeleton
+**By:** Coulson
+**What:** Reviewed and merged PR #719; Spectre.Console 0.54.0 added to csproj, SpectreDisplayService skeleton created with 53 stubs satisfying IDisplayService, feature flag wired in Program.cs.
+**Why:** Foundation required before parallel Spectre migration batches (#713–#717) can proceed.
+
+---
+
+## Findings
+
+### 1. Interface method count drift
+- Charter specified "44 stubs" — IDisplayService has grown to 53 methods during v2
+- SpectreDisplayService correctly implements all 53; build is the authoritative gate (0 errors)
+- **Action:** Charter/planning docs referencing "44" should be updated to reflect current interface size
+
+### 2. Spectre version: 0.54.0
+- Architecture doc specified 0.50.0 (latest stable at time of writing)
+- Hill used 0.54.0 — this is fine; it is a newer stable release
+- No API-breaking changes between 0.50.0 and 0.54.0 affect the skeleton stage
+
+### 3. Feature flag design
+- `--use-spectre` CLI arg AND `DUNGNZ_USE_SPECTRE=1` env var both supported
+- Env var support is a nice addition for CI/smoke testing without arg changes
+- Default: ConsoleDisplayService — correct; no regression risk
+
+### 4. Self-approval blocker
+- PR was authored by squad member; GitHub prevented self-approval
+- Merged directly with `--admin` override per team protocol
+
+## Decisions Confirmed
+- **D-SPECTRE-001:** SpectreDisplayService is the sole Spectre.Console adapter — confirmed by diff
+- **D-SPECTRE-002:** IDisplayService is version-stable — confirmed unchanged
+- **D-SPECTRE-003:** Blazor compatibility preserved — interface uses only CLR primitives and model types
+
+## Status
+- PR #719: ✅ Merged (squash)
+- Issue #712: ✅ Auto-closed
+- Next: Parallel implementation batches #713–#717 are unblocked
+### 2026-03-01: Spectre.Console migration complete
+**By:** Coulson
+**What:** SpectreDisplayService is now the default IDisplayService. All 53+ methods implemented. ConsoleMenuNavigator deleted. Migration finished across PRs #719-#725.
+**Why:** Boss approved UI upgrade; Spectre.Console chosen for rich terminal UX, low risk, IDisplayService seam preserved for future Blazor path.

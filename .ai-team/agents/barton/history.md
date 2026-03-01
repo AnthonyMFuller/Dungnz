@@ -1069,3 +1069,30 @@ Adding ASCII art for enemies is **highly feasible**. The project's existing data
 - The `ShowEquipMenuAndSelect`/`ShowUseMenuAndSelect` pattern (Select → Append Cancel) extended cleanly with Prepend for the "Take All" option
 - `LevenshteinDistance` is only in `EquipmentManager`; no need to copy — just reference it as a static method
 - FakeDisplayService stubs for new menu methods should return null to keep existing tests passing without test-breaking side effects
+
+## PR #721 — Fix Spectre.Console Bracket Escape in Effect Badge Rendering
+
+**Task:** Fix bug rejected by Coulson in PR #721. Hill locked out per rejection protocol.
+
+**Bug:** In `Display/SpectreDisplayService.cs`, `ShowCombatStatus` rendered effect badges using:
+```csharp
+$"[{color}][{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t][/] "
+```
+This produced markup like `[purple][☠Poison 3t][/]` — Spectre parsed `[☠Poison 3t]` as a style tag and threw `MarkupException` at runtime.
+
+**Fix:** Changed inner brackets to double-brackets (Spectre's literal bracket escape) in both the player effect loop (line 52) and enemy effect loop (line 67):
+```csharp
+$"[{color}][[{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t]][/] "
+```
+
+**Files Changed:**
+1. **Display/SpectreDisplayService.cs** — 2 identical 2-character changes (`[{` → `[[{` and `t]` → `t]]`) in both effect loops in `ShowCombatStatus`
+
+**Build Status:** ✅ 0 errors, 32 pre-existing warnings (unchanged)
+**Commit:** `fix: escape literal brackets in effect badge markup (#715)`
+**Branch:** `squad/715-spectre-combat` pushed to origin
+
+**What I Learned:**
+- Spectre.Console uses `[[` and `]]` to render literal square brackets inside markup strings
+- Any user-facing string inside `[color]...[/]` that might contain brackets must use this escape
+- The fix is purely cosmetic/syntax — no logic changes required
