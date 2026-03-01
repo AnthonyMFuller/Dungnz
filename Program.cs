@@ -9,7 +9,10 @@ Console.InputEncoding  = System.Text.Encoding.UTF8;
 var prestige = PrestigeSystem.Load();
 var inputReader = new ConsoleInputReader();
 var navigator = new ConsoleMenuNavigator();
-var display = new ConsoleDisplayService(inputReader, navigator);
+var useSpectre = args.Contains("--use-spectre") || Environment.GetEnvironmentVariable("DUNGNZ_USE_SPECTRE") == "1";
+IDisplayService display = useSpectre
+    ? new SpectreDisplayService()
+    : new ConsoleDisplayService(inputReader, navigator);
 
 var intro = new IntroSequence(display, inputReader);
 var (player, actualSeed, chosenDifficulty) = intro.Run(prestige);
