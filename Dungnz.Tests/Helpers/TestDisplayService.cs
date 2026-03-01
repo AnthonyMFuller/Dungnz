@@ -141,6 +141,8 @@ public class TestDisplayService : IDisplayService
     }
 
     public Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables) => null;
+
+    public Item? ShowEquipMenuAndSelect(IReadOnlyList<Item> equippable) => null;
     
     public void ShowCombatStart(Enemy enemy) { AllOutput.Add($"combat_start:{enemy.Name}"); }
     public void ShowCombatEntryFlags(Enemy enemy) { AllOutput.Add($"combat_flags:{enemy.Name}"); }
