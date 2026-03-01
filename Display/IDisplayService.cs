@@ -127,9 +127,10 @@ public interface IDisplayService
     /// </summary>
     /// <param name="currentRoom">
     /// The room the player currently occupies; rendered at grid origin (0,0) and
-    /// displayed with the <c>[*]</c> symbol.
+    /// displayed with the <c>[@]</c> symbol.
     /// </param>
-    void ShowMap(Room currentRoom);
+    /// <param name="floor">The current dungeon floor number shown in the panel header.</param>
+    void ShowMap(Room currentRoom, int floor = 1);
 
     /// <summary>
     /// Prompts the player to enter their character's name at game start and

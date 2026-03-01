@@ -452,7 +452,7 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     /// <inheritdoc/>
-    public void ShowMap(Room currentRoom)
+    public void ShowMap(Room currentRoom, int floor = 1)
     {
         // BFS to assign (x, y) coordinates to every reachable room
         var positions = new Dictionary<Room, (int x, int y)>();
@@ -480,9 +480,18 @@ public sealed class SpectreDisplayService : IDisplayService
             }
         }
 
-        var visiblePositions = positions
-            .Where(kv => kv.Key.Visited || kv.Key == currentRoom)
-            .ToList();
+        // Rooms the player has seen: visited, current, or adjacent to a visited/current room
+        var knownSet = new HashSet<Room>(positions.Keys.Where(r => r.Visited || r == currentRoom));
+        foreach (var known in knownSet.ToList())
+        {
+            foreach (var (_, neighbour) in known.Exits)
+            {
+                if (positions.ContainsKey(neighbour))
+                    knownSet.Add(neighbour);
+            }
+        }
+
+        var visiblePositions = positions.Where(kv => knownSet.Contains(kv.Key)).ToList();
 
         if (visiblePositions.Count == 0) return;
 
@@ -537,24 +546,33 @@ public sealed class SpectreDisplayService : IDisplayService
         }
 
         mapSb.AppendLine();
-        mapSb.AppendLine("[bold yellow][[*]][/] You    [white][[E]][/] Exit    [red][[!]][/] Enemy    [cyan][[S]][/] Shrine    [white][[+]][/] Cleared    [yellow][[B]][/] Boss");
+        mapSb.AppendLine("[bold yellow][[@]][/] You  [white][[E]][/] Exit  [red][[!]][/] Enemy  [bold red][[B]][/] Boss  [cyan][[S]][/] Shrine  [white][[+]][/] Cleared  [grey][[?]][/] Unknown");
+        mapSb.AppendLine("[bold green][[M]][/] Merchant  [bold red][[T]][/] Trap  [yellow][[A]][/] Armory  [blue][[L]][/] Library  [red][[~]][/] Hazard  [green][[*]][/] Blessed");
 
         AnsiConsole.Write(new Panel(new Markup(mapSb.ToString().TrimEnd()))
         {
             Border = BoxBorder.Rounded,
-            Header = new PanelHeader("[bold white]Mini-Map[/]"),
+            Header = new PanelHeader($"[bold white]Mini-Map — Floor {floor}[/]"),
         });
         AnsiConsole.WriteLine();
     }
 
     private static string GetMapRoomSymbol(Room r, Room currentRoom)
     {
-        if (r == currentRoom)                               return "[bold yellow][[@]][/]";
-        if (!r.Visited)                                     return "[grey][[?]][/]";
-        if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0) return "[bold red][[B]][/]";
-        if (r.IsExit)                                       return "[white][[E]][/]";
-        if (r.Enemy != null && r.Enemy.HP > 0)              return "[red][[!]][/]";
-        if (r.HasShrine && !r.ShrineUsed)                   return "[cyan][[S]][/]";
+        if (r == currentRoom)                                return "[bold yellow][[@]][/]";
+        if (!r.Visited)                                      return "[grey][[?]][/]";
+        if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0)  return "[bold red][[B]][/]";
+        if (r.IsExit)                                        return "[white][[E]][/]";
+        if (r.Enemy != null && r.Enemy.HP > 0)               return "[red][[!]][/]";
+        if (r.HasShrine && !r.ShrineUsed)                    return "[cyan][[S]][/]";
+        if (r.Merchant != null)                              return "[bold green][[M]][/]";
+        if (r.Type == RoomType.TrapRoom && !r.SpecialRoomUsed) return "[bold red][[T]][/]";
+        if (r.Type == RoomType.ContestedArmory)              return "[yellow][[A]][/]";
+        if (r.Type == RoomType.PetrifiedLibrary)             return "[blue][[L]][/]";
+        if (r.Type == RoomType.ForgottenShrine)              return "[cyan][[F]][/]";
+        if (r.EnvironmentalHazard == RoomHazard.BlessedClearing) return "[green][[*]][/]";
+        if (r.EnvironmentalHazard != RoomHazard.None)        return "[red][[~]][/]";
+        if (r.Type == RoomType.Dark)                         return "[grey][[D]][/]";
         return "[white][[+]][/]";
     }
 

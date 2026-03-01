@@ -20,7 +20,7 @@ public class TestDisplayService : IDisplayService
     public void ShowCommandPrompt(Player? player = null) { }
     public void ShowHelp() => AllOutput.Add("help");
     public void ShowRoom(Room room) => AllOutput.Add($"room:{room.Description}");
-    public void ShowMap(Room room) { }
+    public void ShowMap(Room room, int floor = 1) { }
 
     public void ShowMessage(string message)
     {

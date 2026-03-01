@@ -27,7 +27,7 @@ public class FakeDisplayService : IDisplayService
     public void ShowCommandPrompt(Player? player = null) { }
     public void ShowHelp() { AllOutput.Add("help"); }
     public void ShowRoom(Room room) { AllOutput.Add($"room:{room.Description}"); }
-    public void ShowMap(Room room) { AllOutput.Add($"map:{room.Description}"); }
+    public void ShowMap(Room room, int floor = 1) { AllOutput.Add($"map:{room.Description}"); }
     public string ReadPlayerName() => "TestPlayer";
 
     public void ShowMessage(string message)
