@@ -465,15 +465,42 @@ public class GameLoop
 
     private void HandleTake(string itemName)
     {
+        var roomItems = _currentRoom.Items;
+
         if (string.IsNullOrWhiteSpace(itemName))
         {
-            _turnConsumed = false;
-            _display.ShowError("Take what?");
+            if (roomItems.Count == 0)
+            {
+                _turnConsumed = false;
+                _display.ShowError("There is nothing here to take.");
+                return;
+            }
+            var selected = _display.ShowTakeMenuAndSelect(roomItems.AsReadOnly());
+            if (selected == null) { _turnConsumed = false; return; }
+            if (selected.Name == "__TAKE_ALL__")
+            {
+                TakeAllItems();
+                return;
+            }
+            TakeSingleItem(selected);
             return;
         }
 
+        // Typed argument — exact then fuzzy match
         var itemNameLower = itemName.ToLowerInvariant();
-        var item = _currentRoom.Items.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(itemNameLower));
+        var item = roomItems.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(itemNameLower));
+
+        if (item == null)
+        {
+            int tolerance = Math.Max(2, itemNameLower.Length / 2);
+            var candidates = roomItems
+                .Select(i => (Item: i, Distance: Systems.EquipmentManager.LevenshteinDistance(itemNameLower, i.Name.ToLowerInvariant())))
+                .Where(x => x.Distance <= tolerance)
+                .OrderBy(x => x.Distance)
+                .ToList();
+            if (candidates.Count > 0)
+                item = candidates[0].Item;
+        }
 
         if (item == null)
         {
@@ -482,6 +509,11 @@ public class GameLoop
             return;
         }
 
+        TakeSingleItem(item);
+    }
+
+    private void TakeSingleItem(Item item)
+    {
         _currentRoom.Items.Remove(item);
         if (!_inventoryManager.TryAddItem(_player, item))
         {
@@ -498,6 +530,38 @@ public class GameLoop
         _events?.RaiseItemPicked(_player, item, _currentRoom);
         _stats.ItemsFound++;
         if (item.Type == ItemType.Gold) _stats.GoldCollected += item.StatModifier;
+    }
+
+    private void TakeAllItems()
+    {
+        var items = _currentRoom.Items.ToList();
+        if (items.Count == 0)
+        {
+            _turnConsumed = false;
+            _display.ShowError("There is nothing here to take.");
+            return;
+        }
+        int taken = 0;
+        foreach (var item in items)
+        {
+            _currentRoom.Items.Remove(item);
+            if (!_inventoryManager.TryAddItem(_player, item))
+            {
+                _currentRoom.Items.Add(item);
+                _display.ShowMessage($"{Systems.ColorCodes.Red}❌ Inventory full! {item.Name} left behind.{Systems.ColorCodes.Reset}");
+                break;
+            }
+            int slotsCurrent = _player.Inventory.Count;
+            int weightCurrent = _player.Inventory.Sum(i => i.Weight);
+            _display.ShowItemPickup(item, slotsCurrent, Player.MaxInventorySize, weightCurrent, Systems.InventoryManager.MaxWeight);
+            _display.ShowMessage(Systems.ItemInteractionNarration.PickUp(item));
+            _events?.RaiseItemPicked(_player, item, _currentRoom);
+            _stats.ItemsFound++;
+            if (item.Type == ItemType.Gold) _stats.GoldCollected += item.StatModifier;
+            taken++;
+        }
+        if (taken > 0)
+            _display.ShowMessage(_narration.Pick(_lootLines));
     }
 
     private void HandleUse(string itemName)
