@@ -2090,3 +2090,33 @@ Both PRs reviewed and merged in Round 3 (see below).
 **Key Issue:** PR #798 stale branch — third occurrence of squad agent stacking branches. Headless simulation feature (#793) needs reopening.
 
 **Decisions:** See `.ai-team/decisions/inbox/coulson-review-round-4.md` for full analysis.
+
+---
+
+### 2026-03-01: Triage + Dependabot Cleanup Round
+
+**Objective:** Triage 3 open issues, merge 6 Dependabot PRs.
+
+#### Issues Triaged
+
+1. **Issue #755** (HP encapsulation) — Already **CLOSED**. Resolved by PR #789 (merged 2026-03-01).
+2. **Issue #766** (Stryker manifest) — Already **CLOSED**. Resolved by PR #785 (merged 2026-03-01).
+3. **Issue #745** (ANSI escape in ShowMessage) — Bug already fixed in codebase. Lines 549/578 of `Engine/GameLoop.cs` now use `_display.ShowError()` instead of raw ANSI via `ColorCodes.Red`. **Closed** with comment.
+
+#### Dependabot PRs
+
+| PR | Title | Action | Rationale |
+|----|-------|--------|-----------|
+| #788 | xunit.runner.visualstudio 3.1.4→3.1.5 | **Merged** | Minor bump; CI failures are pre-existing arch tests |
+| #787 | Microsoft.NET.Test.Sdk 17.14.1→18.3.0 | **Merged** | Major version but builds clean; same pre-existing test failures |
+| #786 | FluentAssertions 6.12.2→8.8.0 | **Closed** | Major version with breaking API changes; needs dedicated migration |
+| #784 | actions/setup-dotnet 4→5 | **Merged** | Rebased first; GH Actions workflow change, no code impact |
+| #783 | actions/github-script 7→8 | **Merged** | Rebased first; GH Actions workflow change, no code impact |
+| #782 | actions/upload-artifact 4→7 | **Merged** | Rebased first; GH Actions workflow change, no code impact |
+
+#### Notes
+- PRs #784, #783, #782 were stale (missing HP encapsulation from PR #789). Triggered `@dependabot rebase` which resolved the build errors.
+- All CI failures across all merged PRs are the same 4–5 pre-existing architecture test failures (Models→Systems dependency violation, GenericEnemy missing JsonDerivedType, RunStats history test).
+- Final test run on master: **1394 total, 1389 passed, 5 pre-existing failures, 0 regressions.**
+
+**Decisions:** See `.ai-team/decisions/inbox/coulson-cleanup-round.md`.
