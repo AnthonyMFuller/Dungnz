@@ -1,0 +1,14 @@
+﻿{
+  "PlayerName": "TestHero",
+  "PlayerHP": 85,
+  "PlayerMaxHP": 100,
+  "EnemyName": "Goblin",
+  "EnemyHP": 0,
+  "EnemyMaxHP": 20,
+  "DamageDealt": 8,
+  "DamageTaken": 3,
+  "Outcome": "Won",
+  "XPEarned": 15,
+  "GoldEarned": 5,
+  "LootDropped": "Short Sword"
+}

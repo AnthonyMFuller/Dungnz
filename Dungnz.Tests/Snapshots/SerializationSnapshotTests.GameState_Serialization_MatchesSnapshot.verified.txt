@@ -1,0 +1,17 @@
+﻿{
+  "Name": "SnapshotHero",
+  "HP": 100,
+  "MaxHP": 120,
+  "Attack": 15,
+  "Defense": 8,
+  "Level": 3,
+  "Gold": 50,
+  "XP": 150,
+  "Class": 0,
+  "InventoryCount": 1,
+  "FirstItem": "Steel Sword",
+  "CurrentFloor": 2,
+  "Seed": 42,
+  "RoomDescription": "A dimly lit chamber.",
+  "RoomType": "Dark"
+}
