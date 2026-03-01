@@ -1127,3 +1127,13 @@ System.NotSupportedException: Runtime type 'Dungnz.Systems.Enemies.GoblinWarchie
 ```
 
 **Rule:** Every concrete `Enemy` subclass (including subclasses of `DungeonBoss`, `DungeonElite`, etc.) needs its own `[JsonDerivedType(typeof(ClassName), "discriminator")]` line on the `Enemy` base class. The discriminator string should be the class name in lowercase (e.g., `"goblinwarchief"`). This is easy to miss when the new class extends an intermediate abstract class rather than `Enemy` directly.
+
+## Learnings — #736 (Modernize GEAR Display with Spectre.Console)
+
+- The GEAR display was migrated from EquipmentManager manual ASCII rendering to SpectreDisplayService.ShowEquipment()
+- ShowEquipment(Player) added to IDisplayService, implemented with Table (rounded, gold border, 3 columns: Slot/Item/Stats)
+- TierColor() helper already existed in SpectreDisplayService — reused for item name coloring
+- SetBonusManager.GetActiveBonusDescription() used for set bonus footer (rendered in a Panel when non-empty)
+- EquipmentManager.ShowEquipment() is now a one-liner delegating to _display.ShowEquipment(player); private helpers ShowArmorSlot, PadRightVisible, ColorizeItemName removed
+- DisplayService.cs gets a minimal legacy stub (Console.WriteLine("[EQUIPMENT]"))
+- FakeDisplayService and TestDisplayService both get AllOutput.Add("show_equipment") stubs

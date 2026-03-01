@@ -1817,3 +1817,50 @@ The team's strongest capability right now is **finding and fixing bugs systemati
 
 **Maintenance Risk Eliminated:**
 - Stale docs were a scaling risk as codebase grows. A developer implementing floors 9+ would miss the range; a tester debugging EnemyFactory would see "full pool" and wonder how many types. Fixed before they became production bugs.
+
+---
+
+## 2026-03-01: Retrospective Ceremony
+
+**Facilitator:** Coulson
+**Participants:** Hill, Barton, Romanoff, Fury, Fitz
+**Context:** Post-iteration retro — Spectre.Console UI upgrade, XML doc fixes, crash fixes (intro screen markup, MAP player marker), GEAR display modernization, TAKE/USE/EQUIP improvements, difficulty balance wiring, alignment bug fixes
+
+### Key Patterns Identified
+
+**What went well:**
+- `IDisplayService` seam architecture proved its value — incremental Spectre migration with zero consumer breakage
+- Consistent EQUIP/USE/TAKE UX pattern (fuzzy match → interactive menu) is a reusable template for all future command handlers
+- Regression test suite grew meaningfully (58 new tests); `AlignmentRegressionTests` in particular locks an entire class of wide-BMP display bugs that are invisible in code review
+- CI pipeline stability throughout — zero pipeline noise on any merged PR
+- Difficulty balance wiring completed end-to-end with solid property coverage in tests
+
+**Critical gaps surfaced:**
+- "Invisible work" pattern: local commits not pushed/PRd immediately — caused stale PRs, invisible progress, Boss frustration
+- Stub-gap risk: new `IDisplayService` methods shipping without same-day stubs in `FakeDisplayService`/`TestDisplayService` — created build breakages and workaround code
+- Pre-existing red test (`CraftRecipeDisplayTests`) carried into new iteration — normalizes failure, masks new regressions
+- `__TAKE_ALL__` magic-string sentinel introduced — design smell, Barton owns replacement
+
+### Process Changes Adopted
+
+Six process changes captured in `decisions/inbox/coulson-retro-2026-03-01.md`:
+1. **Same-day push rule** — local work pushed + draft PR open by end of session
+2. **Stub-gap policy** — new `IDisplayService` methods require same-day stubs in both test fakes before PR merges
+3. **Fury CC policy** — content writer must be on any PR touching player-facing strings
+4. **Cross-layer sync** — 15-minute domain sync required at start of any feature spanning display + systems + game loop
+5. **Pre-existing red tests are P0** — must be triaged and assigned within the same sprint they are found
+6. **No magic-string menu sentinels** — typed discriminated records or result enums required for future menu return types
+
+### Team Sentiment and Morale Signals
+
+- **Hill:** Satisfied with architecture decisions (IDisplayService seam, fuzzy-match pattern); self-critical on reactive XML doc cleanup and missing `DifficultySettings` validation. Morale: high, proposing improvements proactively.
+- **Barton:** Pleased with difficulty wiring delivery; honest about technical debt introduced (`__TAKE_ALL__`); frustrated about cross-layer communication gap on Spectre migration. Morale: solid, accountable.
+- **Romanoff:** Strong quality sentiment — best technical writing this iteration (alignment tests). Clearly frustrated by the pre-existing red test and stub-gap. Advocating for test-first pilot. Morale: engaged, demanding higher standards.
+- **Fury:** Delivered well on the one clear ask (difficulty copy); frustrated by exclusion from UI-touching PRs. Clear ask for a seat at the table on player-facing changes. Morale: motivated but underutilized.
+- **Fitz:** Satisfied with CI stability; self-critical about not flagging the failing test louder. Focused on systemic fixes (branch staleness alerting, same-day push culture). Morale: stable, process-improvement oriented.
+
+**Overall team sentiment:** Positive iteration with clear delivery. The main stressors are process gaps (invisible work, stub hygiene) rather than technical blockers. Team is aligned and self-aware. No morale concerns.
+
+---
+
+📌 **Team update (2026-03-01):** Retro action items merged to decisions.md — same-day push rule (completed work must be pushed with draft PR by end of session); stub-gap policy (new IDisplayService methods require same-day stubs in FakeDisplayService and TestDisplayService before merge); content review for player-facing strings (Fury CC'd on PRs); cross-layer sync (15-min upfront domain sync required); pre-existing red tests are P0 (triage within same iteration); sentinel pattern ban for IDisplayService menu returns (use typed discriminated records/result enums; replace existing __TAKE_ALL__ sentinel, P1). — decided by Coulson (Retrospective)
