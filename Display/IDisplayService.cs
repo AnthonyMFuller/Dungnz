@@ -175,7 +175,7 @@ public interface IDisplayService
     /// <summary>Renders the enhanced ASCII art title screen with colors.</summary>
     void ShowEnhancedTitle();
 
-    /// <summary>Displays the atmospheric lore introduction paragraph. Returns true if the player skipped it.</summary>
+    /// <summary>Displays the atmospheric lore introduction paragraph. Always returns <see langword="false"/> in the current implementation; the return value is reserved for a future skip path.</summary>
     bool ShowIntroNarrative();
 
     /// <summary>Displays prestige level card. Only called when prestige.PrestigeLevel > 0.</summary>
