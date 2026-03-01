@@ -14148,3 +14148,49 @@ Each test:
 
 **Review outcome:** All doc changes verified accurate against running code. No typos, broken crefs, or missed fixes detected. Merged in order (707, 708, 709) with squash commits.
 
+
+---
+
+## 2026-03-01: Spectre.Console Migration Architecture
+
+**By:** Coulson  
+**Status:** ✅ Approved
+
+**What:** Comprehensive architecture design for Spectre.Console migration with side-by-side implementation, DI swapping, and incremental method-by-method batches.
+
+**Why:** Boss approved Option 1 Spectre.Console upgrade; future Option 3 (Blazor) must remain viable.
+
+### Key Architectural Decisions
+
+1. **Side-by-side implementation, not direct replacement:** Create `SpectreDisplayService : IDisplayService` alongside existing `ConsoleDisplayService`. DI registration in `Program.cs` determines which implementation is used. This allows rollback and A/B testing.
+
+2. **IDisplayService is the seam — no Spectre leakage:** All Spectre.Console calls stay inside `SpectreDisplayService`. Game logic (GameLoop, CombatEngine, etc.) continues to depend only on `IDisplayService`. This preserves Blazor viability.
+
+3. **IMenuNavigator replaced by Spectre SelectionPrompt internally:** `SpectreDisplayService` does NOT use `ConsoleMenuNavigator`. Instead, interactive menus (`Show*AndSelect` methods) delegate to `SelectionPrompt<T>`. The `IMenuNavigator` abstraction can be phased out once migration is complete.
+
+4. **NuGet reference added to main csproj only:** Add `Spectre.Console` (latest stable, currently 0.50.0) to `Dungnz.csproj`. No separate Display project needed — the csproj already contains the Display layer.
+
+5. **Feature flags for gradual rollout:** Add `bool UseSpectreConsole` app setting (default `false` initially) to swap implementations without code changes. Can be deleted post-migration.
+
+### Migration Strategy
+
+**Approach:** Incremental method-by-method migration in visual-category batches:
+
+- **Batch A:** Title/Intro screens (low risk, high visibility)
+- **Batch B:** Menus/Selection prompts (high value — replaces ConsoleMenuNavigator)
+- **Batch C:** Combat UI (stat bars, HP displays)
+- **Batch D:** Room/Map navigation
+- **Batch E:** Inventory/Shop/Loot cards
+- **Batch F:** Endgame screens (Victory/GameOver)
+
+Each batch creates a GitHub issue with testable deliverable. Methods use Spectre primitives (`Table`, `Panel`, `Rule`, `Markup`, `BarChart`, `SelectionPrompt`) while preserving visual intent.
+
+### Architectural Decisions to Capture
+
+**D-SPECTRE-001: SpectreDisplayService is the Spectre.Console adapter** — All Spectre.Console usage is encapsulated in `SpectreDisplayService`. No other class may reference Spectre directly.
+
+**D-SPECTRE-002: IDisplayService is version-stable** — The interface signature is frozen during migration. Any new display needs must be additive (new methods), not breaking changes.
+
+**D-SPECTRE-003: Blazor compatibility preserved** — A future `BlazorDisplayService : IDisplayService` remains viable. The interface uses only CLR primitives and model types — no Console or Spectre types in signatures.
+
+**D-SPECTRE-004: ConsoleMenuNavigator deprecation** — Once SpectreDisplayService is default, `IMenuNavigator` and `ConsoleMenuNavigator` are obsolete. Menu navigation is an internal implementation detail of each display service.
