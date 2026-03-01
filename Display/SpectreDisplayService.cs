@@ -11,8 +11,13 @@ namespace Dungnz.Display;
 public sealed class SpectreDisplayService : IDisplayService
 {
     /// <inheritdoc/>
-    public void ShowTitle() =>
-        throw new NotImplementedException("SpectreDisplayService.ShowTitle not yet implemented");
+    public void ShowTitle()
+    {
+        AnsiConsole.Clear();
+        AnsiConsole.Write(new FigletText("DUNGNZ").Color(Color.Red));
+        AnsiConsole.Write(new Rule("[grey]A dungeon awaits...[/]").RuleStyle("grey"));
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
     public void ShowRoom(Room room) =>
@@ -142,16 +147,54 @@ public sealed class SpectreDisplayService : IDisplayService
         throw new NotImplementedException("SpectreDisplayService.ShowEquipmentComparison not yet implemented");
 
     /// <inheritdoc/>
-    public void ShowEnhancedTitle() =>
-        throw new NotImplementedException("SpectreDisplayService.ShowEnhancedTitle not yet implemented");
+    public void ShowEnhancedTitle()
+    {
+        AnsiConsole.Clear();
+        AnsiConsole.Write(new FigletText("DUNGNZ").Color(Color.Red));
+        AnsiConsole.Write(new Rule("[grey]D  U  N  G  N  Z[/]").RuleStyle("cyan"));
+        AnsiConsole.MarkupLine("[grey]         Descend If You Dare[/]");
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
-    public bool ShowIntroNarrative() =>
-        throw new NotImplementedException("SpectreDisplayService.ShowIntroNarrative not yet implemented");
+    public bool ShowIntroNarrative()
+    {
+        var lore = "The ancient fortress of [bold]Dungnz[/] has stood for a thousand years — a labyrinthine\n"
+                 + "tomb carved into the mountain's heart by hands long since turned to dust. Adventurers\n"
+                 + "who descend its spiral corridors speak of riches beyond imagination and horrors beyond\n"
+                 + "comprehension. The air below reeks of sulfur and old blood. Torches flicker without wind.\n"
+                 + "Something vast and patient watches from the deep.";
+        var panel = new Panel(new Markup($"[grey]{lore}[/]"))
+        {
+            Border = BoxBorder.Rounded,
+            Header = new PanelHeader("[grey]Lore[/]"),
+        };
+        AnsiConsole.Write(panel);
+        AnsiConsole.MarkupLine("[yellow][ Press Enter to begin your descent... ][/]");
+        Console.ReadLine();
+        AnsiConsole.WriteLine();
+        return false;
+    }
 
     /// <inheritdoc/>
-    public void ShowPrestigeInfo(PrestigeData prestige) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowPrestigeInfo not yet implemented");
+    public void ShowPrestigeInfo(PrestigeData prestige)
+    {
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Yellow)
+            .AddColumn(new TableColumn("[yellow]Prestige[/]"))
+            .AddColumn(new TableColumn("[yellow]Value[/]"));
+
+        table.AddRow("⭐ Level",   $"[yellow]{prestige.PrestigeLevel}[/]");
+        table.AddRow("Wins",       prestige.TotalWins.ToString());
+        table.AddRow("Runs",       prestige.TotalRuns.ToString());
+        if (prestige.BonusStartAttack  > 0) table.AddRow("Bonus Attack",   $"[green]+{prestige.BonusStartAttack}[/]");
+        if (prestige.BonusStartDefense > 0) table.AddRow("Bonus Defense",  $"[green]+{prestige.BonusStartDefense}[/]");
+        if (prestige.BonusStartHP      > 0) table.AddRow("Bonus HP",       $"[green]+{prestige.BonusStartHP}[/]");
+
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
     public Difficulty SelectDifficulty() =>
@@ -250,8 +293,25 @@ public sealed class SpectreDisplayService : IDisplayService
         throw new NotImplementedException("SpectreDisplayService.ShowVictory not yet implemented");
 
     /// <inheritdoc/>
-    public void ShowGameOver(Player player, string? killedBy, RunStats stats) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowGameOver not yet implemented");
+    public void ShowGameOver(Player player, string? killedBy, RunStats stats)
+    {
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(new FigletText("GAME OVER").Color(Color.DarkRed));
+        var deathLine = killedBy != null ? $"Killed by: {Markup.Escape(killedBy)}" : "Cause of death: unknown";
+        var summary = $"[bold]{Markup.Escape(player.Name)}[/]  •  Level {player.Level}\n"
+                    + $"[red]{deathLine}[/]\n"
+                    + $"[grey]Enemies slain:  {stats.EnemiesDefeated}\n"
+                    + $"Floors reached: {stats.FloorsVisited}\n"
+                    + $"Turns survived: {stats.TurnsTaken}[/]";
+        var panel = new Panel(new Markup(summary))
+        {
+            Border = BoxBorder.Heavy,
+            Header = new PanelHeader("[bold red]☠  RUN ENDED  ☠[/]"),
+        };
+        panel.BorderColor(Color.DarkRed);
+        AnsiConsole.Write(panel);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
     public void ShowEnemyArt(Enemy enemy)
