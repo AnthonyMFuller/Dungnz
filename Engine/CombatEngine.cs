@@ -685,6 +685,7 @@ public class CombatEngine : ICombatEngine
             // Bug #111: track ability damage in run stats
             if (enemy.HP < hpBeforeAbility)
                 _stats.DamageDealt += hpBeforeAbility - enemy.HP;
+            _stats.AbilitiesUsed++;
             return AbilityMenuResult.Used;
         }
         
