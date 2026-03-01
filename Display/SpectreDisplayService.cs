@@ -762,7 +762,7 @@ public sealed class SpectreDisplayService : IDisplayService
         AddSlot(IL("✦", "Accessory"), player.EquippedAccessory, isAccessory: true);
         AddSlot(IL("⛑", "Head"),      player.EquippedHead);
         AddSlot(IL("◈", "Shoulders"), player.EquippedShoulders);
-        AddSlot(IL("⛨", "Chest"),     player.EquippedChest);
+        AddSlot(IL("✚", "Chest"),     player.EquippedChest);
         AddSlot(IL("☞", "Hands"),     player.EquippedHands);
         AddSlot(IL("≡", "Legs"),      player.EquippedLegs);
         AddSlot(IL("⤓", "Feet"),      player.EquippedFeet);
@@ -1336,7 +1336,7 @@ public sealed class SpectreDisplayService : IDisplayService
     {
         ArmorSlot.Head      => "⛑",
         ArmorSlot.Shoulders => "◈",
-        ArmorSlot.Chest     => "⛨",
+        ArmorSlot.Chest     => "✚",
         ArmorSlot.Hands     => "☞",
         ArmorSlot.Legs      => "≡",
         ArmorSlot.Feet      => "⤓",
