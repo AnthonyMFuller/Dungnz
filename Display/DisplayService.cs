@@ -814,7 +814,7 @@ public class ConsoleDisplayService : IDisplayService
     /// <param name="currentRoom">
     /// The room the player currently occupies, placed at origin (0,0) on the map.
     /// </param>
-    public void ShowMap(Room currentRoom)
+    public void ShowMap(Room currentRoom, int floor = 1)
     {
         // BFS to assign (x, y) coordinates to every reachable room
         var positions = new Dictionary<Room, (int x, int y)>();

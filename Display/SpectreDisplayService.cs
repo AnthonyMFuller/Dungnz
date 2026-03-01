@@ -230,7 +230,7 @@ public sealed class SpectreDisplayService : IDisplayService
         if (player.Class == PlayerClass.Rogue && player.ComboPoints > 0)
         {
             var dots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
-            table.AddRow("⚡ Combo", $"[yellow]{dots}[/]");
+            table.AddRow(EL("⚡", "Combo"), $"[yellow]{dots}[/]");
         }
 
         var classDef = PlayerClassDefinition.All.FirstOrDefault(c => c.Class == player.Class);
@@ -452,7 +452,7 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     /// <inheritdoc/>
-    public void ShowMap(Room currentRoom)
+    public void ShowMap(Room currentRoom, int floor = 1)
     {
         // BFS to assign (x, y) coordinates to every reachable room
         var positions = new Dictionary<Room, (int x, int y)>();
@@ -480,9 +480,18 @@ public sealed class SpectreDisplayService : IDisplayService
             }
         }
 
-        var visiblePositions = positions
-            .Where(kv => kv.Key.Visited || kv.Key == currentRoom)
-            .ToList();
+        // Rooms the player has seen: visited, current, or adjacent to a visited/current room
+        var knownSet = new HashSet<Room>(positions.Keys.Where(r => r.Visited || r == currentRoom));
+        foreach (var known in knownSet.ToList())
+        {
+            foreach (var (_, neighbour) in known.Exits)
+            {
+                if (positions.ContainsKey(neighbour))
+                    knownSet.Add(neighbour);
+            }
+        }
+
+        var visiblePositions = positions.Where(kv => knownSet.Contains(kv.Key)).ToList();
 
         if (visiblePositions.Count == 0) return;
 
@@ -496,8 +505,10 @@ public sealed class SpectreDisplayService : IDisplayService
             grid[pos] = room;
 
         var mapSb = new System.Text.StringBuilder();
-        mapSb.AppendLine("[bold white]═══ MAP ═══[/]   N");
-        mapSb.AppendLine("              ↑");
+        mapSb.AppendLine("[bold white]═══ MAP ═══[/]");
+        mapSb.AppendLine("      N");
+        mapSb.AppendLine("    W ✦ E");
+        mapSb.AppendLine("      S");
 
         for (int y = minY; y <= maxY; y++)
         {
@@ -516,7 +527,7 @@ public sealed class SpectreDisplayService : IDisplayService
                 if (x < maxX)
                 {
                     bool hasConnector = r.Exits.ContainsKey(Direction.East) && grid.ContainsKey((x + 1, y));
-                    mapSb.Append(hasConnector ? "-" : " ");
+                    mapSb.Append(hasConnector ? "─" : " ");
                 }
             }
             mapSb.AppendLine();
@@ -529,7 +540,7 @@ public sealed class SpectreDisplayService : IDisplayService
                     bool hasSouth = grid.TryGetValue((x, y), out var rS)
                         && rS.Exits.ContainsKey(Direction.South)
                         && grid.ContainsKey((x, y + 1));
-                    mapSb.Append(hasSouth ? " | " : "   ");
+                    mapSb.Append(hasSouth ? " │ " : "   ");
                     if (x < maxX) mapSb.Append(" ");
                 }
                 mapSb.AppendLine();
@@ -537,24 +548,75 @@ public sealed class SpectreDisplayService : IDisplayService
         }
 
         mapSb.AppendLine();
-        mapSb.AppendLine("[bold yellow][[*]][/] You    [white][[E]][/] Exit    [red][[!]][/] Enemy    [cyan][[S]][/] Shrine    [white][[+]][/] Cleared    [yellow][[B]][/] Boss");
+        // Build legend dynamically — only include symbols actually present in the grid
+        var legendEntries = new List<string>();
+        legendEntries.Add("[bold yellow][[@]][/] You");
+        bool showUnknown = false, showExit = false, showBoss = false, showEnemy = false;
+        bool showShrine = false, showMerchant = false, showTrap = false, showArmory = false;
+        bool showLibrary = false, showForgottenShrine = false, showBlessed = false;
+        bool showHazard = false, showDark = false, showCleared = false;
+        foreach (var kvLeg in grid)
+        {
+            var rL = kvLeg.Value;
+            if (rL == currentRoom) continue;
+            if (!rL.Visited) { showUnknown = true; continue; }
+            if (rL.IsExit && rL.Enemy != null && rL.Enemy.HP > 0) { showBoss = true; continue; }
+            if (rL.IsExit) { showExit = true; continue; }
+            if (rL.Enemy != null && rL.Enemy.HP > 0) { showEnemy = true; continue; }
+            if (rL.HasShrine && !rL.ShrineUsed) { showShrine = true; continue; }
+            if (rL.Merchant != null) { showMerchant = true; continue; }
+            if (rL.Type == RoomType.TrapRoom && !rL.SpecialRoomUsed) { showTrap = true; continue; }
+            if (rL.Type == RoomType.ContestedArmory) { showArmory = true; continue; }
+            if (rL.Type == RoomType.PetrifiedLibrary) { showLibrary = true; continue; }
+            if (rL.Type == RoomType.ForgottenShrine) { showForgottenShrine = true; continue; }
+            if (rL.EnvironmentalHazard == RoomHazard.BlessedClearing) { showBlessed = true; continue; }
+            if (rL.EnvironmentalHazard != RoomHazard.None) { showHazard = true; continue; }
+            if (rL.Type == RoomType.Dark) { showDark = true; continue; }
+            showCleared = true;
+        }
+        if (showBoss)            legendEntries.Add("[bold red][[B]][/] Boss");
+        if (showEnemy)           legendEntries.Add("[red][[!]][/] Enemy");
+        if (showExit)            legendEntries.Add("[white][[E]][/] Exit");
+        if (showShrine)          legendEntries.Add("[cyan][[S]][/] Shrine");
+        if (showMerchant)        legendEntries.Add("[bold green][[M]][/] Merchant");
+        if (showTrap)            legendEntries.Add("[bold red][[T]][/] Trap");
+        if (showArmory)          legendEntries.Add("[yellow][[A]][/] Armory");
+        if (showLibrary)         legendEntries.Add("[blue][[L]][/] Library");
+        if (showForgottenShrine) legendEntries.Add("[cyan][[F]][/] Shrine");
+        if (showBlessed)         legendEntries.Add("[green][[*]][/] Blessed");
+        if (showHazard)          legendEntries.Add("[red][[~]][/] Hazard");
+        if (showDark)            legendEntries.Add("[grey][[D]][/] Dark");
+        if (showCleared)         legendEntries.Add("[white][[+]][/] Cleared");
+        if (showUnknown)         legendEntries.Add("[grey][[?]][/] Unknown");
+        int legHalf = (legendEntries.Count + 1) / 2;
+        mapSb.AppendLine(string.Join("   ", legendEntries.Take(legendEntries.Count <= 7 ? legendEntries.Count : legHalf)));
+        if (legendEntries.Count > 7)
+            mapSb.AppendLine(string.Join("   ", legendEntries.Skip(legHalf)));
 
         AnsiConsole.Write(new Panel(new Markup(mapSb.ToString().TrimEnd()))
         {
             Border = BoxBorder.Rounded,
-            Header = new PanelHeader("[bold white]Mini-Map[/]"),
+            Header = new PanelHeader($"[bold white]Mini-Map — Floor {floor}[/]"),
         });
         AnsiConsole.WriteLine();
     }
 
     private static string GetMapRoomSymbol(Room r, Room currentRoom)
     {
-        if (r == currentRoom)                               return "[bold yellow][[@]][/]";
-        if (!r.Visited)                                     return "[grey][[?]][/]";
-        if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0) return "[bold red][[B]][/]";
-        if (r.IsExit)                                       return "[white][[E]][/]";
-        if (r.Enemy != null && r.Enemy.HP > 0)              return "[red][[!]][/]";
-        if (r.HasShrine && !r.ShrineUsed)                   return "[cyan][[S]][/]";
+        if (r == currentRoom)                                return "[bold yellow][[@]][/]";
+        if (!r.Visited)                                      return "[grey][[?]][/]";
+        if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0)  return "[bold red][[B]][/]";
+        if (r.IsExit)                                        return "[white][[E]][/]";
+        if (r.Enemy != null && r.Enemy.HP > 0)               return "[red][[!]][/]";
+        if (r.HasShrine && !r.ShrineUsed)                    return "[cyan][[S]][/]";
+        if (r.Merchant != null)                              return "[bold green][[M]][/]";
+        if (r.Type == RoomType.TrapRoom && !r.SpecialRoomUsed) return "[bold red][[T]][/]";
+        if (r.Type == RoomType.ContestedArmory)              return "[yellow][[A]][/]";
+        if (r.Type == RoomType.PetrifiedLibrary)             return "[blue][[L]][/]";
+        if (r.Type == RoomType.ForgottenShrine)              return "[cyan][[F]][/]";
+        if (r.EnvironmentalHazard == RoomHazard.BlessedClearing) return "[green][[*]][/]";
+        if (r.EnvironmentalHazard != RoomHazard.None)        return "[red][[~]][/]";
+        if (r.Type == RoomType.Dark)                         return "[grey][[D]][/]";
         return "[white][[+]][/]";
     }
 
@@ -696,16 +758,16 @@ public sealed class SpectreDisplayService : IDisplayService
             table.AddRow(slotLabel, name, statsStr);
         }
 
-        AddSlot("⚔  Weapon",    player.EquippedWeapon,    isWeapon: true);
-        AddSlot("💍 Accessory", player.EquippedAccessory, isAccessory: true);
-        AddSlot("🪖 Head",      player.EquippedHead);
-        AddSlot("🥋 Shoulders", player.EquippedShoulders);
-        AddSlot("🛡  Chest",    player.EquippedChest);
-        AddSlot("🧤 Hands",     player.EquippedHands);
-        AddSlot("👖 Legs",      player.EquippedLegs);
-        AddSlot("👟 Feet",      player.EquippedFeet);
-        AddSlot("🧥 Back",      player.EquippedBack);
-        AddSlot("⛨  Off-Hand",  player.EquippedOffHand);
+        AddSlot(EL("⚔", "Weapon"),    player.EquippedWeapon,    isWeapon: true);
+        AddSlot(EL("💍", "Accessory"), player.EquippedAccessory, isAccessory: true);
+        AddSlot(EL("🪖", "Head"),      player.EquippedHead);
+        AddSlot(EL("🥋", "Shoulders"), player.EquippedShoulders);
+        AddSlot(EL("🛡", "Chest"),     player.EquippedChest);
+        AddSlot(EL("🧤", "Hands"),     player.EquippedHands);
+        AddSlot(EL("👖", "Legs"),      player.EquippedLegs);
+        AddSlot(EL("👟", "Feet"),      player.EquippedFeet);
+        AddSlot(EL("🧥", "Back"),      player.EquippedBack);
+        AddSlot(EL("⛨", "Off-Hand"),  player.EquippedOffHand);
 
         AnsiConsole.WriteLine();
         AnsiConsole.Write(table);
@@ -763,7 +825,7 @@ public sealed class SpectreDisplayService : IDisplayService
             .AddColumn(new TableColumn("[yellow]Prestige[/]"))
             .AddColumn(new TableColumn("[yellow]Value[/]"));
 
-        table.AddRow("⭐ Level",   $"[yellow]{prestige.PrestigeLevel}[/]");
+        table.AddRow(EL("⭐", "Level"),   $"[yellow]{prestige.PrestigeLevel}[/]");
         table.AddRow("Wins",       prestige.TotalWins.ToString());
         table.AddRow("Runs",       prestige.TotalRuns.ToString());
         if (prestige.BonusStartAttack  > 0) table.AddRow("Bonus Attack",   $"[green]+{prestige.BonusStartAttack}[/]");
@@ -1079,10 +1141,10 @@ public sealed class SpectreDisplayService : IDisplayService
         return PromptFromMenu("[bold yellow]Choose your action:[/]",
             new (string, string)[]
             {
-                ("⚔  Attack",  "A"),
-                ("✨ Ability", "B"),
-                ("🏃 Flee",    "F"),
-                ("🧪 Use Item","I"),
+                (EL("⚔", "Attack"),   "A"),
+                (EL("✨", "Ability"),  "B"),
+                (EL("🏃", "Flee"),     "F"),
+                (EL("🧪", "Use Item"), "I"),
             });
     }
 
@@ -1255,6 +1317,12 @@ public sealed class SpectreDisplayService : IDisplayService
                 .AddChoices(optList));
         return selected.Value;
     }
+
+    // Wide emoji occupy 2 terminal columns; narrow symbols occupy 1.
+    // Pad with 1 space (wide) or 2 spaces (narrow) so text always starts at visual column 3.
+    private static readonly HashSet<string> NarrowEmoji = ["⚔", "⛨", "⚗", "☠", "★", "↩", "•"];
+    private static string EL(string emoji, string text) =>
+        NarrowEmoji.Contains(emoji) ? $"{emoji}  {text}" : $"{emoji} {text}";
 
     private static string ItemTypeIcon(ItemType type) => type switch
     {

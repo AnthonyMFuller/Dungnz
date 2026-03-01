@@ -1161,3 +1161,50 @@ System.NotSupportedException: Runtime type 'Dungnz.Systems.Enemies.GoblinWarchie
 - The Chest slot had only 1 space, causing its label to appear shifted relative to other equipment slots
 - All item display contexts (inventory, pickup, shop, examine, equip menu) use `ItemTypeIcon()` in `Display/SpectreDisplayService.cs`. For armor slot-awareness, the pattern is `ItemIcon(Item)` which delegates to `SlotIcon(ArmorSlot)`.
 - `ArmorSlot` enum is in `Models/ArmorSlot.cs` — values: None, Head, Shoulders, Chest, Hands, Legs, Feet, Back, OffHand
+
+### 2025 — Emoji Label Audit (#820, #821, #822)
+
+**Issues Closed:** #820, #821, #822
+**File Modified:** `Display/SpectreDisplayService.cs`
+
+## Learnings
+
+**What was found:**
+- Line 233: `table.AddRow("⚡ Combo", ...)` — ⚡ is in `NarrowEmoji` but was using raw string (1 space instead of 2)
+- Line 766: `table.AddRow("⭐ Level", ...)` — ⭐ is NOT in `NarrowEmoji` (wide emoji, 1 space is correct), but was using raw string instead of `EL()`
+- All other emoji+text labels in table rows and menus were already using `EL()` (equipment slots, combat actions)
+
+**What was fixed:**
+- Line 233: Updated to `EL("⚡", "Combo")` — now correctly gets 2 spaces (narrow emoji)
+- Line 766: Updated to `EL("⭐", "Level")` — gets 1 space (wide emoji, correct behavior)
+
+**Key decision:** ⭐ (U+2B50) is a wide emoji and was NOT added to `NarrowEmoji`. EL() gives it 1 space, which is correct for terminal rendering.
+
+**Build:** `dotnet build` passes with 0 errors (3 pre-existing XML doc warnings, unrelated).
+
+## Learnings — Mini-Map Phase 1
+
+**What I implemented:**
+- Fog of war: after BFS, built `knownSet` (visited + current rooms), then expanded it one hop to include unvisited neighbours. These show as `[grey][[?]][/]`. Connectors between visited and fog rooms appear automatically because fog rooms enter the grid.
+- Room type symbols: added 8 new symbols in `GetMapRoomSymbol()` — `[M]` Merchant, `[T]` Trap, `[A]` Armory, `[L]` Library, `[F]` ForgottenShrine, `[~]` Hazard, `[*]` BlessedClearing, `[D]` Dark. Priority: BlessedClearing before generic hazard check.
+- Legend split into two lines to fit all symbols.
+- `ShowMap(Room, int floor = 1)` signature propagated to interface, legacy DisplayService, GameLoop (passes `_currentFloor`), and both test helpers.
+
+**Key design decision:** Default parameter `floor = 1` keeps all existing callers valid without changes.
+
+## Learnings — Mini-Map Phase 2
+
+**Issues Closed:** #826, #827
+**File Modified:** `Display/SpectreDisplayService.cs`
+
+### Dynamic Legend (#826)
+
+After building `grid`, iterate all rooms (skipping `currentRoom`) and set boolean flags for each room-type/state category, mirroring the exact priority order in `GetMapRoomSymbol`. Build `legendEntries` list starting with `[@] You` (always), then append each entry only if its flag was set. Format into 1 line (≤7 symbols) or 2 lines (>7 symbols) using `string.Join("   ", ...)` with `legHalf = (count + 1) / 2` split.
+
+Key detail: variable names like `showBoss`, `showExit`, etc. must not conflict with loop-scoped variables `hasConnector`/`hasSouth` already in the method — they live in nested for-loop scopes so names are safe.
+
+### Box-Drawing Connectors + Compass Rose (#827)
+
+- Horizontal connector: `"-"` → `"─"` (U+2500)
+- Vertical connector: `" | "` → `" │ "` (U+2502)
+- Compass rose: replaced 2-line `═══ MAP ═══   N` + `↑` header with 4-line block: `═══ MAP ═══`, then `      N` / `    W ✦ E` / `      S` (✦ U+2726 as center marker)

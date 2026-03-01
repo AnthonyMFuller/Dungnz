@@ -206,7 +206,7 @@ public class GameLoop
                     HandleDescend();
                     break;
                 case CommandType.Map:
-                    _display.ShowMap(_currentRoom);
+                    _display.ShowMap(_currentRoom, _currentFloor);
                     break;
                 case CommandType.Shop:
                     HandleShop();
