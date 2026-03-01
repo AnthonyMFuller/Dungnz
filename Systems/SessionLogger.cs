@@ -1,6 +1,7 @@
 namespace Dungnz.Systems;
 
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// Logs completed game sessions to a JSON-lines file for balance analysis and player
@@ -41,6 +42,32 @@ public static class SessionLogger
             var logFile = Path.Combine(logDir, "sessions.jsonl");
             var json = JsonSerializer.Serialize(record);
             File.AppendAllText(logFile, json + Environment.NewLine);
+        }
+        catch
+        {
+            // Never crash the game due to logging failure
+        }
+    }
+
+    /// <summary>
+    /// Logs a balance summary at the end of a run using the structured logger.
+    /// Captures gold earned, enemies killed, floor reached, boss kills, and damage dealt.
+    /// </summary>
+    /// <param name="logger">The logger instance to write to.</param>
+    /// <param name="sessionStats">The per-session balance metrics.</param>
+    /// <param name="outcome">The run outcome: "Victory", "Defeat", or "Quit".</param>
+    public static void LogBalanceSummary(ILogger logger, SessionStats sessionStats, string outcome)
+    {
+        try
+        {
+            logger.LogInformation(
+                "Session summary — Outcome: {Outcome}, EnemiesKilled: {EnemiesKilled}, GoldEarned: {GoldEarned}, FloorsCleared: {FloorsCleared}, BossKills: {BossKills}, DamageDealt: {DamageDealt}",
+                outcome,
+                sessionStats.EnemiesKilled,
+                sessionStats.GoldEarned,
+                sessionStats.FloorsCleared,
+                sessionStats.BossKills,
+                sessionStats.DamageDealt);
         }
         catch
         {
