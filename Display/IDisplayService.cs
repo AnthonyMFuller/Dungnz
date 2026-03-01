@@ -172,6 +172,14 @@ public interface IDisplayService
     /// <param name="newItem">The item being equipped.</param>
     void ShowEquipmentComparison(Player player, Item? oldItem, Item newItem);
 
+    /// <summary>
+    /// Displays the player's currently equipped items in all slots,
+    /// using a rich Spectre.Console table layout with tier-coloured item names
+    /// and active set bonus information.
+    /// </summary>
+    /// <param name="player">The player whose equipment is displayed.</param>
+    void ShowEquipment(Player player);
+
     /// <summary>Renders the enhanced ASCII art title screen with colors.</summary>
     void ShowEnhancedTitle();
 

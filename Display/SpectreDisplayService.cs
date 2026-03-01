@@ -638,6 +638,84 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     /// <inheritdoc/>
+    public void ShowEquipment(Player player)
+    {
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Gold1)
+            .Title("[bold gold1]⚔ EQUIPMENT[/]")
+            .AddColumn(new TableColumn("[bold grey]Slot[/]").NoWrap().LeftAligned())
+            .AddColumn(new TableColumn("[bold grey]Item[/]").LeftAligned())
+            .AddColumn(new TableColumn("[bold grey]Stats[/]").LeftAligned());
+
+        void AddSlot(string slotLabel, Item? item, bool isWeapon = false, bool isAccessory = false)
+        {
+            if (item == null)
+            {
+                table.AddRow(slotLabel, "[grey](empty)[/]", "[grey]—[/]");
+                return;
+            }
+
+            var tc = TierColor(item.Tier);
+            var name = $"[{tc}]{Markup.Escape(item.Name)}[/]";
+            var stats = new System.Collections.Generic.List<string>();
+
+            if (isWeapon)
+            {
+                if (item.AttackBonus  != 0) stats.Add($"[red]+{item.AttackBonus} ATK[/]");
+                if (item.DodgeBonus   > 0)  stats.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
+                if (item.MaxManaBonus > 0)  stats.Add($"[blue]+{item.MaxManaBonus} mana[/]");
+                if (item.PoisonImmunity)    stats.Add("[green]poison immune[/]");
+            }
+            else if (isAccessory)
+            {
+                if (item.AttackBonus  != 0) stats.Add($"[red]+{item.AttackBonus} ATK[/]");
+                if (item.DefenseBonus != 0) stats.Add($"[cyan]+{item.DefenseBonus} DEF[/]");
+                if (item.StatModifier != 0) stats.Add($"[green]+{item.StatModifier} HP[/]");
+                if (item.DodgeBonus   > 0)  stats.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
+                if (item.MaxManaBonus > 0)  stats.Add($"[blue]+{item.MaxManaBonus} mana[/]");
+            }
+            else // armor
+            {
+                if (item.DefenseBonus != 0) stats.Add($"[cyan]+{item.DefenseBonus} DEF[/]");
+                if (item.DodgeBonus   > 0)  stats.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
+                if (item.MaxManaBonus > 0)  stats.Add($"[blue]+{item.MaxManaBonus} mana[/]");
+                if (item.PoisonImmunity)    stats.Add("[green]poison immune[/]");
+            }
+
+            var statsStr = stats.Count > 0 ? string.Join(", ", stats) : "[grey]—[/]";
+            table.AddRow(slotLabel, name, statsStr);
+        }
+
+        AddSlot("⚔  Weapon",    player.EquippedWeapon,    isWeapon: true);
+        AddSlot("💍 Accessory", player.EquippedAccessory, isAccessory: true);
+        AddSlot("🪖 Head",      player.EquippedHead);
+        AddSlot("🥋 Shoulders", player.EquippedShoulders);
+        AddSlot("🛡 Chest",     player.EquippedChest);
+        AddSlot("🧤 Hands",     player.EquippedHands);
+        AddSlot("👖 Legs",      player.EquippedLegs);
+        AddSlot("👟 Feet",      player.EquippedFeet);
+        AddSlot("🧥 Back",      player.EquippedBack);
+        AddSlot("⛨  Off-Hand",  player.EquippedOffHand);
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(table);
+
+        var setDesc = SetBonusManager.GetActiveBonusDescription(player);
+        if (!string.IsNullOrEmpty(setDesc))
+        {
+            var setPanel = new Panel(new Markup($"[yellow]{Markup.Escape(setDesc)}[/]"))
+            {
+                Border = BoxBorder.Rounded,
+                Header = new PanelHeader("[bold yellow]Set Bonuses[/]"),
+            };
+            AnsiConsole.Write(setPanel);
+        }
+
+        AnsiConsole.WriteLine();
+    }
+
+    /// <inheritdoc/>
     public void ShowEnhancedTitle()
     {
         AnsiConsole.Clear();
