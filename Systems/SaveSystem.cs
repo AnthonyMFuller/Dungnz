@@ -60,7 +60,7 @@ public static class SaveSystem
             CurrentFloor = state.CurrentFloor,
             UnlockedSkills = state.Player.Skills.UnlockedSkills.Select(s => s.ToString()).ToList(),
             StatusEffects = state.Player.ActiveEffects.ToList(),
-            Version = 1,
+            Version = SaveData.CurrentVersion,
             Rooms = roomMap.Values.Select(r => new RoomSaveData
             {
                 Id = r.Id,
@@ -281,6 +281,9 @@ public class GameState
 
 internal class SaveData
 {
+    /// <summary>Current save format version.</summary>
+    public const int CurrentVersion = 1;
+
     public required Player Player { get; init; }
     public required Guid CurrentRoomId { get; init; }
     public required List<RoomSaveData> Rooms { get; init; }
@@ -296,7 +299,7 @@ internal class SaveData
 
     /// <summary>Save format version. 0 = pre-v3 legacy save; 1 = v3+.</summary>
     [System.Text.Json.Serialization.JsonPropertyName("version")]
-    public int Version { get; init; }
+    public int Version { get; set; }
 }
 
 internal class RoomSaveData

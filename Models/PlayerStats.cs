@@ -14,8 +14,8 @@ public partial class Player
     /// </summary>
     public float ClassDodgeBonus { get; set; }
 
-    /// <summary>Gets or sets the player's current hit points. Clamped to [0, <see cref="MaxHP"/>] by combat methods.</summary>
-    public int HP { get; set; } = 100;
+    /// <summary>Gets the player's current hit points. Modify via <see cref="TakeDamage"/> or <see cref="Heal"/>.</summary>
+    public int HP { get; private set; } = 100;
 
     /// <summary>
     /// Gets or sets the player's maximum hit points. Increases on level-up via <see cref="LevelUp"/>,
@@ -251,6 +251,17 @@ public partial class Player
     /// Resets combo points to zero without returning the count.
     /// </summary>
     public void ResetComboPoints() => ComboPoints = 0;
+
+    /// <summary>
+    /// Internal helper to set HP directly without validation, used only by test setup and special cases like resurrection.
+    /// </summary>
+    internal void SetHPDirect(int value)
+    {
+        var oldHP = HP;
+        HP = Math.Clamp(value, 0, MaxHP);
+        if (HP != oldHP)
+            OnHealthChanged?.Invoke(this, new HealthChangedEventArgs(oldHP, HP));
+    }
 }
 
 /// <summary>
