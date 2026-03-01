@@ -112,7 +112,27 @@ public class FakeDisplayService : IDisplayService
 
     public void ShowEquipment(Player player)
     {
+        Messages.Add("EQUIPMENT");
         AllOutput.Add("show_equipment");
+
+        void RecordSlot(string slot, Item? item)
+        {
+            if (item == null)
+                Messages.Add($"{slot}: [Empty]");
+            else
+                Messages.Add($"{slot}: {item.Name}");
+        }
+
+        RecordSlot("Weapon",    player.EquippedWeapon);
+        RecordSlot("Accessory", player.EquippedAccessory);
+        RecordSlot("Head",      player.EquippedHead);
+        RecordSlot("Shoulders", player.EquippedShoulders);
+        RecordSlot("Chest",     player.EquippedChest);
+        RecordSlot("Hands",     player.EquippedHands);
+        RecordSlot("Legs",      player.EquippedLegs);
+        RecordSlot("Feet",      player.EquippedFeet);
+        RecordSlot("Back",      player.EquippedBack);
+        RecordSlot("OffHand",   player.EquippedOffHand);
     }
 
     public bool ShowEnhancedTitleCalled { get; private set; }
