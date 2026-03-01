@@ -37,7 +37,7 @@ public class CryptPriest : Enemy
 
         SelfHealAmount = 10;
         SelfHealEveryTurns = 2;
-        SelfHealCooldown = 1; // first heal fires on turn 2 (decrement-first: 1→0=fire)
+        SelfHealCooldown = 1; // first heal fires on turn 2 (check-first: check==1 no → decrement to 0, then check==0 → heal)
 
         AddLoot(itemConfig);
     }

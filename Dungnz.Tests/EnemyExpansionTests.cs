@@ -238,11 +238,12 @@ public class EnemyExpansionTests
     private bool SimulateSelfHealTick(Enemy enemy)
     {
         if (enemy.SelfHealEveryTurns <= 0) return false;
-        // Mirrors CombatEngine's decrement-first approach
-        enemy.SelfHealCooldown--;
-        if (enemy.SelfHealCooldown <= 0)
+        // Mirrors CombatEngine's check-first pattern: check → if 0 heal → else decrement
+        if (enemy.SelfHealCooldown > 0)
+            enemy.SelfHealCooldown--;
+        else
         {
-            enemy.SelfHealCooldown = enemy.SelfHealEveryTurns;
+            enemy.SelfHealCooldown = enemy.SelfHealEveryTurns - 1;
             enemy.HP = Math.Min(enemy.MaxHP, enemy.HP + enemy.SelfHealAmount);
             return true;
         }
