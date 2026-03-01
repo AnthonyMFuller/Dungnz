@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="Dungnz.csproj" />
+  <Project Path="Dungnz.Tests/Dungnz.Tests.csproj" />
+</Solution>
