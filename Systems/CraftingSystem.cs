@@ -17,10 +17,6 @@ internal record RecipeConfigData
 /// </summary>
 public static class CraftingSystem
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true
-    };
 
     /// <summary>Gets all crafting recipes currently available in the game.</summary>
     public static List<CraftingRecipe> Recipes { get; private set; } = BuildDefaultRecipes();
@@ -36,7 +32,7 @@ public static class CraftingSystem
             return;
 
         var json = File.ReadAllText(path);
-        var data = JsonSerializer.Deserialize<RecipeConfigData>(json, JsonOptions);
+        var data = JsonSerializer.Deserialize<RecipeConfigData>(json, DataJsonOptions.Default);
         if (data?.Recipes is { Count: > 0 })
             Recipes = data.Recipes;
     }
