@@ -2133,3 +2133,40 @@ Both PRs reviewed and merged in Round 3 (see below).
 - **Fix:** Added compiled `Regex` helper `StripAnsiCodes` to `SpectreDisplayService` that strips `\x1B[...m` patterns. Applied defensively in `ShowMessage`, `ShowCombatMessage`, `ShowColoredMessage`, and `ShowColoredCombatMessage`.
 - **Branch:** `squad/745-strip-ansi-codes` → PR #809
 - **Tests:** All 15 DisplayServiceTests pass. No regressions (4 pre-existing failures unrelated).
+
+---
+
+### 2026-03-02: Mini-Map Overhaul — Design & Issue Creation
+
+**Context:** Boss requested design and planning for a "vastly improved mini-map" feature. Analyzed current `ShowMap()` implementation in `SpectreDisplayService.cs` and `Room` model properties.
+
+**Issues Created:**
+- **#823** — Fog of War: Show adjacent unvisited rooms as grey `[?]` (P0, enhancement)
+- **#824** — Rich Room Type Symbols: 15-symbol priority table covering merchants, items, traps, libraries, armories, hazards (P0, enhancement)
+- **#825** — Floor Number in Panel Header + `ShowMap` interface change to accept `int currentFloor` (P0, enhancement)
+- **#826** — Dynamic Legend: Auto-generated from visible symbols, wraps at 6 per line (P1, enhancement)
+- **#827** — Visual Polish: Box-drawing corridor connectors (`─`, `│`) and compass rose (P2, enhancement)
+
+**Implementation Order:** #825 → #823 → #824 → #826 → #827
+- #825 first because it changes `IDisplayService.ShowMap` signature (6 files affected)
+- #823 second because fog-of-war is the biggest visual transformation
+- #824 third builds on fog infrastructure with full symbol table
+- #826 fourth makes legend useful after new symbols exist
+- #827 last, pure cosmetic polish
+
+**Key Architectural Decisions:**
+1. `ShowMap(Room currentRoom)` → `ShowMap(Room currentRoom, int currentFloor)` — interface-breaking change, do first
+2. 15-level priority table for room symbols (current→fog→boss→exit→enemy→shrine→merchant→items→trap→library→armory→lava→corrupted→blessed→cleared)
+3. `[♥]` for BlessedClearing (Unicode narrow, visually positive)
+4. Single branch `squad/minimap-overhaul`, one PR, squash-merge
+5. Fog rooms participate in corridor connector rendering
+
+**Decision Document:** `.ai-team/decisions/inbox/coulson-minimap-plan.md`
+
+## Learnings
+- The mini-map improvement plan covers 5 issues (#823-#827) across 3 priority tiers
+- Interface change (#825) must land first to avoid merge conflicts across 6 files
+- Fog of war (#823) is the single most impactful improvement — transforms sparse dots into exploration grid
+- Rich symbols (#824) is the biggest code change — full rewrite of `GetMapRoomSymbol` with 15-entry priority table
+- Spectre.Console color names must be verified against docs (darkorange3, dodgerblue1, mediumpurple2, orangered1, springgreen2)
+- Unicode `♥` (U+2665) is narrow in most terminals but needs monitoring for width bugs
