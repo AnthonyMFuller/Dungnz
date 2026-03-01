@@ -2061,3 +2061,32 @@ Both PRs reviewed and merged in Round 3 (see below).
 **Issues Found:**
 - Squad agent bundled unrelated changes across commits (HP encapsulation in editorconfig PR, SessionLogger in CI PR, etc.) — stacked branches created merge conflicts when merging in order.
 - PR #771 pointed to wrong commit (duplicate of #767 Stryker branch).
+
+---
+
+### 2026-03-01: PR Review Round 4 — Sprint 3 Completion (9 PRs)
+
+**Context:** 9 open PRs from Romanoff (4 testing/quality) and Barton (5 combat systems). All reviewed and merged per Anthony's directive.
+
+**Romanoff PRs (test additions):**
+- ✅ PR #791: ArchUnitNET Architecture Rules — 3 IL-scanning arch tests (+2 intentional failures for tech debt visibility)
+- ✅ PR #795: Test Builder Pattern — 4 fluent builders (Player, Enemy, Room, Item) + 6 validation tests
+- ✅ PR #797: Verify.Xunit Snapshot Tests — 3 snapshot tests for serialization format stability
+- ✅ PR #801: CsCheck Property-Based Tests — 5 PBT tests for game mechanic invariants
+
+**Barton PRs (combat systems):**
+- ✅ PR #792: Session Balance Logging — SessionStats tracking + SessionLogger + 4 tests
+- ⚠️ PR #798: Headless Simulation Mode — **STALE BRANCH** (pointed to test builder commit, no headless code delivered)
+- ✅ PR #802: IEnemyAI.TakeTurn() Refactor — Interface + GoblinShaman/CryptPriest pilots + 8 tests
+- ✅ PR #804: Data-Driven Status Effects — status-effects.json (12 definitions) + StatusEffectDefinition model
+- ✅ PR #806: Event-Driven Passives — GameEventBus + IGameEvent + SoulHarvestPassive + 8 tests
+
+**Post-Merge Test Results:**
+- Total: 1394 (was 1347, +47 new tests)
+- Passed: 1388, Failed: 6, Skipped: 0
+- Failures: 2 pre-existing arch tests, 2 intentional new arch tests (PR #791), 2 pre-existing flaky tests
+- **No regressions introduced.**
+
+**Key Issue:** PR #798 stale branch — third occurrence of squad agent stacking branches. Headless simulation feature (#793) needs reopening.
+
+**Decisions:** See `.ai-team/decisions/inbox/coulson-review-round-4.md` for full analysis.
