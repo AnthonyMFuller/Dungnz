@@ -36,11 +36,6 @@ public record MerchantInventoryData
 /// </summary>
 public static class MerchantInventoryConfig
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        ReadCommentHandling = JsonCommentHandling.Skip
-    };
 
     private static MerchantInventoryData? _cachedData;
 
@@ -132,7 +127,7 @@ public static class MerchantInventoryConfig
         try
         {
             var json = File.ReadAllText(path);
-            _cachedData = JsonSerializer.Deserialize<MerchantInventoryData>(json, JsonOptions);
+            _cachedData = JsonSerializer.Deserialize<MerchantInventoryData>(json, DataJsonOptions.Default);
             return _cachedData;
         }
         catch

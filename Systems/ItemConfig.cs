@@ -86,11 +86,6 @@ public record ItemConfigData
 /// </summary>
 public static class ItemConfig
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        ReadCommentHandling = JsonCommentHandling.Skip
-    };
 
     /// <summary>
     /// Reads the specified JSON file, deserialises the item list, and validates that each entry
@@ -112,7 +107,7 @@ public static class ItemConfig
         try
         {
             var json = File.ReadAllText(path);
-            var config = JsonSerializer.Deserialize<ItemConfigData>(json, JsonOptions);
+            var config = JsonSerializer.Deserialize<ItemConfigData>(json, DataJsonOptions.Default);
 
             if (config == null || config.Items.Count == 0)
             {

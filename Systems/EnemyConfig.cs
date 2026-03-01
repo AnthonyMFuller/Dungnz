@@ -43,11 +43,6 @@ public record EnemyStats
 /// </summary>
 public static class EnemyConfig
 {
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        PropertyNameCaseInsensitive = true,
-        ReadCommentHandling = JsonCommentHandling.Skip
-    };
 
     /// <summary>
     /// Reads the specified JSON file and deserialises it as a dictionary of enemy stat entries,
@@ -68,7 +63,7 @@ public static class EnemyConfig
         try
         {
             var json = File.ReadAllText(path);
-            var config = JsonSerializer.Deserialize<Dictionary<string, EnemyStats>>(json, JsonOptions);
+            var config = JsonSerializer.Deserialize<Dictionary<string, EnemyStats>>(json, DataJsonOptions.Default);
 
             if (config == null || config.Count == 0)
             {

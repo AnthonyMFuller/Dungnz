@@ -56,7 +56,6 @@ internal record AffixConfigData
 /// </summary>
 public static class AffixRegistry
 {
-    private static readonly JsonSerializerOptions JsonOptions = new() { PropertyNameCaseInsensitive = true };
 
     private static IReadOnlyList<AffixDefinition> _prefixes = Array.Empty<AffixDefinition>();
     private static IReadOnlyList<AffixDefinition> _suffixes = Array.Empty<AffixDefinition>();
@@ -70,7 +69,7 @@ public static class AffixRegistry
         if (!File.Exists(path)) return;
 
         var json = File.ReadAllText(path);
-        var data = JsonSerializer.Deserialize<AffixConfigData>(json, JsonOptions);
+        var data = JsonSerializer.Deserialize<AffixConfigData>(json, DataJsonOptions.Default);
         if (data == null) return;
 
         _prefixes = data.Prefixes;
