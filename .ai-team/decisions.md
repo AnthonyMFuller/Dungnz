@@ -15106,3 +15106,140 @@ This fixes visual misalignment on the Rogue Combo stat row (line 233 call site).
 
 ## Verification
 Romanoff audited all 14 EL() call sites — 13 correct, 1 bug fixed (⚡). All other emoji in NarrowEmoji confirmed correct per Unicode East Asian Width classification.
+
+---
+
+# Decision: Architectural Plan — Mini-Map Overhaul
+
+**Date:** 2026-03-02  
+**Author:** Coulson (Lead)  
+**Requested by:** Boss  
+**Issues:** #823, #824, #825, #826, #827
+
+## Context
+
+The current mini-map is functional but minimal. All cleared rooms show identical `[+]` symbols, unvisited rooms are completely hidden, and the legend is hardcoded. This plan transforms the mini-map into a real exploration and decision-making tool.
+
+## Priority Classification
+
+| Priority | Issue | Title | Impact |
+|----------|-------|-------|--------|
+| **P0** | #825 | Floor Number in Header + Interface Change | Tiny effort, high info, **unblocks other work** |
+| **P0** | #823 | Fog of War — Adjacent Unknowns | Most impactful visual change |
+| **P0** | #824 | Rich Room Type Symbols | Most impactful information change |
+| **P1** | #826 | Dynamic Legend | Required once #824 lands |
+| **P2** | #827 | Visual Polish — Corridors & Compass | Pure cosmetic |
+
+## Implementation Order
+
+### Phase 1: Interface Change (#825)
+
+**Assignee:** Hill  
+**Why first:** Changes the `IDisplayService.ShowMap` signature. Must be done before any other work to avoid merge conflicts.
+
+Changes:
+- `IDisplayService.cs`: `void ShowMap(Room currentRoom, int currentFloor);`
+- `GameLoop.cs` (line ~209): `_display.ShowMap(_currentRoom, _currentFloor);`
+- `SpectreDisplayService.cs` panel header: `Header = new PanelHeader($"[bold white]Mini-Map — Floor {currentFloor}[/]")`
+- `DisplayService.cs`, `TestDisplayService.cs`, `FakeDisplayService.cs` — signature only
+
+### Phase 2: Fog of War (#823)
+
+**Assignee:** Hill  
+**Why second:** Adds the biggest visual transformation — the map goes from sparse dots to a real exploration grid. Independent of symbol work.
+
+Key changes to `ShowMap()`:
+1. After computing `visiblePositions`, compute `fogPositions`:
+   ```csharp
+   var visitedSet = new HashSet<Room>(visiblePositions.Select(kv => kv.Key));
+   var fogPositions = positions
+       .Where(kv => !visitedSet.Contains(kv.Key) && kv.Key != currentRoom)
+       .Where(kv => kv.Key.Exits.Values.Any(n => visitedSet.Contains(n)))
+       .ToList();
+   ```
+2. Include fog positions in the bounding box (`minX/maxX/minY/maxY`)
+3. Use a `fogGrid` dictionary (or mark in main grid) to distinguish fog from visited
+4. Render fog rooms as `[grey][[?]][/]`
+5. Draw corridor connectors between visited↔fog rooms
+
+### Phase 3: Rich Room Symbols (#824)
+
+**Assignee:** Hill  
+**Why third:** Builds on the rendering infrastructure from Phase 2.
+
+**Symbol Priority Table:**
+
+| Pri | Condition | Symbol | Color |
+|-----|-----------|--------|-------|
+| 1 | r == currentRoom | [@] | bold yellow |
+| 2 | fog room | [?] | grey |
+| 3 | r.IsExit && Enemy?.HP > 0 | [B] | bold red |
+| 4 | r.IsExit | [E] | white |
+| 5 | r.Enemy?.HP > 0 | [!] | red |
+| 6 | r.HasShrine && !r.ShrineUsed | [S] | cyan |
+| 7 | r.Merchant != null | [$] | green |
+| 8 | r.Items.Count > 0 | [i] | yellow |
+| 9 | r.Type == TrapRoom && !SpecialUsed | [T] | darkorange3 |
+| 10 | r.Type == PetrifiedLibrary && !SpecialUsed | [L] | dodgerblue1 |
+| 11 | r.Type == ContestedArmory && !SpecialUsed | [A] | mediumpurple2 |
+| 12 | EnvironmentalHazard == LavaSeam | [~] | orangered1 |
+| 13 | EnvironmentalHazard == CorruptedGround | [%] | darkgreen |
+| 14 | EnvironmentalHazard == BlessedClearing | [♥] | springgreen2 |
+| 15 | fallback (cleared) | [+] | white |
+
+**Design decisions:**
+- Merchant condition: Show even if inventory empty
+- Trap rooms: Show even after triggered
+- Special rooms after use: Fall through to hazard or `[+]`
+- `[♥]` for BlessedClearing: single Unicode char, visually distinct and positive
+
+### Phase 4: Dynamic Legend (#826)
+
+**Assignee:** Hill  
+**Why fourth:** Only makes sense after Phase 3 adds the new symbols.
+
+- Track which symbol keys appeared during rendering
+- Build legend from only visible symbols
+- Wrap at 6 entries per line
+
+### Phase 5: Visual Polish (#827)
+
+**Assignee:** Hill (if time permits) or defer  
+**Why last:** Pure cosmetic. Box-drawing characters (`─`, `│`) and compass rose.
+
+## Branch Strategy
+
+Single feature branch: `squad/minimap-overhaul`
+- Phase 1 commit: interface change
+- Phase 2 commit: fog of war
+- Phase 3 commit: rich symbols
+- Phase 4 commit: dynamic legend
+- Phase 5 commit: visual polish (if included)
+
+One PR at the end, squash-merge to master.
+
+---
+
+# Decision: Mini-Map Phase 1 & 2 Implementation Notes
+
+**Date:** 2026-03-01  
+**Author:** Hill
+
+## Fog of War Implementation
+
+Built a `knownSet` from all visited/current rooms, then expanded it by one step: for each known room, added all its exit neighbours that exist in the BFS `positions` map. This gives "seen but unvisited" rooms that appear as `[?]`. The grid bounds and connectors naturally extend to include these fog rooms.
+
+**Key decision:** Used `ToList()` snapshot before mutating `knownSet` in the foreach loop to avoid modifying a collection during enumeration.
+
+## Room Symbol Priority Order
+
+Kept existing priority order unchanged (current → unvisited → boss exit → exit → enemy → shrine), inserted new types after shrine: interactive rooms first (merchant, trap), then named room types (armory, library, forgotten shrine), then environmental effects (hazard, blessed), then dark. Fallback `[+]` unchanged.
+
+## Hazard Ordering
+
+`BlessedClearing` checked before generic `!= None` so it gets its own green `[*]` symbol rather than being lumped with red `[~]` hazards.
+
+## Interface Signature
+
+Used `int floor = 1` default parameter so existing callers with no floor arg continue to compile (DisplayService legacy stub, etc.).
+
