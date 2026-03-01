@@ -4,7 +4,7 @@ using Dungnz.Systems;
 
 /// <summary>Defines an HP-threshold phase for a boss, triggering a named ability once.</summary>
 /// <param name="HpPercent">Fraction of max HP (0.0–1.0) at or below which the ability fires.</param>
-/// <param name="AbilityName">The ability identifier passed to <see cref="CombatEngine.ExecuteBossPhaseAbility"/>.</param>
+/// <param name="AbilityName">The ability identifier passed to the boss phase ability handler in <see cref="Dungnz.Engine.CombatEngine"/>.</param>
 public record BossPhase(double HpPercent, string AbilityName);
 
 /// <summary>
@@ -48,7 +48,7 @@ public class DungeonBoss : Enemy
 
     /// <summary>
     /// Periodic turn-based abilities. Key = turn interval (fires when <c>TurnCount % key == 0</c>),
-    /// value = ability name passed to <see cref="Engine.CombatEngine.ExecuteBossPhaseAbility"/>.
+    /// value = ability name passed to the boss phase ability handler in <see cref="Dungnz.Engine.CombatEngine"/>.
     /// </summary>
     public Dictionary<int, string> TurnActions { get; } = new();
 

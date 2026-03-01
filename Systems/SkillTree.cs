@@ -52,7 +52,7 @@ public enum Skill
     AuraOfProtection,
     /// <summary>Paladin passive: HolyStrike and Consecrate deal +15% bonus damage.</summary>
     HolyFervor,
-    /// <summary>Paladin passive: When HP < 20%: ATK +20%, all heals +25%.</summary>
+    /// <summary>Paladin passive: When HP &lt; 20%: ATK +20%, all heals +25%.</summary>
     MartyrResolve,
 
     // Necromancer passives
@@ -62,7 +62,7 @@ public enum Skill
     VampiricTouch,
     /// <summary>Necromancer passive: Raise Dead cooldown -1; minions have +10% ATK.</summary>
     MasterOfDeath,
-    /// <summary>Necromancer passive: When HP < 15%, all abilities cost 0 mana for 1 turn.</summary>
+    /// <summary>Necromancer passive: When HP &lt; 15%, all abilities cost 0 mana for 1 turn.</summary>
     LichsBargain,
 
     // Ranger passives
@@ -72,7 +72,7 @@ public enum Skill
     PackTactics,
     /// <summary>Ranger passive: Traps can trigger twice before expiring.</summary>
     TrapMastery,
-    /// <summary>Ranger passive: If enemy HP < 40%, all Ranger attacks deal +20% damage.</summary>
+    /// <summary>Ranger passive: If enemy HP &lt; 40%, all Ranger attacks deal +20% damage.</summary>
     ApexPredator,
 }
 

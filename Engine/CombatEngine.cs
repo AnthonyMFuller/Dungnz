@@ -260,6 +260,10 @@ public class CombatEngine : ICombatEngine
     /// </summary>
     /// <param name="player">The player character participating in the fight.</param>
     /// <param name="enemy">The enemy the player is fighting.</param>
+    /// <param name="stats">
+    /// An optional <see cref="RunStats"/> to record metrics for this combat encounter,
+    /// or <see langword="null"/> to use the existing instance.
+    /// </param>
     /// <returns>
     /// <see cref="CombatResult.Won"/> if the enemy was defeated,
     /// <see cref="CombatResult.Fled"/> if the player escaped, or
