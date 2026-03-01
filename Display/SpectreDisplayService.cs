@@ -230,7 +230,7 @@ public sealed class SpectreDisplayService : IDisplayService
         if (player.Class == PlayerClass.Rogue && player.ComboPoints > 0)
         {
             var dots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
-            table.AddRow(EL("⚡", "Combo"), $"[yellow]{dots}[/]");
+            table.AddRow(IL("✦", "Combo"), $"[yellow]{dots}[/]");
         }
 
         var classDef = PlayerClassDefinition.All.FirstOrDefault(c => c.Class == player.Class);
@@ -758,16 +758,16 @@ public sealed class SpectreDisplayService : IDisplayService
             table.AddRow(slotLabel, name, statsStr);
         }
 
-        AddSlot(EL("⚔", "Weapon"),    player.EquippedWeapon,    isWeapon: true);
-        AddSlot(EL("💍", "Accessory"), player.EquippedAccessory, isAccessory: true);
-        AddSlot(EL("🪖", "Head"),      player.EquippedHead);
-        AddSlot(EL("🥋", "Shoulders"), player.EquippedShoulders);
-        AddSlot(EL("🛡", "Chest"),     player.EquippedChest);
-        AddSlot(EL("🧤", "Hands"),     player.EquippedHands);
-        AddSlot(EL("👖", "Legs"),      player.EquippedLegs);
-        AddSlot(EL("👟", "Feet"),      player.EquippedFeet);
-        AddSlot(EL("🧥", "Back"),      player.EquippedBack);
-        AddSlot(EL("⛨", "Off-Hand"),  player.EquippedOffHand);
+        AddSlot(IL("⚔", "Weapon"),    player.EquippedWeapon,    isWeapon: true);
+        AddSlot(IL("✦", "Accessory"), player.EquippedAccessory, isAccessory: true);
+        AddSlot(IL("⛑", "Head"),      player.EquippedHead);
+        AddSlot(IL("◈", "Shoulders"), player.EquippedShoulders);
+        AddSlot(IL("⛨", "Chest"),     player.EquippedChest);
+        AddSlot(IL("☞", "Hands"),     player.EquippedHands);
+        AddSlot(IL("≡", "Legs"),      player.EquippedLegs);
+        AddSlot(IL("⤓", "Feet"),      player.EquippedFeet);
+        AddSlot(IL("↩", "Back"),      player.EquippedBack);
+        AddSlot(IL("⛨", "Off-Hand"),  player.EquippedOffHand);
 
         AnsiConsole.WriteLine();
         AnsiConsole.Write(table);
@@ -825,7 +825,7 @@ public sealed class SpectreDisplayService : IDisplayService
             .AddColumn(new TableColumn("[yellow]Prestige[/]"))
             .AddColumn(new TableColumn("[yellow]Value[/]"));
 
-        table.AddRow(EL("⭐", "Level"),   $"[yellow]{prestige.PrestigeLevel}[/]");
+        table.AddRow(IL("★", "Level"),   $"[yellow]{prestige.PrestigeLevel}[/]");
         table.AddRow("Wins",       prestige.TotalWins.ToString());
         table.AddRow("Runs",       prestige.TotalRuns.ToString());
         if (prestige.BonusStartAttack  > 0) table.AddRow("Bonus Attack",   $"[green]+{prestige.BonusStartAttack}[/]");
@@ -1131,7 +1131,7 @@ public sealed class SpectreDisplayService : IDisplayService
         if (player.Class == PlayerClass.Rogue)
         {
             var dots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
-            ctx.Append($"  ⚡ Combo: {dots}");
+            ctx.Append($"  ✦ Combo: {dots}");
         }
         if (player.Class == PlayerClass.Mage && player.IsManaShieldActive)
             ctx.Append(" [SHIELD ACTIVE]");
@@ -1141,10 +1141,10 @@ public sealed class SpectreDisplayService : IDisplayService
         return PromptFromMenu("[bold yellow]Choose your action:[/]",
             new (string, string)[]
             {
-                (EL("⚔", "Attack"),   "A"),
-                (EL("✨", "Ability"),  "B"),
-                (EL("🏃", "Flee"),     "F"),
-                (EL("🧪", "Use Item"), "I"),
+                (IL("⚔", "Attack"),   "A"),
+                (IL("✦", "Ability"),  "B"),
+                (IL("↗", "Flee"),     "F"),
+                (IL("⚗", "Use Item"), "I"),
             });
     }
 
@@ -1318,33 +1318,31 @@ public sealed class SpectreDisplayService : IDisplayService
         return selected.Value;
     }
 
-    // Wide emoji occupy 2 terminal columns; narrow symbols occupy 1.
-    // Pad with 1 space (wide) or 2 spaces (narrow) so text always starts at visual column 3.
-    private static readonly HashSet<string> NarrowEmoji = ["⚔", "⛨", "⚗", "☠", "★", "↩", "•"];
-    private static string EL(string emoji, string text) =>
-        NarrowEmoji.Contains(emoji) ? $"{emoji}  {text}" : $"{emoji} {text}";
+    // All icons are now narrow Unicode symbols (U+2600-U+27BF), occupying 1 terminal column.
+    // Pad with 2 spaces so text always starts at visual column 3.
+    private static string IL(string icon, string text) => $"{icon}  {text}";
 
     private static string ItemTypeIcon(ItemType type) => type switch
     {
         ItemType.Weapon           => "⚔",
-        ItemType.Armor            => "🛡",
-        ItemType.Consumable       => "🧪",
-        ItemType.Accessory        => "💍",
-        ItemType.CraftingMaterial => "⚗",
+        ItemType.Armor            => "⛨",
+        ItemType.Consumable       => "⚗",
+        ItemType.Accessory        => "✦",
+        ItemType.CraftingMaterial => "✶",
         _                         => "•"
     };
 
     private static string SlotIcon(ArmorSlot slot) => slot switch
     {
-        ArmorSlot.Head      => "🪖",
-        ArmorSlot.Shoulders => "🥋",
-        ArmorSlot.Chest     => "🛡",
-        ArmorSlot.Hands     => "🧤",
-        ArmorSlot.Legs      => "👖",
-        ArmorSlot.Feet      => "👟",
-        ArmorSlot.Back      => "🧥",
+        ArmorSlot.Head      => "⛑",
+        ArmorSlot.Shoulders => "◈",
+        ArmorSlot.Chest     => "⛨",
+        ArmorSlot.Hands     => "☞",
+        ArmorSlot.Legs      => "≡",
+        ArmorSlot.Feet      => "⤓",
+        ArmorSlot.Back      => "↩",
         ArmorSlot.OffHand   => "⛨",
-        _                   => "🛡",
+        _                   => "⛨",
     };
 
     private static string ItemIcon(Item item) =>
