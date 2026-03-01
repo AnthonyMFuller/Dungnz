@@ -15062,3 +15062,47 @@ Skipped: 0
 - **PRs merged:** 5 (#788, #787, #784, #783, #782)
 - **PRs closed:** 1 (#786 — FluentAssertions major version)
 - **No regressions introduced.**
+
+---
+
+# Decision: ⭐ (U+2B50) treated as wide emoji
+
+**Date:** 2026-03-01  
+**Author:** Hill  
+**Context:** Issue #822 emoji audit
+
+## Decision
+⭐ (U+2B50 BLACK MEDIUM STAR) is treated as a **wide emoji** and is NOT added to `NarrowEmoji`.
+
+## Rationale
+Wide emoji occupy 2 terminal columns. EL() gives wide emoji 1 space after the symbol, which produces correct visual alignment in Spectre.Console table cells. ⭐ renders wide in most terminals, so 1 space is correct.
+
+## Impact
+`EL("⭐", "Level")` → `"⭐ Level"` (1 space) — correct alignment in prestige table.
+
+If a future terminal renders ⭐ narrow (1 column), add it to `NarrowEmoji` in `SpectreDisplayService.cs` line ~1261.
+
+---
+
+# Decision: ⚡ (U+26A1) removed from NarrowEmoji
+
+**Date:** 2026-03-01  
+**Author:** Romanoff (review), Hill (fix)  
+**Context:** Issue #822 emoji audit — EL() helper code review
+
+## Decision
+⚡ (U+26A1 HIGH VOLTAGE SIGN) is classified as Unicode Wide (EAW=W) and must be **removed from `NarrowEmoji`** in `SpectreDisplayService.cs` line ~1261.
+
+## Problem
+⚡ was incorrectly in `NarrowEmoji`, causing it to get 2-space padding instead of 1-space padding. With the bug:
+- ⚡ occupies 2 terminal columns (wide)
+- Incorrectly appends 2 spaces → 4 visual columns before label text
+- Text starts at visual column 5 instead of 3 (misaligned)
+
+## Fix
+Remove `"⚡"` from `NarrowEmoji` set to fall through to the wide path: `$"{emoji} {text}"` → 2 + 1 = 3 cols (correct).
+
+This fixes visual misalignment on the Rogue Combo stat row (line 233 call site).
+
+## Verification
+Romanoff audited all 14 EL() call sites — 13 correct, 1 bug fixed (⚡). All other emoji in NarrowEmoji confirmed correct per Unicode East Asian Width classification.
