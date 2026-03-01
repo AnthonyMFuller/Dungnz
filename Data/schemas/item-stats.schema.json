@@ -11,7 +11,7 @@
         "required": ["Name", "Type"],
         "properties": {
           "Name":        { "type": "string", "minLength": 1, "maxLength": 30 },
-          "Type":        { "type": "string", "enum": ["Consumable","Weapon","Armor","Accessory","Key","Gold"] },
+          "Type":        { "type": "string", "enum": ["Consumable","Weapon","Armor","Accessory","Key","Gold","CraftingMaterial"] },
           "HealAmount":  { "type": "integer", "minimum": 0 },
           "AttackBonus": { "type": "integer", "minimum": 0 },
           "DefenseBonus":{ "type": "integer", "minimum": 0 },
