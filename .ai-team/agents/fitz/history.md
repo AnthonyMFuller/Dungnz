@@ -90,6 +90,30 @@ Implemented three additional reductions to further eliminate redundant workflow 
 
 **Impact:** Eliminates ~60% of redundant workflow runs (release re-tests, preview re-tests, heartbeat event spam) while maintaining all quality gates through pre-merge validation in squad-ci.yml.
 
+### Dependabot PR Review and Merge (March 2026)
+
+Reviewed and processed 6 Dependabot dependency update PRs opened after Dependabot configuration was added in PR #761.
+
+**Initial state:** All 6 PRs had failing CI because they were based on a pre-#789 commit that had direct `Player.HP` assignments before the HP encapsulation refactor (commit 427a68d) made the setter `internal`.
+
+**Resolution:** Triggered Dependabot rebases via `@dependabot rebase` comments, which updated all PR branches to include the HP encapsulation fix. After rebases, 5 PRs auto-merged successfully:
+
+- **PR #782:** actions/upload-artifact 4 → 7 — ✅ MERGED
+- **PR #783:** actions/github-script 7 → 8 — ✅ MERGED
+- **PR #784:** actions/setup-dotnet 4 → 5 — ✅ MERGED
+- **PR #787:** Microsoft.NET.Test.Sdk 17.14.1 → 18.3.0 — ✅ MERGED
+- **PR #788:** xunit.runner.visualstudio 3.1.4 → 3.1.5 — ✅ MERGED
+
+**PR #786 (FluentAssertions 6.12.2 → 8.8.0):** Anthony manually closed this PR before the rebase because FluentAssertions 8.x introduces breaking API changes (new assertion syntax, renamed methods, different `BeEquivalentTo` behavior). The test suite uses FluentAssertions extensively and requires a dedicated migration effort. Recommendation: track as a separate issue for planned upgrade with proper test adaptation.
+
+**Post-merge verification:** Pulled master (commit a6d0e7c), ran `dotnet restore && dotnet build` — build succeeded with 0 errors, 3 warnings (XML doc issues unrelated to dependency updates).
+
+**Key learnings:**
+- Dependabot PRs can become stale if base branch evolves with breaking changes (e.g., visibility modifiers)
+- `@dependabot rebase` command successfully rebases PRs onto latest base branch
+- Major version bumps in testing libraries (e.g., FluentAssertions 6→8) require manual review and are not safe for auto-merge
+- GitHub Actions version bumps (upload-artifact, github-script, setup-dotnet) are typically safe and non-breaking
+
 ### UI Consistency PR Cleanup (Feb 2026)
 
 Performed full GitHub hygiene pass after the UI consistency fixes session left the repo in a cluttered state.
