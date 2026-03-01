@@ -114,3 +114,51 @@ Performed full GitHub hygiene pass after the UI consistency fixes session left t
 - When rebasing a branch with already-upstream commits, `git rebase --skip` is the correct tool to drop conflicts caused by duplicate patches
 - GitHub's squash merge `--admin` flag bypasses branch protection when CI hasn't run yet on a rebased docs-only branch
 - After a rebase, `git diff origin/master --name-only` correctly shows only unique file changes before pushing
+
+### DevOps Improvements Round (March 2026)
+
+Implemented six CI/CD and infrastructure enhancements across multiple PRs:
+
+1. **CI Speed Improvements (PR #759)** — Optimized `squad-ci.yml`:
+   - Removed redundant "Enforce XML documentation" build step (already enforced by WarningsAsErrors in .csproj)
+   - Added NuGet package caching with key based on `**/*.csproj` hashes
+   - Impact: ~10-15 second reduction per CI run
+
+2. **Dependabot Configuration (PR #761)** — Added `.github/dependabot.yml`:
+   - NuGet package updates: weekly (Mondays 9am UTC), max 5 open PRs
+   - GitHub Actions updates: monthly, max 3 open PRs
+   - Auto-labels dependency PRs
+
+3. **EditorConfig (PR #763)** — Added `.editorconfig` at repo root:
+   - C# rules: 4-space indent, brace styles, using directives sorting
+   - YAML/JSON: 2-space indent
+   - Ensures consistent formatting across VS, Rider, VS Code
+
+4. **Release Artifacts (PR #765)** — Enhanced `squad-release.yml`:
+   - Publishes linux-x64 and win-x64 self-contained executables
+   - Uses PublishSingleFile and PublishReadyToRun
+   - Archives as zip files attached to GitHub releases
+   - Players no longer need .NET SDK to run the game
+
+5. **Stryker Tool Manifest (PR #767)** — Pinned mutation testing tool version:
+   - Created `.config/dotnet-tools.json` pinning Stryker 4.12.0
+   - Updated `squad-stryker.yml` to use `dotnet tool restore` instead of global install
+   - Added tool cache for faster workflow runs
+   - Ensures reproducible mutation testing
+
+6. **CodeQL Static Analysis (PR #769)** — Added `.github/workflows/codeql.yml`:
+   - Runs on push to master/preview, PRs to master, weekly schedule
+   - Detects security vulnerabilities (SQL injection, XSS, unsafe deserialization)
+   - Identifies code quality issues (null pointers, resource leaks)
+   - Results visible in GitHub Security tab
+
+**Key files modified:**
+- `.github/workflows/squad-ci.yml` — removed redundant build, added NuGet cache
+- `.github/workflows/squad-release.yml` — added publish/archive steps for artifacts
+- `.github/workflows/squad-stryker.yml` — switched to tool manifest
+- `.github/workflows/codeql.yml` — new file
+- `.github/dependabot.yml` — new file
+- `.editorconfig` — new file
+- `.config/dotnet-tools.json` — new file
+
+**Impact:** Faster CI builds, automated dependency management, consistent formatting, downloadable releases, reproducible testing, and security analysis.

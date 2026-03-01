@@ -4,6 +4,7 @@ using System;
 using Dungnz.Display;
 using Dungnz.Models;
 using Dungnz.Systems;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// The primary game loop that drives exploration, combat, inventory management, and
@@ -18,7 +19,7 @@ public class GameLoop
     private readonly ICombatEngine _combat;
     private readonly IInputReader _input;
     private readonly GameEvents? _events;
-    private readonly int? _seed;
+    private int? _seed;
     private readonly DifficultySettings _difficulty;
     private Player _player = null!;
     private Room _currentRoom = null!;
@@ -31,6 +32,7 @@ public class GameLoop
     private readonly IMenuNavigator? _navigator;
     private readonly IReadOnlyList<Item> _allItems = [];
     private readonly NarrationService _narration = new();
+    private readonly ILogger<GameLoop> _logger;
     private int _currentFloor = 1;
     private bool _turnConsumed;
 
@@ -761,7 +763,7 @@ public class GameLoop
             _display.ShowError("Save as what? Usage: SAVE <name>");
             return;
         }
-        SaveSystem.SaveGame(new GameState(_player, _currentRoom, _currentFloor), saveName);
+        SaveSystem.SaveGame(new GameState(_player, _currentRoom, _currentFloor, _seed), saveName);
         _display.ShowMessage($"Game saved as '{saveName}'.");
     }
 
@@ -779,7 +781,9 @@ public class GameLoop
             _player = state.Player;
             _currentRoom = state.CurrentRoom;
             _currentFloor = state.CurrentFloor;
+            _seed = state.Seed;
             _runStart = DateTime.UtcNow;
+            _rng = _seed.HasValue ? new Random(_seed.Value) : new Random();
             _stats = new RunStats();
             _display.ShowMessage($"Loaded save '{saveName}'.");
             _display.ShowRoom(_currentRoom);
