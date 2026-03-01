@@ -14024,3 +14024,87 @@ DifficultyBalanceTests.cs contains 23 comprehensive tests:
 
 **Learnings:** Tests written during Phase 2 implementation (best practice pattern). Demonstrates integration-first testing approach ensuring all systems consume difficulty settings correctly.
 
+
+---
+
+## 2026-03-01: GitHub Issues Created for Text Alignment Bugs
+
+**Author:** Coulson  
+**Status:** ✅ Approved
+
+Created 6 GitHub issues for DisplayService.cs alignment bugs:
+
+| Issue # | Title | File | Line |
+|---------|-------|------|------|
+| #667 | VisibleLength helper doesn't account for wide BMP chars | Display/DisplayService.cs | 1438-1439 |
+| #668 | ShowItemDetail title padding uses raw .Length instead of VisualWidth | Display/DisplayService.cs | 399 |
+| #666 | ShowShop item row icon padding uses raw .Length instead of VisualWidth | Display/DisplayService.cs | 475 |
+| #663 | ShowEnemyDetail elite tag row is 1 column short | Display/DisplayService.cs | 1341 |
+| #664 | ShowVictory banner off by 1 column (too narrow) | Display/DisplayService.cs | 1353 |
+| #665 | ShowGameOver banner 2 columns too wide (☠ double-width not accounted) | Display/DisplayService.cs | 1375 |
+
+**Dependency Chain:**
+- #667 (VisibleLength) is foundational: #668 and #666 depend on VisualWidth working correctly
+- #663, #664, #665 are independent fixes
+
+**Next Steps:** Assign to team members for implementation.
+
+---
+
+## 2026-03-01: Fixed 6 Text Alignment Bugs in DisplayService.cs
+
+**Author:** Hill  
+**Status:** ✅ Approved
+
+Fixed alignment padding in ShowItemDetail, ShowShop, ShowEnemyDetail, ShowVictory, ShowGameOver, and VisibleLength helper.
+
+**Root Cause:** Multiple display boxes were rendering with wrong visual widths due to wide BMP char miscounting.
+
+**Implementation:** Cherry-picked fixes from local commit 2edb71f on squad/add-solution-file branch to squad/663-668-display-alignment, merged via PR #695.
+
+---
+
+## 2026-03-01: Alignment Regression Tests Written
+
+**Author:** Romanoff (Tester)  
+**Status:** ✅ Approved
+
+Added AlignmentRegressionTests.cs with 6 regression tests for the alignment bugs.
+
+**Test Coverage:**
+
+Wrote 6 regression tests in `Dungnz.Tests/AlignmentRegressionTests.cs`:
+
+1. **ShowItemDetail_WeaponWithWideIcon_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests weapon items with ⚔ icon alignment
+
+2. **ShowShop_WeaponWithWideIcon_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests shop display with weapon items containing ⚔ icon
+
+3. **ShowEnemyDetail_EliteEnemyWithWideIcon_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests elite enemy display with ⭐ icon alignment
+
+4. **ShowVictory_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests victory screen with ✦ icon alignment
+
+5. **ShowGameOver_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests game over screen with ☠ icon alignment
+
+6. **ShowItemDetail_ArmorWithSurrogatePairIcon_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests armor items with 🛡 surrogate pair icon
+
+**Pattern Used:**
+
+Each test:
+- Captures console output via `StringWriter`
+- Uses `BoxWidth()` helper to find expected width from ╔...╗ border line
+- Strips ANSI codes from all ║ content lines using `ColorCodes.StripAnsiCodes()`
+- Asserts all stripped content lines match the border width
+
+**Integration:**
+- Uses `[Collection("console-output")]` to prevent console capture conflicts
+- Follows existing test pattern from `ShowEquipmentComparisonAlignmentTests.cs`
+- Tests are marked as regression tests to prevent future alignment regressions
+
+**Decision:** APPROVED — Regression tests validate that alignment fixes are correct and prevent future regressions.
+
