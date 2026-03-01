@@ -49,7 +49,7 @@ public sealed class SpectreDisplayService : IDisplayService
             foreach (var e in playerEffects)
             {
                 var color = e.IsBuff ? "purple" : "red";
-                playerCell.Append($"[{color}][{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t][/] ");
+                playerCell.Append($"[{color}][[{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t]][/] ");
             }
         }
 
@@ -64,7 +64,7 @@ public sealed class SpectreDisplayService : IDisplayService
             foreach (var e in enemyEffects)
             {
                 var color = e.IsBuff ? "purple" : "red";
-                enemyCell.Append($"[{color}][{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t][/] ");
+                enemyCell.Append($"[{color}][[{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t]][/] ");
             }
         }
 
