@@ -137,9 +137,11 @@ public class LootTable
     /// Executes a full loot roll for a defeated enemy, returning any item that was selected and
     /// the gold amount to award. Explicit drops (registered via <see cref="AddDrop"/>) are tried
     /// first; if none trigger, a 30 % chance of a random tiered item applies based on
-    /// <paramref name="playerLevel"/>. Elite enemies are guaranteed at least a tier-2 item.
-    /// Bosses (DungeonBoss or subclass) always drop one Legendary item when the Legendary pool is loaded.
-    /// Floors 6-8 chest/room loot has a 5% Legendary chance.
+    /// <paramref name="playerLevel"/>. Elite enemies below level 4 are guaranteed at least a
+    /// tier-2 item (at level 4+ the normal tiered roll already yields tier-2 or better, so the
+    /// guarantee has no additional effect). Bosses (DungeonBoss or subclass) always drop one
+    /// Legendary item when the Legendary pool is loaded. Floors 5–8 have an Epic drop chance
+    /// (8 % on floors 5–6, 15 % on floors 7–8); floors 6–8 also have a 5 % Legendary chance.
     /// </summary>
     /// <param name="enemy">The defeated enemy, used to check <see cref="Enemy.IsElite"/> for tier escalation.</param>
     /// <param name="playerLevel">The player's current level, used to select the appropriate item tier pool.</param>
