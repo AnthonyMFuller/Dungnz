@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Dungnz.Engine;
 using Dungnz.Systems;
 
@@ -7,6 +8,7 @@ namespace Dungnz.Display;
 /// Arrow-key navigable menu for interactive console sessions.
 /// Falls back to numbered ReadLine selection when stdin is redirected (CI, piped input).
 /// </summary>
+[ExcludeFromCodeCoverage]   // TTY-only class; tests inject FakeMenuNavigator
 public sealed class ConsoleMenuNavigator : IMenuNavigator
 {
     /// <summary>Presents a cursor-navigable list and returns the selected value.</summary>
