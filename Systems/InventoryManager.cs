@@ -158,6 +158,9 @@ public class InventoryManager
                 _display.ShowMessage($"You equipped {item.Name}.");
                 return UseResult.Used;
 
+            case ItemType.CraftingMaterial:
+                return UseResult.NotUsable;
+
             default:
                 return UseResult.NotUsable;
         }

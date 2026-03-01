@@ -396,7 +396,7 @@ public class ConsoleDisplayService : IDisplayService
             _                  => Systems.ColorCodes.BrightWhite
         };
         var titlePlain = $"  {icon} {titleName}";
-        var titlePad   = new string(' ', Math.Max(0, W - titlePlain.Length));
+        var titlePad   = new string(' ', Math.Max(0, W - VisualWidth(titlePlain)));
         Console.WriteLine($"╔{border}╗");
         Console.WriteLine($"║  {icon} {titleColor}{titleName}{Systems.ColorCodes.Reset}{titlePad}║");
         Console.WriteLine($"╠{border}╣");
@@ -413,11 +413,11 @@ public class ConsoleDisplayService : IDisplayService
             Console.WriteLine($"║  {"Max Mana:",-10}{Systems.ColorCodes.Blue}+{item.MaxManaBonus}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 12 - (item.MaxManaBonus.ToString().Length + 1)))}║");
         if (item.DodgeBonus > 0)
             Console.WriteLine($"║  {"Dodge:",-10}+{item.DodgeBonus:P0}{new string(' ', Math.Max(0, W - 12 - $"+{item.DodgeBonus:P0}".Length))}║");
-        Console.WriteLine($"║  {"Weight:",-10}{item.Weight}{new string(' ', Math.Max(0, W - 11 - item.Weight.ToString().Length))}║");
+        Console.WriteLine($"║  {"Weight:",-10}{item.Weight}{new string(' ', Math.Max(0, W - 12 - item.Weight.ToString().Length))}║");
         if (item.AppliesBleedOnHit)
-            Console.WriteLine($"║  {"Bleed:",-10}{Systems.ColorCodes.BrightRed}On Hit{Systems.ColorCodes.Reset}{new string(' ', W - 16)}║");
+            Console.WriteLine($"║  {"Bleed:",-10}{Systems.ColorCodes.BrightRed}On Hit{Systems.ColorCodes.Reset}{new string(' ', W - 18)}║");
         if (item.PoisonImmunity)
-            Console.WriteLine($"║  {"Poison:",-10}Immune{new string(' ', W - 16)}║");
+            Console.WriteLine($"║  {"Poison:",-10}Immune{new string(' ', W - 18)}║");
         if (!string.IsNullOrEmpty(item.Description))
         {
             Console.WriteLine($"╠{border}╣");
@@ -472,7 +472,7 @@ public class ConsoleDisplayService : IDisplayService
 
             // ANSI-safe padding: compute lengths from plain (uncolored) strings
             var l1Lead  = $"  [{idx}] {icon} ";
-            var pad1    = new string(' ', Math.Max(0, Inner - l1Lead.Length - TruncateName(item.Name).Length - tierBadge.Length - 2));
+            var pad1    = new string(' ', Math.Max(0, Inner - VisualWidth(l1Lead) - TruncateName(item.Name).Length - tierBadge.Length - 2));
             var l2Lead  = $"  {stat}  •  {item.Weight} wt";
             var priceStr = $"{price} gold";
             // "💰 " → U+1F4B0 is a surrogate pair (2 C# chars) + space = 3 chars
@@ -663,11 +663,12 @@ public class ConsoleDisplayService : IDisplayService
 
     private static string ItemTypeIcon(ItemType type) => type switch
     {
-        ItemType.Weapon     => "⚔",
-        ItemType.Armor      => "🛡",
-        ItemType.Consumable => "🧪",
-        ItemType.Accessory  => "💍",
-        _                   => "•"
+        ItemType.Weapon          => "⚔",
+        ItemType.Armor           => "🛡",
+        ItemType.Consumable      => "🧪",
+        ItemType.Accessory       => "💍",
+        ItemType.CraftingMaterial => "⚗",
+        _                        => "•"
     };
 
     private static string PrimaryStatLabel(Item item)
@@ -1338,7 +1339,7 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine($"║  DEF:     {Systems.ColorCodes.Cyan}{enemy.Defense}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 11 - enemy.Defense.ToString().Length))}║");
         Console.WriteLine($"║  XP:      {Systems.ColorCodes.Green}{enemy.XPValue}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 11 - enemy.XPValue.ToString().Length))}║");
         if (!string.IsNullOrEmpty(eliteTag))
-            Console.WriteLine($"║  {eliteTag}{new string(' ', Math.Max(0, W - 12))}║");
+            Console.WriteLine($"║  {eliteTag}{new string(' ', Math.Max(0, W - 11))}║");
         Console.WriteLine($"╚{border}╝");
     }
     
@@ -1350,15 +1351,15 @@ public class ConsoleDisplayService : IDisplayService
         
         Console.WriteLine();
         Console.WriteLine($"╔{border}╗");
-        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}{Systems.ColorCodes.Bold}✦  V I C T O R Y  ✦{Systems.ColorCodes.Reset}{new string(' ', W - 22)}║");
+        Console.WriteLine($"║  {Systems.ColorCodes.Yellow}{Systems.ColorCodes.Bold}✦  V I C T O R Y  ✦{Systems.ColorCodes.Reset}{new string(' ', W - 21)}║");
         Console.WriteLine($"╠{border}╣");
-        Console.WriteLine($"║  {player.Name}  •  Level {player.Level}{new string(' ', Math.Max(0, W - 4 - player.Name.Length - 10 - player.Level.ToString().Length))}║");
-        Console.WriteLine($"║  {floorsCleared} floor{(floorsCleared != 1 ? "s" : "")} conquered{new string(' ', Math.Max(0, W - 4 - 11 - floorsCleared.ToString().Length - (floorsCleared != 1 ? 1 : 0)))}║");
+        Console.WriteLine($"║  {player.Name}  •  Level {player.Level}{new string(' ', Math.Max(0, W - 4 - player.Name.Length - 9 - player.Level.ToString().Length))}║");
+        Console.WriteLine($"║  {floorsCleared} floor{(floorsCleared != 1 ? "s" : "")} conquered{new string(' ', Math.Max(0, W - 18 - floorsCleared.ToString().Length - (floorsCleared != 1 ? 1 : 0)))}║");
         Console.WriteLine($"╠{border}╣");
-        Console.WriteLine($"║  Enemies slain:  {Systems.ColorCodes.BrightRed}{stats.EnemiesDefeated}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.EnemiesDefeated.ToString().Length))}║");
-        Console.WriteLine($"║  Gold earned:    {Systems.ColorCodes.Yellow}{stats.GoldCollected}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.GoldCollected.ToString().Length))}║");
-        Console.WriteLine($"║  Items found:    {Systems.ColorCodes.Cyan}{stats.ItemsFound}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.ItemsFound.ToString().Length))}║");
-        Console.WriteLine($"║  Turns taken:    {Systems.ColorCodes.Gray}{stats.TurnsTaken}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.TurnsTaken.ToString().Length))}║");
+        Console.WriteLine($"║  Enemies slain:  {Systems.ColorCodes.BrightRed}{stats.EnemiesDefeated}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 18 - stats.EnemiesDefeated.ToString().Length))}║");
+        Console.WriteLine($"║  Gold earned:    {Systems.ColorCodes.Yellow}{stats.GoldCollected}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 18 - stats.GoldCollected.ToString().Length))}║");
+        Console.WriteLine($"║  Items found:    {Systems.ColorCodes.Cyan}{stats.ItemsFound}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 18 - stats.ItemsFound.ToString().Length))}║");
+        Console.WriteLine($"║  Turns taken:    {Systems.ColorCodes.Gray}{stats.TurnsTaken}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 18 - stats.TurnsTaken.ToString().Length))}║");
         Console.WriteLine($"╚{border}╝");
         Console.WriteLine();
     }
@@ -1372,14 +1373,14 @@ public class ConsoleDisplayService : IDisplayService
         
         Console.WriteLine();
         Console.WriteLine($"╔{border}╗");
-        Console.WriteLine($"║  {Systems.ColorCodes.BrightRed}{Systems.ColorCodes.Bold}☠  G A M E  O V E R  ☠{Systems.ColorCodes.Reset}{new string(' ', W - 24)}║");
+        Console.WriteLine($"║  {Systems.ColorCodes.BrightRed}{Systems.ColorCodes.Bold}☠  G A M E  O V E R  ☠{Systems.ColorCodes.Reset}{new string(' ', W - 26)}║");
         Console.WriteLine($"╠{border}╣");
-        Console.WriteLine($"║  {player.Name}  •  Level {player.Level}{new string(' ', Math.Max(0, W - 4 - player.Name.Length - 10 - player.Level.ToString().Length))}║");
-        Console.WriteLine($"║  {Systems.ColorCodes.Red}{deathLine}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 4 - deathLine.Length))}║");
+        Console.WriteLine($"║  {player.Name}  •  Level {player.Level}{new string(' ', Math.Max(0, W - 4 - player.Name.Length - 9 - player.Level.ToString().Length))}║");
+        Console.WriteLine($"║  {Systems.ColorCodes.Red}{deathLine}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 2 - deathLine.Length))}║");
         Console.WriteLine($"╠{border}╣");
-        Console.WriteLine($"║  Enemies slain:  {Systems.ColorCodes.BrightRed}{stats.EnemiesDefeated}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.EnemiesDefeated.ToString().Length))}║");
-        Console.WriteLine($"║  Floors reached: {Systems.ColorCodes.Cyan}{stats.FloorsVisited}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.FloorsVisited.ToString().Length))}║");
-        Console.WriteLine($"║  Turns survived: {Systems.ColorCodes.Gray}{stats.TurnsTaken}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 20 - stats.TurnsTaken.ToString().Length))}║");
+        Console.WriteLine($"║  Enemies slain:  {Systems.ColorCodes.BrightRed}{stats.EnemiesDefeated}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 18 - stats.EnemiesDefeated.ToString().Length))}║");
+        Console.WriteLine($"║  Floors reached: {Systems.ColorCodes.Cyan}{stats.FloorsVisited}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 18 - stats.FloorsVisited.ToString().Length))}║");
+        Console.WriteLine($"║  Turns survived: {Systems.ColorCodes.Gray}{stats.TurnsTaken}{Systems.ColorCodes.Reset}{new string(' ', Math.Max(0, W - 18 - stats.TurnsTaken.ToString().Length))}║");
         Console.WriteLine($"╚{border}╝");
         Console.WriteLine();
     }
@@ -1436,7 +1437,7 @@ public class ConsoleDisplayService : IDisplayService
     };
 
     private static int VisibleLength(string s)
-        => Systems.ColorCodes.StripAnsiCodes(s).Length;
+        => VisualWidth(Systems.ColorCodes.StripAnsiCodes(s));
 
     /// <summary>
     /// Wide BMP characters (U+0000–U+FFFF) that render as 2 terminal columns.

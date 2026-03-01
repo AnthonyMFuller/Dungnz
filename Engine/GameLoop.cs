@@ -668,6 +668,11 @@ public class GameLoop
                 _display.ShowError($"Use 'EQUIP {item.Name}' to equip this item.");
                 break;
 
+            case ItemType.CraftingMaterial:
+                _turnConsumed = false;
+                _display.ShowError($"{item.Name} is a crafting material and cannot be used directly. Use it at a crafting station.");
+                break;
+
             default:
                 _turnConsumed = false;
                 _display.ShowError($"You can't use {item.Name}.");

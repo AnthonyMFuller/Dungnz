@@ -723,7 +723,7 @@
         },
         {
             "Name": "Iron Ore",
-            "Type": "Consumable",
+            "Type": "CraftingMaterial",
             "HealAmount": 0,
             "AttackBonus": 0,
             "DefenseBonus": 0,
@@ -1149,7 +1149,7 @@
         },
         {
             "Name": "Goblin Ear",
-            "Type": "Consumable",
+            "Type": "CraftingMaterial",
             "HealAmount": 0,
             "AttackBonus": 0,
             "DefenseBonus": 0,
@@ -1163,7 +1163,7 @@
         },
         {
             "Name": "Skeleton Dust",
-            "Type": "Consumable",
+            "Type": "CraftingMaterial",
             "HealAmount": 0,
             "AttackBonus": 0,
             "DefenseBonus": 0,
@@ -1177,7 +1177,7 @@
         },
         {
             "Name": "Troll Blood",
-            "Type": "Consumable",
+            "Type": "CraftingMaterial",
             "HealAmount": 0,
             "AttackBonus": 0,
             "DefenseBonus": 0,
@@ -1191,7 +1191,7 @@
         },
         {
             "Name": "Wraith Essence",
-            "Type": "Consumable",
+            "Type": "CraftingMaterial",
             "HealAmount": 0,
             "AttackBonus": 0,
             "DefenseBonus": 0,
@@ -1205,7 +1205,7 @@
         },
         {
             "Name": "Dragon Scale",
-            "Type": "Consumable",
+            "Type": "CraftingMaterial",
             "HealAmount": 0,
             "AttackBonus": 0,
             "DefenseBonus": 0,
@@ -1219,7 +1219,7 @@
         },
         {
             "Name": "Wyvern Fang",
-            "Type": "Consumable",
+            "Type": "CraftingMaterial",
             "HealAmount": 0,
             "AttackBonus": 0,
             "DefenseBonus": 0,
@@ -1233,7 +1233,7 @@
         },
         {
             "Name": "Soul Gem",
-            "Type": "Consumable",
+            "Type": "CraftingMaterial",
             "HealAmount": 0,
             "AttackBonus": 0,
             "DefenseBonus": 0,
@@ -1449,7 +1449,7 @@
         },
         {
             "Name": "Rodent Pelt",
-            "Type": "Consumable",
+            "Type": "CraftingMaterial",
             "HealAmount": 0,
             "AttackBonus": 0,
             "DefenseBonus": 0,

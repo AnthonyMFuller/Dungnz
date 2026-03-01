@@ -13597,3 +13597,246 @@ New private method `HandleItemMenu(Player, Enemy)` in `CombatEngine`, following 
 **By:** Romanoff  
 **What:** Added 4 tests for EQUIP with no argument behavior in EquipmentManagerNoArgTests.cs  
 **Why:** Issue #654 coverage — empty arg menu, no equippables error, cancel selection, whitespace arg
+### 2026-03-01: Fixed 6 text alignment bugs in DisplayService.cs
+**By:** Hill
+**What:** Fixed alignment padding in ShowItemDetail, ShowShop, ShowEnemyDetail, ShowVictory, ShowGameOver, and VisibleLength helper
+**Why:** Multiple display boxes were rendering with wrong visual widths due to wide BMP char miscounting
+### 2026-03-01: GitHub issues created for text alignment bugs
+**By:** Coulson  
+**What:** Created 6 GitHub issues for DisplayService.cs alignment bugs  
+**Why:** Boss requested issues be created before fixes are implemented
+
+#### Issues Created
+
+| Issue # | Title | File | Line |
+|---------|-------|------|------|
+| #667 | VisibleLength helper doesn't account for wide BMP chars | Display/DisplayService.cs | 1438-1439 |
+| #668 | ShowItemDetail title padding uses raw .Length instead of VisualWidth | Display/DisplayService.cs | 399 |
+| #666 | ShowShop item row icon padding uses raw .Length instead of VisualWidth | Display/DisplayService.cs | 475 |
+| #663 | ShowEnemyDetail elite tag row is 1 column short | Display/DisplayService.cs | 1341 |
+| #664 | ShowVictory banner off by 1 column (too narrow) | Display/DisplayService.cs | 1353 |
+| #665 | ShowGameOver banner 2 columns too wide (☠ double-width not accounted) | Display/DisplayService.cs | 1375 |
+
+#### Dependency Chain
+- **#667 (VisibleLength)** is foundational: #668 and #666 depend on VisualWidth working correctly
+- **#663, #664, #665** are independent fixes
+
+#### Next Steps
+Assign to team members for implementation.
+### 2026-03-01: CraftingMaterial Implementation Decisions
+**By:** Hill
+**Issues:** #669, #670
+
+#### Enum Placement
+Placed `CraftingMaterial` between `Consumable` and `Gold` in the `ItemType` enum. This keeps related single-use item types together and separates them from equipment types (Weapon, Armor, Accessory).
+
+#### Icon Selection
+Chose ⚗ (alembic/chemistry flask, U+2697) for CraftingMaterial items. Rationale:
+- Visually distinct from 🧪 (test tube) used for Consumables
+- Represents alchemical/crafting processes
+- Single-width character, consistent with other item type icons
+
+#### Switch Statement Handling
+Added explicit `case ItemType.CraftingMaterial:` to all switches on `item.Type`, even where default would suffice:
+- `InventoryManager.UseItem()` — returns `UseResult.NotUsable`
+- `GameLoop.HandleUse()` — shows error with guidance to use at crafting station
+- `ItemInteractionNarration.PickUp()` — uses `PickUpOther` pool
+
+Made explicit to document intent and prevent future confusion about whether CraftingMaterial was overlooked or intentionally handled by default.
+
+#### Error Messaging
+`GameLoop.HandleUse()` error message: `"{item.Name} is a crafting material and cannot be used directly. Use it at a crafting station."`
+- Explains WHY the item can't be used (it's a crafting material)
+- Provides guidance on WHERE to use it (crafting station)
+- Prevents player confusion about items that appear in inventory but aren't usable
+
+#### Items NOT Reclassified
+**dragon-fang** — Appeared in crafting recipes but is a Weapon with 17 ATK bonus. Kept as Weapon per design rule: "Dual-purpose items (potions that are also ingredients) remain Consumable" extended to equipment. An item's primary function determines its type.
+
+#### Test Impact
+All 1308 existing tests passed without modification. No new tests added as:
+- USE menu already filters by `ItemType.Consumable` (excludes CraftingMaterial by design)
+- JSON deserialization uses `Enum.TryParse` (auto-recognizes new enum value)
+- Display logic uses `item.Type.ToString()` (automatically shows "CraftingMaterial")
+- Existing tests validate these systems work for any item type
+# Decision: CraftingMaterial Regression Test Coverage
+
+**Date:** 2026-02-28  
+**Agent:** Romanoff (Tester)  
+**Issue:** #671  
+**Files:** `Dungnz.Tests/CraftingMaterialTypeTests.cs`
+
+---
+
+## Context
+
+Hill added `ItemType.CraftingMaterial` to the enum and reclassified 9 items in `item-stats.json`:
+- goblin-ear, skeleton-dust, troll-blood, wraith-essence, dragon-scale, wyvern-fang, soul-gem, iron-ore, rodent-pelt
+
+The USE menu filter (`player.Inventory.Where(i => i.Type == ItemType.Consumable)`) naturally excludes CraftingMaterial items since they are a distinct type.
+
+---
+
+## Decision: Comprehensive Test Coverage Strategy
+
+**What:** Write 6 regression tests covering both behavioral correctness and production data integrity.
+
+**Why:**
+1. **USE menu filter correctness** — Verify CraftingMaterial items don't appear in the usable items list
+2. **Positive case coverage** — Verify Consumables still work correctly
+3. **Mixed inventory scenario** — Real-world case of mixed item types
+4. **Enum integrity** — Verify the new enum value exists and is distinct
+5. **Production data validation** — Load actual item-stats.json to verify the 9 items were reclassified
+6. **Icon rendering** — Verify DisplayService renders the ⚗ (alembic) icon
+
+**How:**
+- Tests 1-3: Filter logic with hand-crafted Item instances
+- Test 4: Enum reflection and parsing
+- Test 5: Integration test loading actual JSON via ItemConfig
+- Test 6: Console capture to verify private ItemTypeIcon method indirectly
+
+---
+
+## Key Testing Patterns Established
+
+### 1. Integration Testing with ItemConfig
+```csharp
+var itemStatsPath = Path.Combine("Data", "item-stats.json");
+var allItemStats = ItemConfig.Load(itemStatsPath);
+var allItems = allItemStats.Select(ItemConfig.CreateItem).ToList();
+```
+- Validates production JSON data, not just in-memory objects
+- Catches mismatches between code changes and data file updates
+- Higher confidence than unit tests alone
+
+### 2. Indirect Testing of Private Methods
+```csharp
+// ItemTypeIcon is private, so we test via ShowLootDrop which calls it
+display.ShowLootDrop(craftingItem, player);
+var output = consoleCapture.ToString();
+output.Should().Contain("⚗");
+```
+- Respects encapsulation (private methods are implementation details)
+- Tests observable behavior instead of internal structure
+
+### 3. Positive + Negative + Mixed Cases
+- **Negative:** CraftingMaterial items NOT in filter
+- **Positive:** Consumable items ARE in filter
+- **Mixed:** Both types in inventory, only Consumables in filter
+- Pattern guards against false positives (e.g., filter accidentally returning everything)
+
+---
+
+## Alternatives Considered
+
+### Option 1: Only test the filter logic (tests 1-3)
+**Rejected:** Would miss data integrity issues. If someone forgot to update item-stats.json, tests would pass but game would be broken.
+
+### Option 2: Skip the ItemTypeIcon test
+**Rejected:** Icon display is user-facing behavior. Console capture is standard pattern in this codebase (AlignmentRegressionTests).
+
+### Option 3: Mock ItemConfig instead of loading real JSON
+**Rejected:** Integration tests are more valuable. We WANT to catch JSON-code mismatches early.
+
+---
+
+## Test Results
+
+- ✅ All 6 tests pass
+- ✅ Test suite: 1308 → 1314 tests (+6)
+- ✅ No regressions (all 1314 tests pass)
+
+---
+
+## Recommendation
+
+**Approved for merge.** Test coverage is comprehensive and follows established codebase patterns.
+
+Future PRs that add new ItemType values should follow this same pattern:
+1. Filter behavior tests (negative, positive, mixed)
+2. Enum integrity test
+3. Production data integration test
+4. Icon rendering test (if applicable)
+### 2026-03-01: Introduce CraftingMaterial ItemType
+**By:** Coulson
+**What:** Add CraftingMaterial to ItemType enum. Items with no direct stat effects used only as crafting ingredients should use this type, not Consumable.
+**Why:** Crafting materials were appearing in the USE menu because they shared the Consumable type. Pure crafting materials (no HealAmount, ManaRestore, AttackBonus, DefenseBonus, StatModifier, or PassiveEffectId) must be distinguished. Dual-purpose items (potions that are also ingredients) remain Consumable.
+
+#### Affected Items (Reclassified to CraftingMaterial)
+- `goblin-ear` — ingredient in Goblin Stew, Sharpen Stone
+- `skeleton-dust` — ingredient in Bone Powder Tonic, Fortify Armor
+- `troll-blood` — ingredient in Troll's Endurance Brew, Mithril Infusion, Ironclad Forge
+- `wraith-essence` — ingredient in Elixir of Strength, Wraith Cloak, Enchant Weapon, Phoenix Rebirth, Arcanist Bind
+- `dragon-scale` — ingredient in Dragon Scale Armor, Forge the Deathbringer
+- `wyvern-fang` — ingredient in Bind the Lich
+- `soul-gem` — ingredient in Bind the Lich
+- `iron-ore` — no stat effects, not in recipes (but should be a crafting material)
+- `rodent-pelt` — no stat effects, not in recipes (should be a crafting material)
+
+#### Items Remaining as Consumable (Dual Purpose)
+- `health-potion`, `large-health-potion`, `antidote`, `mana-draught`, `scroll-of-power`, `regeneration-tonic`, `blood-vial` — All have stat effects AND are used as crafting ingredients
+
+#### Implementation Tasks
+1. Add `CraftingMaterial` to `ItemType` enum in `Models/ItemType.cs`
+2. Update `item-stats.json` to reclassify the 9 pure crafting materials
+3. Ensure JSON serialization/deserialization handles new enum value
+4. Update display logic if `CraftingMaterial` items need distinct rendering
+5. Add regression tests to verify `CraftingMaterial` items are excluded from USE menu
+
+
+
+
+
+### 2026-03-01: Alignment regression tests written
+**By:** Romanoff  
+**What:** Added AlignmentRegressionTests.cs with 6 regression tests for the alignment bugs  
+**Why:** Prevent regressions — Boss was hitting alignment issues frequently
+
+## Test Coverage
+
+Wrote 6 regression tests in `Dungnz.Tests/AlignmentRegressionTests.cs`:
+
+1. **ShowItemDetail_WeaponWithWideIcon_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests weapon items with ⚔ icon alignment
+
+2. **ShowShop_WeaponWithWideIcon_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests shop display with weapon items containing ⚔ icon
+
+3. **ShowEnemyDetail_EliteEnemyWithWideIcon_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests elite enemy display with ⭐ icon alignment
+
+4. **ShowVictory_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests victory screen with ✦ icon alignment
+
+5. **ShowGameOver_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests game over screen with ☠ icon alignment
+
+6. **ShowItemDetail_ArmorWithSurrogatePairIcon_AllBoxLinesHaveConsistentVisualWidth**  
+   Tests armor items with 🛡 surrogate pair icon
+
+## Pattern Used
+
+Each test:
+- Captures console output via `StringWriter`
+- Uses `BoxWidth()` helper to find expected width from ╔...╗ border line
+- Strips ANSI codes from all ║ content lines using `ColorCodes.StripAnsiCodes()`
+- Asserts all stripped content lines match the border width
+
+## Current Status
+
+✅ **Tests compile successfully**  
+❌ **All 6 tests currently fail** (expected behavior)
+
+The failures correctly detect the pre-fix alignment bugs:
+- Tests 1-4: 1 column short (wide BMP char like ⚔, ⭐, ✦)
+- Test 5: 2 columns too wide (☠ over-corrected)
+- Test 6: Fails due to related issue
+
+These tests should **pass after Hill applies the alignment fixes**.
+
+## Integration
+
+- Uses `[Collection("console-output")]` to prevent console capture conflicts
+- Follows existing test pattern from `ShowEquipmentComparisonAlignmentTests.cs`
+- Tests are marked as regression tests to prevent future alignment regressions
+
