@@ -230,7 +230,7 @@ public sealed class SpectreDisplayService : IDisplayService
         if (player.Class == PlayerClass.Rogue && player.ComboPoints > 0)
         {
             var dots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
-            table.AddRow("⚡ Combo", $"[yellow]{dots}[/]");
+            table.AddRow(EL("⚡", "Combo"), $"[yellow]{dots}[/]");
         }
 
         var classDef = PlayerClassDefinition.All.FirstOrDefault(c => c.Class == player.Class);
@@ -763,7 +763,7 @@ public sealed class SpectreDisplayService : IDisplayService
             .AddColumn(new TableColumn("[yellow]Prestige[/]"))
             .AddColumn(new TableColumn("[yellow]Value[/]"));
 
-        table.AddRow("⭐ Level",   $"[yellow]{prestige.PrestigeLevel}[/]");
+        table.AddRow(EL("⭐", "Level"),   $"[yellow]{prestige.PrestigeLevel}[/]");
         table.AddRow("Wins",       prestige.TotalWins.ToString());
         table.AddRow("Runs",       prestige.TotalRuns.ToString());
         if (prestige.BonusStartAttack  > 0) table.AddRow("Bonus Attack",   $"[green]+{prestige.BonusStartAttack}[/]");
