@@ -283,7 +283,10 @@ public sealed class SpectreDisplayService : IDisplayService
             var tc        = TierColor(item.Tier);
             var nameMk    = $"[{tc}]{Markup.Escape(item.Name)}[/]" + (count > 1 ? $" [grey]×{count}[/]" : "");
             var equip     = isEquipped ? "[green]✓[/]" : "";
-            table.AddRow(idx.ToString(), nameMk, Markup.Escape(item.Type.ToString()), $"[{tc}]{item.Tier}[/]", equip);
+            var typeLabel = item.Type == ItemType.Armor && item.Slot != ArmorSlot.None
+                ? item.Slot.ToString()
+                : item.Type.ToString();
+            table.AddRow(idx.ToString(), nameMk, Markup.Escape(typeLabel), $"[{tc}]{item.Tier}[/]", equip);
             idx++;
         }
 
@@ -315,7 +318,7 @@ public sealed class SpectreDisplayService : IDisplayService
         var content = new Markup(
             $"{header}\n" +
             $"[{tc}]{item.Tier}[/]\n" +
-            $"{ItemTypeIcon(item.Type)} [{tc}]{Markup.Escape(item.Name)}[/]\n" +
+            $"{ItemIcon(item)} [{tc}]{Markup.Escape(item.Name)}[/]\n" +
             $"{statLine}  [grey]{item.Weight} wt[/]");
 
         AnsiConsole.Write(new Panel(content)
@@ -334,7 +337,7 @@ public sealed class SpectreDisplayService : IDisplayService
     public void ShowItemPickup(Item item, int slotsCurrent, int slotsMax, int weightCurrent, int weightMax)
     {
         var tc = TierColor(item.Tier);
-        AnsiConsole.MarkupLine($"  {ItemTypeIcon(item.Type)} Picked up: [{tc}]{Markup.Escape(item.Name)}[/]  [grey]({Markup.Escape(PrimaryStatLabel(item))})[/]");
+        AnsiConsole.MarkupLine($"  {ItemIcon(item)} Picked up: [{tc}]{Markup.Escape(item.Name)}[/]  [grey]({Markup.Escape(PrimaryStatLabel(item))})[/]");
 
         var slotColor = slotsCurrent >= slotsMax         ? "red"
                       : slotsCurrent >= slotsMax * 0.95  ? "yellow" : "green";
@@ -374,7 +377,7 @@ public sealed class SpectreDisplayService : IDisplayService
         {
             Border      = BoxBorder.Rounded,
             BorderStyle = Style.Parse(tc),
-            Header      = new PanelHeader($"[{tc} bold]{ItemTypeIcon(item.Type)} {Markup.Escape(item.Name)}[/]"),
+            Header      = new PanelHeader($"[{tc} bold]{ItemIcon(item)} {Markup.Escape(item.Name)}[/]"),
         };
 
         AnsiConsole.WriteLine();
@@ -840,7 +843,7 @@ public sealed class SpectreDisplayService : IDisplayService
         var stockList = stock.ToList();
         var options = stockList
             .Select((s, i) => (
-                $"{ItemTypeIcon(s.item.Type)} {Markup.Escape(s.item.Name)}  [grey]{Markup.Escape(PrimaryStatLabel(s.item))}[/]  [yellow]{s.price}g[/]",
+                $"{ItemIcon(s.item)} {Markup.Escape(s.item.Name)}  [grey]{Markup.Escape(PrimaryStatLabel(s.item))}[/]  [yellow]{s.price}g[/]",
                 i + 1))
             .Append(("[grey]Cancel[/]", 0));
         return PromptFromMenu("[bold yellow]Buy an item:[/]", options);
@@ -879,7 +882,7 @@ public sealed class SpectreDisplayService : IDisplayService
         var itemList = items.ToList();
         var options = itemList
             .Select((s, i) => (
-                $"{ItemTypeIcon(s.item.Type)} {Markup.Escape(s.item.Name)}  [grey]{Markup.Escape(PrimaryStatLabel(s.item))}[/]  [green]+{s.sellPrice}g[/]",
+                $"{ItemIcon(s.item)} {Markup.Escape(s.item.Name)}  [grey]{Markup.Escape(PrimaryStatLabel(s.item))}[/]  [green]+{s.sellPrice}g[/]",
                 i + 1))
             .Append(("[grey]Cancel[/]", 0));
         return PromptFromMenu("[bold yellow]Sell an item:[/]", options);
@@ -890,7 +893,7 @@ public sealed class SpectreDisplayService : IDisplayService
     {
         var tc = TierColor(result.Tier);
         var content = new System.Text.StringBuilder();
-        content.AppendLine($"[grey]Result:[/]  {ItemTypeIcon(result.Type)} [{tc}]{Markup.Escape(result.Name)}[/]  [grey]({Markup.Escape(PrimaryStatLabel(result))})[/]");
+        content.AppendLine($"[grey]Result:[/]  {ItemIcon(result)} [{tc}]{Markup.Escape(result.Name)}[/]  [grey]({Markup.Escape(PrimaryStatLabel(result))})[/]");
         content.AppendLine($"[grey]Stats:[/]   [cyan]{Markup.Escape(PrimaryStatLabel(result))}[/]");
         content.AppendLine();
         content.AppendLine("[grey]Ingredients:[/]");
@@ -1115,7 +1118,7 @@ public sealed class SpectreDisplayService : IDisplayService
         var stockList = stock.ToList();
         var options = stockList
             .Select((s, i) => (
-                $"{ItemTypeIcon(s.item.Type)} {Markup.Escape(s.item.Name)}  [grey]{Markup.Escape(PrimaryStatLabel(s.item))}[/]  [yellow]{s.price}g[/]",
+                $"{ItemIcon(s.item)} {Markup.Escape(s.item.Name)}  [grey]{Markup.Escape(PrimaryStatLabel(s.item))}[/]  [yellow]{s.price}g[/]",
                 i + 1))
             .Append(("[yellow]💰 Sell Items[/]", -1))
             .Append(("[grey]Leave[/]", 0));
@@ -1201,7 +1204,7 @@ public sealed class SpectreDisplayService : IDisplayService
     {
         var options = equippable
             .Select(item => (
-                $"{ItemTypeIcon(item.Type)} {Markup.Escape(item.Name)}  [grey][[{Markup.Escape(PrimaryStatLabel(item))}]][/]",
+                $"{ItemIcon(item)} {Markup.Escape(item.Name)}  [grey][[{Markup.Escape(PrimaryStatLabel(item))}]][/]",
                 (Item?)item))
             .Append(("[grey]↩  Cancel[/]", (Item?)null));
         return PromptFromMenu("[bold yellow]=== EQUIP — Choose an item ===[/]", options);
@@ -1212,7 +1215,7 @@ public sealed class SpectreDisplayService : IDisplayService
     {
         var options = usable
             .Select(item => (
-                $"{ItemTypeIcon(item.Type)} {Markup.Escape(item.Name)}  [grey][[{Markup.Escape(PrimaryStatLabel(item))}]][/]",
+                $"{ItemIcon(item)} {Markup.Escape(item.Name)}  [grey][[{Markup.Escape(PrimaryStatLabel(item))}]][/]",
                 (Item?)item))
             .Append(("[grey]↩  Cancel[/]", (Item?)null));
         return PromptFromMenu("[bold yellow]=== Use which item? ===[/]", options);
@@ -1224,7 +1227,7 @@ public sealed class SpectreDisplayService : IDisplayService
         var sentinel = new Item { Name = "__TAKE_ALL__" };
         var options = roomItems
             .Select(item => (
-                $"{ItemTypeIcon(item.Type)} {Markup.Escape(item.Name)}  [grey][[{Markup.Escape(PrimaryStatLabel(item))}]][/]",
+                $"{ItemIcon(item)} {Markup.Escape(item.Name)}  [grey][[{Markup.Escape(PrimaryStatLabel(item))}]][/]",
                 (Item?)item))
             .Prepend(("[yellow]📦 Take All[/]", (Item?)sentinel))
             .Append(("[grey]↩  Cancel[/]", (Item?)null));
@@ -1262,6 +1265,22 @@ public sealed class SpectreDisplayService : IDisplayService
         ItemType.CraftingMaterial => "⚗",
         _                         => "•"
     };
+
+    private static string SlotIcon(ArmorSlot slot) => slot switch
+    {
+        ArmorSlot.Head      => "🪖",
+        ArmorSlot.Shoulders => "🥋",
+        ArmorSlot.Chest     => "🛡",
+        ArmorSlot.Hands     => "🧤",
+        ArmorSlot.Legs      => "👖",
+        ArmorSlot.Feet      => "👟",
+        ArmorSlot.Back      => "🧥",
+        ArmorSlot.OffHand   => "⛨",
+        _                   => "🛡",
+    };
+
+    private static string ItemIcon(Item item) =>
+        item.Type == ItemType.Armor ? SlotIcon(item.Slot) : ItemTypeIcon(item.Type);
 
     private static string PrimaryStatLabel(Item item)
     {
