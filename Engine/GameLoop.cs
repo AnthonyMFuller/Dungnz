@@ -24,6 +24,7 @@ public class GameLoop
     private Player _player = null!;
     private Room _currentRoom = null!;
     private RunStats _stats = null!;
+    private SessionStats _sessionStats = new();
     private DateTime _runStart;
     private Random _rng = new();
     private readonly AchievementSystem _achievements = new();
@@ -134,6 +135,7 @@ public class GameLoop
         _player = player;
         _currentRoom = startRoom;
         _stats = new RunStats();
+        _sessionStats = new SessionStats();
         _runStart = DateTime.UtcNow;
         _rng = _seed.HasValue ? new Random(_seed.Value) : new Random();
         _currentFloor = 1;
@@ -197,7 +199,7 @@ public class GameLoop
                 case CommandType.Quit:
                     _stats.FinalLevel = _player.Level;
                     _stats.TimeElapsed = DateTime.UtcNow - _runStart;
-                    RecordRunEnd(won: false);
+                    RecordRunEnd(won: false, outcomeOverride: "Quit");
                     _display.ShowMessage("Thanks for playing!");
                     return;
                 case CommandType.Descend:
@@ -348,6 +350,12 @@ public class GameLoop
             
             if (result == CombatResult.Won)
             {
+                _sessionStats.EnemiesKilled++;
+                if (_currentRoom.Enemy is Systems.Enemies.DungeonBoss
+                    || _currentRoom.Enemy is Systems.Enemies.ArchlichSovereign
+                    || _currentRoom.Enemy is Systems.Enemies.AbyssalLeviathan
+                    || _currentRoom.Enemy is Systems.Enemies.InfernalDragon)
+                    _sessionStats.BossKills++;
                 var enemyName = _currentRoom.Enemy!.Name;
                 _currentRoom.Enemy = null;
                 _display.ShowMessage(_narration.Pick(_postCombatLines, enemyName));
@@ -548,7 +556,7 @@ public class GameLoop
         _display.ShowMessage(Systems.ItemInteractionNarration.PickUp(item));
         _events?.RaiseItemPicked(_player, item, _currentRoom);
         _stats.ItemsFound++;
-        if (item.Type == ItemType.Gold) _stats.GoldCollected += item.StatModifier;
+        if (item.Type == ItemType.Gold) { _stats.GoldCollected += item.StatModifier; _sessionStats.GoldEarned += item.StatModifier; }
     }
 
     private void TakeAllItems()
@@ -576,7 +584,7 @@ public class GameLoop
             _display.ShowMessage(Systems.ItemInteractionNarration.PickUp(item));
             _events?.RaiseItemPicked(_player, item, _currentRoom);
             _stats.ItemsFound++;
-            if (item.Type == ItemType.Gold) _stats.GoldCollected += item.StatModifier;
+            if (item.Type == ItemType.Gold) { _stats.GoldCollected += item.StatModifier; _sessionStats.GoldEarned += item.StatModifier; }
             taken++;
         }
         if (taken > 0)
@@ -795,6 +803,7 @@ public class GameLoop
             _runStart = DateTime.UtcNow;
             _rng = _seed.HasValue ? new Random(_seed.Value) : new Random();
             _stats = new RunStats();
+            _sessionStats = new SessionStats();
             _display.ShowMessage($"Loaded save '{saveName}'.");
             _logger.LogInformation("Game loaded from {SaveFile}", saveName);
             _display.ShowRoom(_currentRoom);
@@ -1441,9 +1450,13 @@ public class GameLoop
     /// evaluates and displays any newly unlocked achievements. Must be called after
     /// <see cref="RunStats.FinalLevel"/> and <see cref="RunStats.TimeElapsed"/> are set.
     /// </summary>
-    private void RecordRunEnd(bool won)
+    private void RecordRunEnd(bool won, string? outcomeOverride = null)
     {
         RunStats.AppendToHistory(_stats, won);
+        _sessionStats.FloorsCleared = _currentFloor;
+        _sessionStats.DamageDealt = _stats.DamageDealt;
+        var outcome = outcomeOverride ?? (won ? "Victory" : "Defeat");
+        SessionLogger.LogBalanceSummary(_logger, _sessionStats, outcome);
         PrestigeSystem.RecordRun(won);
         if (won)
         {
