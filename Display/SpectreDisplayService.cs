@@ -697,7 +697,7 @@ public sealed class SpectreDisplayService : IDisplayService
         AddSlot("💍 Accessory", player.EquippedAccessory, isAccessory: true);
         AddSlot("🪖 Head",      player.EquippedHead);
         AddSlot("🥋 Shoulders", player.EquippedShoulders);
-        AddSlot("🛡 Chest",     player.EquippedChest);
+        AddSlot("🛡  Chest",    player.EquippedChest);
         AddSlot("🧤 Hands",     player.EquippedHands);
         AddSlot("👖 Legs",      player.EquippedLegs);
         AddSlot("👟 Feet",      player.EquippedFeet);
