@@ -48,7 +48,7 @@ public class DungeonBoss : Enemy
 
     /// <summary>
     /// Periodic turn-based abilities. Key = turn interval (fires when <c>TurnCount % key == 0</c>),
-    /// value = ability name passed to the boss phase ability handler in <see cref="Engine.CombatEngine"/>.
+    /// value = ability name passed to the boss phase ability handler in <see cref="Dungnz.Engine.CombatEngine"/>.
     /// </summary>
     public Dictionary<int, string> TurnActions { get; } = new();
 

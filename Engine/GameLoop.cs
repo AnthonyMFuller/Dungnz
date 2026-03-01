@@ -94,6 +94,14 @@ public class GameLoop
     /// The difficulty settings to apply for this run. Defaults to <see cref="Difficulty.Normal"/>
     /// when <see langword="null"/>.
     /// </param>
+    /// <param name="allItems">
+    /// The full item catalog used for shop and loot generation,
+    /// or <see langword="null"/> to disable item-dependent features.
+    /// </param>
+    /// <param name="navigator">
+    /// An optional menu navigator override; when <see langword="null"/> a default
+    /// <see cref="Spectre.Console"/> selection prompt is used.
+    /// </param>
     public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null, DifficultySettings? difficulty = null, IReadOnlyList<Item>? allItems = null, IMenuNavigator? navigator = null)
     {
         _display = display;
