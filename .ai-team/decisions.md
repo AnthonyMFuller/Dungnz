@@ -14108,3 +14108,28 @@ Each test:
 
 **Decision:** APPROVED — Regression tests validate that alignment fixes are correct and prevent future regressions.
 
+
+---
+
+## 2026-03-01: TAKE Command Interactive Menu Design & Delivery
+
+**Author:** Coulson  
+**Status:** ✅ Shipped (PR #700 merged)
+
+**Plan:** Upgrade TAKE command to arrow-key menu parity with USE/EQUIP, plus Take All and fuzzy matching.
+
+**Issues:** #697 (IDisplayService), #698 (HandleTake rewrite), #699 (Tests) — all closed.
+
+**Key Design Decisions:**
+1. **Sentinel value for Take All:** `Item{Name="__TAKE_ALL__"}` — no new return type needed
+2. **Levenshtein fuzzy match:** `Math.Max(2, inputLength/2)` tolerance, reuses `EquipmentManager.LevenshteinDistance`
+3. **Take All inventory-full:** Stops on first full, items already taken stay, remaining stay in room
+4. **Empty room guard:** Shows error instead of empty menu
+5. **Menu structure:** Room items → 📦 Take All → ↩ Cancel
+
+**Implementation:**
+- Barton: `ShowTakeMenuAndSelect` in DisplayService + `HandleTake` rewrite in GameLoop.cs
+- Romanoff: 10 regression tests in `TakeCommandTests.cs`, TestDisplayService stub fix
+- Coulson: Final commit, review, PR #700 creation, merge, issue closure
+
+**Test results:** 1347/1347 passing (10 new tests added)
