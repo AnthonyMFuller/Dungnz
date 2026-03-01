@@ -1864,3 +1864,50 @@ Six process changes captured in `decisions/inbox/coulson-retro-2026-03-01.md`:
 ---
 
 📌 **Team update (2026-03-01):** Retro action items merged to decisions.md — same-day push rule (completed work must be pushed with draft PR by end of session); stub-gap policy (new IDisplayService methods require same-day stubs in FakeDisplayService and TestDisplayService before merge); content review for player-facing strings (Fury CC'd on PRs); cross-layer sync (15-min upfront domain sync required); pre-existing red tests are P0 (triage within same iteration); sentinel pattern ban for IDisplayService menu returns (use typed discriminated records/result enums; replace existing __TAKE_ALL__ sentinel, P1). — decided by Coulson (Retrospective)
+
+---
+
+## 2026-03-01: Bug Hunt Round 1 Completion
+
+**Context:** Wrapped up first round of bug fixes from comprehensive pre-v3 architecture review. Two remaining PRs reviewed and merged.
+
+**PR #749 (rework) — fix: register missing boss types + persist room special/hazard/trap state**
+- **Previous rejection reason:** Save/load paths not wired for new Room fields
+- **Hill's rework verified:**
+  - ✅ Four fields now persisted: SpecialRoomUsed, BlessedHealApplied, EnvironmentalHazard, Trap
+  - ✅ SaveSystem.cs save path (lines 79-82): All four fields wired in RoomSaveData creation
+  - ✅ SaveSystem.cs load path (lines 162-165): All four fields restored to Room instance
+  - ✅ JsonDerivedType registrations added for: PlagueHoundAlpha, IronSentinel, BoneArchon, CrimsonVampire
+- **Status:** Merged via PR #749, branch squad/739-serialization-fixes deleted
+
+**PR #752 — test: fix CryptPriest_HealsOnTurn2And4 to match CombatEngine check-first pattern**
+- **Issue:** Test helper SimulateSelfHealTick used decrement-first pattern; CombatEngine uses check-first pattern
+- **Romanoff's fix verified:**
+  - ✅ Test helper now matches CombatEngine: check cooldown > 0 → decrement, else heal and reset cooldown
+  - ✅ No production code changed (test-only fix)
+  - ✅ CryptPriest.cs comment updated to clarify check-first pattern
+- **Status:** Merged via PR #752, branch squad/fix-cryptpriest-test deleted
+
+**Final Verification (master branch):**
+- ✅ Build: Clean (2.7s, 2 warnings about CsCheck version — non-blocking)
+- ✅ Tests: **1347 tests passed, 0 failures** (1.3s runtime)
+- ✅ Coverage: Maintained >90% threshold
+- ✅ No regressions introduced
+
+**Bug Hunt Round 1 Summary:**
+- **Total bugs identified:** 47 (Coulson: 16, Hill: encapsulation audit, Barton: 14, Romanoff: 7)
+- **Bugs resolved this round:** 7 critical issues (boss registration, room state persistence, test pattern mismatch)
+- **Remaining work:** Medium/low severity bugs staged for future waves
+- **Team velocity:** 2 PRs reviewed and merged, full test suite green
+
+**Learnings:**
+1. **Check-first vs decrement-first patterns:** CombatEngine uses check-first for cooldowns (check > 0 → decrement, else trigger); must match in test helpers to avoid false positives
+2. **Save/load field coverage:** Adding Room properties requires wiring in BOTH SaveSystem save path AND load path; missing either breaks persistence
+3. **JsonDerivedType registration critical:** Boss subclasses must be registered or deserialization fails with runtime error (silent until production save/load)
+4. **Test-only PRs valuable:** Fixing test helpers to match production patterns prevents future confusion and ensures test validity
+
+**Next Actions:** Continue bug hunt round 2 addressing medium-severity issues (status effect integration, boss mechanics hardening) before v3 Wave 1 kickoff.
+
+---
+
+📌 **Team update (2026-03-01):** Bug hunt round 1 complete — all 7 critical bugs resolved, 1347 tests passing, 0 failures. PRs #749 (boss registration + room persistence) and #752 (test pattern fix) merged to master. — completed by Coulson (Lead), Hill (rework), Romanoff (test fix)

@@ -1137,3 +1137,19 @@ System.NotSupportedException: Runtime type 'Dungnz.Systems.Enemies.GoblinWarchie
 - EquipmentManager.ShowEquipment() is now a one-liner delegating to _display.ShowEquipment(player); private helpers ShowArmorSlot, PadRightVisible, ColorizeItemName removed
 - DisplayService.cs gets a minimal legacy stub (Console.WriteLine("[EQUIPMENT]"))
 - FakeDisplayService and TestDisplayService both get AllOutput.Add("show_equipment") stubs
+
+### 2026-03-01 — Serialization Fix: Room State Fields Wiring (#739, #746, #747, PR #749)
+
+**Branch:** `squad/739-serialization-fixes`
+
+## Learnings
+
+### How SaveSystem.cs structures its save and load paths
+
+**Save path** — inside `SaveGame()`, a BFS (`CollectRooms`) walks the room graph from the current room, collecting all reachable `Room` objects. Each `Room` is projected into a `RoomSaveData` init-only record using a LINQ `.Select()`. Exits are dehydrated to a `Dictionary<Direction, Guid>` (IDs only, no object references) to avoid circular-reference serialization. The whole `SaveData` (Player + Rooms + metadata) is serialized to JSON with a tmp-file swap pattern for atomic writes.
+
+**Load path** — inside `LoadGame()`, a two-pass hydration strategy is used:
+1. **Pass 1:** Iterate `saveData.Rooms`, construct each `Room` from flat fields (no exits yet), store in `Dictionary<Guid, Room>`.
+2. **Pass 2:** Iterate `saveData.Rooms` again, look up each room in the dict, then wire `room.Exits[direction] = roomDict[exitId]` to restore the full bidirectional graph.
+
+**The gap that caused PR #749 to fail:** Four fields (`SpecialRoomUsed`, `BlessedHealApplied`, `EnvironmentalHazard`, `Trap`) had been added to `RoomSaveData` but were never populated in the save LINQ projection or assigned back during the load pass. Fix was 9 lines: 4 in the save path, 4 in the load path, 1 trailing-comma fix.

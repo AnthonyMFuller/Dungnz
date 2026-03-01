@@ -892,3 +892,21 @@ Created comprehensive regression test suite for difficulty balance overhaul with
 - "potoin" vs "Potion": Levenshtein = 1, tolerance = Max(2, 3) = 3 → within range. ✓
 
 **Test count:** 1346 baseline → 1347 – 10 pre-existing passes = 10 new tests added. All 1347 pass (1 pre-existing unrelated failure unchanged).
+
+---
+
+## Session: Fix CryptPriest Heal Timing Test (2026-03-01, PR #752)
+
+**Task:** Fix `CryptPriest_HealsOnTurn2And4_NotTurn1And3` which failed after PR #750 fixed `SelfHealCooldown` from 2 to 1.
+
+**Root cause:** The test's `SimulateSelfHealTick` helper used a **decrement-first** pattern (decrement → check `<= 0` → reset to `SelfHealEveryTurns`), but `CombatEngine` uses a **check-first** pattern (check `> 0` → if yes decrement, else heal → reset to `SelfHealEveryTurns - 1`).
+
+With `SelfHealCooldown=1` and decrement-first: fires on turn 1 (wrong).  
+With `SelfHealCooldown=1` and check-first: fires on turn 2 (correct, matching assertions).
+
+**Fix:** Updated `SimulateSelfHealTick` to mirror CombatEngine's check-first pattern exactly. Also corrected the misleading comment in `CryptPriest.cs`.
+
+## Learnings
+
+- **CombatEngine cooldown check pattern is check-first**: `if (cooldown > 0) decrement; else { heal; reset to SelfHealEveryTurns - 1; }`. Any test helpers simulating this must mirror this pattern, not assume decrement-first.
+- When writing test helpers that simulate engine behavior, always verify against the actual engine implementation rather than assuming a pattern.
