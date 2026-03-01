@@ -18,7 +18,7 @@ public class EquipmentManagerAdditionalTests
     // ── HandleEquip error paths ───────────────────────────────────────────────
 
     [Fact]
-    public void HandleEquip_EmptyName_ShowsError()
+    public void HandleEquip_EmptyName_NoInventory_ShowsError()
     {
         var display = new FakeDisplayService();
         var manager = MakeManager(display);
@@ -26,11 +26,11 @@ public class EquipmentManagerAdditionalTests
 
         manager.HandleEquip(player, "");
 
-        display.Errors.Should().ContainSingle().Which.Should().Contain("Equip what?");
+        display.Errors.Should().ContainSingle().Which.Should().Contain("no equippable items");
     }
 
     [Fact]
-    public void HandleEquip_WhitespaceName_ShowsError()
+    public void HandleEquip_WhitespaceName_NoInventory_ShowsError()
     {
         var display = new FakeDisplayService();
         var manager = MakeManager(display);
@@ -38,7 +38,7 @@ public class EquipmentManagerAdditionalTests
 
         manager.HandleEquip(player, "   ");
 
-        display.Errors.Should().ContainSingle().Which.Should().Contain("Equip what?");
+        display.Errors.Should().ContainSingle().Which.Should().Contain("no equippable items");
     }
 
     [Fact]
