@@ -34,8 +34,31 @@ public class EquipmentManager
 
         if (item == null)
         {
-            _display.ShowError($"You don't have '{itemName}' in your inventory.");
-            return;
+            // Pass 2: fuzzy Levenshtein distance match
+            int tolerance = Math.Max(3, itemNameLower.Length / 2);
+            var candidates = player.Inventory
+                .Select(i => (Item: i, Distance: LevenshteinDistance(itemNameLower, i.Name.ToLowerInvariant())))
+                .Where(x => x.Distance <= tolerance)
+                .ToList();
+
+            if (candidates.Count == 0)
+            {
+                _display.ShowError($"You don't have '{itemName}' in your inventory.");
+                return;
+            }
+
+            int bestDistance = candidates.Min(x => x.Distance);
+            var bestCandidates = candidates.Where(x => x.Distance == bestDistance).ToList();
+
+            if (bestCandidates.Count > 1)
+            {
+                var names = string.Join(", ", bestCandidates.Select(x => x.Item.Name));
+                _display.ShowError($"Did you mean one of: {names}? Please be more specific.");
+                return;
+            }
+
+            item = bestCandidates[0].Item;
+            _display.ShowMessage($"(Did you mean \"{item.Name}\"?)");
         }
 
         if (!item.IsEquippable)
@@ -237,5 +260,20 @@ public class EquipmentManager
     private static string ColorizeItemName(Item item)
     {
         return Systems.ColorCodes.ColorizeItemName(item.Name, item.Tier);
+    }
+
+    /// <summary>Computes the Levenshtein edit distance between two strings.</summary>
+    internal static int LevenshteinDistance(string a, string b)
+    {
+        int m = a.Length, n = b.Length;
+        var dp = new int[m + 1, n + 1];
+        for (int i = 0; i <= m; i++) dp[i, 0] = i;
+        for (int j = 0; j <= n; j++) dp[0, j] = j;
+        for (int i = 1; i <= m; i++)
+            for (int j = 1; j <= n; j++)
+                dp[i, j] = a[i - 1] == b[j - 1]
+                    ? dp[i - 1, j - 1]
+                    : 1 + Math.Min(dp[i - 1, j - 1], Math.Min(dp[i - 1, j], dp[i, j - 1]));
+        return dp[m, n];
     }
 }
