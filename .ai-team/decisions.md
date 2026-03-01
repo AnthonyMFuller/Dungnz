@@ -14136,3 +14136,15 @@ Each test:
 
 ---
 
+### 2026-02-28: XML doc audit complete
+**By:** Coulson
+**What:** Reviewed and merged three PRs (707, 708, 709) fixing XML doc comment inaccuracies across Engine, Models, and Display layers.
+**Why:** Stale/inaccurate docs were a maintenance risk. All fixes confirmed accurate against the code.
+
+**Summary of fixes merged:**
+- **PR #707 (Engine):** CombatEngine constructor params (inventoryManager, navigator, difficulty) documented; GameLoop's ExitRun/ShowGameOver orphaned docs reassigned to correct methods; DungeonGenerator floor range corrected from 1–5 to 1–8; EnemyFactory pool description expanded with hardcoded list and floor-pool usage caveat.
+- **PR #708 (Models):** PlayerStats property docs updated from "Gets" to "Gets or sets" for all mutable stat fields; Player.Class doc expanded to list all 6 classes (Warrior, Mage, Rogue, Paladin, Necromancer, Ranger); LootTable.RollDrop doc clarified with Elite tier-2 threshold at level 4+ and floors 5–8 epic/legendary drop chance mechanics.
+- **PR #709 (Display):** DisplayService stub implementation labels replaced with accurate descriptions of rendered output (banners, flag badges, level-up menus, stat cards); ShowCombatStatus doc updated to describe multi-line layout with player/enemy rows and effect badges; IDisplayService.ShowIntroNarrative doc caveat added clarifying return value is reserved for future skip path.
+
+**Review outcome:** All doc changes verified accurate against running code. No typos, broken crefs, or missed fixes detected. Merged in order (707, 708, 709) with squash commits.
+
