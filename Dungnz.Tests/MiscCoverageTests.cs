@@ -16,9 +16,9 @@ public class MiscCoverageTests
     public void DifficultySettings_Casual_HasWeakerEnemiesAndBetterLoot()
     {
         var settings = DifficultySettings.For(Difficulty.Casual);
-        settings.EnemyStatMultiplier.Should().BeApproximately(0.7f, 0.001f);
-        settings.LootDropMultiplier.Should().BeApproximately(1.5f, 0.001f);
-        settings.GoldMultiplier.Should().BeApproximately(1.5f, 0.001f);
+        settings.EnemyStatMultiplier.Should().BeApproximately(0.65f, 0.001f);
+        settings.LootDropMultiplier.Should().BeApproximately(1.60f, 0.001f);
+        settings.GoldMultiplier.Should().BeApproximately(1.80f, 0.001f);
         settings.Permadeath.Should().BeFalse();
     }
 
@@ -35,9 +35,9 @@ public class MiscCoverageTests
     public void DifficultySettings_Hard_HasStrongerEnemiesAndWorseLoot()
     {
         var settings = DifficultySettings.For(Difficulty.Hard);
-        settings.EnemyStatMultiplier.Should().BeApproximately(1.3f, 0.001f);
-        settings.LootDropMultiplier.Should().BeApproximately(0.7f, 0.001f);
-        settings.GoldMultiplier.Should().BeApproximately(0.7f, 0.001f);
+        settings.EnemyStatMultiplier.Should().BeApproximately(1.35f, 0.001f);
+        settings.LootDropMultiplier.Should().BeApproximately(0.65f, 0.001f);
+        settings.GoldMultiplier.Should().BeApproximately(0.60f, 0.001f);
     }
 
     [Fact]

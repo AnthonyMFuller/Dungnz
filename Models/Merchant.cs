@@ -31,14 +31,15 @@ public class Merchant
     /// <param name="rng">The random number generator used to select the stock.</param>
     /// <param name="floor">The dungeon floor number (1–5), used to select appropriate items.</param>
     /// <param name="allItems">All available items for resolving IDs; pass empty/null to trigger fallback.</param>
+    /// <param name="difficulty">Optional DifficultySettings for applying merchant price multiplier.</param>
     /// <returns>A new <see cref="Merchant"/> instance stocked for the given floor.</returns>
-    public static Merchant CreateRandom(Random rng, int floor = 1, IReadOnlyList<Item>? allItems = null)
+    public static Merchant CreateRandom(Random rng, int floor = 1, IReadOnlyList<Item>? allItems = null, DifficultySettings? difficulty = null)
     {
         List<MerchantItem> stock;
 
         if (allItems is { Count: > 0 })
         {
-            stock = MerchantInventoryConfig.GetStockForFloor(floor, allItems, rng);
+            stock = MerchantInventoryConfig.GetStockForFloor(floor, allItems, rng, difficulty);
         }
         else
         {
@@ -48,16 +49,20 @@ public class Merchant
         // Fallback: if JSON loading yielded nothing, use a minimal hardcoded set
         if (stock.Count == 0)
         {
-            stock = GetFallbackStock();
+            stock = GetFallbackStock(difficulty);
         }
 
         return new Merchant { Stock = stock };
     }
 
-    private static List<MerchantItem> GetFallbackStock() =>
-    [
-        new() { Item = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 20, Description = "Restores 20 HP.", Tier = ItemTier.Common }, Price = 25 },
-        new() { Item = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true, Description = "A sturdy iron blade.", Tier = ItemTier.Common }, Price = 50 },
-        new() { Item = new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 3, IsEquippable = true, Description = "Basic leather protection.", Tier = ItemTier.Common }, Price = 40 },
-    ];
+    private static List<MerchantItem> GetFallbackStock(DifficultySettings? difficulty = null)
+    {
+        var multiplier = difficulty?.MerchantPriceMultiplier ?? 1.0f;
+        return
+        [
+            new() { Item = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 20, Description = "Restores 20 HP.", Tier = ItemTier.Common }, Price = Math.Max(1, (int)(25 * multiplier)) },
+            new() { Item = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true, Description = "A sturdy iron blade.", Tier = ItemTier.Common }, Price = Math.Max(1, (int)(50 * multiplier)) },
+            new() { Item = new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 3, IsEquippable = true, Description = "Basic leather protection.", Tier = ItemTier.Common }, Price = Math.Max(1, (int)(40 * multiplier)) },
+        ];
+    }
 }

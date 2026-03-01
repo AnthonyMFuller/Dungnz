@@ -1719,3 +1719,52 @@ The team's strongest capability right now is **finding and fixing bugs systemati
 **Decision written to:** `.ai-team/decisions/inbox/coulson-crafting-material-type.md`
 
 **Key Learning:** Items with no HealAmount, ManaRestore, AttackBonus, DefenseBonus, StatModifier, or PassiveEffectId should be CraftingMaterial, not Consumable. The distinction is usage context: Consumable items directly affect player state; CraftingMaterial items are ingredients for other systems.
+---
+
+### 2026-03-01: Difficulty Balance System Analysis & Design
+**Objective:** Diagnose why Casual difficulty feels punishing and design comprehensive difficulty scaling overhaul.
+
+**Key Findings:**
+- `DifficultySettings.LootDropMultiplier` and `GoldMultiplier` are DEAD CODE — defined but never consumed by any system. Only `EnemyStatMultiplier` is wired up (in DungeonGenerator line 69).
+- Casual's advertised 1.5× loot/gold bonuses do not function — players get no benefit.
+- All players start with 0 gold and 0 items regardless of difficulty.
+- Merchant prices are difficulty-agnostic (MerchantInventoryConfig.ComputePrice uses tier-based formula only).
+- Healing item availability is entirely luck-based — 30% room loot chance, 30% enemy drop chance, both unscaled by difficulty.
+- XP gains are accidentally reduced on Casual because EnemyStatMultiplier scales XPValue along with combat stats.
+- Shrine costs are hardcoded (30/50/75g) regardless of difficulty.
+- CombatEngine does not receive DifficultySettings at all — damage formulas are difficulty-blind.
+
+**Files That Control Balance:**
+- `Models/Difficulty.cs` — DifficultySettings class (3 multipliers, only 1 wired)
+- `Engine/DungeonGenerator.cs` — Enemy/shrine/merchant placement, the only consumer of EnemyStatMultiplier
+- `Engine/EnemyFactory.cs` — CreateScaled() applies stat scalar to all enemy stats
+- `Engine/CombatEngine.cs` — Damage formulas, loot/XP/gold distribution (no difficulty awareness)
+- `Engine/IntroSequence.cs` — Player starting stats (no difficulty consideration)
+- `Models/LootTable.cs` — RollDrop() with hardcoded 30% base chance
+- `Systems/MerchantInventoryConfig.cs` — ComputePrice() tier-based, no difficulty input
+- `Engine/GameLoop.cs` — Shrine costs (hardcoded 30/50/75g)
+- `Data/enemy-stats.json` — Base enemy stats (31 enemy types)
+- `Data/item-stats.json` — 186 items, 34 consumables
+- `Data/merchant-inventory.json` — Per-floor merchant stock pools
+
+**Design Decisions Made:**
+- Expand DifficultySettings with 9 new properties: PlayerDamageMultiplier, EnemyDamageMultiplier, HealingMultiplier, MerchantPriceMultiplier, XPMultiplier, StartingGold, StartingPotions, ShrineSpawnMultiplier, MerchantSpawnMultiplier
+- Keep DifficultySettings as C# class (not JSON) — values are tied to game logic
+- Pass DifficultySettings to CombatEngine constructor (currently missing)
+- Pass DifficultySettings through to Merchant.CreateRandom and MerchantInventoryConfig
+- Casual should feel dramatically different: cheaper shops, more healing, starting supplies, higher XP
+- Hard enables permadeath and restricts all resource access
+
+**GitHub Issues Created:**
+- #673 — Wire up LootDropMultiplier and GoldMultiplier dead code (assigned Barton)
+- #674 — Expand DifficultySettings with new balance knobs (assigned Hill)
+- #675 — Apply damage multipliers in CombatEngine (assigned Barton, depends on #674)
+- #676 — Apply HealingMultiplier to all healing sources (assigned Barton, depends on #674)
+- #677 — Apply MerchantPriceMultiplier to merchant pricing (assigned Barton, depends on #674)
+- #678 — Apply XPMultiplier to experience gains (assigned Barton, depends on #674)
+- #679 — Difficulty-scaled starting conditions (assigned Hill, depends on #674)
+- #680 — Difficulty-scaled shrine and merchant spawn rates (assigned Barton, depends on #674)
+- #681 — Regression tests for difficulty balance system (assigned Romanoff, depends on all above)
+- #682 — Update difficulty selection screen (assigned Fury, depends on #674)
+
+**Decision written to:** `.ai-team/decisions/inbox/coulson-difficulty-balance-plan.md`

@@ -145,8 +145,9 @@ public class LootTable
     /// <param name="playerLevel">The player's current level, used to select the appropriate item tier pool.</param>
     /// <param name="isBossRoom">When <see langword="true"/>, guarantees a Legendary drop from the boss pool.</param>
     /// <param name="dungeoonFloor">Current dungeon floor (1-8); floors 6-8 have a 5% Legendary chance.</param>
+    /// <param name="lootDropMultiplier">Multiplier applied to drop chances (from DifficultySettings).</param>
     /// <returns>A <see cref="LootResult"/> containing the optional item drop and the gold amount.</returns>
-    public LootResult RollDrop(Enemy enemy, int playerLevel = 1, bool isBossRoom = false, int dungeoonFloor = 1)
+    public LootResult RollDrop(Enemy enemy, int playerLevel = 1, bool isBossRoom = false, int dungeoonFloor = 1, float lootDropMultiplier = 1.0f)
     {
         int gold = _minGold == _maxGold ? _minGold : _rng.Next(_minGold, _maxGold + 1);
 
@@ -181,7 +182,7 @@ public class LootTable
         }
 
         // 30% chance of a tiered item drop if none already rolled
-        if (dropped == null && _rng.NextDouble() < 0.30)
+        if (dropped == null && _rng.NextDouble() < 0.30 * lootDropMultiplier)
         {
             var pool = playerLevel >= 7 ? (_sharedTier3 ?? FallbackTier3)
                      : playerLevel >= 4 ? (_sharedTier2 ?? FallbackTier2)
