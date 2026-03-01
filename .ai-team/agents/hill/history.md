@@ -1115,3 +1115,15 @@ Converted bounded menu selection from typed-number input to arrow-key navigation
 | Permadeath                | false  | false  | true   |
 
 **Key insight:** Normal mode values are all 1.0f (or neutral defaults) — this is the baseline. Casual makes the game easier across all dimensions (cheaper items, more healing, more XP, more resources). Hard makes the game harder across all dimensions (tougher enemies, less healing, less XP, fewer resources, permadeath).
+
+## Learnings — #701 (GoblinWarchief JSON Serialization Fix)
+
+**Pattern: Registering new Enemy subclasses for JSON polymorphic serialization**
+
+When adding a new `Enemy` subclass — especially a subclass of an existing subclass like `DungeonBoss` — it must be registered in the `[JsonDerivedType]` attribute list on the `Enemy` base class in `Models/Enemy.cs`. Failure to do so causes a `System.NotSupportedException` at runtime when saving game state:
+
+```
+System.NotSupportedException: Runtime type 'Dungnz.Systems.Enemies.GoblinWarchief' is not supported by polymorphic type 'Dungnz.Models.Enemy'.
+```
+
+**Rule:** Every concrete `Enemy` subclass (including subclasses of `DungeonBoss`, `DungeonElite`, etc.) needs its own `[JsonDerivedType(typeof(ClassName), "discriminator")]` line on the `Enemy` base class. The discriminator string should be the class name in lowercase (e.g., `"goblinwarchief"`). This is easy to miss when the new class extends an intermediate abstract class rather than `Enemy` directly.
