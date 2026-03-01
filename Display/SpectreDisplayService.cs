@@ -20,8 +20,122 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     /// <inheritdoc/>
-    public void ShowRoom(Room room) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowRoom not yet implemented");
+    public void ShowRoom(Room room)
+    {
+        AnsiConsole.WriteLine();
+
+        // Build room panel content
+        var sb = new System.Text.StringBuilder();
+
+        // Room type prefix with color
+        var (prefix, prefixColor) = room.Type switch
+        {
+            RoomType.Dark            => ("🌑 The room is pitch dark. ",                           "red"),
+            RoomType.Scorched        => ("🔥 Scorch marks scar the stone. ",                      "yellow"),
+            RoomType.Flooded         => ("💧 Ankle-deep water pools here. ",                      "yellow"),
+            RoomType.Mossy           => ("🌿 Damp moss covers the walls. ",                       "green"),
+            RoomType.Ancient         => ("🏛 Ancient runes line the walls. ",                     "cyan"),
+            RoomType.ForgottenShrine => ("✨ Holy light radiates from a forgotten shrine. ",      "cyan"),
+            RoomType.PetrifiedLibrary=> ("📚 Petrified bookshelves line these ancient walls. ",  "cyan"),
+            RoomType.ContestedArmory => ("⚔ Weapon racks gleam dangerously in the dark. ",       "yellow"),
+            _                        => (string.Empty, "white")
+        };
+
+        if (!string.IsNullOrEmpty(prefix))
+            sb.AppendLine($"[{prefixColor}]{Markup.Escape(prefix)}[/]");
+
+        sb.AppendLine(Markup.Escape(room.Description));
+
+        // Environmental hazard
+        var envLine = room.EnvironmentalHazard switch
+        {
+            RoomHazard.LavaSeam        => "[red]🔥 Lava seams crack the floor — each action will burn you.[/]",
+            RoomHazard.CorruptedGround => "[grey]💀 The ground pulses with dark energy — it will drain you with every action.[/]",
+            RoomHazard.BlessedClearing => "[cyan]✨ A blessed warmth fills this clearing.[/]",
+            _                          => null
+        };
+        if (envLine != null) sb.AppendLine(envLine);
+
+        // Hazard forewarning
+        var hazardLine = room.Type switch
+        {
+            RoomType.Scorched => "[yellow]⚠ The scorched stone radiates heat — take care.[/]",
+            RoomType.Flooded  => "[cyan]⚠ The water here looks treacherous.[/]",
+            RoomType.Dark     => "[grey]⚠ Darkness presses in around you.[/]",
+            _                 => null
+        };
+        if (hazardLine != null) sb.AppendLine(hazardLine);
+
+        // Exits
+        if (room.Exits.Count > 0)
+        {
+            var exitSymbols = new Dictionary<Direction, string>
+            {
+                [Direction.North] = "↑ North",
+                [Direction.South] = "↓ South",
+                [Direction.East]  = "→ East",
+                [Direction.West]  = "← West"
+            };
+            var ordered = new[] { Direction.North, Direction.South, Direction.East, Direction.West }
+                .Where(d => room.Exits.ContainsKey(d))
+                .Select(d => exitSymbols[d]);
+            sb.AppendLine($"[yellow]Exits:[/] {string.Join("   ", ordered)}");
+        }
+
+        // Enemies
+        if (room.Enemy != null)
+            sb.AppendLine($"[bold red]⚔ {Markup.Escape(room.Enemy.Name)} is here![/]");
+
+        // Items on floor
+        if (room.Items.Count > 0)
+        {
+            sb.AppendLine("[grey]Items on the ground:[/]");
+            foreach (var item in room.Items)
+                sb.AppendLine($"  [green]◆ {Markup.Escape(item.Name)}[/] [grey]({Markup.Escape(PrimaryStatLabel(item))})[/]");
+        }
+
+        // Shrine hints
+        if (room.HasShrine && room.Type != RoomType.ForgottenShrine)
+        {
+            var atm = ShrineNarration.Presence[Random.Shared.Next(ShrineNarration.Presence.Length)];
+            sb.AppendLine($"[cyan]{Markup.Escape(atm)}[/]");
+            sb.AppendLine("[cyan]✨ A shrine glimmers here. (USE SHRINE)[/]");
+        }
+        if (room.Type == RoomType.ForgottenShrine && !room.SpecialRoomUsed)
+            sb.AppendLine("[cyan]✨ A forgotten shrine stands here, radiating holy energy. (USE SHRINE)[/]");
+        if (room.Type == RoomType.PetrifiedLibrary && !room.SpecialRoomUsed)
+            sb.AppendLine("[cyan]📖 Ancient tomes line the walls. Something catches the light as you enter...[/]");
+        if (room.Type == RoomType.ContestedArmory && !room.SpecialRoomUsed)
+            sb.AppendLine("[yellow]⚠ Trapped weapons gleam in the dark. (USE ARMORY to approach)[/]");
+        if (room.Merchant != null)
+        {
+            var greeting = MerchantNarration.Greetings[Random.Shared.Next(MerchantNarration.Greetings.Length)];
+            sb.AppendLine($"[yellow]{Markup.Escape(greeting)}[/]");
+            sb.AppendLine("[yellow]🛒 A merchant awaits. (SHOP)[/]");
+        }
+
+        var panel = new Panel(new Markup(sb.ToString().TrimEnd()))
+        {
+            Border = BoxBorder.Rounded,
+            Header = new PanelHeader($"[bold cyan]{Markup.Escape(room.Description.Length > 0 ? GetRoomDisplayName(room) : "Room")}[/]"),
+        };
+        AnsiConsole.Write(panel);
+        AnsiConsole.WriteLine();
+    }
+
+    private static string GetRoomDisplayName(Room room) => room.Type switch
+    {
+        RoomType.Dark             => "Dark Room",
+        RoomType.Mossy            => "Mossy Chamber",
+        RoomType.Flooded          => "Flooded Chamber",
+        RoomType.Scorched         => "Scorched Hall",
+        RoomType.Ancient          => "Ancient Chamber",
+        RoomType.ForgottenShrine  => "Forgotten Shrine",
+        RoomType.PetrifiedLibrary => "Petrified Library",
+        RoomType.ContestedArmory  => "Contested Armory",
+        RoomType.TrapRoom         => "Trap Room",
+        _                         => "Chamber"
+    };
 
     /// <inheritdoc/>
     public void ShowCombat(string message) =>
@@ -108,39 +222,218 @@ public sealed class SpectreDisplayService : IDisplayService
 
     /// <inheritdoc/>
     public void ShowMessage(string message) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowMessage not yet implemented");
+        AnsiConsole.MarkupLine(Markup.Escape(message));
 
     /// <inheritdoc/>
     public void ShowError(string message) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowError not yet implemented");
+        AnsiConsole.MarkupLine($"[red]✗ {Markup.Escape(message)}[/]");
 
     /// <inheritdoc/>
-    public void ShowHelp() =>
-        throw new NotImplementedException("SpectreDisplayService.ShowHelp not yet implemented");
+    public void ShowHelp()
+    {
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Yellow)
+            .AddColumn(new TableColumn("[bold yellow]Command[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold yellow]Description[/]"));
+
+        table.AddRow("[grey]── Navigation ──[/]", "");
+        table.AddRow("go [north|south|east|west]", "Move in a direction  [grey](aliases: n s e w)[/]");
+        table.AddRow("look",       "Re-describe the current room");
+        table.AddRow("map",        "Show ASCII mini-map of discovered rooms");
+        table.AddRow("descend",    "Descend to the next floor (at cleared exit)");
+        table.AddRow("[grey]── Items ──[/]", "");
+        table.AddRow("examine [target]", "Inspect an enemy, room item, or inventory item");
+        table.AddRow("take [item]",      "Pick up an item from the floor");
+        table.AddRow("use [item]",       "Use a consumable [grey](e.g. USE POTION, USE SHRINE)[/]");
+        table.AddRow("inventory",        "List carried items");
+        table.AddRow("equipment",        "Show equipped gear");
+        table.AddRow("equip [item]",     "Equip a weapon, armour, or accessory");
+        table.AddRow("unequip [item]",   "Unequip an item back to inventory");
+        table.AddRow("craft [recipe]",   "Craft an item [grey](CRAFT alone lists recipes)[/]");
+        table.AddRow("shop",             "Browse the merchant (if one is present)");
+        table.AddRow("sell",             "Sell items to the merchant (if one is present)");
+        table.AddRow("[grey]── Character ──[/]", "");
+        table.AddRow("stats",            "Show player stats and current floor");
+        table.AddRow("skills",           "Show skill tree");
+        table.AddRow("learn [skill]",    "Unlock a skill");
+        table.AddRow("[grey]── Systems ──[/]", "");
+        table.AddRow("save [name]",      "Save the game");
+        table.AddRow("load [name]",      "Load a saved game");
+        table.AddRow("listsaves",        "List available save files");
+        table.AddRow("prestige",         "Show prestige level and bonuses");
+        table.AddRow("leaderboard",      "Show top run history");
+        table.AddRow("help",             "Show this help");
+        table.AddRow("quit",             "Exit the game");
+
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
-    public void ShowCommandPrompt(Player? player = null) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowCommandPrompt not yet implemented");
+    public void ShowCommandPrompt(Player? player = null)
+    {
+        if (player == null)
+        {
+            AnsiConsole.Markup("[grey]>[/] ");
+            return;
+        }
+        var hpBar = BuildHpBar(player.HP, player.MaxHP, 6);
+        AnsiConsole.Markup($"[grey][[/]{hpBar} {player.HP}/{player.MaxHP} HP");
+        if (player.MaxMana > 0)
+            AnsiConsole.Markup($" [grey]│[/] [blue]{BuildBar(player.Mana, player.MaxMana, 4)}[/] {player.Mana}/{player.MaxMana} MP");
+        AnsiConsole.Markup("[grey]][/] [grey]>[/] ");
+    }
 
     /// <inheritdoc/>
-    public void ShowMap(Room currentRoom) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowMap not yet implemented");
+    public void ShowMap(Room currentRoom)
+    {
+        // BFS to assign (x, y) coordinates to every reachable room
+        var positions = new Dictionary<Room, (int x, int y)>();
+        var queue = new Queue<Room>();
+        positions[currentRoom] = (0, 0);
+        queue.Enqueue(currentRoom);
+
+        while (queue.Count > 0)
+        {
+            var room = queue.Dequeue();
+            var (rx, ry) = positions[room];
+            foreach (var (dir, neighbour) in room.Exits)
+            {
+                if (positions.ContainsKey(neighbour)) continue;
+                var (nx, ny) = dir switch
+                {
+                    Direction.North => (rx,     ry - 1),
+                    Direction.South => (rx,     ry + 1),
+                    Direction.East  => (rx + 1, ry),
+                    Direction.West  => (rx - 1, ry),
+                    _               => (rx,     ry)
+                };
+                positions[neighbour] = (nx, ny);
+                queue.Enqueue(neighbour);
+            }
+        }
+
+        var visiblePositions = positions
+            .Where(kv => kv.Key.Visited || kv.Key == currentRoom)
+            .ToList();
+
+        if (visiblePositions.Count == 0) return;
+
+        int minX = visiblePositions.Min(kv => kv.Value.x);
+        int maxX = visiblePositions.Max(kv => kv.Value.x);
+        int minY = visiblePositions.Min(kv => kv.Value.y);
+        int maxY = visiblePositions.Max(kv => kv.Value.y);
+
+        var grid = new Dictionary<(int x, int y), Room>();
+        foreach (var (room, pos) in visiblePositions)
+            grid[pos] = room;
+
+        var mapSb = new System.Text.StringBuilder();
+        mapSb.AppendLine("[bold white]═══ MAP ═══[/]   N");
+        mapSb.AppendLine("              ↑");
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            mapSb.Append("  ");
+            for (int x = minX; x <= maxX; x++)
+            {
+                if (!grid.TryGetValue((x, y), out var r))
+                {
+                    mapSb.Append(x < maxX ? "    " : "   ");
+                    continue;
+                }
+
+                string symbol = GetMapRoomSymbol(r, currentRoom);
+                mapSb.Append(symbol);
+
+                if (x < maxX)
+                {
+                    bool hasConnector = r.Exits.ContainsKey(Direction.East) && grid.ContainsKey((x + 1, y));
+                    mapSb.Append(hasConnector ? "-" : " ");
+                }
+            }
+            mapSb.AppendLine();
+
+            if (y < maxY)
+            {
+                mapSb.Append("  ");
+                for (int x = minX; x <= maxX; x++)
+                {
+                    bool hasSouth = grid.TryGetValue((x, y), out var rS)
+                        && rS.Exits.ContainsKey(Direction.South)
+                        && grid.ContainsKey((x, y + 1));
+                    mapSb.Append(hasSouth ? " | " : "   ");
+                    if (x < maxX) mapSb.Append(" ");
+                }
+                mapSb.AppendLine();
+            }
+        }
+
+        mapSb.AppendLine();
+        mapSb.AppendLine("[bold yellow][[*]][/] You    [white][[E]][/] Exit    [red][[!]][/] Enemy    [cyan][[S]][/] Shrine    [white][[+]][/] Cleared    [yellow][[B]][/] Boss");
+
+        AnsiConsole.Write(new Panel(new Markup(mapSb.ToString().TrimEnd()))
+        {
+            Border = BoxBorder.Rounded,
+            Header = new PanelHeader("[bold white]Mini-Map[/]"),
+        });
+        AnsiConsole.WriteLine();
+    }
+
+    private static string GetMapRoomSymbol(Room r, Room currentRoom)
+    {
+        if (r == currentRoom)                               return "[bold yellow][@][/]";
+        if (!r.Visited)                                     return "[grey][[?]][/]";
+        if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0) return "[bold red][[B]][/]";
+        if (r.IsExit)                                       return "[white][[E]][/]";
+        if (r.Enemy != null && r.Enemy.HP > 0)              return "[red][[!]][/]";
+        if (r.HasShrine && !r.ShrineUsed)                   return "[cyan][[S]][/]";
+        return "[white][[+]][/]";
+    }
 
     /// <inheritdoc/>
     public string ReadPlayerName() =>
-        throw new NotImplementedException("SpectreDisplayService.ReadPlayerName not yet implemented");
+        AnsiConsole.Prompt(
+            new TextPrompt<string>("[bold yellow]Enter your name, hero:[/]")
+                .Validate(name => !string.IsNullOrWhiteSpace(name)
+                    ? ValidationResult.Success()
+                    : ValidationResult.Error("[red]Name cannot be empty[/]")));
 
     /// <inheritdoc/>
-    public void ShowColoredMessage(string message, string color) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowColoredMessage not yet implemented");
+    public void ShowColoredMessage(string message, string color)
+    {
+        // Map legacy ANSI color codes to Spectre color names where recognisable; fallback to white
+        var spectreColor = MapAnsiToSpectre(color);
+        AnsiConsole.MarkupLine($"[{spectreColor}]{Markup.Escape(message)}[/]");
+    }
 
     /// <inheritdoc/>
-    public void ShowColoredCombatMessage(string message, string color) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowColoredCombatMessage not yet implemented");
+    public void ShowColoredCombatMessage(string message, string color)
+    {
+        var spectreColor = MapAnsiToSpectre(color);
+        AnsiConsole.MarkupLine($"  [{spectreColor}]{Markup.Escape(message)}[/]");
+    }
 
     /// <inheritdoc/>
-    public void ShowColoredStat(string label, string value, string valueColor) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowColoredStat not yet implemented");
+    public void ShowColoredStat(string label, string value, string color)
+    {
+        var spectreColor = MapAnsiToSpectre(color);
+        AnsiConsole.MarkupLine($"{Markup.Escape(label),-8} [{spectreColor}]{Markup.Escape(value)}[/]");
+    }
+
+    private static string MapAnsiToSpectre(string ansiCode) => ansiCode switch
+    {
+        var c when c == Systems.ColorCodes.Red       || c == Systems.ColorCodes.BrightRed  => "red",
+        var c when c == Systems.ColorCodes.Green                                           => "green",
+        var c when c == Systems.ColorCodes.Yellow                                          => "yellow",
+        var c when c == Systems.ColorCodes.Cyan                                            => "cyan",
+        var c when c == Systems.ColorCodes.Gray                                            => "grey",
+        var c when c == Systems.ColorCodes.Blue                                            => "blue",
+        var c when c == Systems.ColorCodes.BrightWhite                                    => "white",
+        _ => "white"
+    };
 
     /// <inheritdoc/>
     public void ShowEquipmentComparison(Player player, Item? oldItem, Item newItem) =>
@@ -277,20 +570,83 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     /// <inheritdoc/>
-    public void ShowLevelUpChoice(Player player) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowLevelUpChoice not yet implemented");
+    public void ShowLevelUpChoice(Player player)
+    {
+        AnsiConsole.WriteLine();
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .BorderColor(Color.Yellow)
+            .AddColumn(new TableColumn("[bold yellow]#[/]").NoWrap())
+            .AddColumn(new TableColumn("[bold yellow]Bonus[/]"))
+            .AddColumn(new TableColumn("[bold yellow]Value[/]").NoWrap());
+
+        table.AddRow("[yellow]1[/]", "+5 Max HP",   $"[grey]{player.MaxHP} → {player.MaxHP + 5}[/]");
+        table.AddRow("[yellow]2[/]", "+2 Attack",   $"[grey]{player.Attack} → {player.Attack + 2}[/]");
+        table.AddRow("[yellow]3[/]", "+2 Defense",  $"[grey]{player.Defense} → {player.Defense + 2}[/]");
+
+        AnsiConsole.MarkupLine("[bold white]★ LEVEL UP! Choose a stat bonus:[/]");
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
-    public void ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowFloorBanner not yet implemented");
+    public void ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant)
+    {
+        var threatColor = floor <= 2 ? "green" : floor <= 4 ? "yellow" : "red";
+        var threat = floor <= 2 ? "Low" : floor <= 4 ? "Moderate" : "High";
+
+        var content = $"[{threatColor}]Floor {floor} of {maxFloor}[/]\n"
+                    + $"[white]{Markup.Escape(variant.Name)}[/]\n"
+                    + $"[{threatColor}]⚠ Danger: {threat}[/]";
+
+        var rule = new Rule($"[bold {threatColor}]Floor {floor} — {Markup.Escape(variant.Name)}[/]");
+        rule.Style = Style.Parse(threatColor);
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(rule);
+        AnsiConsole.MarkupLine($"  [{threatColor}]⚠ Danger: {threat}[/]");
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
-    public void ShowEnemyDetail(Enemy enemy) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowEnemyDetail not yet implemented");
+    public void ShowEnemyDetail(Enemy enemy)
+    {
+        var nameColor = enemy.IsElite ? "yellow" : "red";
+        var summary = new System.Text.StringBuilder();
+        summary.AppendLine($"HP:      {BuildHpBar(enemy.HP, enemy.MaxHP)} {enemy.HP}/{enemy.MaxHP}");
+        summary.AppendLine($"[red]ATK:     {enemy.Attack}[/]");
+        summary.AppendLine($"[cyan]DEF:     {enemy.Defense}[/]");
+        summary.Append($"[green]XP:      {enemy.XPValue}[/]");
+        if (enemy.IsElite) summary.Append("  [yellow]⭐ ELITE[/]");
+
+        var panel = new Panel(new Markup(summary.ToString()))
+        {
+            Border = BoxBorder.Rounded,
+            Header = new PanelHeader($"[bold {nameColor}]{Markup.Escape(enemy.Name.ToUpperInvariant())}[/]"),
+        };
+        AnsiConsole.Write(panel);
+    }
 
     /// <inheritdoc/>
-    public void ShowVictory(Player player, int floorsCleared, RunStats stats) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowVictory not yet implemented");
+    public void ShowVictory(Player player, int floorsCleared, RunStats stats)
+    {
+        AnsiConsole.WriteLine();
+        AnsiConsole.Write(new FigletText("VICTORY").Color(Color.Gold1));
+        var floorWord = floorsCleared == 1 ? "floor" : "floors";
+        var summary = $"[bold]{Markup.Escape(player.Name)}[/]  •  Level {player.Level}\n"
+                    + $"[yellow]{floorsCleared} {floorWord} conquered[/]\n\n"
+                    + $"[grey]Enemies slain:  {stats.EnemiesDefeated}\n"
+                    + $"Gold earned:    {stats.GoldCollected}\n"
+                    + $"Items found:    {stats.ItemsFound}\n"
+                    + $"Turns taken:    {stats.TurnsTaken}[/]";
+        var panel = new Panel(new Markup(summary))
+        {
+            Border = BoxBorder.Heavy,
+            Header = new PanelHeader("[bold yellow]✦  V I C T O R Y  ✦[/]"),
+        };
+        panel.BorderColor(Color.Gold1);
+        AnsiConsole.Write(panel);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
     public void ShowGameOver(Player player, string? killedBy, RunStats stats)
