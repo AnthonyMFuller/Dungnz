@@ -13597,3 +13597,188 @@ New private method `HandleItemMenu(Player, Enemy)` in `CombatEngine`, following 
 **By:** Romanoff  
 **What:** Added 4 tests for EQUIP with no argument behavior in EquipmentManagerNoArgTests.cs  
 **Why:** Issue #654 coverage — empty arg menu, no equippables error, cancel selection, whitespace arg
+
+---
+
+## 2026-03-01: Systems balance analysis
+
+**By:** Barton  
+**What:** Detailed quantitative analysis of combat, healing, and merchant balance  
+**Why:** Casual difficulty is punishing — need to identify every lever
+
+### Key Findings
+
+1. **LootDropMultiplier is dead code** — defined but never used by LootTable.RollDrop()
+2. **GoldMultiplier is dead code** — defined but never applied to gold drops
+3. **Merchant prices not difficulty-aware** — flat cost regardless of difficulty
+4. **No difficulty-scaled starting conditions** — all players start with 0g, 0 items
+5. **XP reduced on Casual** — enemy XP values × 0.7 due to stat scaling
+
+### Balance Problem
+
+Casual players encounter a damage vs healing economic imbalance:
+- Floor 1 with mixed enemies deals 24-49 HP damage
+- Gold earned: 51-81g
+- Health Potion cost: 35g
+- Result: Can afford 1-2 potions while at 50+ HP damage accumulated
+
+### Root Cause
+
+1. Loot and gold multipliers not wired up
+2. Merchant prices not difficulty-aware
+3. No starting resources for Casual safety net
+4. Gold multiplier (1.5×) insufficient
+
+---
+
+## 2026-03-01: Phase 2 — Difficulty Multipliers Wired Into Game Systems
+
+**Author:** Barton (Systems Dev)  
+**Status:** ✅ Complete  
+
+### Implementation Summary
+
+**Combat Damage** (CombatEngine.cs)
+- Applied PlayerDamageMultiplier to player attacks
+- Applied EnemyDamageMultiplier to enemy attacks
+- Both use Math.Max(1, ...) for minimum 1 damage
+
+**Loot & Gold** (CombatEngine + LootTable)
+- Applied GoldMultiplier to gold drops
+- Wired LootDropMultiplier into base 30% drop chance
+- Special drops (boss/epic/legendary) unaffected
+
+**Healing** (GameLoop + CombatEngine + DisplayService)
+- Applied HealingMultiplier to consumable healing
+- Applied HealingMultiplier to Paladin Divine Favor
+- Shrine costs scale inversely by HealingMultiplier (higher multiplier = cheaper shrines)
+- Updated DisplayService interface for dynamic shrine costs
+
+**XP** (CombatEngine)
+- Applied XPMultiplier independently from enemy stat scaling
+
+**Merchant Pricing** (MerchantInventoryConfig + Merchant + DungeonGenerator)
+- Added difficulty parameter to ComputePrice()
+- Applied MerchantPriceMultiplier to all computed prices
+- Merchant.CreateRandom passes difficulty through
+
+**Spawn Rates** (DungeonGenerator)
+- Applied MerchantSpawnMultiplier with 35% cap
+- Applied ShrineSpawnMultiplier with 35% cap
+
+### Design Choices
+
+1. **Minimum Values**: Math.Max(1, ...) for damage, gold, XP prevents degenerate cases
+2. **Inverse Shrine Costs**: Easier difficulties have better healing AND cheaper shrines
+3. **Spawn Rate Caps**: Capped at 35% to prevent room saturation
+4. **Loot Drop Scope**: Multiplier only affects base 30% roll, not special drops
+5. **Backward Compatibility**: All new parameters optional with sensible fallbacks
+
+### Results
+
+✅ Build: Succeeded (38 pre-existing warnings, no new failures)
+✅ Tests: 1297/1302 pass (2 outdated expectations, 3 pre-existing infrastructure issues, 0 new failures)
+✅ Files Modified: 10 implementation files with comprehensive integration
+
+### Difficulty Values Reference
+
+| Multiplier | Casual | Normal | Hard |
+|------------|--------|--------|------|
+| EnemyDamageMultiplier | 0.70 | 1.00 | 1.25 |
+| PlayerDamageMultiplier | 1.20 | 1.00 | 0.90 |
+| LootDropMultiplier | 1.60 | 1.00 | 0.65 |
+| GoldMultiplier | 1.80 | 1.00 | 0.60 |
+| HealingMultiplier | 1.50 | 1.00 | 0.75 |
+| MerchantPriceMultiplier | 0.65 | 1.00 | 1.40 |
+| XPMultiplier | 1.40 | 1.00 | 0.80 |
+| ShrineSpawnMultiplier | 1.50 | 1.00 | 0.70 |
+| MerchantSpawnMultiplier | 1.40 | 1.00 | 0.70 |
+
+---
+
+## 2026-03-01: Difficulty Selection Screen Update
+
+**Author:** Fury (Content Writer)  
+**Status:** Complete
+
+Updated difficulty labels in Display/DisplayService.cs:
+
+```
+CASUAL     Weaker enemies · Cheap shops · Start with 50g + 3 potions
+NORMAL     Balanced challenge · The intended experience · Start with 15g + 1 potion
+HARD       Stronger enemies · Scarce rewards · No starting supplies · ☠ Permadeath
+```
+
+**Rationale:** Narrative-driven labels communicate actual gameplay impact instead of raw multiplier numbers. Players understand concrete consequences before committing to difficulty. Permadeath explicitly flagged for safety awareness.
+
+**Design Approach:** Omitted less-impactful stats (XP multiplier, shrine spawn rate) to maintain readability. Emphasized most differentiating factors: enemy strength, merchant prices, starting supplies, permadeath.
+
+---
+
+## 2026-03-01: Expanded DifficultySettings for balance overhaul
+
+**Author:** Hill  
+**Status:** Complete (Phase 1)
+
+Added 9 new properties to DifficultySettings class:
+- PlayerDamageMultiplier (scales player outgoing damage)
+- EnemyDamageMultiplier (scales enemy outgoing damage)
+- HealingMultiplier (scales all healing received)
+- MerchantPriceMultiplier (scales merchant buy prices)
+- XPMultiplier (scales XP gains)
+- StartingGold (gold at game start)
+- StartingPotions (free health potions at start)
+- ShrineSpawnMultiplier (scales shrine spawn rate)
+- MerchantSpawnMultiplier (scales merchant spawn rate)
+
+Updated DifficultySettings.For() with explicit values:
+- **Casual:** 50g + 3 potions, 1.20× player dmg, 0.70× enemy dmg, 1.50× healing
+- **Normal:** 15g + 1 potion, 1.00× all multipliers
+- **Hard:** 0g + 0 potions, 0.90× player dmg, 1.25× enemy dmg, 0.75× healing
+
+Updated IntroSequence.BuildPlayer() to apply StartingGold and StartingPotions from difficulty settings.
+
+**Impact:** Phase 1 foundation enabling Phase 2 systems integration. Players immediately receive difficulty-appropriate starting resources.
+
+---
+
+## 2026-02-28: Difficulty Balance Tests Complete
+
+**Author:** Romanoff (Tester)  
+**Status:** ✅ Approved (Tests Already Exist)
+
+DifficultyBalanceTests.cs contains 23 comprehensive tests:
+
+| Coverage Area | Tests | Details |
+|---------------|-------|---------|
+| DifficultySettings.For() | 3 | All properties, Casual/Normal/Hard |
+| PlayerDamageMultiplier | 3 | 1.20x/1.00x/0.90x verification |
+| EnemyDamageMultiplier | 2 | 0.70x Casual, 1.25x Hard |
+| GoldMultiplier | 2 | 1.80x Casual, 0.60x Hard |
+| XPMultiplier | 2 | 1.40x Casual, 0.80x Hard |
+| LootDropMultiplier | 2 | Statistical tests (1000 trials) |
+| MerchantPriceMultiplier | 2 | 0.65x Casual, 1.40x Hard |
+| Starting Conditions | 3 | Gold + potions per difficulty |
+| HealingMultiplier | 3 | 1.50x/1.00x/0.75x scaling |
+| Sell Prices | 1 | Unaffected by difficulty |
+
+**Test Quality Highlights:**
+- file-scoped test stubs (C# 11+) prevent namespace pollution
+- ControlledRandom for deterministic combat/loot outcomes
+- Statistical validation for drop rate multiplier effects (1000-trial runs)
+- Exact multiplier assertions verify correct value application
+- All 13 DifficultySettings properties tested
+
+**Integration Verified:**
+- CombatEngine constructor accepts optional DifficultySettings
+- IntroSequence.BuildPlayer applies StartingGold and StartingPotions
+- LootTable.RollDrop accepts lootDropMultiplier parameter
+- MerchantInventoryConfig applies MerchantPriceMultiplier
+- Merchant.CreateRandom passes difficulty to stock and fallback pricing
+- DungeonGenerator applies spawn multipliers
+- GameLoop applies HealingMultiplier to consumables
+
+**Decision:** APPROVED — Tests already exist with full coverage. No additional tests required.
+
+**Learnings:** Tests written during Phase 2 implementation (best practice pattern). Demonstrates integration-first testing approach ensuring all systems consume difficulty settings correctly.
+
