@@ -15,7 +15,8 @@ public partial class Player
     public float ClassDodgeBonus { get; set; }
 
     /// <summary>Gets the player's current hit points. Modify via <see cref="TakeDamage"/> or <see cref="Heal"/>.</summary>
-    public int HP { get; private set; } = 100;
+    [System.Text.Json.Serialization.JsonInclude]
+    public int HP { get; internal set; } = 100;
 
     /// <summary>
     /// Gets or sets the player's maximum hit points. Increases on level-up via <see cref="LevelUp"/>,
