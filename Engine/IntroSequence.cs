@@ -56,7 +56,7 @@ public class IntroSequence
         player.Attack += classDef.BonusAttack;
         player.Defense = Math.Max(0, player.Defense + classDef.BonusDefense);
         player.MaxHP = Math.Max(1, player.MaxHP + classDef.BonusMaxHP);
-        player.HP = player.MaxHP;
+        player.SetHPDirect(player.MaxHP);
         player.MaxMana = Math.Max(0, player.MaxMana + classDef.BonusMaxMana);
         player.Mana = player.MaxMana;
 
@@ -68,7 +68,7 @@ public class IntroSequence
             player.Attack += prestige.BonusStartAttack;
             player.Defense += prestige.BonusStartDefense;
             player.MaxHP += prestige.BonusStartHP;
-            player.HP = player.MaxHP;
+            player.SetHPDirect(player.MaxHP);
         }
 
         player.Gold = settings.StartingGold;

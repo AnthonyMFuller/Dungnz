@@ -35,6 +35,18 @@ public class RunStats
     /// <summary><see langword="true"/> if the player completed the dungeon successfully; <see langword="false"/> if they died.</summary>
     public bool Won { get; set; }
 
+    /// <summary>The deepest dungeon floor the player reached before death or victory.</summary>
+    public int FloorReached { get; set; }
+
+    /// <summary>Cause of death (null if player won): "Combat", "Trap", "Starvation", etc.</summary>
+    public string? DeathCause { get; set; }
+
+    /// <summary>Name of the enemy that killed the player (null if player won or died to non-combat).</summary>
+    public string? DeathEnemy { get; set; }
+
+    /// <summary>Total number of combat abilities used during the run.</summary>
+    public int AbilitiesUsed { get; set; }
+
     /// <summary>The wall-clock duration from the start to the end of the run.</summary>
     public TimeSpan TimeElapsed { get; set; }
 

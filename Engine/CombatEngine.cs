@@ -685,6 +685,7 @@ public class CombatEngine : ICombatEngine
             // Bug #111: track ability damage in run stats
             if (enemy.HP < hpBeforeAbility)
                 _stats.DamageDealt += hpBeforeAbility - enemy.HP;
+            _stats.AbilitiesUsed++;
             return AbilityMenuResult.Used;
         }
         
@@ -850,7 +851,7 @@ public class CombatEngine : ICombatEngine
                 // Soul Harvest (Necromancer): heal 5 HP on enemy kill
                 if (player.Class == PlayerClass.Necromancer)
                 {
-                    player.HP = Math.Min(player.MaxHP, player.HP + 5);
+                    player.Heal(5);
                     _display.ShowCombatMessage("[Soul Harvest] You absorb the fallen's essence. +5 HP");
                 }
                 // on-kill bonus damage from thunderstrike
@@ -1585,7 +1586,7 @@ public class CombatEngine : ICombatEngine
                         break;
                     default:
                         player.MaxHP += 5;
-                        player.HP = Math.Min(player.HP + 5, player.MaxHP);
+                        player.Heal(5);
                         _display.ShowMessage("You feel healthier! +5 Max HP");
                         break;
                 }

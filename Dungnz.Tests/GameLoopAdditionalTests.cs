@@ -260,7 +260,7 @@ public class GameLoopAdditionalTests
     public void UseCommand_ConsumableItem_HealsAndRemovesFromInventory()
     {
         var (player, room, display, combat) = MakeSetup();
-        player.HP = 50; // below max
+        player.SetHPDirect(50); // below max
         player.MaxHP = 100;
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 30 };
         player.Inventory.Add(potion);
@@ -275,7 +275,7 @@ public class GameLoopAdditionalTests
     public void UseCommand_Shrine_HealsPlayer()
     {
         var (player, room, display, combat) = MakeSetup();
-        player.HP = 50;
+        player.SetHPDirect(50);
         room.HasShrine = true;
         var loop = MakeLoop(display, combat.Object, "use shrine", "quit");
         loop.Run(player, room);

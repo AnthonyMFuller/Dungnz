@@ -43,12 +43,48 @@ jobs:
           git tag -a "${{ steps.version.outputs.tag }}" -m "Release ${{ steps.version.outputs.tag }}"
           git push origin "${{ steps.version.outputs.tag }}"
 
+      - name: Setup .NET
+        if: steps.check_tag.outputs.exists == 'false'
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Publish linux-x64
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          dotnet publish Dungnz.csproj \
+            -c Release \
+            -r linux-x64 \
+            --self-contained true \
+            /p:PublishSingleFile=true \
+            /p:PublishReadyToRun=true \
+            -o publish/linux-x64
+
+      - name: Publish win-x64
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          dotnet publish Dungnz.csproj \
+            -c Release \
+            -r win-x64 \
+            --self-contained true \
+            /p:PublishSingleFile=true \
+            /p:PublishReadyToRun=true \
+            -o publish/win-x64
+
+      - name: Archive artifacts
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          cd publish/linux-x64 && zip -j ../../dungnz-linux-x64.zip * && cd ../..
+          cd publish/win-x64 && zip -j ../../dungnz-win-x64.zip * && cd ../..
+
       - name: Create GitHub Release
         if: steps.check_tag.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release create "${{ steps.version.outputs.tag }}" \
+            dungnz-linux-x64.zip \
+            dungnz-win-x64.zip \
             --title "${{ steps.version.outputs.tag }}" \
             --generate-notes \
             --latest
