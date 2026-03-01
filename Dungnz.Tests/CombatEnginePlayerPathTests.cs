@@ -87,7 +87,7 @@ public class CombatEnginePlayerPathTests
         var display = new FakeDisplayService(input);
         var engine = new CombatEngine(display, input, new ControlledRandom(defaultDouble: 0.9));
         var player = MakePlayer(hp: 100, atk: 20, def: 0, cls: PlayerClass.Warrior, mana: 0);
-        player.HP = 40; // < 50% of 100
+        player.SetHPDirect(40); // < 50% of 100
         var enemy = new Enemy_Stub(30, 5, 0, 10);
         engine.RunCombat(player, enemy);
         display.CombatMessages.Should().NotBeEmpty();

@@ -128,7 +128,7 @@ public class GameLoopTests
     public void UseCommand_HealsConsumable()
     {
         var (player, room, display, combat) = MakeSetup();
-        player.HP = 50;
+        player.SetHPDirect(50);
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 30 };
         player.Inventory.Add(potion);
 

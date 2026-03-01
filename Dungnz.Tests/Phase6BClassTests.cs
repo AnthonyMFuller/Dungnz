@@ -30,7 +30,7 @@ public class Phase6BClassTests
         for (int i = 1; i < level; i++) player.LevelUp();
         // Now stamp the exact stats the test needs
         player.MaxHP = maxHp;
-        player.HP = hp;
+        player.SetHPDirect(hp);
         player.Attack = atk;
         player.Defense = def;
         player.MaxMana = maxMana;
@@ -322,7 +322,7 @@ public class Phase6BClassTests
     public void SummonCompanion_CreatesWolfWithCorrectStats()
     {
         var player = MakePlayer(PlayerClass.Ranger, level: 3, atk: 10, maxHp: 100);
-        player.HP = 100;
+        player.SetHPDirect(100);
 
         _abilities.UseAbility(player, MakeEnemy(), AbilityType.SummonCompanion, _statusEffects, _display);
 

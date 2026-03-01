@@ -60,7 +60,7 @@ public class InventoryManagerTests
     public void UseItem_Consumable_ClampsToMaxHP()
     {
         var (player, room, display, manager) = Make();
-        player.HP = 95;
+        player.SetHPDirect(95);
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 30 };
         player.Inventory.Add(potion);
 
