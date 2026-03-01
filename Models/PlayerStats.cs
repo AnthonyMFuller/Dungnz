@@ -3,8 +3,9 @@ namespace Dungnz.Models;
 public partial class Player
 {
     /// <summary>
-    /// Gets or sets the player's chosen class (Warrior, Mage, or Rogue), which determines
-    /// starting stat modifiers, the mana pool size, and passive combat traits.
+    /// Gets or sets the player's chosen class (Warrior, Mage, Rogue, Paladin, Necromancer,
+    /// or Ranger), which determines starting stat modifiers, the mana pool size, and passive
+    /// combat traits.
     /// </summary>
     public PlayerClass Class { get; set; } = PlayerClass.Warrior;
     /// <summary>
@@ -17,44 +18,44 @@ public partial class Player
     public int HP { get; set; } = 100;
 
     /// <summary>
-    /// Gets the player's maximum hit points. Increases on level-up via <see cref="LevelUp"/>,
+    /// Gets or sets the player's maximum hit points. Increases on level-up via <see cref="LevelUp"/>,
     /// via <see cref="FortifyMaxHP"/>, and when certain equipment with a positive
     /// <see cref="Item.StatModifier"/> is equipped.
     /// </summary>
     public int MaxHP { get; set; } = 100;
 
     /// <summary>
-    /// Gets the player's base attack power used to calculate raw damage against enemies before
+    /// Gets or sets the player's base attack power used to calculate raw damage against enemies before
     /// their defense is subtracted.
     /// </summary>
     public int Attack { get; set; } = 10;
 
     /// <summary>
-    /// Gets the player's base defense value used to reduce incoming damage and influence
+    /// Gets or sets the player's base defense value used to reduce incoming damage and influence
     /// dodge-chance calculations during combat.
     /// </summary>
     public int Defense { get; set; } = 5;
 
     /// <summary>
-    /// Gets the player's total accumulated experience points. Callers must check this value
+    /// Gets or sets the player's total accumulated experience points. Callers must check this value
     /// externally to decide when to call <see cref="LevelUp"/>.
     /// </summary>
     public int XP { get; set; }
 
     /// <summary>
-    /// Gets the player's current level. Starts at 1 and increments each time
+    /// Gets or sets the player's current level. Starts at 1 and increments each time
     /// <see cref="LevelUp"/> is called.
     /// </summary>
     public int Level { get; set; } = 1;
 
     /// <summary>
-    /// Gets the player's current mana. Spent by abilities via <see cref="SpendMana"/> and
+    /// Gets or sets the player's current mana. Spent by abilities via <see cref="SpendMana"/> and
     /// restored via <see cref="RestoreMana"/>; always clamped between 0 and <see cref="MaxMana"/>.
     /// </summary>
     public int Mana { get; set; } = 30;
 
     /// <summary>
-    /// Gets the player's maximum mana capacity. Increases on level-up and via
+    /// Gets or sets the player's maximum mana capacity. Increases on level-up and via
     /// <see cref="FortifyMaxMana"/>.
     /// </summary>
     public int MaxMana { get; set; } = 30;
