@@ -661,7 +661,7 @@ public sealed class SpectreDisplayService : IDisplayService
             Header = new PanelHeader("[grey]Lore[/]"),
         };
         AnsiConsole.Write(panel);
-        AnsiConsole.MarkupLine("[yellow][ Press Enter to begin your descent... ][/]");
+        AnsiConsole.MarkupLine("[yellow][[ Press Enter to begin your descent... ]][/]");
         Console.ReadLine();
         AnsiConsole.WriteLine();
         return false;
