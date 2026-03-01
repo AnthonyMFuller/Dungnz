@@ -527,7 +527,7 @@ public class GameLoop
         {
             _currentRoom.Items.Add(item);
             _turnConsumed = false;
-            _display.ShowMessage($"{Systems.ColorCodes.Red}❌ Inventory full!{Systems.ColorCodes.Reset}");
+            _display.ShowError("❌ Inventory full!");
             return;
         }
         int slotsCurrent = _player.Inventory.Count;
@@ -556,7 +556,7 @@ public class GameLoop
             if (!_inventoryManager.TryAddItem(_player, item))
             {
                 _currentRoom.Items.Add(item);
-                _display.ShowMessage($"{Systems.ColorCodes.Red}❌ Inventory full! {item.Name} left behind.{Systems.ColorCodes.Reset}");
+                _display.ShowError($"❌ Inventory full! {item.Name} left behind.");
                 break;
             }
             int slotsCurrent = _player.Inventory.Count;
