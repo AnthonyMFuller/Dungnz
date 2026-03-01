@@ -1054,6 +1054,13 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine();
     }
 
+    /// <inheritdoc/>
+    public void ShowEquipment(Player player)
+    {
+        Console.WriteLine("[EQUIPMENT]");
+        // Legacy display — full implementation in SpectreDisplayService
+    }
+
     /// <summary>
     /// Renders the enhanced ASCII art title screen with colors.
     /// </summary>

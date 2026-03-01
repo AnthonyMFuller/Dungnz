@@ -106,6 +106,11 @@ public class TestDisplayService : IDisplayService
         AllOutput.Add($"equipment_compare:{oldItem?.Name ?? "none"}->{newItem.Name}");
     }
 
+    public void ShowEquipment(Player player)
+    {
+        AllOutput.Add("show_equipment");
+    }
+
     public bool ShowEnhancedTitleCalled { get; private set; }
     public bool ShowIntroNarrativeCalled { get; private set; }
     public PrestigeData? LastPrestigeInfo { get; private set; }
