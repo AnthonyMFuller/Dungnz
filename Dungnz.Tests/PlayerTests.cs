@@ -1,4 +1,5 @@
 using Dungnz.Models;
+using Dungnz.Tests.Builders;
 using FluentAssertions;
 using Xunit;
 
@@ -29,10 +30,7 @@ public class PlayerTests
     [Fact]
     public void Stats_CanBeModified()
     {
-        var player = new Player();
-        player.SetHPDirect(50);
-        player.Attack = 20;
-        player.Defense = 15;
+        var player = new PlayerBuilder().WithHP(50).WithAttack(20).WithDefense(15).Build();
         player.HP.Should().Be(50);
         player.Attack.Should().Be(20);
         player.Defense.Should().Be(15);
@@ -50,16 +48,15 @@ public class PlayerTests
     [Fact]
     public void Name_CanBeSet()
     {
-        var player = new Player { Name = "Romanoff" };
+        var player = new PlayerBuilder().Named("Romanoff").Build();
         player.Name.Should().Be("Romanoff");
     }
 
     [Fact]
     public void Inventory_CanAddItems()
     {
-        var player = new Player();
-        var item = new Item { Name = "Sword" };
-        player.Inventory.Add(item);
+        var sword = new ItemBuilder().Named("Sword").WithDamage(5).Build();
+        var player = new PlayerBuilder().WithItem(sword).Build();
         player.Inventory.Should().ContainSingle().Which.Name.Should().Be("Sword");
     }
 
