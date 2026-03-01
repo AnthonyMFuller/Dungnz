@@ -1064,3 +1064,17 @@ Converted bounded menu selection from typed-number input to arrow-key navigation
 - In interactive mode (`input.IsInteractive == true`), `SelectFromMenu` converts options to `MenuOption<T>` and calls `_navigator.Select(menuOptions)` which handles arrow-key navigation and returns the selected value.
 - In non-interactive mode (tests/redirected input), `SelectFromMenu` falls back to numbered text input via `input.ReadLine()`.
 - `IMenuNavigator` is **never** injected into game logic classes (EquipmentManager, CombatEngine, etc.) — all menu presentation is owned by `IDisplayService`. Game logic classes call a typed `ShowXxxAndSelect` method and receive a typed result back.
+
+## Learnings
+
+- Alignment bug: `VisibleLength` was using `.Length` after stripping ANSI, not accounting for wide BMP chars
+- Pattern: Any hardcoded padding constant that involves wide BMP chars in `_wideBmpChars` must account for +1 col per char
+- Fixed files: Display/DisplayService.cs lines 399, 475, 1341, 1353, 1375, 1438
+- CraftingMaterial enum value: Added new `ItemType.CraftingMaterial` between `Consumable` and `Gold` in enum definition
+- Explicit handling in switches: Always add explicit `case ItemType.CraftingMaterial:` to all switch statements on `item.Type`, even when it should match default behavior — makes intent clear and prevents future maintenance issues
+- JSON reclassification: Changed 9 pure crafting materials (no stat effects) from `Consumable` to `CraftingMaterial` in item-stats.json: goblin-ear, skeleton-dust, troll-blood, wraith-essence, dragon-scale, wyvern-fang, soul-gem, iron-ore, rodent-pelt
+- Dragon-fang exception: dragon-fang is a Weapon with 17 ATK bonus, not a crafting material despite appearing in recipes — dual-purpose items keep their primary functional type
+- Display icon: Used ⚗ (alembic) for CraftingMaterial items in `ItemTypeIcon()` — visually distinct from 🧪 (consumables)
+- Error messaging: GameLoop.HandleUse shows helpful message directing players to use crafting materials at a crafting station, not directly
+- Files changed: Models/ItemType.cs, Display/DisplayService.cs, Systems/InventoryManager.cs, Engine/GameLoop.cs, Systems/ItemInteractionNarration.cs, Data/item-stats.json
+- All 1308 tests passed after implementation

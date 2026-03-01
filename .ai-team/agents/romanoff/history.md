@@ -727,3 +727,75 @@ Fixed parallel execution race conditions by adding `[Collection]` attributes:
 - **Tests: 689 → 1285** (+596 tests)
 - All new tests pass in isolation; suite has 1 pre-existing flaky failure
 - Changes pushed to `squad/coverage-gate-80` (PR #630 already open)
+
+## Learnings
+
+- **Pattern: alignment tests** should capture console output, strip ANSI, check all ║ lines match ╔ line width
+- **BoxWidth helper**: find the ╔...╗ line and take its length as the expected visual width
+- **Wide BMP chars** in `_wideBmpChars` need visual-width-aware tests
+- Test **failure before fix is expected**: alignment regression tests fail pre-fix, pass post-fix
+- **TestEnemy subclass**: simple `internal class TestEnemy : Enemy { }` works — no constructor needed, use object initializer
+
+---
+
+## Session: CraftingMaterial Regression Tests (2026-02-28, Issue #671)
+
+**Task:** Write comprehensive regression tests for the new `ItemType.CraftingMaterial` enum value and verify that 9 items (goblin-ear, skeleton-dust, troll-blood, wraith-essence, dragon-scale, wyvern-fang, soul-gem, iron-ore, rodent-pelt) were correctly reclassified.
+
+**Context:**
+- Hill added `ItemType.CraftingMaterial` to the enum
+- 9 items reclassified from Consumable/Weapon/etc. to CraftingMaterial in item-stats.json
+- USE menu filter: `player.Inventory.Where(i => i.Type == ItemType.Consumable)` naturally excludes crafting materials
+- DisplayService.ItemTypeIcon returns "⚗" (alembic) for CraftingMaterial
+
+**Tests Written in `CraftingMaterialTypeTests.cs` (6 tests):**
+
+1. **`CraftingMaterial_Items_NotInUseMenu`**
+   - Player with only CraftingMaterial items
+   - Filter: `player.Inventory.Where(i => i.Type == ItemType.Consumable)`
+   - Assert: result is empty (crafting materials excluded)
+
+2. **`Consumable_Items_AreInUseMenu`**
+   - Player with consumables (HealAmount > 0, ManaRestore > 0)
+   - Apply same filter
+   - Assert: consumables appear (positive case)
+
+3. **`CraftingMaterial_And_Consumable_Mixed`**
+   - Player with 2 CraftingMaterials + 2 Consumables
+   - Apply filter
+   - Assert: only 2 consumables appear, crafting materials excluded
+
+4. **`ItemType_CraftingMaterial_EnumExists`**
+   - Verify enum value is distinct from Consumable/Weapon/Armor/Accessory/Gold
+   - Verify `Enum.TryParse<ItemType>("CraftingMaterial")` succeeds
+
+5. **`KnownCraftingMaterials_HaveCorrectType`**
+   - Load actual item-stats.json via `ItemConfig.Load("Data/item-stats.json")`
+   - Convert to Item instances via `ItemConfig.CreateItem`
+   - Filter for 9 reclassified item IDs
+   - Assert: all 9 items have `Type == ItemType.CraftingMaterial`
+   - Spot-check goblin-ear, skeleton-dust, dragon-scale, iron-ore
+
+6. **`CraftingMaterial_ItemTypeIcon_IsAlembic`**
+   - Create CraftingMaterial item
+   - Call `display.ShowLootDrop()` (internally uses private `ItemTypeIcon()`)
+   - Capture console output
+   - Assert: output contains "⚗" (alembic icon)
+
+**Test Patterns Used:**
+- Follow `AlignmentRegressionTests.cs` for console capture (StringWriter + try/finally)
+- Follow `InventoryManagerTests.cs` for item creation patterns
+- Use FluentAssertions (`.Should().Be()`, `.Should().Contain()`, `.Should().NotContain()`)
+- Load item-stats.json via `ItemConfig.Load()` for integration testing
+
+**Results:**
+- All 6 tests pass ✅
+- Test suite: 1308 → 1314 tests (+6)
+- No regressions (all 1314 pass)
+
+**Key Learnings:**
+- **ItemConfig integration testing:** Load actual Data/item-stats.json to verify production data
+- **Private method testing:** Test `ItemTypeIcon()` indirectly via public methods (ShowLootDrop) that use it
+- **Console capture pattern:** `StringWriter + Console.SetOut() + try/finally` for output verification
+- **FluentAssertions clarity:** `.Should().Contain(item)` is clearer than `.Contains(item).Should().BeTrue()`
+

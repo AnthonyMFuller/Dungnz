@@ -1695,3 +1695,27 @@ The team's strongest capability right now is **finding and fixing bugs systemati
 - #649 — Tests: combat item usage tests (assigned Romanoff, depends on #647 + #648)
 
 **Decision written to:** `.ai-team/decisions/inbox/coulson-combat-items-design.md`
+
+
+---
+
+### 2026-03-01: CraftingMaterial ItemType Bug Fix
+
+**Reported by:** Anthony  
+**Bug:** Crafting materials (goblin-ear, skeleton-dust, etc.) appearing in USE menu because they're typed as Consumable despite having no direct stat effects.
+
+**Root Cause:** No `CraftingMaterial` type exists in ItemType enum. Pure crafting materials (ingredients with zero stat effects) were incorrectly classified as Consumable, triggering the USE menu filter: `i.Type == ItemType.Consumable`.
+
+**Design Decision:**
+- Add `CraftingMaterial` to ItemType enum
+- Reclassify 9 pure crafting materials: goblin-ear, skeleton-dust, troll-blood, wraith-essence, dragon-scale, wyvern-fang, soul-gem, iron-ore, rodent-pelt
+- Dual-purpose items (health-potion, etc.) remain Consumable because they have direct stat effects
+
+**Issues Created:**
+- #669 — Add CraftingMaterial to ItemType enum (assigned Hill)
+- #670 — Reclassify pure crafting materials in item-stats.json (assigned Hill, depends on #669)
+- #671 — Add regression tests for USE menu filtering (assigned Romanoff, depends on #669 + #670)
+
+**Decision written to:** `.ai-team/decisions/inbox/coulson-crafting-material-type.md`
+
+**Key Learning:** Items with no HealAmount, ManaRestore, AttackBonus, DefenseBonus, StatModifier, or PassiveEffectId should be CraftingMaterial, not Consumable. The distinction is usage context: Consumable items directly affect player state; CraftingMaterial items are ingredients for other systems.
