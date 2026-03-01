@@ -546,8 +546,50 @@ public sealed class SpectreDisplayService : IDisplayService
         }
 
         mapSb.AppendLine();
-        mapSb.AppendLine("[bold yellow][[@]][/] You  [white][[E]][/] Exit  [red][[!]][/] Enemy  [bold red][[B]][/] Boss  [cyan][[S]][/] Shrine  [white][[+]][/] Cleared  [grey][[?]][/] Unknown");
-        mapSb.AppendLine("[bold green][[M]][/] Merchant  [bold red][[T]][/] Trap  [yellow][[A]][/] Armory  [blue][[L]][/] Library  [red][[~]][/] Hazard  [green][[*]][/] Blessed");
+        // Build legend dynamically — only include symbols actually present in the grid
+        var legendEntries = new List<string>();
+        legendEntries.Add("[bold yellow][[@]][/] You");
+        bool showUnknown = false, showExit = false, showBoss = false, showEnemy = false;
+        bool showShrine = false, showMerchant = false, showTrap = false, showArmory = false;
+        bool showLibrary = false, showForgottenShrine = false, showBlessed = false;
+        bool showHazard = false, showDark = false, showCleared = false;
+        foreach (var kvLeg in grid)
+        {
+            var rL = kvLeg.Value;
+            if (rL == currentRoom) continue;
+            if (!rL.Visited) { showUnknown = true; continue; }
+            if (rL.IsExit && rL.Enemy != null && rL.Enemy.HP > 0) { showBoss = true; continue; }
+            if (rL.IsExit) { showExit = true; continue; }
+            if (rL.Enemy != null && rL.Enemy.HP > 0) { showEnemy = true; continue; }
+            if (rL.HasShrine && !rL.ShrineUsed) { showShrine = true; continue; }
+            if (rL.Merchant != null) { showMerchant = true; continue; }
+            if (rL.Type == RoomType.TrapRoom && !rL.SpecialRoomUsed) { showTrap = true; continue; }
+            if (rL.Type == RoomType.ContestedArmory) { showArmory = true; continue; }
+            if (rL.Type == RoomType.PetrifiedLibrary) { showLibrary = true; continue; }
+            if (rL.Type == RoomType.ForgottenShrine) { showForgottenShrine = true; continue; }
+            if (rL.EnvironmentalHazard == RoomHazard.BlessedClearing) { showBlessed = true; continue; }
+            if (rL.EnvironmentalHazard != RoomHazard.None) { showHazard = true; continue; }
+            if (rL.Type == RoomType.Dark) { showDark = true; continue; }
+            showCleared = true;
+        }
+        if (showBoss)            legendEntries.Add("[bold red][[B]][/] Boss");
+        if (showEnemy)           legendEntries.Add("[red][[!]][/] Enemy");
+        if (showExit)            legendEntries.Add("[white][[E]][/] Exit");
+        if (showShrine)          legendEntries.Add("[cyan][[S]][/] Shrine");
+        if (showMerchant)        legendEntries.Add("[bold green][[M]][/] Merchant");
+        if (showTrap)            legendEntries.Add("[bold red][[T]][/] Trap");
+        if (showArmory)          legendEntries.Add("[yellow][[A]][/] Armory");
+        if (showLibrary)         legendEntries.Add("[blue][[L]][/] Library");
+        if (showForgottenShrine) legendEntries.Add("[cyan][[F]][/] Shrine");
+        if (showBlessed)         legendEntries.Add("[green][[*]][/] Blessed");
+        if (showHazard)          legendEntries.Add("[red][[~]][/] Hazard");
+        if (showDark)            legendEntries.Add("[grey][[D]][/] Dark");
+        if (showCleared)         legendEntries.Add("[white][[+]][/] Cleared");
+        if (showUnknown)         legendEntries.Add("[grey][[?]][/] Unknown");
+        int legHalf = (legendEntries.Count + 1) / 2;
+        mapSb.AppendLine(string.Join("   ", legendEntries.Take(legendEntries.Count <= 7 ? legendEntries.Count : legHalf)));
+        if (legendEntries.Count > 7)
+            mapSb.AppendLine(string.Join("   ", legendEntries.Skip(legHalf)));
 
         AnsiConsole.Write(new Panel(new Markup(mapSb.ToString().TrimEnd()))
         {
