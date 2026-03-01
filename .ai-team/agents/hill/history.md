@@ -1045,3 +1045,22 @@ Converted bounded menu selection from typed-number input to arrow-key navigation
 - `HandleSell()` uses `ShowConfirmMenu` for the "Sell X for Yg?" prompt — no more Y/N text parsing
 
 **Test coverage maintained:** All existing tests pass with new stubs returning safe defaults (0 for menus, false for confirms).
+
+## Learnings — #654 (EQUIP no-arg interactive menu)
+
+### Branch: squad/654-equip-no-arg-menu | PR: #656
+
+**Pattern used for the equip menu:**
+- Added `Item? ShowEquipMenuAndSelect(IReadOnlyList<Item> equippable)` to `IDisplayService` and implemented it in `ConsoleDisplayService` following the exact same pattern as `ShowCombatItemMenuAndSelect`.
+- The implementation builds a `(string Label, Item? Value)` array using `ItemTypeIcon` + item name + `PrimaryStatLabel`, appends a `"↩  Cancel"` entry with `null` value, then calls the private `SelectFromMenu<T>` helper with the header `"=== EQUIP — Choose an item ==="`.
+- `EquipmentManager.HandleEquip` now checks for empty `itemName`, filters `player.Inventory` by `IsEquippable`, calls `_display.ShowEquipMenuAndSelect`, then delegates to a new private `DoEquip(Player player, Item item)` method.
+- The equip logic (class restriction, weight check, `player.EquipItem`, set bonus, narration) was extracted into `DoEquip` to avoid duplication between the menu path and the name-resolution path.
+- Test helpers: `FakeDisplayService` reads a line and returns the item at that 1-based index (mirrors the pattern from `ShowCombatItemMenuAndSelect`). `TestDisplayService` returns `null` (safe default).
+- README updated: `equip <item>` command description now mentions "omit item name to pick from an interactive menu".
+
+**How `IMenuNavigator` is used across the codebase:**
+- `IMenuNavigator` is injected into `ConsoleDisplayService` as `_navigator`.
+- All arrow-key menus in `DisplayService` are driven by the private generic helper `SelectFromMenu<T>(IReadOnlyList<(string Label, T Value)> options, IInputReader input, string? header)`.
+- In interactive mode (`input.IsInteractive == true`), `SelectFromMenu` converts options to `MenuOption<T>` and calls `_navigator.Select(menuOptions)` which handles arrow-key navigation and returns the selected value.
+- In non-interactive mode (tests/redirected input), `SelectFromMenu` falls back to numbered text input via `input.ReadLine()`.
+- `IMenuNavigator` is **never** injected into game logic classes (EquipmentManager, CombatEngine, etc.) — all menu presentation is owned by `IDisplayService`. Game logic classes call a typed `ShowXxxAndSelect` method and receive a typed result back.
