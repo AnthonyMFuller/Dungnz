@@ -13,11 +13,6 @@ public class VampireLord : Enemy
     /// or built-in fallback defaults. Sets <see cref="Enemy.LifestealPercent"/> to 50%
     /// so the Vampire Lord restores HP equal to half the damage it deals each attack.
     /// </summary>
-    /// <param name="stats">
-    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
-    /// hard-coded defaults (80 HP, 16 ATK, 12 DEF, 60 XP, 15–30 gold).
-    /// </param>
-    /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
     [System.Text.Json.Serialization.JsonConstructor]
     private VampireLord() { }
 

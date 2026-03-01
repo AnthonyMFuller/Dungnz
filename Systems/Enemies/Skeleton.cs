@@ -12,14 +12,6 @@ public class Skeleton : Enemy
     /// Initialises the Skeleton using either the provided external stats from config
     /// or built-in fallback defaults, and populates the loot table from item config when available.
     /// </summary>
-    /// <param name="stats">
-    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
-    /// hard-coded defaults (30 HP, 12 ATK, 5 DEF, 25 XP, 5–15 gold).
-    /// </param>
-    /// <param name="itemConfig">
-    /// The loaded item configuration used to source Rusty Sword and Bone Fragment drops,
-    /// or <see langword="null"/> to create fallback inline items.
-    /// </param>
     [System.Text.Json.Serialization.JsonConstructor]
     private Skeleton() { }
 
