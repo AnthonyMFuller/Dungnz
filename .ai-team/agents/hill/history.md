@@ -1153,3 +1153,9 @@ System.NotSupportedException: Runtime type 'Dungnz.Systems.Enemies.GoblinWarchie
 2. **Pass 2:** Iterate `saveData.Rooms` again, look up each room in the dict, then wire `room.Exits[direction] = roomDict[exitId]` to restore the full bidirectional graph.
 
 **The gap that caused PR #749 to fail:** Four fields (`SpecialRoomUsed`, `BlessedHealApplied`, `EnvironmentalHazard`, `Trap`) had been added to `RoomSaveData` but were never populated in the save LINQ projection or assigned back during the load pass. Fix was 9 lines: 4 in the save path, 4 in the load path, 1 trailing-comma fix.
+
+## Learnings — #813 (Chest Slot Label Alignment in GEAR Display)
+
+- The 🛡 (U+1F6E1), ⚔ (U+2694), and ⛨ (U+26E8) symbols are all 1-column-wide in terminals
+- They all need 2 spaces after them in slot labels to align with full-width emoji entries in the GEAR table
+- The Chest slot had only 1 space, causing its label to appear shifted relative to other equipment slots
