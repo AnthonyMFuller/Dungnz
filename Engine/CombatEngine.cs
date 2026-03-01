@@ -685,6 +685,7 @@ public class CombatEngine : ICombatEngine
             // Bug #111: track ability damage in run stats
             if (enemy.HP < hpBeforeAbility)
                 _stats.DamageDealt += hpBeforeAbility - enemy.HP;
+            _stats.AbilitiesUsed++;
             return AbilityMenuResult.Used;
         }
         
@@ -1584,7 +1585,8 @@ public class CombatEngine : ICombatEngine
                         _display.ShowMessage("You feel tougher! +2 Defense");
                         break;
                     default:
-                        player.FortifyMaxHP(5);
+                        player.MaxHP += 5;
+                        player.Heal(5);
                         _display.ShowMessage("You feel healthier! +5 Max HP");
                         break;
                 }
