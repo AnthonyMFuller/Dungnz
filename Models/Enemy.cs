@@ -19,6 +19,7 @@ namespace Dungnz.Models;
 [JsonDerivedType(typeof(VampireLord), "VampireLord")]
 [JsonDerivedType(typeof(Wraith), "Wraith")]
 [JsonDerivedType(typeof(DungeonBoss), "DungeonBoss")]
+[JsonDerivedType(typeof(GoblinWarchief), "goblinwarchief")]
 [JsonDerivedType(typeof(LichKing), "lichking")]
 [JsonDerivedType(typeof(StoneTitan), "stonetitan")]
 [JsonDerivedType(typeof(ShadowWraith), "shadowwraith")]
