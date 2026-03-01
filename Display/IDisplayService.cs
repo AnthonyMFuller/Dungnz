@@ -340,4 +340,11 @@ public interface IDisplayService
     /// </summary>
     /// <param name="equippable">The list of equippable items to display.</param>
     Item? ShowEquipMenuAndSelect(IReadOnlyList<Item> equippable);
+
+    /// <summary>
+    /// Presents an arrow-key navigable menu of usable (consumable) items from the player's inventory.
+    /// Returns the selected <see cref="Item"/>, or <c>null</c> if the player cancels.
+    /// </summary>
+    /// <param name="usable">The list of usable items to display.</param>
+    Item? ShowUseMenuAndSelect(IReadOnlyList<Item> usable);
 }

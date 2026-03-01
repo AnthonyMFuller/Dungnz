@@ -83,7 +83,7 @@ Choose one class at the start of each run. Bonuses are applied on top of base st
 | `look` | `l` | Redescribe current room |
 | `examine <target>` | `ex` | Inspect an enemy or item |
 | `take <item>` | `get` | Pick up an item |
-| `use <item>` | | Use consumable or equip gear |
+| `use <item>` | | Use a consumable item; omit item name to pick from an interactive menu; accepts fuzzy/typo matching |
 | `inventory` | `inv`, `i` | List carried items |
 | `equipment` | `gear` | Show equipped items and their bonuses |
 | `equip <item>` | | Equip a weapon or armour from inventory; omit item name to pick from an interactive menu |

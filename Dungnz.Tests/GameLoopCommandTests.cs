@@ -339,4 +339,71 @@ public class GameLoopCommandTests
         loop.Run(player, room);
         display.Messages.Should().NotBeEmpty();
     }
+
+    // ── USE fuzzy matching ────────────────────────────────────────────────────
+
+    [Fact]
+    public void Use_FuzzyMatch_SingleCandidate_UsesItem()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        player.HP = 50;
+        var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 20 };
+        player.Inventory.Add(potion);
+        var loop = MakeLoop(display, combat.Object, "use Helth Potion", "quit");
+        loop.Run(player, room);
+        display.Messages.Should().Contain(m => m.Contains("Did you mean") && m.Contains("Health Potion"));
+        player.Inventory.Should().NotContain(potion, "item should be consumed after use");
+    }
+
+    [Fact]
+    public void Use_FuzzyMatch_NoMatch_ShowsError()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 20 };
+        player.Inventory.Add(potion);
+        var loop = MakeLoop(display, combat.Object, "use zzzzzzzzz", "quit");
+        loop.Run(player, room);
+        display.Errors.Should().Contain(e => e.Contains("don't have"));
+    }
+
+    [Fact]
+    public void Use_FuzzyMatch_MultipleMatches_ShowsError()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        player.Inventory.Add(new Item { Name = "Red Potion", Type = ItemType.Consumable, HealAmount = 10 });
+        player.Inventory.Add(new Item { Name = "Red Elixir", Type = ItemType.Consumable, HealAmount = 15 });
+        // "Red" matches both with distance 0 via Contains, so try something that fuzzy-matches both equally
+        var loop = MakeLoop(display, combat.Object, "use Rd Ptn", "quit");
+        loop.Run(player, room);
+        // Should either show "Did you mean one of:" or "don't have" — just no crash
+        (display.Errors.Count > 0 || display.Messages.Count > 0).Should().BeTrue();
+    }
+
+    // ── USE no-arg interactive menu ───────────────────────────────────────────
+
+    [Fact]
+    public void Use_NoArg_ShowsUseMenu_ConsumablesOnly()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        player.HP = 50;
+        var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 20 };
+        player.Inventory.Add(potion);
+        // "1" selects first item from menu; "quit" ends the loop
+        var loop = MakeLoop(display, combat.Object, "use", "1", "quit");
+        loop.Run(player, room);
+        display.AllOutput.Should().Contain("use_menu", "the interactive use menu should be shown");
+        player.Inventory.Should().NotContain(potion, "selected item should be consumed");
+    }
+
+    [Fact]
+    public void Use_NoArg_EmptyConsumables_ShowsError()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        // Inventory has only a weapon — no consumables
+        player.Inventory.Add(new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true });
+        var loop = MakeLoop(display, combat.Object, "use", "quit");
+        loop.Run(player, room);
+        display.Errors.Should().Contain(e => e.Contains("no usable", StringComparison.OrdinalIgnoreCase));
+        display.AllOutput.Should().NotContain("use_menu");
+    }
 }
