@@ -1208,3 +1208,31 @@ Key detail: variable names like `showBoss`, `showExit`, etc. must not conflict w
 - Horizontal connector: `"-"` → `"─"` (U+2500)
 - Vertical connector: `" | "` → `" │ "` (U+2502)
 - Compass rose: replaced 2-line `═══ MAP ═══   N` + `↑` header with 4-line block: `═══ MAP ═══`, then `      N` / `    W ✦ E` / `      S` (✦ U+2726 as center marker)
+
+## Learnings — Icon Standardization (#829)
+
+**Issue Closed:** #829
+**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/830
+**File Modified:** `Display/SpectreDisplayService.cs`
+
+### Problem
+Mixed-width emoji (wide emoji U+1F300+ vs narrow symbols U+2600-U+27BF) caused terminal alignment issues. Chest slot using 🛡 (U+1F6E1, EAW=N but not in `NarrowEmoji` set) got 1 space instead of 2, misaligning with other slots.
+
+### Solution
+Executive directive: ALL icons must use the same character set. Replaced all emoji with narrow Unicode symbols exclusively from Miscellaneous Symbols (U+2600–U+26FF) and Dingbats (U+2700–U+27BF) blocks. All are EAW=N (1 terminal column) — no ambiguity.
+
+### Symbol Choices
+- **Equipment slots:** ⚔ Weapon (U+2694), ✦ Accessory (U+2726), ⛑ Head (U+26D1 helmet), ◈ Shoulders (U+25C8), ⛨ Chest (U+26E8), ☞ Hands (U+261E pointing finger), ≡ Legs (U+2261 triple bar), ⤓ Feet (U+2913 downward arrow), ↩ Back (U+21A9 cloak-like), ⛨ Off-Hand (U+26E8)
+- **Player stats:** ★ Level (U+2605 filled star), ✦ Combo (U+2726 sparkle)
+- **Combat menu:** ⚔ Attack (U+2694), ✦ Ability (U+2726), ↗ Flee (U+2197 diagonal arrow), ⚗ Use Item (U+2697 alembic)
+- **Item types:** ⚔ Weapon, ⛨ Armor, ⚗ Consumable, ✦ Accessory, ✶ CraftingMaterial (U+2736 six-pointed star)
+
+**Why these symbols:** Selected for visual metaphor (⛑ is literally helmet, ⚗ is alchemical, ⚔ is swords) while staying strictly in narrow Unicode ranges. Verified all are EAW=N or EAW=A (ambiguous-narrow).
+
+### EL() Simplification
+Since ALL icons are now 1-column wide, replaced `EL(emoji, text)` helper with `IL(icon, text)` (Icon Label) that always adds 2 spaces: `$"{icon}  {text}"`. Deleted the `NarrowEmoji` HashSet entirely — no longer needed.
+
+**Pattern:** icon(1 col) + 2 spaces = text starts at visual column 3, consistent across all UI.
+
+### Build
+`dotnet build Dungnz.csproj` passes with 0 errors (4 pre-existing XML doc warnings, unrelated).
