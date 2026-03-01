@@ -86,7 +86,7 @@ Choose one class at the start of each run. Bonuses are applied on top of base st
 | `use <item>` | | Use consumable or equip gear |
 | `inventory` | `inv`, `i` | List carried items |
 | `equipment` | `gear` | Show equipped items and their bonuses |
-| `equip <item>` | | Equip a weapon or armour from inventory |
+| `equip <item>` | | Equip a weapon or armour from inventory; omit item name to pick from an interactive menu |
 | `unequip <slot>` | | Remove equipped item back to inventory |
 | `stats` | `status` | View current player stats |
 | `map` | `m` | Display ASCII dungeon map |

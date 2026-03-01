@@ -25,7 +25,15 @@ public class EquipmentManager
     {
         if (string.IsNullOrWhiteSpace(itemName))
         {
-            _display.ShowError("Equip what? Specify an item name.");
+            var equippable = player.Inventory.Where(i => i.IsEquippable).ToList();
+            if (equippable.Count == 0)
+            {
+                _display.ShowError("You have no equippable items in your inventory.");
+                return;
+            }
+            var selected = _display.ShowEquipMenuAndSelect(equippable.AsReadOnly());
+            if (selected == null) return;
+            DoEquip(player, selected);
             return;
         }
 
@@ -61,6 +69,17 @@ public class EquipmentManager
             _display.ShowMessage($"(Did you mean \"{item.Name}\"?)");
         }
 
+        if (!item.IsEquippable)
+        {
+            _display.ShowError($"{item.Name} cannot be equipped.");
+            return;
+        }
+
+        DoEquip(player, item);
+    }
+
+    private void DoEquip(Player player, Item item)
+    {
         if (!item.IsEquippable)
         {
             _display.ShowError($"{item.Name} cannot be equipped.");
