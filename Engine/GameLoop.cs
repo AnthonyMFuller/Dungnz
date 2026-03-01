@@ -4,6 +4,7 @@ using System;
 using Dungnz.Display;
 using Dungnz.Models;
 using Dungnz.Systems;
+using Microsoft.Extensions.Logging;
 
 /// <summary>
 /// The primary game loop that drives exploration, combat, inventory management, and
@@ -18,7 +19,7 @@ public class GameLoop
     private readonly ICombatEngine _combat;
     private readonly IInputReader _input;
     private readonly GameEvents? _events;
-    private readonly int? _seed;
+    private int? _seed;
     private readonly DifficultySettings _difficulty;
     private Player _player = null!;
     private Room _currentRoom = null!;
@@ -31,6 +32,7 @@ public class GameLoop
     private readonly IMenuNavigator? _navigator;
     private readonly IReadOnlyList<Item> _allItems = [];
     private readonly NarrationService _narration = new();
+    private readonly ILogger<GameLoop> _logger;
     private int _currentFloor = 1;
     private bool _turnConsumed;
 
@@ -102,7 +104,10 @@ public class GameLoop
     /// An optional menu navigator override; when <see langword="null"/> a default
     /// <see cref="Spectre.Console"/> selection prompt is used.
     /// </param>
-    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null, DifficultySettings? difficulty = null, IReadOnlyList<Item>? allItems = null, IMenuNavigator? navigator = null)
+    /// <param name="logger">
+    /// Optional logger for structured event tracking. When <see langword="null"/> a no-op logger is used.
+    /// </param>
+    public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null, DifficultySettings? difficulty = null, IReadOnlyList<Item>? allItems = null, IMenuNavigator? navigator = null, ILogger<GameLoop>? logger = null)
     {
         _display = display;
         _combat = combat;
@@ -114,6 +119,7 @@ public class GameLoop
         _inventoryManager = new InventoryManager(display);
         _allItems = allItems ?? [];
         _navigator = navigator;
+        _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<GameLoop>.Instance;
     }
 
     /// <summary>
@@ -292,6 +298,7 @@ public class GameLoop
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
         _events?.RaiseRoomEntered(_player, _currentRoom, previousRoom);
+        _logger.LogDebug("Player entered room at {RoomId}", _currentRoom.Id);
 
         // Apply environmental hazard damage
         if (_currentRoom.Hazard != HazardType.None)
@@ -329,7 +336,9 @@ public class GameLoop
         if (_currentRoom.Enemy != null && _currentRoom.Enemy.HP > 0)
         {
             var killerName = _currentRoom.Enemy.Name;
+            _logger.LogInformation("Combat started with {EnemyName}", _currentRoom.Enemy.Name);
             var result = _combat.RunCombat(_player, _currentRoom.Enemy, _stats);
+            _logger.LogInformation("Combat ended: {Result}", result);
             
             if (result == CombatResult.PlayerDied)
             {
@@ -353,6 +362,8 @@ public class GameLoop
                 return;
             }
         }
+
+        if (_player.HP < _player.MaxHP * 0.2) _logger.LogWarning("Player HP critically low: {HP}/{MaxHP}", _player.HP, _player.MaxHP);
 
         // Check win/floor condition
         if (_currentRoom.IsExit && _currentRoom.Enemy == null)
@@ -761,7 +772,8 @@ public class GameLoop
             _display.ShowError("Save as what? Usage: SAVE <name>");
             return;
         }
-        SaveSystem.SaveGame(new GameState(_player, _currentRoom, _currentFloor), saveName);
+        SaveSystem.SaveGame(new GameState(_player, _currentRoom, _currentFloor, _seed), saveName);
+        _logger.LogInformation("Game saved to {SaveFile}", saveName);
         _display.ShowMessage($"Game saved as '{saveName}'.");
     }
 
@@ -779,9 +791,12 @@ public class GameLoop
             _player = state.Player;
             _currentRoom = state.CurrentRoom;
             _currentFloor = state.CurrentFloor;
+            _seed = state.Seed;
             _runStart = DateTime.UtcNow;
+            _rng = _seed.HasValue ? new Random(_seed.Value) : new Random();
             _stats = new RunStats();
             _display.ShowMessage($"Loaded save '{saveName}'.");
+            _logger.LogInformation("Game loaded from {SaveFile}", saveName);
             _display.ShowRoom(_currentRoom);
         }
         catch (FileNotFoundException)
@@ -792,6 +807,7 @@ public class GameLoop
         catch (Exception ex)
         {
             _turnConsumed = false;
+            _logger.LogError(ex, "Failed to load save '{SaveFile}'", saveName);
             _display.ShowError($"Failed to load save: {ex.Message}");
         }
     }
