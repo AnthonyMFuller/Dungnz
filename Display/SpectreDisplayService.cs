@@ -20,17 +20,62 @@ public sealed class SpectreDisplayService : IDisplayService
 
     /// <inheritdoc/>
     public void ShowCombat(string message) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowCombat not yet implemented");
+        AnsiConsole.Write(new Rule($"[bold red]{Markup.Escape(message)}[/]"));
 
     /// <inheritdoc/>
     public void ShowCombatStatus(Player player, Enemy enemy,
         IReadOnlyList<ActiveEffect> playerEffects,
-        IReadOnlyList<ActiveEffect> enemyEffects) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowCombatStatus not yet implemented");
+        IReadOnlyList<ActiveEffect> enemyEffects)
+    {
+        AnsiConsole.WriteLine();
+
+        var table = new Table().NoBorder().Expand();
+        table.AddColumn(new TableColumn("").NoWrap());
+        table.AddColumn(new TableColumn("").NoWrap());
+
+        // Player cell
+        var playerCell = new System.Text.StringBuilder();
+        playerCell.Append($"⚔  [bold]{Markup.Escape(player.Name)}[/]");
+        playerCell.AppendLine();
+        playerCell.Append($"HP: {BuildHpBar(player.HP, player.MaxHP)} {player.HP}/{player.MaxHP}");
+        if (player.MaxMana > 0)
+        {
+            playerCell.AppendLine();
+            playerCell.Append($"MP: [blue]{BuildBar(player.Mana, player.MaxMana)}[/] {player.Mana}/{player.MaxMana}");
+        }
+        if (playerEffects.Count > 0)
+        {
+            playerCell.AppendLine();
+            foreach (var e in playerEffects)
+            {
+                var color = e.IsBuff ? "purple" : "red";
+                playerCell.Append($"[{color}][[{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t]][/] ");
+            }
+        }
+
+        // Enemy cell
+        var enemyCell = new System.Text.StringBuilder();
+        enemyCell.Append($"🐉 [bold]{Markup.Escape(enemy.Name)}[/]");
+        enemyCell.AppendLine();
+        enemyCell.Append($"HP: {BuildHpBar(enemy.HP, enemy.MaxHP)} {enemy.HP}/{enemy.MaxHP}");
+        if (enemyEffects.Count > 0)
+        {
+            enemyCell.AppendLine();
+            foreach (var e in enemyEffects)
+            {
+                var color = e.IsBuff ? "purple" : "red";
+                enemyCell.Append($"[{color}][[{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t]][/] ");
+            }
+        }
+
+        table.AddRow(new Markup(playerCell.ToString()), new Markup(enemyCell.ToString()));
+        AnsiConsole.Write(table);
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
     public void ShowCombatMessage(string message) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowCombatMessage not yet implemented");
+        AnsiConsole.MarkupLine($"  [white]{Markup.Escape(message)}[/]");
 
     /// <inheritdoc/>
     public void ShowPlayerStats(Player player) =>
@@ -169,12 +214,24 @@ public sealed class SpectreDisplayService : IDisplayService
         throw new NotImplementedException("SpectreDisplayService.ShowCraftRecipe not yet implemented");
 
     /// <inheritdoc/>
-    public void ShowCombatStart(Enemy enemy) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowCombatStart not yet implemented");
+    public void ShowCombatStart(Enemy enemy)
+    {
+        AnsiConsole.WriteLine();
+        var rule = new Rule($"[bold red]⚔  COMBAT BEGINS  ⚔[/]");
+        rule.Style = Style.Parse("red");
+        AnsiConsole.Write(rule);
+        AnsiConsole.MarkupLine($"[bold red]  {Markup.Escape(enemy.Name)}[/]");
+        AnsiConsole.WriteLine();
+    }
 
     /// <inheritdoc/>
-    public void ShowCombatEntryFlags(Enemy enemy) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowCombatEntryFlags not yet implemented");
+    public void ShowCombatEntryFlags(Enemy enemy)
+    {
+        if (enemy.IsElite)
+            AnsiConsole.MarkupLine("  [yellow]⭐ ELITE — enhanced stats and loot[/]");
+        if (enemy is Dungnz.Systems.Enemies.DungeonBoss boss && boss.IsEnraged)
+            AnsiConsole.MarkupLine("  [bold red]⚡ ENRAGED[/]");
+    }
 
     /// <inheritdoc/>
     public void ShowLevelUpChoice(Player player) =>
@@ -197,8 +254,20 @@ public sealed class SpectreDisplayService : IDisplayService
         throw new NotImplementedException("SpectreDisplayService.ShowGameOver not yet implemented");
 
     /// <inheritdoc/>
-    public void ShowEnemyArt(Enemy enemy) =>
-        throw new NotImplementedException("SpectreDisplayService.ShowEnemyArt not yet implemented");
+    public void ShowEnemyArt(Enemy enemy)
+    {
+        if (enemy.AsciiArt == null || enemy.AsciiArt.Length == 0)
+            return;
+
+        var artText = string.Join("\n", enemy.AsciiArt.Select(l => Markup.Escape(l)));
+        var artColor = enemy.IsElite ? "yellow" : "red";
+        var panel = new Panel($"[{artColor}]{artText}[/]")
+        {
+            Header = new PanelHeader($"[bold red]{Markup.Escape(enemy.Name)}[/]"),
+            Border = BoxBorder.Rounded,
+        };
+        AnsiConsole.Write(panel);
+    }
 
     /// <inheritdoc/>
     public int ShowLevelUpChoiceAndSelect(Player player) =>
@@ -426,5 +495,37 @@ public sealed class SpectreDisplayService : IDisplayService
         PlayerClass.Necromancer => "💀",
         PlayerClass.Ranger      => "🏹",
         _                       => "•"
+    };
+
+    private static string BuildBar(int current, int max, int width = 10)
+    {
+        current = Math.Clamp(current, 0, Math.Max(max, 1));
+        int filled = max > 0 ? (int)Math.Round((double)current / max * width) : 0;
+        return new string('█', filled) + new string('░', width - filled);
+    }
+
+    private static string BuildHpBar(int current, int max, int width = 10)
+    {
+        var bar = BuildBar(current, max, width);
+        double pct = max > 0 ? (double)current / max : 0;
+        var color = pct > 0.5 ? "green" : pct >= 0.25 ? "yellow" : "red";
+        return $"[{color}]{bar}[/]";
+    }
+
+    private static string EffectIcon(StatusEffect effect) => effect switch
+    {
+        StatusEffect.Poison    => "☠",
+        StatusEffect.Bleed     => "🩸",
+        StatusEffect.Stun      => "⚡",
+        StatusEffect.Regen     => "✨",
+        StatusEffect.Fortified => "🛡",
+        StatusEffect.Weakened  => "💀",
+        StatusEffect.Slow      => ">",
+        StatusEffect.BattleCry => "!",
+        StatusEffect.Burn      => "*",
+        StatusEffect.Freeze    => "~",
+        StatusEffect.Silence   => "X",
+        StatusEffect.Curse     => "@",
+        _                      => "●"
     };
 }
