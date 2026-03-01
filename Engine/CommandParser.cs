@@ -163,7 +163,61 @@ public static class CommandParser
             "learn" => new ParsedCommand { Type = CommandType.Learn, Argument = argument },
             "craft" => new ParsedCommand { Type = CommandType.Craft, Argument = argument },
             "leaderboard" or "lb" or "scores" => new ParsedCommand { Type = CommandType.Leaderboard },
-            _ => new ParsedCommand { Type = CommandType.Unknown }
+            _ => TryFuzzyMatch(command, argument)
         };
+    }
+
+    /// <summary>
+    /// Attempts fuzzy matching when a command is not recognized.
+    /// If exactly one known verb has Levenshtein distance <= 1, returns that command.
+    /// Otherwise, returns Unknown command.
+    /// </summary>
+    private static ParsedCommand TryFuzzyMatch(string command, string argument)
+    {
+        // All known command verbs (extracted from the switch statement)
+        string[] knownVerbs = 
+        [
+            "go", "north", "n", "south", "s", "east", "e", "west", "w",
+            "look", "l", "examine", "ex", "take", "get", "use",
+            "inventory", "inv", "i", "stats", "status",
+            "help", "?", "h", "quit", "exit", "q",
+            "equip", "unequip", "equipment", "gear",
+            "save", "load", "list", "saves", "listsaves",
+            "descend", "down", "map", "m",
+            "shop", "buy", "sell",
+            "prestige", "p", "skills", "skill", "learn",
+            "craft", "leaderboard", "lb", "scores"
+        ];
+
+        // Find verbs with Levenshtein distance <= 1
+        var closeMatches = knownVerbs
+            .Where(verb => LevenshteinDistance(command, verb) <= 1)
+            .ToList();
+
+        // Only use fuzzy matching if exactly one close match exists
+        if (closeMatches.Count == 1)
+        {
+            // Recursively parse the corrected command
+            return Parse($"{closeMatches[0]} {argument}".Trim());
+        }
+
+        return new ParsedCommand { Type = CommandType.Unknown };
+    }
+
+    /// <summary>
+    /// Calculates the Levenshtein distance between two strings.
+    /// Returns the minimum number of single-character edits (insertions, deletions, or substitutions)
+    /// required to change one string into the other.
+    /// </summary>
+    private static int LevenshteinDistance(string s, string t)
+    {
+        int[,] d = new int[s.Length + 1, t.Length + 1];
+        for (int i = 0; i <= s.Length; i++) d[i, 0] = i;
+        for (int j = 0; j <= t.Length; j++) d[0, j] = j;
+        for (int j = 1; j <= t.Length; j++)
+            for (int i = 1; i <= s.Length; i++)
+                d[i, j] = s[i-1] == t[j-1] ? d[i-1, j-1]
+                         : 1 + Math.Min(d[i-1, j], Math.Min(d[i, j-1], d[i-1, j-1]));
+        return d[s.Length, t.Length];
     }
 }

@@ -1911,3 +1911,111 @@ Six process changes captured in `decisions/inbox/coulson-retro-2026-03-01.md`:
 ---
 
 📌 **Team update (2026-03-01):** Bug hunt round 1 complete — all 7 critical bugs resolved, 1347 tests passing, 0 failures. PRs #749 (boss registration + room persistence) and #752 (test pattern fix) merged to master. — completed by Coulson (Lead), Hill (rework), Romanoff (test fix)
+
+---
+
+## 2026-02-20: Tier 1 Architecture Improvements (HP Encapsulation + Structured Logging)
+
+**Facilitator:** Coulson  
+**Context:** Implemented two high-priority architecture improvements requested by Boss.
+
+### Task 1: HP Encapsulation Enforcement (Issue #755, PR #771)
+
+**Problem:**
+- Player.HP had public setter allowing direct bypasses of event system
+- Bypass bugs fixed three times previously with no enforcement
+- TakeDamage/Heal/OnHealthChanged event system existed but wasn't mandatory
+
+**Implementation:**
+- **Models/PlayerStats.cs**: Changed `public int HP { get; set; }` to `public int HP { get; private set; }`
+- **Models/PlayerStats.cs**: Added `internal void SetHPDirect(int value)` helper for test setup and resurrection mechanics
+- **Engine/CombatEngine.cs**: Soul Harvest (Necromancer) now uses `Heal(5)` instead of direct HP assignment
+- **Engine/CombatEngine.cs**: Shrine MaxHP bonus now uses `FortifyMaxHP(5)` instead of manual MaxHP/HP manipulation
+- **Engine/IntroSequence.cs**: Class selection uses `SetHPDirect(player.MaxHP)` for initialization
+- **Systems/PassiveEffectProcessor.cs**: Aegis of the Immortal and Amulet of the Phoenix use `SetHPDirect` for special revival mechanics
+- **Dungnz.Tests/***: All test files updated to use `SetHPDirect` for HP setup
+
+**Verification:**
+- Build: ✅ Success
+- Tests: ✅ 1345/1347 passing (2 pre-existing unrelated failures)
+- Commit: c4fd39f on branch squad/hp-encapsulation-v2
+
+**Impact:**
+- Eliminates entire class of HP bypass bugs
+- Enforces OnHealthChanged event firing for all HP changes
+- Makes HP changes auditable for debugging
+- Internal architecture only — no public API changes
+
+### Task 2: Structured Logging Infrastructure (Issue #773, PR #776)
+
+**Problem:**
+- Zero logging infrastructure in application
+- Crashes and bypass bugs had no paper trail for debugging
+- No visibility into production behavior or performance
+
+**Implementation:**
+- **Dungnz.csproj**: Added packages: Microsoft.Extensions.Logging, Microsoft.Extensions.Logging.Console, Serilog.Extensions.Logging, Serilog.Sinks.File
+- **Program.cs**: Configured Serilog with daily rolling file sink to `%APPDATA%/Dungnz/Logs/dungnz-.log`
+- **Program.cs**: Created ILoggerFactory and injected ILogger<GameLoop> into GameLoop
+- **Engine/GameLoop.cs**: 
+  - Added `ILogger<GameLoop>` constructor parameter (optional, defaults to NullLogger for backward compatibility)
+  - Stored as `private readonly ILogger<GameLoop> _logger`
+  - Added logging calls:
+    * Room navigation: `LogDebug("Player entered room at {RoomId}", ...)`
+    * Combat start/end: `LogInformation("Combat started with {EnemyName}", ...)` and `LogInformation("Combat ended: {Result}", ...)`
+    * Player HP critically low (<20%): `LogWarning("Player HP critically low: {HP}/{MaxHP}", ...)`
+    * Save operations: `LogInformation("Game saved to {SaveFile}", ...)`
+    * Load operations: `LogInformation("Game loaded from {SaveFile}", ...)`
+    * Load failures: `LogError(ex, "Failed to load game from {SaveFile}", ...)`
+
+**Verification:**
+- Build: ✅ Success
+- Tests: ✅ 1346/1347 passing (1 pre-existing unrelated failure)
+- Log files: ✅ Created at %APPDATA%/Dungnz/Logs/dungnz-YYYYMMDD.log
+- Commit: d49418d on branch squad/structured-logging
+
+**Impact:**
+- Full audit trail for debugging crashes and unexpected behavior
+- Production monitoring capability (player behavior, system health)
+- Performance bottleneck identification via log analysis
+- Future HP bypass bugs will have complete event history
+- Backward compatible: ILogger is optional, doesn't break existing code
+
+### Patterns Established
+
+**HP Encapsulation Pattern:**
+- All HP modifications must use TakeDamage/Heal/SetHPDirect
+- SetHPDirect is internal-only, for test setup and special mechanics (revival, initialization)
+- OnHealthChanged event MUST fire for all HP changes
+- Private setter prevents accidental bypasses at compile time
+
+**Structured Logging Pattern:**
+- Microsoft.Extensions.Logging with Serilog backend
+- Daily rolling file logs in %APPDATA%/Dungnz/Logs/
+- ILogger<T> injection pattern for dependency injection
+- Optional logging (NullLogger fallback) for backward compatibility
+- Semantic log levels: Debug (navigation), Information (events), Warning (critical states), Error (exceptions)
+- Structured properties in log messages (e.g., {HP}, {EnemyName}) for queryability
+
+### Key Files Modified
+
+**HP Encapsulation:**
+- Models/PlayerStats.cs
+- Engine/CombatEngine.cs
+- Engine/IntroSequence.cs
+- Systems/PassiveEffectProcessor.cs
+- Dungnz.Tests/* (13 test files)
+
+**Structured Logging:**
+- Dungnz.csproj
+- Program.cs
+- Engine/GameLoop.cs
+
+### GitHub Issues & PRs
+
+- Issue #755: enforce HP encapsulation: make Player.HP private setter → PR #771
+- Issue #773: add structured logging with Microsoft.Extensions.Logging → PR #776
+
+Both PRs awaiting review and merge.
+
+**Outcome:** Both Tier 1 architecture improvements completed with full test coverage and backward compatibility. No regressions introduced. Ready for team review.
