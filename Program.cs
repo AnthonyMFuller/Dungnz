@@ -8,11 +8,7 @@ Console.InputEncoding  = System.Text.Encoding.UTF8;
 
 var prestige = PrestigeSystem.Load();
 var inputReader = new ConsoleInputReader();
-var navigator = new ConsoleMenuNavigator();
-var useSpectre = args.Contains("--use-spectre") || Environment.GetEnvironmentVariable("DUNGNZ_USE_SPECTRE") == "1";
-IDisplayService display = useSpectre
-    ? new SpectreDisplayService()
-    : new ConsoleDisplayService(inputReader, navigator);
+IDisplayService display = new SpectreDisplayService();
 
 var intro = new IntroSequence(display, inputReader);
 var (player, actualSeed, chosenDifficulty) = intro.Run(prestige);
@@ -28,6 +24,6 @@ var allItems = ItemConfig.Load("Data/item-stats.json").Select(ItemConfig.CreateI
 var generator = new DungeonGenerator(actualSeed, allItems);
 var (startRoom, _) = generator.Generate(difficulty: difficultySettings);
 
-var combat = new CombatEngine(display, inputReader, navigator: navigator, difficulty: difficultySettings);
-var gameLoop = new GameLoop(display, combat, inputReader, seed: actualSeed, difficulty: difficultySettings, allItems: allItems, navigator: navigator);
+var combat = new CombatEngine(display, inputReader, difficulty: difficultySettings);
+var gameLoop = new GameLoop(display, combat, inputReader, seed: actualSeed, difficulty: difficultySettings, allItems: allItems);
 gameLoop.Run(player, startRoom);

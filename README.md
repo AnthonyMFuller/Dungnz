@@ -375,7 +375,7 @@ Armor crafting recipes are now available for all equipment slots (Head, Shoulder
 
 ## Display & Colours
 
-Dungnz uses native ANSI escape codes — no third-party dependencies. Colour support is automatic on modern terminals (Windows Terminal, macOS Terminal, Linux).
+Dungnz uses [Spectre.Console](https://spectreconsole.net/) for all rendering — rich panels, tables, progress bars, and arrow-key selection menus. Colour and styling are applied via Spectre markup tags.
 
 ### What's colour-coded
 
@@ -395,8 +395,9 @@ Dungnz uses native ANSI escape codes — no third-party dependencies. Colour sup
 | Critical hits | Yellow + Bold |
 | Room danger level | Scales green → red |
 | Ability on cooldown | Dimmed |
+| Item tier | Common=grey / Uncommon=green / Rare=blue / Epic=purple / Legendary=gold |
 
-All console output is routed through `IDisplayService` / `DisplayService` — colour constants live in `Systems/ColorCodes.cs`. When equipping items, `EquipmentManager` shows stat deltas with green `+` / red `−` indicators.
+All console output is routed through `IDisplayService` / `SpectreDisplayService` — colour constants live in `Systems/ColorCodes.cs`. When equipping items, `EquipmentManager` shows stat deltas with green `+` / red `−` indicators.
 
 The `ColorizeDamage` helper in `CombatEngine` targets only the **last** occurrence of the damage value in a narration string (via `LastIndexOf`) to avoid accidentally colourising an identical number that appears earlier in the message text.
 
