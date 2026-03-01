@@ -76,23 +76,19 @@ public class StatusEffectManager
             switch (ae.Effect)
             {
                 case StatusEffect.Poison:
-                    if (target is Player p) { p.TakeDamage(3); _display.ShowCombatMessage($"{GetTargetName(target)} takes 3 poison damage!"); }
-                    else if (target is Enemy e) { e.HP = Math.Max(0, e.HP - 3); _display.ShowCombatMessage($"{GetTargetName(target)} takes 3 poison damage!"); } // Fix #613
+                    { var dmg = StatusEffectRegistry.GetTickDamage("Poison", 3); if (target is Player p) { p.TakeDamage(dmg); _display.ShowCombatMessage($"{GetTargetName(target)} takes {dmg} poison damage!"); } else if (target is Enemy e) { e.HP = Math.Max(0, e.HP - dmg); _display.ShowCombatMessage($"{GetTargetName(target)} takes {dmg} poison damage!"); } }
                     break;
                 case StatusEffect.Bleed:
-                    if (target is Player p2) { p2.TakeDamage(5); _display.ShowCombatMessage($"{GetTargetName(target)} takes 5 bleed damage!"); }
-                    else if (target is Enemy e2) { e2.HP = Math.Max(0, e2.HP - 5); _display.ShowCombatMessage($"{GetTargetName(target)} takes 5 bleed damage!"); } // Fix #613
+                    { var dmg = StatusEffectRegistry.GetTickDamage("Bleed", 5); if (target is Player p2) { p2.TakeDamage(dmg); _display.ShowCombatMessage($"{GetTargetName(target)} takes {dmg} bleed damage!"); } else if (target is Enemy e2) { e2.HP = Math.Max(0, e2.HP - dmg); _display.ShowCombatMessage($"{GetTargetName(target)} takes {dmg} bleed damage!"); } }
                     break;
                 case StatusEffect.Regen:
-                    if (target is Player p3) { p3.Heal(4); _display.ShowCombatMessage($"{GetTargetName(target)} regenerates 4 HP!"); }
-                    else if (target is Enemy e3) { e3.HP = Math.Min(e3.MaxHP, e3.HP + 4); _display.ShowCombatMessage($"{GetTargetName(target)} regenerates 4 HP!"); }
+                    { var heal = Math.Abs(StatusEffectRegistry.GetTickDamage("Regen", -4)); if (target is Player p3) { p3.Heal(heal); _display.ShowCombatMessage($"{GetTargetName(target)} regenerates {heal} HP!"); } else if (target is Enemy e3) { e3.HP = Math.Min(e3.MaxHP, e3.HP + heal); _display.ShowCombatMessage($"{GetTargetName(target)} regenerates {heal} HP!"); } }
                     break;
                 case StatusEffect.Stun:
                     // Stun message is emitted by CombatEngine before ProcessTurnStart is called.
                     break;
                 case StatusEffect.Burn:
-                    if (target is Player pb) { pb.TakeDamage(8); _display.ShowCombatMessage($"{GetTargetName(target)} takes 8 burn damage!"); }
-                    else if (target is Enemy eb) { eb.HP = Math.Max(0, eb.HP - 8); _display.ShowCombatMessage($"{GetTargetName(target)} takes 8 burn damage!"); } // Fix #613
+                    { var dmg = StatusEffectRegistry.GetTickDamage("Burn", 8); if (target is Player pb) { pb.TakeDamage(dmg); _display.ShowCombatMessage($"{GetTargetName(target)} takes {dmg} burn damage!"); } else if (target is Enemy eb) { eb.HP = Math.Max(0, eb.HP - dmg); _display.ShowCombatMessage($"{GetTargetName(target)} takes {dmg} burn damage!"); } }
                     break;
                 case StatusEffect.Freeze:
                     // Freeze message is emitted by CombatEngine before ProcessTurnStart is called.

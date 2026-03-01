@@ -38,6 +38,7 @@ EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
 StartupValidator.ValidateOrThrow();
 CraftingSystem.Load("Data/crafting-recipes.json");
 AffixRegistry.Load("Data/item-affixes.json");
+StatusEffectRegistry.Load("Data/status-effects.json");
 var allItems = ItemConfig.Load("Data/item-stats.json").Select(ItemConfig.CreateItem).ToList();
 var generator = new DungeonGenerator(actualSeed, allItems);
 var (startRoom, _) = generator.Generate(difficulty: difficultySettings);

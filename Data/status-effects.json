@@ -1,0 +1,98 @@
+[
+  {
+    "id": "Poison",
+    "name": "Poison",
+    "description": "Deals periodic damage each turn from toxins coursing through the veins.",
+    "durationRounds": 3,
+    "tickDamage": 3,
+    "statModifiers": null
+  },
+  {
+    "id": "Burn",
+    "name": "Burning",
+    "description": "Engulfed in flames, taking heavy fire damage each turn.",
+    "durationRounds": 2,
+    "tickDamage": 8,
+    "statModifiers": null
+  },
+  {
+    "id": "Freeze",
+    "name": "Chilled",
+    "description": "Frozen in place, unable to act. Breaks on physical impact.",
+    "durationRounds": 2,
+    "tickDamage": null,
+    "statModifiers": null
+  },
+  {
+    "id": "Bleed",
+    "name": "Bleed",
+    "description": "A deep wound that bleeds profusely each turn.",
+    "durationRounds": 3,
+    "tickDamage": 5,
+    "statModifiers": null
+  },
+  {
+    "id": "Regen",
+    "name": "Regeneration",
+    "description": "Slowly regenerating health each turn.",
+    "durationRounds": 3,
+    "tickDamage": -4,
+    "statModifiers": null
+  },
+  {
+    "id": "Weakened",
+    "name": "Weakened",
+    "description": "Attack power reduced by half.",
+    "durationRounds": 3,
+    "tickDamage": null,
+    "statModifiers": { "Attack": -0.5 }
+  },
+  {
+    "id": "Fortified",
+    "name": "Fortified",
+    "description": "Defense increased by half.",
+    "durationRounds": 3,
+    "tickDamage": null,
+    "statModifiers": { "Defense": 0.5 }
+  },
+  {
+    "id": "Slow",
+    "name": "Slowed",
+    "description": "Movement and attack speed reduced.",
+    "durationRounds": 2,
+    "tickDamage": null,
+    "statModifiers": { "Attack": -0.25 }
+  },
+  {
+    "id": "Stun",
+    "name": "Stunned",
+    "description": "Unable to take any action.",
+    "durationRounds": 1,
+    "tickDamage": null,
+    "statModifiers": null
+  },
+  {
+    "id": "Curse",
+    "name": "Cursed",
+    "description": "Attack and Defense reduced by 25%.",
+    "durationRounds": 4,
+    "tickDamage": null,
+    "statModifiers": { "Attack": -0.25, "Defense": -0.25 }
+  },
+  {
+    "id": "Silence",
+    "name": "Silenced",
+    "description": "Unable to use abilities.",
+    "durationRounds": 3,
+    "tickDamage": null,
+    "statModifiers": null
+  },
+  {
+    "id": "BattleCry",
+    "name": "Battle Cry",
+    "description": "Attack power increased by 25%.",
+    "durationRounds": 3,
+    "tickDamage": null,
+    "statModifiers": { "Attack": 0.25 }
+  }
+]
