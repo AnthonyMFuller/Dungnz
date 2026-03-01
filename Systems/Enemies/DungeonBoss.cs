@@ -59,14 +59,6 @@ public class DungeonBoss : Enemy
     /// or built-in fallback defaults. Optionally populates the loot table with a Boss Key
     /// item from the item configuration.
     /// </summary>
-    /// <param name="stats">
-    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
-    /// hard-coded defaults (100 HP, 22 ATK, 15 DEF, 100 XP, 50–100 gold).
-    /// </param>
-    /// <param name="itemConfig">
-    /// The loaded item configuration used to source the Boss Key drop,
-    /// or <see langword="null"/> to create a fallback inline item.
-    /// </param>
     [System.Text.Json.Serialization.JsonConstructor]
     private DungeonBoss() { }
 

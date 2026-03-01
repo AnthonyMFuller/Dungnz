@@ -13,11 +13,6 @@ public class StoneGolem : Enemy
     /// or built-in fallback defaults. Sets <see cref="Enemy.IsImmuneToEffects"/> to prevent
     /// any status effects from being applied.
     /// </summary>
-    /// <param name="stats">
-    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
-    /// hard-coded defaults (90 HP, 8 ATK, 20 DEF, 50 XP, 10–25 gold).
-    /// </param>
-    /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
     [System.Text.Json.Serialization.JsonConstructor]
     private StoneGolem() { }
 

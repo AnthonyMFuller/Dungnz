@@ -12,14 +12,6 @@ public class DarkKnight : Enemy
     /// Initialises the Dark Knight using either the provided external stats from config
     /// or built-in fallback defaults, and populates the loot table from item config when available.
     /// </summary>
-    /// <param name="stats">
-    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
-    /// hard-coded defaults (45 HP, 18 ATK, 12 DEF, 55 XP, 20–40 gold).
-    /// </param>
-    /// <param name="itemConfig">
-    /// The loaded item configuration used to source Dark Blade and Knight's Armor drops,
-    /// or <see langword="null"/> to create fallback inline items.
-    /// </param>
     [System.Text.Json.Serialization.JsonConstructor]
     private DarkKnight() { }
 

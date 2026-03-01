@@ -12,11 +12,6 @@ public class Goblin : Enemy
     /// Initialises the Goblin using either the provided external stats from config
     /// or built-in fallback defaults.
     /// </summary>
-    /// <param name="stats">
-    /// External stats loaded from the enemy config file, or <see langword="null"/> to use
-    /// hard-coded defaults (20 HP, 8 ATK, 2 DEF, 15 XP, 2–8 gold).
-    /// </param>
-    /// <param name="itemConfig">Item configuration reserved for future loot table expansion; currently unused.</param>
     [System.Text.Json.Serialization.JsonConstructor]
     private Goblin() { }
 
