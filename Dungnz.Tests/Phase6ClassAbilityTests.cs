@@ -237,7 +237,7 @@ public class Phase6ClassAbilityTests
     public void Fortify_HealsWhenHPAtOrBelow50Percent()
     {
         var player = MakePlayer(PlayerClass.Warrior, level: 3);
-        player.HP = 50; // Exactly 50%
+        player.SetHPDirect(50); // Exactly 50%
         var enemy = MakeEnemy();
 
         _abilities.UseAbility(player, enemy, AbilityType.Fortify, _statusEffects, _display);
@@ -251,7 +251,7 @@ public class Phase6ClassAbilityTests
     {
         var player = MakePlayer(PlayerClass.Warrior, level: 3);
         var hpAbove50 = (int)(player.MaxHP * 0.51); // Just above 50%
-        player.HP = hpAbove50;
+        player.SetHPDirect(hpAbove50);
         var enemy = MakeEnemy();
 
         _abilities.UseAbility(player, enemy, AbilityType.Fortify, _statusEffects, _display);
@@ -288,7 +288,7 @@ public class Phase6ClassAbilityTests
     public void RecklessBlow_CannotReducePlayerBelow1HP()
     {
         var player = MakePlayer(PlayerClass.Warrior, level: 5);
-        player.HP = 5; // Very low HP
+        player.SetHPDirect(5); // Very low HP
         var enemy = MakeEnemy(hp: 200, def: 0);
 
         _abilities.UseAbility(player, enemy, AbilityType.RecklessBlow, _statusEffects, _display);
@@ -302,7 +302,7 @@ public class Phase6ClassAbilityTests
         var player = MakePlayer(PlayerClass.Warrior, level: 7);
         // 40% threshold, so HP at 45% should fail
         var hpAboveThreshold = (int)(player.MaxHP * 0.45);
-        player.HP = hpAboveThreshold;
+        player.SetHPDirect(hpAboveThreshold);
         var enemy = MakeEnemy();
 
         var result = _abilities.UseAbility(player, enemy, AbilityType.LastStand, _statusEffects, _display);
@@ -314,7 +314,7 @@ public class Phase6ClassAbilityTests
     public void LastStand_ActivatesWhenHPBelowThreshold()
     {
         var player = MakePlayer(PlayerClass.Warrior, level: 7);
-        player.HP = 30; // 30% <= 40% threshold
+        player.SetHPDirect(30); // 30% <= 40% threshold
         var enemy = MakeEnemy();
 
         var result = _abilities.UseAbility(player, enemy, AbilityType.LastStand, _statusEffects, _display);
@@ -329,7 +329,7 @@ public class Phase6ClassAbilityTests
         var player = MakePlayer(PlayerClass.Warrior, level: 7);
         // Set HP above 40% threshold so it fails
         var hpAboveThreshold = (int)(player.MaxHP * 0.45);
-        player.HP = hpAboveThreshold;
+        player.SetHPDirect(hpAboveThreshold);
         var manaBefore = player.Mana;
         var enemy = MakeEnemy();
 
@@ -415,7 +415,7 @@ public class Phase6ClassAbilityTests
     public void ArcaneSacrifice_PreservesMinimum1HP()
     {
         var player = MakePlayer(PlayerClass.Mage, level: 5);
-        player.HP = 5; // Very low HP
+        player.SetHPDirect(5); // Very low HP
         var enemy = MakeEnemy();
 
         _abilities.UseAbility(player, enemy, AbilityType.ArcaneSacrifice, _statusEffects, _display);

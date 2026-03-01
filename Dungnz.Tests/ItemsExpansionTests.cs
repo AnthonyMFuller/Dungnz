@@ -44,7 +44,7 @@ public class ItemsExpansionTests
     {
         var player = MakePlayer(hp: 50, atk: 10, def: 5);
         player.MaxHP = 100;
-        player.HP = 50;
+        player.SetHPDirect(50);
         var weapon = MakeLegendaryWeapon("vampiric_strike");
         player.Inventory.Add(weapon);
         player.EquipItem(weapon);
@@ -92,7 +92,7 @@ public class ItemsExpansionTests
         };
         player.Inventory.Add(armor);
         player.EquipItem(armor);
-        player.HP = 0; // simulate death
+        player.SetHPDirect(0); // simulate death
 
         var proc = MakeProcessor();
         proc.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerWouldDie, null, 0);
@@ -115,7 +115,7 @@ public class ItemsExpansionTests
         };
         player.Inventory.Add(armor);
         player.EquipItem(armor);
-        player.HP = 0;
+        player.SetHPDirect(0);
 
         var proc = MakeProcessor();
 
@@ -124,7 +124,7 @@ public class ItemsExpansionTests
         player.HP.Should().Be(1);
 
         // Simulate "death" again
-        player.HP = 0;
+        player.SetHPDirect(0);
         proc.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerWouldDie, null, 0);
 
         // Should NOT fire again
@@ -138,7 +138,7 @@ public class ItemsExpansionTests
     {
         var player = MakePlayer(hp: 0);
         player.MaxHP = 100;
-        player.HP = 0;
+        player.SetHPDirect(0);
         var amulet = new Item
         {
             Name = "Amulet of the Phoenix",
@@ -163,7 +163,7 @@ public class ItemsExpansionTests
     {
         var player = MakePlayer(hp: 0);
         player.MaxHP = 100;
-        player.HP = 0;
+        player.SetHPDirect(0);
         var amulet = new Item
         {
             Name = "Amulet of the Phoenix",
@@ -182,7 +182,7 @@ public class ItemsExpansionTests
         player.HP.Should().BeGreaterThan(0);
 
         // Second death in same run — should NOT revive
-        player.HP = 0;
+        player.SetHPDirect(0);
         proc.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerWouldDie, null, 0);
         player.HP.Should().Be(0);
     }
@@ -381,7 +381,7 @@ public class ItemsExpansionTests
     public void BeltRegen_OnTurnStart_Heals3HpPerTurn()
     {
         var player = MakePlayer();
-        player.HP = 50;
+        player.SetHPDirect(50);
         player.MaxHP = 100;
 
         var belt = new Item
@@ -405,7 +405,7 @@ public class ItemsExpansionTests
     public void BeltRegen_DoesNotOverheal()
     {
         var player = MakePlayer();
-        player.HP = player.MaxHP; // full health
+        player.SetHPDirect(player.MaxHP); // full health
 
         var belt = new Item
         {
@@ -428,7 +428,7 @@ public class ItemsExpansionTests
     public void BeltRegen_MultipleTurns_AccumulatesHeal()
     {
         var player = MakePlayer();
-        player.HP = 40;
+        player.SetHPDirect(40);
         player.MaxHP = 100;
 
         var belt = new Item
