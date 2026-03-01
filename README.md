@@ -574,7 +574,7 @@ Dungnz/
 
 ## Testing
 
-**1,279 passing tests** across **68 test files** in `Dungnz.Tests/`.
+**1,289 passing tests** across **68 test files** in `Dungnz.Tests/`.
 
 ```bash
 dotnet test Dungnz.Tests

@@ -28,6 +28,7 @@ public class SellSystemTests
         var display = new FakeDisplayService();
         var combat = new Mock<ICombatEngine>();
         var reader = new FakeInputReader(inputs);
+        display.SetInputReader(reader);
         var loop = new GameLoop(display, combat.Object, reader);
 
         return (player, room, display, loop);
@@ -227,8 +228,9 @@ public class SellSystemTests
     [Fact]
     public void Regression574_Sell_TypedInsideShop_OpensSellerNotExitShop()
     {
-        // Sequence: open shop with SHOP, type SELL inside shop, pick item 1, confirm Y, exit shop with X
-        var (player, room, display, loop) = MakeSellSetup("shop", "sell", "1", "Y", "x", "quit");
+        // Sequence: open shop, select Sell option (-1), pick item 1, confirm Y, exit shop (0)
+        // The shop now uses arrow-key menus; -1 is the "Sell" option in ShowShopWithSellAndSelect.
+        var (player, room, display, loop) = MakeSellSetup("shop", "-1", "1", "Y", "0", "quit");
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, Tier = ItemTier.Common };
         player.Inventory.Add(potion);
 
@@ -236,7 +238,7 @@ public class SellSystemTests
 
         loop.Run(player, room);
 
-        player.Inventory.Should().NotContain(potion, "item should have been sold via SELL typed inside the shop");
+        player.Inventory.Should().NotContain(potion, "item should have been sold via the Sell option in the shop menu");
         player.Gold.Should().Be(expectedPrice, "gold should be awarded after selling from inside the shop");
     }
 

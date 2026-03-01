@@ -7,9 +7,10 @@ namespace Dungnz.Tests.Helpers;
 
 public class FakeDisplayService : IDisplayService
 {
-    private readonly IInputReader? _input;
+    private IInputReader? _input;
 
     public FakeDisplayService(IInputReader? input = null) { _input = input; }
+    public void SetInputReader(IInputReader reader) { _input = reader; }
 
     public List<string> Messages { get; } = new();
     public List<string> Errors { get; } = new();
@@ -126,7 +127,16 @@ public class FakeDisplayService : IDisplayService
     public void ShowShop(IEnumerable<(Item item, int price)> stock, int playerGold) { AllOutput.Add($"shop:{playerGold}g"); }
     public int ShowShopAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold) { AllOutput.Add($"shop_select:{playerGold}g"); return 0; }
     public void ShowSellMenu(IEnumerable<(Item item, int sellPrice)> items, int playerGold) { AllOutput.Add($"sell:{playerGold}g"); }
-    public int ShowSellMenuAndSelect(IEnumerable<(Item item, int sellPrice)> items, int playerGold) { AllOutput.Add($"sell_select:{playerGold}g"); return 0; }
+    public int ShowSellMenuAndSelect(IEnumerable<(Item item, int sellPrice)> items, int playerGold)
+    {
+        AllOutput.Add($"sell_select:{playerGold}g");
+        if (_input is not null)
+        {
+            var line = _input.ReadLine()?.Trim() ?? "";
+            if (int.TryParse(line, out int n) && n >= 0) return n;
+        }
+        return 0;
+    }
     public int ShowLevelUpChoiceAndSelect(Player player)
     {
         AllOutput.Add($"levelup_select:{player.Level}");
