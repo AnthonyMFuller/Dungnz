@@ -316,10 +316,11 @@ public static class ItemInteractionNarration
 
         var pool = item.Type switch
         {
-            ItemType.Weapon     => PickUpWeapon,
-            ItemType.Armor      => PickUpArmor,
-            ItemType.Consumable => PickUpConsumable,
-            _                   => PickUpOther,
+            ItemType.Weapon          => PickUpWeapon,
+            ItemType.Armor           => PickUpArmor,
+            ItemType.Consumable      => PickUpConsumable,
+            ItemType.CraftingMaterial => PickUpOther,
+            _                        => PickUpOther,
         };
         return pool[Random.Shared.Next(pool.Length)];
     }

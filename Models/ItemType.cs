@@ -18,6 +18,9 @@ public enum ItemType
     /// <summary>A single-use item consumed from the inventory for an immediate effect such as healing.</summary>
     Consumable,
 
+    /// <summary>Items used as ingredients in crafting recipes; cannot be used directly.</summary>
+    CraftingMaterial,
+
     /// <summary>Currency picked up directly from a room or enemy drop; added to the player's gold total rather than held as an inventory item.</summary>
     Gold
 }

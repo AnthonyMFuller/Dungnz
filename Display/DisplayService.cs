@@ -663,11 +663,12 @@ public class ConsoleDisplayService : IDisplayService
 
     private static string ItemTypeIcon(ItemType type) => type switch
     {
-        ItemType.Weapon     => "⚔",
-        ItemType.Armor      => "🛡",
-        ItemType.Consumable => "🧪",
-        ItemType.Accessory  => "💍",
-        _                   => "•"
+        ItemType.Weapon          => "⚔",
+        ItemType.Armor           => "🛡",
+        ItemType.Consumable      => "🧪",
+        ItemType.Accessory       => "💍",
+        ItemType.CraftingMaterial => "⚗",
+        _                        => "•"
     };
 
     private static string PrimaryStatLabel(Item item)
