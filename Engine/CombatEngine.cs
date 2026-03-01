@@ -193,6 +193,18 @@ public class CombatEngine : ICombatEngine
     /// Optional narration service used to pick varied combat messages; a default instance
     /// sharing <paramref name="rng"/> is created when <see langword="null"/>.
     /// </param>
+    /// <param name="inventoryManager">
+    /// Optional pre-configured inventory manager used for item use during combat;
+    /// a default instance is created when <see langword="null"/>.
+    /// </param>
+    /// <param name="navigator">
+    /// Optional menu navigator used for arrow-key ability and item menus during combat.
+    /// Falls back to legacy numbered <see cref="IInputReader.ReadLine"/> input when <see langword="null"/>.
+    /// </param>
+    /// <param name="difficulty">
+    /// Optional difficulty settings applied to damage scaling and flee mechanics.
+    /// Defaults to <see cref="Difficulty.Normal"/> when <see langword="null"/>.
+    /// </param>
     public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null, NarrationService? narration = null, InventoryManager? inventoryManager = null, IMenuNavigator? navigator = null, DifficultySettings? difficulty = null)
     {
         _display = display;
