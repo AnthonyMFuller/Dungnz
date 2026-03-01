@@ -313,6 +313,20 @@ internal class RoomSaveData
     /// <summary>The environmental flavour type of this room.</summary>
     public RoomType RoomType { get; init; }
 
+    /// <summary>Whether the special room effect has already been used (once-per-run reward).</summary>
+    public bool SpecialRoomUsed { get; init; }
+
+    /// <summary>Whether the BlessedClearing one-time heal has already been applied.</summary>
+    public bool BlessedHealApplied { get; init; }
+
+    /// <summary>The environmental room hazard (e.g. LavaSeam, CorruptedGround).</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+    public RoomHazard EnvironmentalHazard { get; init; }
+
+    /// <summary>The trap variant for TrapRoom rooms, or null if none.</summary>
+    [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
+    public TrapVariant? Trap { get; init; }
+
     /// <summary>
     /// Persisted combat flags for a <see cref="Dungnz.Systems.Enemies.DungeonBoss"/>.
     /// <see langword="null"/> when the room's enemy is not a boss.

@@ -412,12 +412,12 @@ public class GameLoop
         switch (room.EnvironmentalHazard)
         {
             case RoomHazard.LavaSeam:
-                player.HP = Math.Max(0, player.HP - 5);
+                player.TakeDamage(5);
                 _stats.DamageTaken += 5;
                 _display.ShowMessage("🔥 The lava seam sears you. (-5 HP)");
                 break;
             case RoomHazard.CorruptedGround:
-                player.HP = Math.Max(0, player.HP - 3);
+                player.TakeDamage(3);
                 _stats.DamageTaken += 3;
                 _display.ShowMessage("💀 The corrupted ground drains you. (-3 HP)");
                 break;
@@ -425,7 +425,7 @@ public class GameLoop
                 if (!room.BlessedHealApplied)
                 {
                     room.BlessedHealApplied = true;
-                    player.HP = Math.Min(player.MaxHP, player.HP + 3);
+                    player.Heal(3);
                     _display.ShowMessage("✨ A blessed warmth flows through you. (+3 HP)");
                 }
                 break;
