@@ -15468,3 +15468,38 @@ Queue-based is cleaner than callback-based (no lambda closures). Inner class kee
 ### Consequences
 
 ✅ Complete coverage of all 4 menu options + cancellations. Pattern established for future orchestrator testing.
+
+---
+
+## Decision: Inventory Inspect & Compare Features Implementation
+
+**Date:** 2026-03-02  
+**Author:** Hill (C# Dev)  
+**Status:** Implemented  
+**Issues:** #844 (COMPARE command), #845 (Enhanced EXAMINE), #846 (Interactive INVENTORY)  
+
+Successfully implemented three inventory UX improvements: COMPARE command with interactive menu, enhanced EXAMINE auto-showing comparisons for equippable items, and interactive INVENTORY with arrow-key selection. Created `GetCurrentlyEquippedForItem` helper to mirror EquipmentManager slot logic. All changes non-breaking, reusing existing display methods per established patterns.
+
+---
+
+## Decision: Test Coverage for Inspect & Compare Features
+
+**Date:** 2026-03-02  
+**Author:** Romanoff (Tester)  
+**Status:** Complete  
+**Issues:** #844, #845, #846  
+
+Added comprehensive test coverage: 3 CommandParser tests for COMPARE parsing, 8 GameLoop tests covering COMPARE/EXAMINE execution paths and error cases, 4 InventoryDisplay tests for interactive selection. Updated FakeDisplayService and TestDisplayService with ShowInventoryAndSelect stubs. All 15 tests written; awaiting XML doc comment fixes for build success.
+
+---
+
+## Decision: PR #847 Review & Merge — Inventory UX Features
+
+**Date:** 2026-03-02  
+**Author:** Coulson (Technical Lead)  
+**Status:** APPROVED & MERGED  
+**PR:** #847  
+**Issues:** #844, #845, #846  
+
+Merged PR #847 implementing inventory improvements. Build passed with 0 errors. Test suite: 1420 total, 1415 passing, 5 pre-existing failures unrelated to PR. All 15 feature-specific tests passed. Code quality verified against 10-point checklist. No regressions introduced. Design requirements met. Production-ready.
+
