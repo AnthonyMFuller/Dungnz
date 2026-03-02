@@ -8,6 +8,52 @@
 
 ## Learnings
 
+### 2026-03-03 — Schema Validation Fix (#849)
+
+**PR:** #850 — `fix: repair invalid items in item-stats.json`  
+**Branch:** `squad/849-fix-item-stats-schema`  
+**File:** `Data/schemas/item-stats.schema.json` only
+
+**Problem:**
+- Game crashed on startup with schema validation error
+- Error: `System.IO.InvalidDataException: Schema validation failed for Data/item-stats.json`
+- Affected items at indices: 50, 77, 78, 79, 80, 81, 82, 83, 97 (all crafting materials)
+- Validation reported: `ArrayItemNotValid` for each of these items
+
+**Root Cause:**
+- The JSON schema was missing property definitions for 4 fields that exist in all items:
+  - `StatModifier` (integer)
+  - `Description` (string)  
+  - `Weight` (number)
+  - `SellPrice` (integer)
+- JSON Schema validation by default rejects properties not defined in the schema
+- All items in item-stats.json have these properties, but the schema didn't declare them
+- This caused validation to fail when StartupValidator ran its schema checks
+
+**Fix:**
+- Added missing property definitions to `Data/schemas/item-stats.schema.json`:
+  - `"StatModifier": { "type": "integer" }`
+  - `"Description": { "type": "string" }`
+  - `"Weight": { "type": "number", "minimum": 0 }`
+  - `"SellPrice": { "type": "integer", "minimum": 0 }`
+- No changes to item-stats.json data file needed — it was already correct
+- Schema now matches the actual structure of items in the data file
+
+**Testing:**
+- ✅ `dotnet build` succeeds
+- ✅ Game starts without validation errors
+- ✅ StartupValidator.ValidateOrThrow() passes
+- Confirmed by running game — title screen appears (previously crashed immediately)
+
+**Key Learning:**
+- StartupValidator in `Systems/StartupValidator.cs` validates all data files against schemas at startup
+- Schema validation is strict by default — all properties must be declared
+- When schema validation fails, error messages show indices (0-based) and error kind
+- Use `jq '.Items[N]'` to inspect specific items by index in large JSON files
+- Always test both build AND runtime startup after schema changes
+
+---
+
 ### 2026-03-02 — Emoji Restoration (#832)
 
 **PR:** #833 — `fix: restore visual emojis, replace 🛡 with 🦺 for Chest alignment`  
