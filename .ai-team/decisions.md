@@ -15338,3 +15338,104 @@ All emoji and icon characters used throughout the game (equipment slots, combat 
 ## Rationale
 
 Mixed character sets cause terminal column width discrepancies between Spectre.Console's cell measurement and actual terminal rendering, producing persistent border and text alignment bugs that are difficult to fix case-by-case.
+
+---
+
+# Decision: Startup Menu Architecture
+
+**Date:** 2026-03-02  
+**Agent:** Coulson
+
+## Decision
+
+Implement a startup menu system shown before `IntroSequence`, offering: **New Game**, **Load Save**, **New Game with Seed**, and **Exit**. The design uses:
+
+- **StartupMenuOption** enum — discriminator for user choice
+- **StartupResult** discriminated union — outcome (NewGame, LoadedGame, ExitGame)
+- **StartupOrchestrator** class — coordinates the menu flow
+- Three new **IDisplayService** methods:
+  - `ShowStartupMenu(bool hasSaves)` — main menu
+  - `SelectSaveToLoad(string[] saveNames)` — save picker
+  - `int? ReadSeed()` — seed input with 6-digit validation
+- **GameLoop.Run(GameState)** overload — load saved game without dungeon generation
+- **Program.cs** rewrite — branch on `StartupResult` to dispatch to new game or loaded game flow
+
+## Implementation Notes
+
+- **RunLoop() extraction:** Both `Run(Player, Room)` and `Run(GameState)` share a common command loop extracted to private `RunLoop()` method to avoid duplication.
+- **IntroSequence.showTitle parameter:** Optional parameter (default `true`) skips title display when called from orchestrator, which already shows it.
+- **Load error handling:** `RunLoadSave()` catches exceptions and displays errors via `_display.ShowError()`, re-showing menu on cancel.
+- **Seed validation:** Accepts 6-digit numeric seeds (100000–999999) with retry on invalid input.
+
+## Rationale
+
+- Keeps changes surgical — one new class, three new interface methods, one `GameLoop` overload.
+- Orchestrator owns the loop, so cancelling a sub-menu (save picker, seed entry) naturally re-shows the startup menu.
+- Pattern matching on `StartupResult` in `Program.cs` makes the branching logic clean and type-safe.
+- Reuses existing `IntroSequence` for name/class/difficulty flow; only the seed entry point differs.
+
+---
+
+# Decision: GameLoop.Run(GameState) and Program.cs Rewire
+
+**Date:** 2026-03-02  
+**Agent:** Barton
+
+## Decision
+
+Implemented the game loop changes required for startup menu feature:
+
+1. **GameLoop.cs** — Added public `Run(GameState)` overload that restores player, room, floor, and seed from a saved state and enters the command loop.
+2. **GameLoop.cs** — Extracted the `while (true) { ... }` command dispatch switch into a private `RunLoop()` method.
+3. **Program.cs** — Rewired to use `StartupOrchestrator`, pattern-match on `StartupResult`, and dispatch:
+   - `NewGame` → dungeon generation + `Run(Player, Room)`
+   - `LoadedGame` → `Run(GameState)`
+   - `ExitGame` → exit application
+
+## Implementation Notes
+
+- **Minimal state initialization:** `Run(GameState)` resets stats and session tracking to new instances, treating the load as a new session.
+- **Shared command loop:** Both `Run()` overloads call `RunLoop()` after state setup, ensuring identical command dispatch logic and maintaining DRY.
+- **Different welcome messages:** New game shows difficulty and floor separately; loaded game shows "Loaded save — Floor N".
+
+## Rationale
+
+- Avoids duplicating ~60-line command loop logic between two `Run()` overloads.
+- Clean separation of concerns: new game initializes dungeon; loaded game restores from save.
+- Depends on Hill's PR for `StartupOrchestrator`, `StartupResult`, and `StartupMenuOption` types.
+
+---
+
+# Decision: Startup Menu UI Implementation
+
+**Date:** 2026-03-02  
+**Agent:** Hill
+
+## Decision
+
+Implemented the complete display layer for startup menu system per Coulson's design:
+
+### New Files
+- **Engine/StartupMenuOption.cs** — Enum with NewGame, LoadSave, NewGameWithSeed, Exit
+- **Engine/StartupResult.cs** — Sealed record hierarchy (NewGame, LoadedGame, ExitGame)
+- **Engine/StartupOrchestrator.cs** — Main orchestrator class
+
+### Modified Files
+- **Display/IDisplayService.cs** — Added three new methods as specified
+- **Display/SpectreDisplayService.cs** — Implemented all three methods with Spectre-specific UI
+- **Display/DisplayService.cs (ConsoleDisplayService)** — Implemented all three methods using Console.ReadLine fallback
+- **Engine/IntroSequence.cs** — Added optional `showTitle = true` parameter
+
+## Implementation Details
+
+- **ShowStartupMenu:** Uses `PromptFromMenu` with conditional inclusion of Load Save option (omitted when `hasSaves` is false).
+- **SelectSaveToLoad:** Maps save names to menu options with Back/cancel option returning `null`.
+- **ReadSeed:** Validates 6-digit numeric range (100000–999999) with retry loop and "cancel" option.
+- **Both display implementations:** Required implementations in both `SpectreDisplayService` and legacy `ConsoleDisplayService` to satisfy interface contract.
+
+## Rationale
+
+- 100% adherence to Coulson's architecture design ensures integration compatibility with Barton's Program.cs rewire.
+- Dual display implementations maintain backward compatibility with legacy console code.
+- XML documentation on enum members satisfies project's documentation requirements (CS1591).
+- Adding optional parameter to `IntroSequence.Run()` with default `true` preserves existing call sites while enabling title suppression from orchestrator.
