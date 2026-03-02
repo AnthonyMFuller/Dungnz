@@ -62,6 +62,13 @@ public interface IDisplayService
     void ShowInventory(Player player);
 
     /// <summary>
+    /// Displays the inventory list, then presents an arrow-key navigable menu for selecting an item.
+    /// Returns the selected item, or null if the player cancels.
+    /// </summary>
+    /// <param name="player">The player whose inventory to display and select from.</param>
+    Item? ShowInventoryAndSelect(Player player);
+
+    /// <summary>
     /// Announces that an enemy dropped an item after being defeated, rendered as a
     /// box-drawn card with type icon and primary stat.
     /// </summary>

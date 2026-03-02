@@ -297,6 +297,33 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     /// <inheritdoc/>
+    public Item? ShowInventoryAndSelect(Player player)
+    {
+        // First, show the full inventory list (existing method)
+        ShowInventory(player);
+        
+        if (player.Inventory.Count == 0)
+            return null; // No items to select
+        
+        // Build selection list
+        var items = player.Inventory.ToList();
+        var prompt = new SelectionPrompt<string>()
+            .Title("[yellow]Select an item:[/]")
+            .PageSize(12)
+            .MoreChoicesText("[grey](Move up and down to see more items)[/]")
+            .AddChoices(items.Select(i => i.Name))
+            .AddChoices("[grey]« Cancel »[/]");
+        
+        var selection = AnsiConsole.Prompt(prompt);
+        
+        if (selection == "[grey]« Cancel »[/]")
+            return null;
+        
+        // Find and return the selected item
+        return items.FirstOrDefault(i => i.Name == selection);
+    }
+
+    /// <inheritdoc/>
     public void ShowLootDrop(Item item, Player player, bool isElite = false)
     {
         var tc        = TierColor(item.Tier);

@@ -149,6 +149,7 @@ public class TestDisplayService : IDisplayService
     public Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables) => null;
 
     public Item? ShowEquipMenuAndSelect(IReadOnlyList<Item> equippable) => null;
+    public Item? ShowInventoryAndSelect(Player player) => null;
     public Item? ShowUseMenuAndSelect(IReadOnlyList<Item> usable) => null;
     public Item? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems) => null;
     

@@ -77,6 +77,9 @@ public enum CommandType
     /// <summary>Display the top 5 historical runs ranked by score.</summary>
     Leaderboard,
 
+    /// <summary>Display side-by-side stats for an inventory item vs. currently equipped gear.</summary>
+    Compare,
+
     /// <summary>
     /// The player's input could not be matched to any known command verb;
     /// the game loop will display an error and prompt again.
@@ -163,6 +166,7 @@ public static class CommandParser
             "learn" => new ParsedCommand { Type = CommandType.Learn, Argument = argument },
             "craft" => new ParsedCommand { Type = CommandType.Craft, Argument = argument },
             "leaderboard" or "lb" or "scores" => new ParsedCommand { Type = CommandType.Leaderboard },
+            "compare" or "comp" => new ParsedCommand { Type = CommandType.Compare, Argument = argument },
             _ => TryFuzzyMatch(command, argument)
         };
     }
@@ -186,7 +190,8 @@ public static class CommandParser
             "descend", "down", "map", "m",
             "shop", "buy", "sell",
             "prestige", "p", "skills", "skill", "learn",
-            "craft", "leaderboard", "lb", "scores"
+            "craft", "leaderboard", "lb", "scores",
+            "compare", "comp"
         ];
 
         // Find verbs with Levenshtein distance <= 1

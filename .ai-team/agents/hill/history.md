@@ -1259,3 +1259,97 @@ Since ALL icons are now 1-column wide, replaced `EL(emoji, text)` helper with `I
 
 ### Build
 `dotnet build Dungnz.csproj` passes with 0 errors (4 pre-existing XML doc warnings, unrelated).
+
+## Learnings — Inventory Inspect & Compare Features (#844, #845, #846)
+
+**Issues Closed:** #844 (COMPARE command), #845 (Enhanced EXAMINE), #846 (Interactive INVENTORY)
+**PR:** #847 — `feat: add COMPARE command, enhanced EXAMINE, and interactive inventory`
+**Branch:** `squad/844-845-846-inspect-compare`
+**Design Spec:** `.ai-team/decisions/inbox/coulson-inspect-compare-design.md`
+
+### What Was Implemented
+
+**1. COMPARE Command (#844)**
+- Added `Compare` to `CommandType` enum in `Engine/CommandParser.cs` (after `Leaderboard`, before `Unknown`)
+- Added `"compare" or "comp"` switch case in parser with fuzzy-match support
+- Implemented `HandleCompare(string itemName)` in `Engine/GameLoop.cs`:
+  - No argument: shows interactive menu with equippable items only via `ShowEquipMenuAndSelect`
+  - With argument: finds item by case-insensitive contains match, validates equippable, then shows comparison
+  - Error cases: no equippable items, item not found, item not equippable
+  - Never consumes a turn (`_turnConsumed = false` on all paths)
+
+**2. Enhanced EXAMINE (#845)**
+- Modified `HandleExamine` in `Engine/GameLoop.cs` to auto-show comparison after detail card for equippable inventory items
+- Slot resolution uses new `GetCurrentlyEquippedForItem(Item)` helper
+- Non-breaking: only affects inventory items (room items and enemies unchanged)
+
+**3. Interactive INVENTORY (#846)**
+- Changed `case CommandType.Inventory:` dispatcher to call `ShowInventoryAndSelect` instead of `ShowInventory`
+- After selection, shows `ShowItemDetail` + auto-comparison if equippable
+- Cancelling selection returns gracefully without error
+- Never consumes a turn (`_turnConsumed = false`)
+
+**4. Display Service Methods**
+- Added `ShowInventoryAndSelect(Player)` to `IDisplayService.cs` interface
+- **SpectreDisplayService:** Uses `SelectionPrompt<string>` with item names + `[grey]« Cancel »[/]` option
+- **DisplayService (fallback):** Numbered text input with 'x' to cancel
+- **Test helpers:** Added stubs to `FakeDisplayService` (with input reader support) and `TestDisplayService`
+
+**5. Helper Method — GetCurrentlyEquippedForItem**
+```csharp
+private Item? GetCurrentlyEquippedForItem(Item item)
+{
+    return item.Type switch
+    {
+        ItemType.Weapon    => _player.EquippedWeapon,
+        ItemType.Armor     => _player.GetArmorSlotItem(item.Slot == ArmorSlot.None ? ArmorSlot.Chest : item.Slot),
+        ItemType.Accessory => _player.EquippedAccessory,
+        _                  => null
+    };
+}
+```
+- Mirrors exact slot resolution logic from `EquipmentManager.DoEquip`
+- `ArmorSlot.None` defaults to `Chest` (existing behavior)
+
+**6. README Update**
+Updated commands table to reflect new functionality:
+- `examine <target>` — now mentions auto-comparison for equippable inventory items
+- `inventory` — changed from "List carried items" to "Interactive item browser with arrow-key selection; displays details and comparison for selected equippable items"
+- `compare <item>` — new row documenting COMPARE command with `comp` alias
+
+### Key Design Decisions
+
+**Reuse Over Reinvention:**
+- COMPARE reuses existing `ShowEquipmentComparison` method (no new display code needed)
+- Interactive selection reuses existing `ShowEquipMenuAndSelect` pattern
+- Slot resolution mirrors `EquipmentManager.DoEquip` exactly (no divergence)
+
+**Non-Breaking Behavior:**
+- COMPARE/INVENTORY never consume a turn (info-only commands)
+- EXAMINE only shows comparison for *inventory* items (room items/enemies unchanged)
+- All interactive menus support cancellation without error
+
+**Progressive Disclosure:**
+- EXAMINE shows detail card first, then comparison (two separate calls)
+- INVENTORY shows full list, then selection prompt (not hidden behind command)
+- COMPARE validates equippable status before showing comparison
+
+### Build & Verification
+
+`dotnet build --no-restore` passes with 0 errors (5 pre-existing XML doc warnings, unrelated).
+
+Pre-push hook required README update due to Engine/ changes — addressed by updating commands table.
+
+### Files Modified
+1. `Engine/CommandParser.cs` — enum, switch case, fuzzy-match array
+2. `Engine/GameLoop.cs` — dispatcher, HandleExamine, HandleCompare, GetCurrentlyEquippedForItem, Inventory case
+3. `Display/IDisplayService.cs` — ShowInventoryAndSelect signature
+4. `Display/SpectreDisplayService.cs` — ShowInventoryAndSelect with SelectionPrompt
+5. `Display/DisplayService.cs` — ShowInventoryAndSelect fallback
+6. `Dungnz.Tests/Helpers/FakeDisplayService.cs` — ShowInventoryAndSelect stub
+7. `Dungnz.Tests/Helpers/TestDisplayService.cs` — ShowInventoryAndSelect stub
+8. `README.md` — commands table updates
+
+### Coordination Note
+
+Romanoff already implemented unit tests on branch `squad/846-inspect-compare-tests` (commit `9759491`). This implementation branch (`squad/844-845-846-inspect-compare`) contains only production code. Tests will merge separately to avoid conflicts.

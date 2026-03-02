@@ -243,6 +243,21 @@ public class FakeDisplayService : IDisplayService
         return null;
     }
 
+    public Item? ShowInventoryAndSelect(Player player)
+    {
+        AllOutput.Add("inventory_select_menu");
+        ShowInventory(player); // Call existing method to track output
+
+        if (_input != null)
+        {
+            var line = _input.ReadLine()?.Trim() ?? "";
+            if (int.TryParse(line, out int idx) && idx >= 1 && idx <= player.Inventory.Count)
+                return player.Inventory[idx - 1];
+        }
+
+        return null; // No input or invalid input = cancel
+    }
+
     public Item? ShowUseMenuAndSelect(IReadOnlyList<Item> usable)
     {
         AllOutput.Add("use_menu");

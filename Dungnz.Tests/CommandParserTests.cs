@@ -146,4 +146,25 @@ public class CommandParserTests
         var cmd = CommandParser.Parse(input);
         cmd.Type.Should().Be(CommandType.Inventory);
     }
+
+    [Theory]
+    [InlineData("compare sword", "sword")]
+    [InlineData("comp shield", "shield")]
+    [InlineData("comp iron sword", "iron sword")]
+    public void Parse_CompareWithArgument_ReturnsCompareCommandWithArgument(string input, string expectedArg)
+    {
+        var cmd = CommandParser.Parse(input);
+        cmd.Type.Should().Be(CommandType.Compare);
+        cmd.Argument.Should().Be(expectedArg);
+    }
+
+    [Theory]
+    [InlineData("compare")]
+    [InlineData("comp")]
+    public void Parse_CompareNoArgument_ReturnsCompareCommandWithEmptyArgument(string input)
+    {
+        var cmd = CommandParser.Parse(input);
+        cmd.Type.Should().Be(CommandType.Compare);
+        cmd.Argument.Should().Be(string.Empty);
+    }
 }

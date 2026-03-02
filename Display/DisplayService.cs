@@ -297,6 +297,29 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine();
     }
 
+    /// <inheritdoc/>
+    public Item? ShowInventoryAndSelect(Player player)
+    {
+        // First, show the full inventory list
+        ShowInventory(player);
+        
+        if (player.Inventory.Count == 0)
+            return null; // No items to select
+        
+        // Fallback to numbered text input
+        Console.WriteLine();
+        Console.Write("Enter item number (or 'x' to cancel): ");
+        var input = Console.ReadLine()?.Trim() ?? "";
+        
+        if (input.Equals("x", StringComparison.OrdinalIgnoreCase))
+            return null;
+        
+        if (int.TryParse(input, out int index) && index >= 1 && index <= player.Inventory.Count)
+            return player.Inventory[index - 1];
+        
+        return null; // Invalid input treated as cancel
+    }
+
     /// <summary>
     /// Renders a box-drawn loot drop card with type icon, item name, primary stat, and weight.
     /// </summary>
