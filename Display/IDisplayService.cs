@@ -1,3 +1,4 @@
+using Dungnz.Engine;
 using Dungnz.Models;
 
 namespace Dungnz.Display;
@@ -359,4 +360,13 @@ public interface IDisplayService
 
     /// <summary>Presents room items as an arrow-key menu. Returns selected item, a sentinel "__TAKE_ALL__" item (Name == "__TAKE_ALL__"), or null for cancel.</summary>
     Item? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems);
+
+    /// <summary>Shows the main startup menu. When <paramref name="hasSaves"/> is false, the Load Save option is omitted.</summary>
+    StartupMenuOption ShowStartupMenu(bool hasSaves);
+
+    /// <summary>Shows the save selection list and returns the chosen save name, or null if cancelled.</summary>
+    string? SelectSaveToLoad(string[] saveNames);
+
+    /// <summary>Prompts for a 6-digit seed (100000–999999). Returns the seed or null if cancelled.</summary>
+    int? ReadSeed();
 }

@@ -1681,4 +1681,46 @@ public class ConsoleDisplayService : IDisplayService
             .ToArray();
         return SelectFromMenu(options, _input, "=== TAKE — Choose an item ===");
     }
+
+    /// <inheritdoc />
+    public StartupMenuOption ShowStartupMenu(bool hasSaves)
+    {
+        var options = new List<(string Label, StartupMenuOption Value)>
+        {
+            ("🗡  New Game", StartupMenuOption.NewGame)
+        };
+
+        if (hasSaves)
+            options.Add(("📂 Load Save", StartupMenuOption.LoadSave));
+
+        options.Add(("🌱 New Game with Seed", StartupMenuOption.NewGameWithSeed));
+        options.Add(("✖  Exit", StartupMenuOption.Exit));
+
+        return SelectFromMenu(options, _input, "What would you like to do?");
+    }
+
+    /// <inheritdoc />
+    public string? SelectSaveToLoad(string[] saveNames)
+    {
+        var options = saveNames
+            .Select(name => (name, (string?)name))
+            .Append(("↩  Back", (string?)null))
+            .ToArray();
+        return SelectFromMenu(options, _input, "Choose a save to load:");
+    }
+
+    /// <inheritdoc />
+    public int? ReadSeed()
+    {
+        while (true)
+        {
+            Console.Write("Enter a 6-digit seed (or type 'cancel'): ");
+            var input = Console.ReadLine()?.Trim();
+            if (string.IsNullOrWhiteSpace(input) || input.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                return null;
+            if (int.TryParse(input, out var seed) && seed >= 100000 && seed <= 999999)
+                return seed;
+            ShowError("Invalid seed. Enter a 6-digit number (100000–999999) or 'cancel'.");
+        }
+    }
 }

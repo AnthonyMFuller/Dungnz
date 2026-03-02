@@ -144,6 +144,33 @@ public class GameLoop
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
 
+        RunLoop();
+    }
+
+    /// <summary>
+    /// Starts the game loop from a previously saved GameState, restoring the player's
+    /// position, floor, seed, and all associated state.
+    /// </summary>
+    public void Run(GameState state)
+    {
+        _player = state.Player;
+        _currentRoom = state.CurrentRoom;
+        _currentFloor = state.CurrentFloor;
+        _seed = state.Seed;
+        _stats = new RunStats();
+        _sessionStats = new SessionStats();
+        _runStart = DateTime.UtcNow;
+        _rng = _seed.HasValue ? new Random(_seed.Value) : new Random();
+
+        _display.ShowMessage($"Loaded save — Floor {_currentFloor}");
+        _display.ShowRoom(_currentRoom);
+        _currentRoom.Visited = true;
+
+        RunLoop();
+    }
+
+    private void RunLoop()
+    {
         while (true)
         {
             _display.ShowCommandPrompt();
