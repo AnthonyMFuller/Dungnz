@@ -276,4 +276,8 @@ public class FakeDisplayService : IDisplayService
         if (enemy.AsciiArt != null && enemy.AsciiArt.Length > 0)
             AllOutput.Add($"enemy_art:{string.Join("|", enemy.AsciiArt)}");
     }
+
+    public StartupMenuOption ShowStartupMenu(bool hasSaves) => StartupMenuOption.NewGame;
+    public string? SelectSaveToLoad(string[] saveNames) => saveNames.FirstOrDefault();
+    public int? ReadSeed() => null;
 }
