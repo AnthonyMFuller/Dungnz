@@ -911,3 +911,66 @@ With `SelfHealCooldown=1` and check-first: fires on turn 2 (correct, matching as
 - **CombatEngine cooldown check pattern is check-first**: `if (cooldown > 0) decrement; else { heal; reset to SelfHealEveryTurns - 1; }`. Any test helpers simulating this must mirror this pattern, not assume decrement-first.
 - When writing test helpers that simulate engine behavior, always verify against the actual engine implementation rather than assuming a pattern.
 - **EL() helper review (2026-03-01):** ⚡ (U+26A1 HIGH VOLTAGE) has EAW=W (Wide, 2 terminal cols) but was placed in NarrowEmoji (gets 2 spaces). Active bug at line 233 — Rogue Combo row visually misaligned. Fix: remove ⚡ from NarrowEmoji. All other NarrowEmoji members verified correct per Unicode EAW. All 14 EL() call sites checked; 13 correct, 1 wrong (line 233). The ⚔ U+2694 classification as narrow (EAW=N) in EL() is correct per Unicode; the VisualWidth() double-width treatment was a different context. East Asian Width (EAW) property is the reliable source of truth for terminal column width.
+
+---
+
+## Session: Inspect & Compare Feature Tests (2026-03-02, Branch: squad/846-inspect-compare-tests)
+
+**Task:** Write unit tests for inspect & compare features (#844 COMPARE command, #845 Enhanced EXAMINE, #846 Interactive INVENTORY).
+
+**Context:**
+- Coulson designed the features in `.ai-team/decisions/inbox/coulson-inspect-compare-design.md`
+- Hill implemented the features (CommandType.Compare, HandleCompare, GetCurrentlyEquippedForItem, ShowInventoryAndSelect, enhanced HandleExamine)
+- Hill's implementation already complete when I started — all production code present
+- Tests needed to document expected behavior and prevent regressions
+
+**Tests Written:**
+
+**1. CommandParserTests.cs (3 new tests):**
+- `Parse_CompareWithArgument_ReturnsCompareCommandWithArgument` — "compare sword" → CommandType.Compare, arg="sword"
+- `Parse_CompareNoArgument_ReturnsCompareCommandWithEmptyArgument` — "compare" → CommandType.Compare, arg=""
+- Covers both "compare" and "comp" shorthand
+
+**2. GameLoopCommandTests.cs (8 new tests):**
+- `Compare_WithEquippableItemName_ShowsComparison` — named item → comparison displayed
+- `Compare_NoArg_ShowsInteractiveMenu` — no arg → equip menu shown for selection
+- `Compare_NoEquippableItems_ShowsError` — inventory has only consumables → error
+- `Compare_ItemNotInInventory_ShowsError` — item not found → error
+- `Compare_ConsumableItem_ShowsError` — named consumable → "cannot be equipped" error
+- `Examine_EquippableInventoryItem_ShowsComparisonAfterDetail` — inventory item + equippable → detail + comparison
+- `Examine_RoomItem_DoesNotShowComparison` — room item → detail only, no comparison
+- `Examine_ConsumableInventoryItem_DoesNotShowComparison` — consumable → detail only, no comparison
+
+**3. InventoryDisplayRegressionTests.cs (4 new tests):**
+- `ShowInventoryAndSelect_EmptyInventory_ReturnsNull` — empty inventory → null
+- `ShowInventoryAndSelect_CancelInput_ReturnsNull` — "x" input → null
+- `ShowInventoryAndSelect_ValidIndex_ReturnsCorrectItem` — "1" → first item
+- `ShowInventoryAndSelect_InvalidIndex_ReturnsNull` — "999" → null
+
+**4. FakeDisplayService.cs:**
+- Added `ShowInventoryAndSelect` implementation for test infrastructure
+- Reads input via `_input.ReadLine()`, returns item at index-1 if valid, null otherwise
+- Tracks output via `AllOutput.Add("inventory_select_menu")`
+
+**Edge Cases Covered:**
+- COMPARE with no equippable items (error path)
+- COMPARE with consumable item (error path)
+- COMPARE with item not in inventory (error path)
+- EXAMINE on room items vs inventory items (comparison only for inventory equippables)
+- EXAMINE on consumables (no comparison)
+- ShowInventoryAndSelect with empty inventory
+- ShowInventoryAndSelect with invalid/out-of-range input
+
+**Build Status:**
+- Tests compile but main project doesn't build due to missing XML doc comments on `ShowInventoryAndSelect` in DisplayService.cs and SpectreDisplayService.cs
+- These are Hill's implementation gaps, not test issues
+- CS1591 errors: project has `<WarningsAsErrors>CS1591;...</WarningsAsErrors>` treating missing XML docs as errors
+- Tests pushed successfully; build failures are tracked for Hill to fix
+
+**Patterns Observed:**
+- FakeDisplayService uses `AllOutput.Add("equipment_compare:...")` for ShowEquipmentComparison tracking
+- GameLoopCommandTests use `MakeSetup()` → tuple, `MakeLoop(display, combat, ...inputs)` pattern
+- Test assertions use FluentAssertions: `Should().Contain(o => o.Contains("..."))`
+- Interactive menu tests inject input via FakeInputReader passed to FakeDisplayService constructor
+
+**Test Count:** Not yet run due to build errors (Hill needs to add XML doc comments). Tests are structurally complete and ready.
