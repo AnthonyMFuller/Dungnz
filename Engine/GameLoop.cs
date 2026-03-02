@@ -196,7 +196,17 @@ public class GameLoop
                     HandleUse(cmd.Argument);
                     break;
                 case CommandType.Inventory:
-                    _display.ShowInventory(_player);
+                    var selectedItem = _display.ShowInventoryAndSelect(_player);
+                    _turnConsumed = false;
+                    if (selectedItem != null)
+                    {
+                        _display.ShowItemDetail(selectedItem);
+                        if (selectedItem.IsEquippable)
+                        {
+                            var equipped = GetCurrentlyEquippedForItem(selectedItem);
+                            _display.ShowEquipmentComparison(_player, equipped, selectedItem);
+                        }
+                    }
                     break;
                 case CommandType.Stats:
                     _display.ShowPlayerStats(_player);
@@ -255,6 +265,9 @@ public class GameLoop
                     break;
                 case CommandType.Leaderboard:
                     HandleLeaderboard();
+                    break;
+                case CommandType.Compare:
+                    HandleCompare(cmd.Argument);
                     break;
                 default:
                     _display.ShowError("Unknown command. Type HELP for commands.");
@@ -510,6 +523,14 @@ public class GameLoop
         if (invItem != null)
         {
             _display.ShowItemDetail(invItem);
+            
+            // If equippable, show comparison vs. currently equipped
+            if (invItem.IsEquippable)
+            {
+                Item? currentlyEquipped = GetCurrentlyEquippedForItem(invItem);
+                _display.ShowEquipmentComparison(_player, currentlyEquipped, invItem);
+            }
+            
             return;
         }
 
@@ -859,6 +880,73 @@ public class GameLoop
         _display.ShowMessage("=== Saved Games ===");
         foreach (var s in saves)
             _display.ShowMessage($"  {s}");
+    }
+
+    /// <summary>
+    /// Returns the currently equipped item in the slot that <paramref name="item"/> would occupy.
+    /// Logic mirrors Systems/EquipmentManager.DoEquip slot resolution.
+    /// </summary>
+    private Item? GetCurrentlyEquippedForItem(Item item)
+    {
+        return item.Type switch
+        {
+            ItemType.Weapon    => _player.EquippedWeapon,
+            ItemType.Armor     => _player.GetArmorSlotItem(item.Slot == ArmorSlot.None ? ArmorSlot.Chest : item.Slot),
+            ItemType.Accessory => _player.EquippedAccessory,
+            _                  => null
+        };
+    }
+
+    /// <summary>
+    /// Handles the COMPARE command: displays side-by-side stats for an inventory item
+    /// vs. currently equipped gear. Shows interactive menu if no argument provided.
+    /// </summary>
+    private void HandleCompare(string itemName)
+    {
+        if (string.IsNullOrWhiteSpace(itemName))
+        {
+            // Interactive selection: show equippable items only
+            var equippable = _player.Inventory.Where(i => i.IsEquippable).ToList();
+            if (equippable.Count == 0)
+            {
+                _turnConsumed = false;
+                _display.ShowError("You have no equippable items to compare.");
+                return;
+            }
+            
+            var selected = _display.ShowEquipMenuAndSelect(equippable.AsReadOnly());
+            if (selected == null)
+            {
+                _turnConsumed = false;
+                return; // User cancelled
+            }
+            
+            itemName = selected.Name;
+        }
+        
+        // Find item by name (case-insensitive contains match)
+        var itemNameLower = itemName.ToLowerInvariant();
+        var item = _player.Inventory.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(itemNameLower));
+        
+        if (item == null)
+        {
+            _turnConsumed = false;
+            _display.ShowError($"You don't have '{itemName}' in your inventory.");
+            return;
+        }
+        
+        if (!item.IsEquippable)
+        {
+            _turnConsumed = false;
+            _display.ShowError($"{item.Name} cannot be equipped, so there's nothing to compare.");
+            return;
+        }
+        
+        // Get currently equipped item in target slot
+        Item? currentlyEquipped = GetCurrentlyEquippedForItem(item);
+        
+        // Show comparison
+        _display.ShowEquipmentComparison(_player, currentlyEquipped, item);
     }
 
     private void HandleDescend()

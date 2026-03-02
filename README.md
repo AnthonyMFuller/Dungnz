@@ -81,10 +81,11 @@ Choose one class at the start of each run. Bonuses are applied on top of base st
 |---------|---------|-------------|
 | `go <dir>` | `north`/`n`, `south`/`s`, `east`/`e`, `west`/`w` | Move to adjacent room |
 | `look` | `l` | Redescribe current room |
-| `examine <target>` | `ex` | Inspect an enemy or item |
+| `examine <target>` | `ex` | Inspect an enemy or item; for equippable inventory items, auto-shows comparison vs. currently equipped |
 | `take <item>` | `get` | Pick up an item |
 | `use <item>` | | Use a consumable item; omit item name to pick from an interactive menu; accepts fuzzy/typo matching |
-| `inventory` | `inv`, `i` | List carried items |
+| `inventory` | `inv`, `i` | Interactive item browser with arrow-key selection; displays details and comparison for selected equippable items |
+| `compare <item>` | `comp` | Display side-by-side stat comparison for an inventory item vs. currently equipped gear; omit item name for interactive menu |
 | `equipment` | `gear` | Show equipped items and their bonuses |
 | `equip <item>` | | Equip a weapon or armour from inventory; omit item name to pick from an interactive menu |
 | `unequip <slot>` | | Remove equipped item back to inventory |
