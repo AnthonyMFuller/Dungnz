@@ -8,6 +8,29 @@
 
 ## Learnings
 
+### 2026-03-02 — Emoji Restoration (#832)
+
+**PR:** #833 — `fix: restore visual emojis, replace 🛡 with 🦺 for Chest alignment`  
+**Branch:** `squad/832-restore-visual-emojis`  
+**File:** `Display/SpectreDisplayService.cs` only
+
+**What:**
+- PR #830 replaced all emojis with narrow Unicode symbols to fix an alignment bug. The only ACTUALLY broken emoji was 🛡 (U+1F6E1, SHIELD) — EAW=N but not in NarrowEmoji, so it got 1 space instead of 2.
+- Restored all original wide emojis (💍🪖🥋🧤👖👟🧥⭐✨🏃🧪).
+- Replaced 🛡 with 🦺 (safety vest, U+1F9BA, EAW=W) for Chest and Armor icon — this is the real fix.
+- Replaced `IL()` helper with `EL()` that uses a `NarrowEmoji` HashSet to decide spacing: narrow symbols get 2 spaces, wide emojis get 1 space.
+
+**Key learning — EAW and terminal alignment:**
+- EAW=W (wide) emojis occupy 2 terminal columns → use 1 space after = 3 columns total
+- EAW=N (narrow) symbols occupy 1 terminal column → use 2 spaces after = 3 columns total
+- The NarrowEmoji set: `["⚔", "⛨", "⚗", "☠", "★", "↩", "•"]`
+- ✦ (U+2736) is narrow but only used in Combo row (not an equipment slot) — acceptable
+- Never add 🛡 to the emoji set; 🦺 is the permanent replacement
+
+**Build note:** `dotnet build Dungnz.csproj` (without `-q`, without `--no-restore`) works when the incremental build cache is in a bad state. `dotnet build -q --no-restore` may fail with MSB3492/GenerateTargetFrameworkMonikerAttribute — this is a pre-existing SDK quirk, not a code error.
+
+---
+
 ### 2026-02-22 — Phase 0: UI/UX Shared Infrastructure (#269, #270, #271)
 
 **PR:** #298 — `feat: Phase 0 — UI/UX shared infrastructure`  
