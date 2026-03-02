@@ -181,6 +181,119 @@ public class GameLoopCommandTests
         display.Messages.Should().NotBeEmpty();
     }
 
+    // ── Compare command ───────────────────────────────────────────────────────
+
+    [Fact]
+    public void Compare_WithEquippableItemName_ShowsComparison()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true };
+        player.Inventory.Add(sword);
+        player.EquippedWeapon = new Item { Name = "Rusty Dagger", Type = ItemType.Weapon, AttackBonus = 2, IsEquippable = true };
+
+        var loop = MakeLoop(display, combat.Object, "compare iron sword", "quit");
+        loop.Run(player, room);
+
+        display.AllOutput.Should().Contain(o => o.Contains("equipment_compare"), "comparison should display stat changes");
+    }
+
+    [Fact]
+    public void Compare_NoArg_ShowsInteractiveMenu()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true };
+        player.Inventory.Add(sword);
+
+        // "1" selects first item, "quit" ends loop
+        var loop = MakeLoop(display, combat.Object, "compare", "1", "quit");
+        loop.Run(player, room);
+
+        display.AllOutput.Should().Contain("equip_menu", "interactive selection menu should be shown");
+    }
+
+    [Fact]
+    public void Compare_NoEquippableItems_ShowsError()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        player.Inventory.Add(new Item { Name = "Health Potion", Type = ItemType.Consumable });
+
+        var loop = MakeLoop(display, combat.Object, "compare", "quit");
+        loop.Run(player, room);
+
+        display.Errors.Should().Contain(e => e.Contains("no equippable"));
+    }
+
+    [Fact]
+    public void Compare_ItemNotInInventory_ShowsError()
+    {
+        var (player, room, display, combat) = MakeSetup();
+
+        var loop = MakeLoop(display, combat.Object, "compare iron sword", "quit");
+        loop.Run(player, room);
+
+        display.Errors.Should().Contain(e => e.Contains("don't have") || e.Contains("inventory"));
+    }
+
+    [Fact]
+    public void Compare_ConsumableItem_ShowsError()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        player.Inventory.Add(new Item { Name = "Health Potion", Type = ItemType.Consumable });
+
+        var loop = MakeLoop(display, combat.Object, "compare Health Potion", "quit");
+        loop.Run(player, room);
+
+        display.Errors.Should().Contain(e => e.Contains("cannot be equipped"));
+    }
+
+    // ── Examine with auto-comparison ──────────────────────────────────────────
+
+    [Fact]
+    public void Examine_EquippableInventoryItem_ShowsComparisonAfterDetail()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true };
+        player.Inventory.Add(sword);
+        player.EquippedWeapon = new Item { Name = "Rusty Dagger", Type = ItemType.Weapon, AttackBonus = 2, IsEquippable = true };
+
+        var loop = MakeLoop(display, combat.Object, "examine iron sword", "quit");
+        loop.Run(player, room);
+
+        // Both ShowItemDetail AND ShowEquipmentComparison should be called
+        display.Messages.Should().Contain(m => m.Contains("Iron Sword"), "detail should be shown");
+        display.AllOutput.Should().Contain(o => o.Contains("equipment_compare"), "comparison should be shown after detail");
+    }
+
+    [Fact]
+    public void Examine_RoomItem_DoesNotShowComparison()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true };
+        room.Items.Add(sword);
+
+        var loop = MakeLoop(display, combat.Object, "examine iron sword", "quit");
+        loop.Run(player, room);
+
+        // ShowItemDetail should be called, ShowEquipmentComparison should NOT
+        display.Messages.Should().Contain(m => m.Contains("Iron Sword"), "detail should be shown");
+        display.AllOutput.Should().NotContain(o => o.Contains("equipment_compare"), "comparison should NOT be shown for room items");
+    }
+
+    [Fact]
+    public void Examine_ConsumableInventoryItem_DoesNotShowComparison()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable };
+        player.Inventory.Add(potion);
+
+        var loop = MakeLoop(display, combat.Object, "examine health potion", "quit");
+        loop.Run(player, room);
+
+        // ShowItemDetail should be called, ShowEquipmentComparison should NOT
+        display.Messages.Should().Contain(m => m.Contains("Health Potion"), "detail should be shown");
+        display.AllOutput.Should().NotContain(o => o.Contains("equipment_compare"), "comparison should NOT be shown for consumables");
+    }
+
     // ── Room with combat — enemy alive ─────────────────────────────────────────
 
     [Fact]

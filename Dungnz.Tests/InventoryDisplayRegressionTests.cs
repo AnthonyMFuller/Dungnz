@@ -531,6 +531,69 @@ public class InventoryDisplayRegressionTests : IDisposable
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+    // ShowInventoryAndSelect tests
+    // ─────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void ShowInventoryAndSelect_EmptyInventory_ReturnsNull()
+    {
+        // Arrange
+        var fake = new FakeDisplayService(new FakeInputReader("1"));
+        var player = new Player { Name = "Tester", HP = 100, MaxHP = 100 };
+
+        // Act
+        var selected = fake.ShowInventoryAndSelect(player);
+
+        // Assert
+        selected.Should().BeNull("selecting from empty inventory should return null");
+    }
+
+    [Fact]
+    public void ShowInventoryAndSelect_CancelInput_ReturnsNull()
+    {
+        // Arrange
+        var fake = new FakeDisplayService(new FakeInputReader("x"));
+        var player = BuildPlayerWithFullInventory();
+
+        // Act
+        var selected = fake.ShowInventoryAndSelect(player);
+
+        // Assert
+        selected.Should().BeNull("'x' input should cancel selection");
+    }
+
+    [Fact]
+    public void ShowInventoryAndSelect_ValidIndex_ReturnsCorrectItem()
+    {
+        // Arrange
+        var fake = new FakeDisplayService(new FakeInputReader("1"));
+        var player = BuildPlayerWithFullInventory();
+
+        // Act
+        var selected = fake.ShowInventoryAndSelect(player);
+
+        // Assert
+        fake.AllOutput.Should().Contain("inventory_select_menu");
+        fake.AllOutput.Should().Contain($"inventory:{player.Inventory.Count}");
+        selected.Should().NotBeNull("selecting '1' should return the first item");
+        selected!.Name.Should().Be(player.Inventory[0].Name);
+    }
+
+    [Fact]
+    public void ShowInventoryAndSelect_InvalidIndex_ReturnsNull()
+    {
+        // Arrange
+        var fake = new FakeDisplayService(new FakeInputReader("999"));
+        var player = BuildPlayerWithFullInventory();
+
+        // Act
+        var selected = fake.ShowInventoryAndSelect(player);
+
+        // Assert
+        selected.Should().BeNull("invalid index should return null");
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
     // ShowInventory after equip — [E] tag and color code both appear
     // ─────────────────────────────────────────────────────────────────────────
 
