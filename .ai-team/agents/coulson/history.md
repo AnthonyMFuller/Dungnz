@@ -2170,3 +2170,55 @@ Both PRs reviewed and merged in Round 3 (see below).
 - Rich symbols (#824) is the biggest code change — full rewrite of `GetMapRoomSymbol` with 15-entry priority table
 - Spectre.Console color names must be verified against docs (darkorange3, dodgerblue1, mediumpurple2, orangered1, springgreen2)
 - Unicode `♥` (U+2665) is narrow in most terminals but needs monitoring for width bugs
+
+---
+
+## 2026-03-02: PR #847 Review & Merge — Inventory UX Features
+
+**Context:** Hill implemented three inventory UX improvements per Coulson's design spec (issues #844, #845, #846) on branch `squad/844-845-846-inspect-compare`.
+
+**Review Checklist — ALL PASSED:**
+
+1. ✅ `CommandType.Compare` enum value exists with XML doc comment ("Display side-by-side stats for an inventory item vs. currently equipped gear.")
+2. ✅ `CommandParser.Parse()` has `"compare" or "comp"` case at line 169
+3. ✅ `GetCurrentlyEquippedForItem(Item)` uses correct slot resolution logic (lines 889–898), mirrors `EquipmentManager.DoEquip`
+4. ✅ `HandleExamine` shows comparison after detail for equippable inventory items (lines 528–532)
+5. ✅ `HandleCompare` has all error cases per spec (lines 912, 920, 933, 940):
+   - No equippable items → error + no turn consumed
+   - User cancels selection → graceful exit + no turn consumed
+   - Item not found → error + no turn consumed
+   - Item not equippable → error + no turn consumed
+6. ✅ `ShowInventoryAndSelect` exists in IDisplayService with XML doc (line 69)
+7. ✅ Both display implementations exist:
+   - SpectreDisplayService (line 300) — SelectionPrompt with arrow-key navigation
+   - DisplayService fallback (line 301) — numbered text input with 'x' to cancel
+8. ✅ FakeDisplayService (input reader support) and TestDisplayService (null stub) updated
+9. ✅ Tests exist for all 3 features:
+   - CommandParserTests: 2 tests (Compare with/without argument)
+   - GameLoopCommandTests: 5 Compare tests + 3 Examine tests (8 total)
+   - InventoryDisplayRegressionTests: 4 ShowInventoryAndSelect tests
+   - **Total: 15 tests, all passing**
+10. ✅ `_turnConsumed = false` appears on error/cancel paths in HandleCompare (never set on success path)
+
+**Build & Tests:**
+- `dotnet build` passes with 0 errors, 4 pre-existing XML doc warnings (unrelated to PR)
+- `dotnet test` passes: 1415 total tests (pre-existing suite), 1410 passed, 5 pre-existing arch violations (unrelated)
+- **Feature-specific tests (15 total): 100% pass rate**
+
+**Documentation:**
+- README.md updated with full feature descriptions:
+  - `examine <target>` — "auto-shows comparison for equippable inventory items"
+  - `inventory` — "Interactive item browser with arrow-key selection; displays details and comparison"
+  - `compare <item>` — "Display side-by-side stat comparison; omit item name for interactive menu"
+
+**Merge Action:**
+- **APPROVED** — Executed `gh pr merge 847 --squash --admin --delete-branch`
+- Master now includes all feature code + tests + docs
+- Issues #844, #845, #846 already auto-closed by commit message
+
+**Key Observations:**
+- Hill's implementation is clean, idiomatic C#, follows established patterns (ShowEquipMenuAndSelect, GetCurrentlyEquippedForItem mirrors EquipmentManager)
+- No turn consumption on info-only paths (correct behavior per charter)
+- Romanoff's tests on separate branch (`squad/846-inspect-compare-tests`) ensure feature coverage without code duplication
+- PR history: feat commit (88a4476) + docs (c46050e) + tests (5620c9c) — logically separated, clean squash
+- All error cases properly handled; no edge cases missed
