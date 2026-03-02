@@ -758,7 +758,7 @@ public sealed class SpectreDisplayService : IDisplayService
             table.AddRow(slotLabel, name, statsStr);
         }
 
-        AddSlot(EL("⚔", "Weapon"),    player.EquippedWeapon,    isWeapon: true);
+        AddSlot(EL("🔪", "Weapon"),    player.EquippedWeapon,    isWeapon: true);
         AddSlot(EL("💍", "Accessory"), player.EquippedAccessory, isAccessory: true);
         AddSlot(EL("🪖", "Head"),      player.EquippedHead);
         AddSlot(EL("🥋", "Shoulders"), player.EquippedShoulders);
@@ -767,7 +767,7 @@ public sealed class SpectreDisplayService : IDisplayService
         AddSlot(EL("👖", "Legs"),      player.EquippedLegs);
         AddSlot(EL("👟", "Feet"),      player.EquippedFeet);
         AddSlot(EL("🧥", "Back"),      player.EquippedBack);
-        AddSlot(EL("⛨", "Off-Hand"),  player.EquippedOffHand);
+        AddSlot(EL("🔰", "Off-Hand"),  player.EquippedOffHand);
 
         AnsiConsole.WriteLine();
         AnsiConsole.Write(table);
@@ -1318,7 +1318,7 @@ public sealed class SpectreDisplayService : IDisplayService
         return selected.Value;
     }
 
-    private static readonly HashSet<string> NarrowEmoji = ["⚔", "⛨", "⚗", "☠", "★", "↩", "•"];
+    private static readonly HashSet<string> NarrowEmoji = ["⚔", "⚗", "☠", "★", "↩", "•"];
     private static string EL(string emoji, string text) =>
         NarrowEmoji.Contains(emoji) ? $"{emoji}  {text}" : $"{emoji} {text}";
 
@@ -1341,7 +1341,7 @@ public sealed class SpectreDisplayService : IDisplayService
         ArmorSlot.Legs      => "👖",
         ArmorSlot.Feet      => "👟",
         ArmorSlot.Back      => "🧥",
-        ArmorSlot.OffHand   => "⛨",
+        ArmorSlot.OffHand   => "🔰",
         _                   => "🦺",
     };
 
