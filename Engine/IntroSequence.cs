@@ -28,11 +28,15 @@ public class IntroSequence
     /// Runs the complete intro flow: title → lore → prestige (if any) → name → class → difficulty.
     /// Returns a fully configured Player, the auto-generated run seed, and the chosen difficulty.
     /// </summary>
-    public (Player player, int seed, Difficulty difficulty) Run(PrestigeData? prestige = null)
+    /// <param name="prestige">Optional prestige data for bonuses. Defaults to new PrestigeData if null.</param>
+    /// <param name="showTitle">Whether to show the enhanced title screen. Default is true.</param>
+    public (Player player, int seed, Difficulty difficulty) Run(PrestigeData? prestige = null, bool showTitle = true)
     {
         prestige ??= new PrestigeData();
 
-        _display.ShowEnhancedTitle();
+        if (showTitle)
+            _display.ShowEnhancedTitle();
+        
         _display.ShowIntroNarrative();
 
         if (prestige.PrestigeLevel > 0)

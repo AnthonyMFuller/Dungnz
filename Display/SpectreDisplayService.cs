@@ -1,4 +1,5 @@
 using System.Text.RegularExpressions;
+using Dungnz.Engine;
 using Dungnz.Models;
 using Dungnz.Systems;
 using Spectre.Console;
@@ -1294,6 +1295,48 @@ public sealed class SpectreDisplayService : IDisplayService
             .Prepend(("[yellow]📦 Take All[/]", (Item?)sentinel))
             .Append(("[grey]↩  Cancel[/]", (Item?)null));
         return PromptFromMenu("[bold yellow]=== TAKE — Choose an item ===[/]", options);
+    }
+
+    /// <inheritdoc/>
+    public StartupMenuOption ShowStartupMenu(bool hasSaves)
+    {
+        var options = new List<(string Label, StartupMenuOption Value)>
+        {
+            ("🗡  New Game", StartupMenuOption.NewGame)
+        };
+
+        if (hasSaves)
+            options.Add(("📂 Load Save", StartupMenuOption.LoadSave));
+
+        options.Add(("🌱 New Game with Seed", StartupMenuOption.NewGameWithSeed));
+        options.Add(("✖  Exit", StartupMenuOption.Exit));
+
+        return PromptFromMenu("[bold yellow]What would you like to do?[/]", options);
+    }
+
+    /// <inheritdoc/>
+    public string? SelectSaveToLoad(string[] saveNames)
+    {
+        var options = saveNames
+            .Select(name => (Markup.Escape(name), (string?)name))
+            .Append(("↩  Back", (string?)null));
+        return PromptFromMenu("[bold yellow]Choose a save to load:[/]", options);
+    }
+
+    /// <inheritdoc/>
+    public int? ReadSeed()
+    {
+        while (true)
+        {
+            var input = AnsiConsole.Prompt(
+                new TextPrompt<string>("[bold yellow]Enter a 6-digit seed (or type 'cancel'):[/]")
+                    .AllowEmpty());
+            if (string.IsNullOrWhiteSpace(input) || input.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                return null;
+            if (int.TryParse(input, out var seed) && seed >= 100000 && seed <= 999999)
+                return seed;
+            AnsiConsole.MarkupLine("[red]Invalid seed. Enter a 6-digit number (100000–999999) or 'cancel'.[/]");
+        }
     }
 
     // ── Private helpers ───────────────────────────────────────────────────────
