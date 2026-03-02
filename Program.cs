@@ -28,21 +28,47 @@ var prestige = PrestigeSystem.Load();
 var inputReader = new ConsoleInputReader();
 IDisplayService display = new SpectreDisplayService();
 
-var intro = new IntroSequence(display, inputReader);
-var (player, actualSeed, chosenDifficulty) = intro.Run(prestige);
+var startup = new StartupOrchestrator(display, inputReader, prestige);
+var result = startup.Run();
 
-var difficultySettings = DifficultySettings.For(chosenDifficulty);
-display.ShowMessage($"Run #{prestige.TotalRuns + 1} — Seed: {actualSeed} (share to replay)");
+if (result is StartupResult.ExitGame)
+    return;
 
+// Initialize data (runs for all non-exit paths)
 EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
 StartupValidator.ValidateOrThrow();
 CraftingSystem.Load("Data/crafting-recipes.json");
 AffixRegistry.Load("Data/item-affixes.json");
 StatusEffectRegistry.Load("Data/status-effects.json");
 var allItems = ItemConfig.Load("Data/item-stats.json").Select(ItemConfig.CreateItem).ToList();
-var generator = new DungeonGenerator(actualSeed, allItems);
-var (startRoom, _) = generator.Generate(difficulty: difficultySettings);
 
-var combat = new CombatEngine(display, inputReader, difficulty: difficultySettings);
-var gameLoop = new GameLoop(display, combat, inputReader, seed: actualSeed, difficulty: difficultySettings, allItems: allItems, logger: loggerFactory.CreateLogger<GameLoop>());
-gameLoop.Run(player, startRoom);
+switch (result)
+{
+    case StartupResult.NewGame ng:
+    {
+        var difficultySettings = DifficultySettings.For(ng.Difficulty);
+        display.ShowMessage($"Run #{prestige.TotalRuns + 1} — Seed: {ng.Seed} (share to replay)");
+
+        var generator = new DungeonGenerator(ng.Seed, allItems);
+        var (startRoom, _) = generator.Generate(difficulty: difficultySettings);
+
+        var combat = new CombatEngine(display, inputReader, difficulty: difficultySettings);
+        var gameLoop = new GameLoop(display, combat, inputReader, seed: ng.Seed,
+            difficulty: difficultySettings, allItems: allItems,
+            logger: loggerFactory.CreateLogger<GameLoop>());
+        gameLoop.Run(ng.Player, startRoom);
+        break;
+    }
+
+    case StartupResult.LoadedGame lg:
+    {
+        var difficultySettings = DifficultySettings.For(Difficulty.Normal);
+        var combat = new CombatEngine(display, inputReader, difficulty: difficultySettings);
+        var gameLoop = new GameLoop(display, combat, inputReader, seed: lg.State.Seed,
+            difficulty: difficultySettings, allItems: allItems,
+            logger: loggerFactory.CreateLogger<GameLoop>());
+        gameLoop.Run(lg.State);
+        break;
+    }
+}
+
