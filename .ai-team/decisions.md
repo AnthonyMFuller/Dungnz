@@ -15243,3 +15243,98 @@ Kept existing priority order unchanged (current → unvisited → boss exit → 
 
 Used `int floor = 1` default parameter so existing callers with no floor arg continue to compile (DisplayService legacy stub, etc.).
 
+
+---
+
+# Decision: Restore Visual Emojis, Use 🦺 for Chest/Armor
+
+**Date:** 2026-03-02  
+**Agent:** Hill  
+**PR:** #833 (closes #832)
+
+## Context
+
+PR #830 replaced all wide visual emojis in `SpectreDisplayService.cs` with narrow Unicode symbols (⚔✦⛑◈✚☞≡⤓↩⛨) to fix an alignment issue. On investigation, the ONLY emoji that actually caused misalignment was 🛡 (U+1F6E1, SHIELD) — it has EAW=N (narrow, 1 terminal column) but was NOT included in the `NarrowEmoji` set, so `EL()` gave it only 1 space of padding instead of 2.
+
+## Decision
+
+Restore all original wide emojis. Replace ONLY 🛡 with 🦺 (U+1F9BA, safety vest).
+
+### Emoji mapping restored
+| Slot/Context | Old (#830) | New (#833) |
+|---|---|---|
+| Accessory slot | ✦ | 💍 |
+| Head slot | ⛑ | 🪖 |
+| Shoulders slot | ◈ | 🥋 |
+| **Chest slot** | ✚ | **🦺** (not 🛡) |
+| Hands slot | ☞ | 🧤 |
+| Legs slot | ≡ | 👖 |
+| Feet slot | ⤓ | 👟 |
+| Back slot | ↩ | 🧥 |
+| Prestige Level | ★ | ⭐ |
+| Combat Ability | ✦ | ✨ |
+| Combat Flee | ↗ | 🏃 |
+| Combat Use Item | ⚗ | 🧪 |
+| ItemType.Armor | ⛨ | 🦺 |
+| ItemType.Consumable | ⚗ | 🧪 |
+| ItemType.Accessory | ✦ | 💍 |
+| ItemType.CraftingMaterial | ✶ | ⚗ |
+
+### Why 🦺 for Chest
+- EAW=W (2 terminal columns) — consistent with all other slot emojis
+- Visually evokes body armor / breastplate / protective vest
+- The original 🛡 was EAW=N and caused the alignment bug
+
+## Helper: EL() replaces IL()
+
+```csharp
+private static readonly HashSet<string> NarrowEmoji = ["⚔", "⛨", "⚗", "☠", "★", "↩", "•"];
+private static string EL(string emoji, string text) =>
+    NarrowEmoji.Contains(emoji) ? $"{emoji}  {text}" : $"{emoji} {text}";
+```
+
+Wide emojis (EAW=W, 2 terminal columns) get 1 space. Narrow symbols get 2 spaces. Both produce consistent visual alignment.
+
+## Rationale
+The original broad replacement in #830 was unnecessary — 9 out of 10 emojis were fine. Restoring them makes the UI richer and more visually expressive.
+
+---
+
+# Decision: Weapon & Off-Hand EAW=W Emoji Update
+
+**Date:** 2026-03-02  
+**Agent:** Hill  
+**PR:** #833 (part of emoji restoration)
+
+## Request
+
+Anthony requested Weapon and Off-Hand slots also use EAW=W emojis, consistent with all other equipment slots.
+
+## Changes
+
+- **Weapon:** ⚔ → 🔪 (U+1F52A, knife, EAW=W)
+- **Off-Hand:** ⛨ → 🔰 (U+1F530, shield reserved mark, EAW=W)
+
+## NarrowEmoji Set Simplified
+
+Removed ⛨ from `NarrowEmoji` set.  
+Now only: `{"⚔","⚗","☠","★","↩","•"}` for combat menu Attack label and other narrow symbols.
+
+## Rationale
+
+Maintains visual consistency across all equipment and UI elements using EAW=W emojis while preserving the EL() helper for remaining narrow Unicode symbols.
+
+---
+
+# Decision: All Icons/Emoji Must Use Same Character Set
+
+**Date:** 2026-03-01  
+**Agent:** Anthony (via Copilot directive)
+
+## Decision
+
+All emoji and icon characters used throughout the game (equipment slots, combat menus, stats display, etc.) must be drawn from a single, consistent Unicode character set. Mixing wide emoji (U+1F000+ range) with narrow text symbols (U+2500-U+26FF range) is explicitly prohibited.
+
+## Rationale
+
+Mixed character sets cause terminal column width discrepancies between Spectre.Console's cell measurement and actual terminal rendering, producing persistent border and text alignment bugs that are difficult to fix case-by-case.
