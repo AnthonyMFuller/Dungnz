@@ -15439,3 +15439,32 @@ Implemented the complete display layer for startup menu system per Coulson's des
 - Dual display implementations maintain backward compatibility with legacy console code.
 - XML documentation on enum members satisfies project's documentation requirements (CS1591).
 - Adding optional parameter to `IntroSequence.Run()` with default `true` preserves existing call sites while enabling title suppression from orchestrator.
+
+---
+
+## Decision: Startup Menu Test Infrastructure
+
+**Date:** 2026-03-02  
+**Author:** Romanoff (Tester)  
+**PR:** #842  
+**Issue:** #838
+
+### Context
+
+`StartupOrchestrator` (PR #840) added New Game, Load Save, New Game with Seed, and Exit flows that needed comprehensive test coverage via `StartupOrchestratorTests`.
+
+### Decision
+
+**Queue-based test double** (`StartupTestDisplayService : TestDisplayService`): three queues (`Queue<StartupMenuOption>`, `Queue<string?>`, `Queue<int?>`) for deterministic multi-interaction control.
+
+**Made TestDisplayService methods virtual:** `ShowStartupMenu`, `SelectSaveToLoad`, `ReadSeed` — enables surgical inner-class overrides without duplicating 150+ lines.
+
+**Save isolation:** `SaveSystem.OverrideSaveDirectory(tempPath)` per test with `IDisposable` cleanup.
+
+### Rationale
+
+Queue-based is cleaner than callback-based (no lambda closures). Inner class keeps concerns local. Virtual methods are minimal change (3 methods) enabling future reuse. Follows project pattern (no mock frameworks).
+
+### Consequences
+
+✅ Complete coverage of all 4 menu options + cancellations. Pattern established for future orchestrator testing.
