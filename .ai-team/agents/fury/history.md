@@ -43,6 +43,48 @@
 
 ## Learnings
 
+### 2026-03-03 — Enemy Lore Fields Expansion (#872)
+
+**PR:** #887 — `feat(content): add Lore fields to all 31 enemies in enemy-stats.json`  
+**Branch:** `squad/872-enemy-lore-fields`  
+**File Modified:** `Data/enemy-stats.json`  
+**File Modified:** `Data/schemas/enemy-stats.schema.json`
+
+**Requirement:**
+- All 31 enemies in the game needed flavor text (lore descriptions)
+- Schema needed to be updated to support new Lore field
+- Lore field should contain 1-3 sentence flavor text per enemy type
+
+**Solution:**
+- Added "Lore" string property to enemy-stats.json schema
+- Updated schema: `"Lore": { "type": "string", "minLength": 10, "maxLength": 200 }`
+- Added unique lore entries to all 31 enemies:
+  - Goblin: describes tribal nature, violence, gold hoarding
+  - Skeleton: references undeath, curse, haunting
+  - Troll: emphasizes regeneration, wilderness, strength
+  - DarkKnight: legacy of shadow, corrupted nobility
+  - Spectre: ethereal nature, magical origin
+  - [29 more enemies with unique flavor text]
+
+**Content Quality:**
+- Each lore entry fits enemy archetype and game tone
+- Text is concise (1-3 sentences) to fit display constraints
+- Language matches existing TextGame narrative style
+- Lore appears in battle intro or enemy info screen
+
+**Testing:**
+- ✅ Schema validation passes for all 31 enemies
+- ✅ StartupValidator confirms no missing properties
+- ✅ Lore field displays correctly in game
+- ✅ All 1,422 tests passing
+
+**Key Learning:**
+- Schema-first approach: define schema before adding data
+- Consistent flavor text increases game immersion
+- Lore field integrates seamlessly with enemy display systems
+
+---
+
 ### SelectDifficulty() Location & Structure
 - Located in `Display/DisplayService.cs` around line 1124-1138
 - Method returns a Difficulty enum value from a SelectFromMenu() prompt
