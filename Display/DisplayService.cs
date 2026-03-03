@@ -1746,4 +1746,21 @@ public class ConsoleDisplayService : IDisplayService
             ShowError("Invalid seed. Enter a 6-digit number (100000–999999) or 'cancel'.");
         }
     }
+
+    /// <inheritdoc />
+    public Systems.Skill? ShowSkillTreeMenu(Models.Player player)
+    {
+        var allSkills = Systems.SkillTree.GetSkillsForClass(player);
+        ShowMessage("=== SKILL TREE ===");
+        ShowMessage($"Your level: {player.Level}");
+        foreach (var s in allSkills)
+        {
+            if (player.Skills.IsUnlocked(s)) continue;
+            var (minLevel, _) = Systems.SkillTree.GetSkillRequirements(s);
+            var status = player.Level >= minLevel ? "Available" : $"Req. Lv{minLevel}";
+            ShowMessage($"  {s}: {Systems.SkillTree.GetDescription(s)} [{status}]");
+        }
+        ShowMessage("Type LEARN <skill> to unlock a skill.");
+        return null;
+    }
 }

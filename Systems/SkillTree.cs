@@ -123,7 +123,7 @@ public class SkillTree
     /// <summary>
     /// Returns the minimum level and class restriction for a given skill.
     /// </summary>
-    private static (int minLevel, PlayerClass? classRestriction) GetSkillRequirements(Skill skill)
+    public static (int minLevel, PlayerClass? classRestriction) GetSkillRequirements(Skill skill)
     {
         return skill switch
         {
@@ -261,6 +261,17 @@ public class SkillTree
                 var (minLevel, classRestriction) = GetSkillRequirements(s);
                 return player.Level >= minLevel && 
                        (classRestriction == null || classRestriction == player.Class);
+            })
+            .ToList();
+    }
+
+    /// <summary>Returns all skills available to this player's class (universal + class-specific), regardless of level.</summary>
+    public static List<Skill> GetSkillsForClass(Player player)
+    {
+        return Enum.GetValues<Skill>()
+            .Where(s => {
+                var (_, classRestriction) = GetSkillRequirements(s);
+                return classRestriction == null || classRestriction == player.Class;
             })
             .ToList();
     }

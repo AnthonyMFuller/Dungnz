@@ -1477,19 +1477,22 @@ public class GameLoop
 
     private void HandleSkills()
     {
-        _display.ShowMessage("=== SKILL TREE ===");
-        _display.ShowMessage($"Your level: {_player.Level}");
-        foreach (Skill skill in Enum.GetValues<Skill>())
+        var skillToLearn = _display.ShowSkillTreeMenu(_player);
+        if (skillToLearn.HasValue)
         {
-            var unlocked = _player.Skills.IsUnlocked(skill);
-            var minLevel = skill switch {
-                Skill.PowerStrike => 3, Skill.IronSkin => 3, Skill.Swiftness => 5,
-                Skill.ManaFlow => 4, Skill.BattleHardened => 6, _ => 1
-            };
-            var status = unlocked ? "✅ Unlocked" : $"Locked (need Lv{minLevel})";
-            _display.ShowMessage($"  {skill}: {SkillTree.GetDescription(skill)} [{status}]");
+            HandleLearnSpecificSkill(skillToLearn.Value);
         }
-        _display.ShowMessage("Type LEARN <skill> to unlock a skill.");
+        _turnConsumed = false;
+    }
+
+    private void HandleLearnSpecificSkill(Skill skill)
+    {
+        var success = _player.Skills.TryUnlock(_player, skill);
+        if (success)
+            _display.ShowMessage($"You learned {skill}!");
+        else
+            _display.ShowMessage($"Cannot learn {skill} right now.");
+        _turnConsumed = false;
     }
 
     private void HandleLearnSkill(string skillName)
@@ -1500,18 +1503,7 @@ public class GameLoop
             _display.ShowError($"Unknown skill: {skillName}");
             return;
         }
-        if (_player.Skills.TryUnlock(_player, skill))
-            _display.ShowMessage($"You learned {skill}! {SkillTree.GetDescription(skill)}");
-        else if (_player.Skills.IsUnlocked(skill))
-        {
-            _turnConsumed = false;
-            _display.ShowError($"You already know {skill}.");
-        }
-        else
-        {
-            _turnConsumed = false;
-            _display.ShowError($"You need to be higher level to learn {skill}.");
-        }
+        HandleLearnSpecificSkill(skill);
     }
     private void HandleCraft(string recipeName)
     {

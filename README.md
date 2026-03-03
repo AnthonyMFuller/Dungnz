@@ -92,8 +92,8 @@ Choose one class at the start of each run. Bonuses are applied on top of base st
 | `stats` | `status` | View current player stats |
 | `map` | `m` | Display ASCII dungeon map |
 | `shop` | `buy` | Browse merchant's wares |
-| `skills` | `skill` | List skills and unlock status |
-| `learn <skill>` | | Unlock a skill (requires minimum level) |
+| `skills` | `skill` | Open interactive skill tree menu; select a skill to learn |
+| `learn <skill>` | | Unlock a skill by name (text command shortcut) |
 | `craft <recipe>` | | Craft an item from ingredients |
 | `save <name>` | | Save current game state |
 | `load <name>` | | Load a saved game |
@@ -218,7 +218,9 @@ Every **2 levels** you also choose a bonus trait: +5 Max HP, +2 Attack, or +2 De
 
 ### Skill tree
 
-Skills are passive bonuses unlocked for free with `learn <skill>` once you meet the level requirement. Each skill can only be unlocked once per run.
+Skills are passive bonuses unlocked for free once you meet the level requirement. Use the `skills` command to open an interactive arrow-key menu showing all skills for your class (locked ones shown with their level requirement). Select a skill to learn it, or use `learn <skill>` as a text command shortcut. Each skill can only be unlocked once per run.
+
+Universal skills (available to all classes):
 
 | Skill | Min Level | Effect |
 |-------|-----------|--------|
