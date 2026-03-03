@@ -442,67 +442,13 @@ public class CombatEngine : ICombatEngine
                 {
                     player.ExtraFleeCount--;
                     _display.ShowMessage("You vanish with supernatural speed, escaping effortlessly!");
-                    _statusEffects.Clear(player);
-                    _statusEffects.Clear(enemy);
-                    player.ActiveEffects.Clear();
-                    player.ResetComboPoints();
-                    player.LastStandTurns = 0;
-                    player.EvadeNextAttack = false;
-                    player.ActiveMinions.Clear();
-                    player.ActiveTraps.Clear();
-                    player.TrapTriggeredThisCombat = false;
-                    player.DivineHealUsedThisCombat = false;
-                    player.HunterMarkUsedThisCombat = false;
-                    player.DivineShieldTurnsRemaining = 0;
-                    player.LichsBargainActive = false;
-                    player.WardingVeilActive = false;
-                    player.IsManaShieldActive = false;
-                    player.ResetCombatPassives();
-                    // Fix #547: reset boss combat state on flee
-                    if (enemy is DungeonBoss fb1)
-                    {
-                        fb1.IsCharging = false;
-                        fb1.ChargeActive = false;
-                        fb1.IsEnraged = false;
-                        fb1.FlightPhaseActive = false;
-                        fb1.IsSubmerged = false;
-                        fb1.DamageImmune = false;
-                        fb1.AddsAlive = 0;
-                        fb1.FiredPhases.Clear();
-                    }
+                    ResetFleeState(player, enemy);
                     return CombatResult.Fled;
                 }
                 if (_rng.NextDouble() < 0.5)
                 {
                     _display.ShowMessage("You fled successfully!");
-                    _statusEffects.Clear(player);
-                    _statusEffects.Clear(enemy);
-                    player.ActiveEffects.Clear();
-                    player.ResetComboPoints();
-                    player.LastStandTurns = 0;
-                    player.EvadeNextAttack = false;
-                    player.ActiveMinions.Clear();
-                    player.ActiveTraps.Clear();
-                    player.TrapTriggeredThisCombat = false;
-                    player.DivineHealUsedThisCombat = false;
-                    player.HunterMarkUsedThisCombat = false;
-                    player.DivineShieldTurnsRemaining = 0;
-                    player.LichsBargainActive = false;
-                    player.WardingVeilActive = false;
-                    player.IsManaShieldActive = false;
-                    player.ResetCombatPassives();
-                    // Fix #547: reset boss combat state on flee
-                    if (enemy is DungeonBoss fb2)
-                    {
-                        fb2.IsCharging = false;
-                        fb2.ChargeActive = false;
-                        fb2.IsEnraged = false;
-                        fb2.FlightPhaseActive = false;
-                        fb2.IsSubmerged = false;
-                        fb2.DamageImmune = false;
-                        fb2.AddsAlive = 0;
-                        fb2.FiredPhases.Clear();
-                    }
+                    ResetFleeState(player, enemy);
                     return CombatResult.Fled;
                 }
                 else
@@ -1707,6 +1653,39 @@ public class CombatEngine : ICombatEngine
         => player.EquippedWeapon?.PassiveEffectId == effectId
         || player.EquippedAccessory?.PassiveEffectId == effectId
         || player.AllEquippedArmor.Any(a => a.PassiveEffectId == effectId);
+
+    /// <summary>Resets all transient combat state after a successful flee.</summary>
+    private void ResetFleeState(Player player, Enemy enemy)
+    {
+        _statusEffects.Clear(player);
+        _statusEffects.Clear(enemy);
+        player.ActiveEffects.Clear();
+        player.ResetComboPoints();
+        player.LastStandTurns = 0;
+        player.EvadeNextAttack = false;
+        player.ActiveMinions.Clear();
+        player.ActiveTraps.Clear();
+        player.TrapTriggeredThisCombat = false;
+        player.DivineHealUsedThisCombat = false;
+        player.HunterMarkUsedThisCombat = false;
+        player.DivineShieldTurnsRemaining = 0;
+        player.LichsBargainActive = false;
+        player.WardingVeilActive = false;
+        player.IsManaShieldActive = false;
+        player.ResetCombatPassives();
+        // Fix #547: reset boss combat state on flee
+        if (enemy is DungeonBoss fb)
+        {
+            fb.IsCharging = false;
+            fb.ChargeActive = false;
+            fb.IsEnraged = false;
+            fb.FlightPhaseActive = false;
+            fb.IsSubmerged = false;
+            fb.DamageImmune = false;
+            fb.AddsAlive = 0;
+            fb.FiredPhases.Clear();
+        }
+    }
 }
 
 /// <summary>
