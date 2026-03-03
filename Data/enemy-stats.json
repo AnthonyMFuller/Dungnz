@@ -7,6 +7,7 @@
         "XPValue": 15,
         "MinGold": 2,
         "MaxGold": 8,
+        "Lore": "The dungeon's most common scavengers, goblins stake claim to the shallow passages where torchlight still reaches. They trade scraps, stolen trinkets, and grudges with equal enthusiasm. Do not mistake their cackling cowardice for harmlessness — they are relentless, and they outnumber you.",
         "AsciiArt": [
             "  _,.",
             " (o o)",
@@ -24,6 +25,7 @@
         "MinGold": 5,
         "MaxGold": 15,
         "IsUndead": true,
+        "Lore": "Held together by decades of necromantic residue soaked into the dungeon walls, these skeletons are not the work of any single sorcerer — they simply happened, coalescing from old bones and older grievances. They fight with grim purpose, as though completing some errand long interrupted by death. No one has ever found what errand that might be.",
         "AsciiArt": [
             "  ,---.",
             " ( o o )",
@@ -40,6 +42,7 @@
         "XPValue": 40,
         "MinGold": 10,
         "MaxGold": 25,
+        "Lore": "Dungeon trolls have colonised the mid-levels for so long that their hides have calcified into something approaching stone, fed by mineral seep from the walls. They heal faster than most creatures can wound them, and they are not as stupid as they appear — they merely have different priorities. Food and territory, in that order.",
         "AsciiArt": [
             " ,-----,",
             "| o   o |",
@@ -57,6 +60,7 @@
         "XPValue": 55,
         "MinGold": 20,
         "MaxGold": 40,
+        "Lore": "Once paladins who descended to cleanse the dungeon and were consumed by it instead, dark knights now serve whatever will speaks through them. Their armour has fused with their flesh over years of corrupted service. Behind their visors, their eyes still glow with the faint blue of the oaths they can no longer keep.",
         "AsciiArt": [
             "  [###]",
             " |o   o|",
@@ -74,6 +78,7 @@
         "XPValue": 100,
         "MinGold": 50,
         "MaxGold": 100,
+        "Lore": "The Dungeon Boss is not a creature that wandered into the dungeon — it is a creature of the dungeon, a focal point where the structure's malice has condensed into singular, violent will. It has broken every adventuring party that reached this chamber, and it remembers each one. The trophies on its walls are not decorations; they are a catalogue.",
         "AsciiArt": [
             " _______",
             "| O   O |",
@@ -93,6 +98,7 @@
         "XPValue": 25,
         "MinGold": 5,
         "MaxGold": 15,
+        "Lore": "Goblin shamans occupy the uneasy middle ground between tribal elder and outright lunatic, channelling the dungeon's raw spite through bone-carved fetishes. Their spells are crude but vindictive, favouring hexes that linger long after the caster is slain. Other goblins fear and obey them, which tells you something.",
         "AsciiArt": [
             "  _,.",
             " (^ ^)",
@@ -109,6 +115,7 @@
         "XPValue": 50,
         "MinGold": 10,
         "MaxGold": 25,
+        "Lore": "Constructed in an era when the dungeon had a keeper with ambitions of permanence, stone golems were intended as sentinels for the treasure vaults. The keeper is gone, the vaults are empty, and the golems have been standing in the same corridors for three centuries, waiting for orders that will never come. They are very thorough about strangers.",
         "AsciiArt": [
             " [=====]",
             "|[o] [o]|",
@@ -127,6 +134,7 @@
         "MinGold": 8,
         "MaxGold": 20,
         "IsUndead": true,
+        "Lore": "A wraith is the shape grief takes when a soul refuses to depart. These particular wraiths haunt corridors where massacres once occurred, endlessly replaying their final moments in a silent loop. The cold they carry is not a matter of temperature — it is the feeling of being forgotten.",
         "AsciiArt": [
             "  ~~~~~",
             " ( o o )",
@@ -143,6 +151,7 @@
         "XPValue": 60,
         "MinGold": 15,
         "MaxGold": 30,
+        "Lore": "Vampire lords do not rule territories — they are their territories, their influence spreading through the dungeon's water table like dye through cloth. The surrounding corridors take on a certain quality: the air tastes of old copper, and torches flicker without wind. Their charm is the weaponised remnant of whatever grace they once possessed.",
         "AsciiArt": [
             "  /\\   /\\",
             " (o  v  o)",
@@ -160,6 +169,7 @@
         "XPValue": 40,
         "MinGold": 10,
         "MaxGold": 25,
+        "Lore": "Mimics are not monsters that disguise themselves as chests — they are chests that have been alive longer than most civilisations and have grown resentful of being touched by strangers. The wood of their casing is warm to the touch, and they breathe, faintly, when they think no one is listening. They are always listening.",
         "AsciiArt": [
             " _______ ",
             "|       |",
@@ -176,6 +186,7 @@
         "XPValue": 12,
         "MinGold": 1,
         "MaxGold": 5,
+        "Lore": "Born in the refuse-choked warrens beneath the dungeon's entry hall, giant rats have grown bloated on carrion and forgotten things. Their bite festers with a dozen nameless infections, and their beady red eyes never blink. Many an overconfident adventurer has bled out on the first floor, undone by teeth they dismissed.",
         "AsciiArt": [
             "   __",
             " _(oo)_",
@@ -193,6 +204,7 @@
         "MinGold": 4,
         "MaxGold": 12,
         "IsUndead": true,
+        "Lore": "These shambling dead were once foolish adventurers who accepted bargains from the dungeon's whispers. The curse that animates them is intelligent enough to remember the face of whoever killed them last. Burning the body afterwards is considered, among dungeon veterans, simply polite.",
         "AsciiArt": [
             "  ,---.",
             " (x   x)",
@@ -209,6 +221,7 @@
         "XPValue": 38,
         "MinGold": 10,
         "MaxGold": 22,
+        "Lore": "Bred in the dungeon's deeper kennels by a warlord whose name has been deliberately erased from every record, blood hounds track by the electromagnetic pulse of a beating heart. Armour is irrelevant to them; they aim for throats. Their baying echoes up through three floors of stone — the only warning you will get.",
         "AsciiArt": [
             "  /\\_/\\",
             " (o o  )",
@@ -225,6 +238,7 @@
         "XPValue": 48,
         "MinGold": 15,
         "MaxGold": 32,
+        "Lore": "The iron guards were the dungeon's original security force, built to an older contract that no living party ever negotiated. Their loyalty is absolute and their memory of intruders is perfect. They do not sleep, do not eat, and do not accept bribes — the dungeon's architects considered this a feature.",
         "AsciiArt": [
             "  [###]",
             " [o   o]",
@@ -242,6 +256,7 @@
         "XPValue": 58,
         "MinGold": 18,
         "MaxGold": 38,
+        "Lore": "Night stalkers have evolved to hunt in the absolute darkness of the dungeon's sealed sub-levels, their senses mapped entirely to sound and body heat. They are silent for something so large, and patient for something so hungry. The first sign of a night stalker is the sudden absence of every other sound.",
         "AsciiArt": [
             "   /\\ /\\",
             "  (o   o)",
@@ -258,6 +273,7 @@
         "XPValue": 70,
         "MinGold": 25,
         "MaxGold": 50,
+        "Lore": "Driven down from the ice fields above by a century of encroaching civilisation, frost wyverns have carved frigid sanctuaries in the dungeon's deeper reaches, lowering the ambient temperature of entire floors. Their breath crystallises stone, and their wings generate blizzards in enclosed corridors. They are furious about being underground, and will take it out on you.",
         "AsciiArt": [
             "   __*__",
             "  /o   o\\\\",
@@ -275,6 +291,7 @@
         "XPValue": 80,
         "MinGold": 35,
         "MaxGold": 60,
+        "Lore": "Chaos knights are what remains when a warrior makes too many bargains with too many powers simultaneously and none of the deities involved can agree on who owns the result. Their armour shifts between forms, their attacks defy prediction, and the reality immediately around them has become slightly optional. Fighting one requires accepting that the rules of combat have been temporarily suspended.",
         "AsciiArt": [
             "  [*#*]",
             " [O   O]",
@@ -293,6 +310,7 @@
         "MinGold": 70,
         "MaxGold": 120,
         "IsUndead": true,
+        "Lore": "The Lich King was once a mortal ruler who found the prospect of death administratively inconvenient and addressed the problem with characteristic ruthlessness. His phylactery is hidden somewhere so clever he has occasionally forgotten it himself. His patience is geological; he has been waiting in these deep halls for a challenger worth the effort of killing.",
         "AsciiArt": [
             "  *~~~~~*",
             " (X     X)",
@@ -312,6 +330,7 @@
         "XPValue": 18,
         "MinGold": 3,
         "MaxGold": 10,
+        "Lore": "Spawned from ambient malice where torch smoke pools thick near ceilings, shadow imps are less creatures than moods given claws. They delight in snuffing lights and plucking at loose nerves. A lone imp is a nuisance; a dozen imps is how adventurers vanish without a trace.",
         "AsciiArt": [
             "  /\\  /\\",
             " (x  x)",
@@ -328,6 +347,7 @@
         "XPValue": 30,
         "MinGold": 5,
         "MaxGold": 14,
+        "Lore": "These pale, multi-limbed abominations migrate up from the deep levels whenever something large and edible dies above them. Their digestive secretions dissolve bone, flesh, and ambition alike. Scholars debate whether they are native to the dungeon or simply are the dungeon, eating it hollow from within.",
         "AsciiArt": [
             " /~~~~~\\",
             "(o  o  o)",
@@ -342,6 +362,7 @@
         "XPValue": 40,
         "MinGold": 10,
         "MaxGold": 22,
+        "Lore": "Renegade scholars who traded their academic credentials for power the institution had declared too dangerous to study. Their robes are self-repairing, stitched with sigils that consume ambient fear. They came to the dungeon for secrets; the dungeon has been slowly replacing their memories with its own.",
         "AsciiArt": [
             "  (*)",
             " (o o)",
@@ -358,6 +379,7 @@
         "MinGold": 8,
         "MaxGold": 18,
         "IsUndead": true,
+        "Lore": "Assembled by necromancers who valued range over loyalty, bone archers have outlasted their creators by centuries. The arrows they loose are their own finger bones, regrowing each night from some inexhaustible marrow-store deep in the dungeon stone. They never miss. They never tire. They never run out.",
         "AsciiArt": [
             "  ,---.",
             " ( x x )",
@@ -374,6 +396,7 @@
         "MinGold": 12,
         "MaxGold": 26,
         "IsUndead": true,
+        "Lore": "Crypt priests minister to the dungeon's undead population with the same bureaucratic devotion a living priest might bring to a parish. They conduct rites that keep lesser undead obedient, catalogue the dead's remaining possessions, and fill the deep corridors with incense that smells of cold iron and dried flowers. Their faith is genuine, which makes them dangerous.",
         "AsciiArt": [
             "  \\\u2020/",
             " (x x)",
@@ -389,6 +412,7 @@
         "XPValue": 44,
         "MinGold": 12,
         "MaxGold": 26,
+        "Lore": "Something went wrong in the dungeon's lower menagerie long ago, and the plague bears are what came of it. Their fur seethes with spores that burst on impact, and each wound they deal festers within seconds. Scholars who study them do so from a considerable distance, and seldom return.",
         "AsciiArt": [
             " /UU\\",
             "(o  o)",
@@ -404,6 +428,7 @@
         "XPValue": 58,
         "MinGold": 16,
         "MaxGold": 32,
+        "Lore": "Siege ogres were press-ganged from mountain clans by a dungeon warlord who needed walls demolished on short notice. The warlord is long dead; the ogres remain, still looking for walls. Their frustration has curdled into something feral, and they now carry sections of old portcullis as improvised weapons — which should tell you something about their physical capability.",
         "AsciiArt": [
             " ,-----,",
             "|O     O|",
@@ -420,6 +445,7 @@
         "XPValue": 46,
         "MinGold": 14,
         "MaxGold": 28,
+        "Lore": "Former duelists who descended seeking a worthy opponent and found the dungeon itself answering the challenge. Their technique is flawless — each strike flows into the next with the fluid inevitability of water finding cracks in stone. They have been fighting for so long they no longer remember what victory would feel like.",
         "AsciiArt": [
             " /|\\ /|\\",
             "(o   o)",
@@ -435,6 +461,7 @@
         "XPValue": 38,
         "MinGold": 10,
         "MaxGold": 22,
+        "Lore": "These translucent, pulsing creatures evolved to feed on the magical residue left behind by spellcasting, drifting toward sources of arcane energy with single-minded hunger. They absorb enchantments from items on contact, leaving weapons dull and armour mundane. Unenchanted steel is, annoyingly, their only reliable weakness.",
         "AsciiArt": [
             "  ~~~~",
             " (o  o)",
@@ -450,6 +477,7 @@
         "XPValue": 50,
         "MinGold": 14,
         "MaxGold": 28,
+        "Lore": "Constructed to counter the dungeon's own iron guard units when a civil war broke out in the deep levels, shield breakers were never decommissioned after the conflict ended. They have since adapted to destroying anything armoured on principle. Each of their strikes carries the kinetic memory of a thousand broken defences.",
         "AsciiArt": [
             "  [\\\\]",
             " (o o)",
@@ -466,6 +494,7 @@
         "MinGold": 80,
         "MaxGold": 150,
         "IsUndead": true,
+        "Lore": "Where the Lich King rules through fear, the Archlich Sovereign rules through inevitability. It has rewritten the magical architecture of its domain so thoroughly that death itself operates differently here — wounds do not heal the way they should, and the dead do not stay dead the way they must. It regards adventurers as an interesting source of raw material.",
         "AsciiArt": [
             "   *~*~*~*~*",
             "  (X       X)",
@@ -485,6 +514,7 @@
         "XPValue": 180,
         "MinGold": 100,
         "MaxGold": 200,
+        "Lore": "The Abyssal Leviathan is not native to this dungeon — it arrived through a breach in the floor of the deepest sub-level, drawn by the accumulated spiritual weight of centuries of death, a weight it feeds on as casually as breathing. The dungeon has rearranged itself around it, building new corridors toward it the way a wound builds scar tissue. Whatever tore open the floor to let it through has not been found.",
         "AsciiArt": [
             "     ~~~~~~~",
             "  ~~(O     O)~~",
@@ -504,6 +534,7 @@
         "XPValue": 220,
         "MinGold": 120,
         "MaxGold": 250,
+        "Lore": "The Infernal Dragon has occupied the lowest vault since before the dungeon existed — the dungeon was built around it, by architects who considered proximity to such power a selling point. It does not attack out of territorial instinct or hunger; it attacks because it is bored, and because the screaming of something small and brave is the closest thing to entertainment these depths afford. Its hoard is legendary. Its patience is shorter.",
         "AsciiArt": [
             "  /\\       /\\",
             " /  \\     /  \\",

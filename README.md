@@ -276,7 +276,7 @@ Equip multiple pieces of a named set for powerful bonuses:
 
 ### Regular enemies
 
-29 enemy types spread across 8 dungeon floors. Representative examples:
+29 enemy types spread across 8 dungeon floors, each with a `Lore` field surfaced on inspect. Representative examples:
 
 | Enemy | HP | ATK | DEF | Notable |
 |-------|----|-----|-----|---------|
