@@ -50,15 +50,14 @@ jobs:
         with:
           name: coverage-reports
           path: |
-            coverage/
-            TestResults/
+            Dungnz.Tests/coverage/
           retention-days: 5
 
       - name: Code Coverage Summary
         if: github.event_name == 'pull_request'
         uses: 5monkeys/cobertura-action@master
         with:
-          path: coverage/coverage.cobertura.xml
+          path: Dungnz.Tests/coverage/coverage.cobertura.xml
           minimum_coverage: 70
           show_line: true
           show_branch: true
