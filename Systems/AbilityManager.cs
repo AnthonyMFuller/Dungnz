@@ -292,7 +292,7 @@ public class AbilityManager
             // Old shared abilities - removed in Phase 2
             case AbilityType.PowerStrike:
                 var damage = Math.Max(1, player.Attack * 2 - enemy.Defense);
-                enemy.HP -= damage;
+                enemy.HP = Math.Max(0, enemy.HP - damage);
                 display.ShowCombatMessage($"Power Strike! You deal {damage} damage to {enemy.Name}!");
                 break;
                 
@@ -316,7 +316,7 @@ public class AbilityManager
             case AbilityType.ShieldBash:
                 {
                     var bashDamage = Math.Max(1, (int)(player.Attack * 1.2) - enemy.Defense);
-                    enemy.HP -= bashDamage;
+                    enemy.HP = Math.Max(0, enemy.HP - bashDamage);
                     display.ShowCombatMessage($"You slam your shield into the enemy's skull! ({bashDamage} damage)");
                     if (_rng.NextDouble() < 0.5)
                     {
@@ -354,7 +354,7 @@ public class AbilityManager
                 {
                     var effectiveEnemyDef = enemy.Defense / 2;
                     var recklessDamage = Math.Max(1, (int)(player.Attack * 2.5) - effectiveEnemyDef);
-                    enemy.HP -= recklessDamage;
+                    enemy.HP = Math.Max(0, enemy.HP - recklessDamage);
                     
                     var selfDamage = Math.Max(1, (int)(player.MaxHP * 0.1));
                     if (player.HP - selfDamage < 1)
@@ -391,7 +391,7 @@ public class AbilityManager
                     }
                     // Magic damage bypasses defense (or reduces it significantly)
                     var arcaneDamage = Math.Max(1, baseDmg - (enemy.Defense / 4));
-                    enemy.HP -= arcaneDamage;
+                    enemy.HP = Math.Max(0, enemy.HP - arcaneDamage);
                     display.ShowCombatMessage($"A crackling bolt of raw energy leaps from your fingertips! ({arcaneDamage} damage)");
                 }
                 break;
@@ -405,7 +405,7 @@ public class AbilityManager
                         player.OverchargeUsedThisTurn = true;
                     }
                     var frostDamage = Math.Max(1, baseDmg - (enemy.Defense / 4));
-                    enemy.HP -= frostDamage;
+                    enemy.HP = Math.Max(0, enemy.HP - frostDamage);
                     statusEffects.Apply(enemy, StatusEffect.Slow, 2);
                     statusEffects.Apply(enemy, StatusEffect.Freeze, 2);
                     display.ShowCombatMessage($"A wave of bitter cold explodes outward! ({frostDamage} damage, enemy slowed and frozen)");
@@ -445,7 +445,7 @@ public class AbilityManager
                         player.OverchargeUsedThisTurn = true;
                     }
                     var meteorDamage = Math.Max(1, baseDmg);
-                    enemy.HP -= meteorDamage;
+                    enemy.HP = Math.Max(0, enemy.HP - meteorDamage);
                     
                     // Check for execute
                     if (enemy.HP <= enemy.MaxHP * 0.20 && !enemy.IsImmuneToEffects)
@@ -464,7 +464,7 @@ public class AbilityManager
             case AbilityType.QuickStrike:
                 {
                     var quickDamage = Math.Max(1, player.Attack - enemy.Defense);
-                    enemy.HP -= quickDamage;
+                    enemy.HP = Math.Max(0, enemy.HP - quickDamage);
                     player.AddComboPoints(1);
                     display.ShowCombatMessage($"A lightning-fast jab — you're already setting up the next hit. ({quickDamage} damage, Combo: {player.ComboPoints})");
                 }
@@ -484,7 +484,7 @@ public class AbilityManager
                         backstabDamage = Math.Max(1, (int)(player.Attack * 1.5) - enemy.Defense);
                         display.ShowCombatMessage($"You find the opening and drive your blade home. ({backstabDamage} damage)");
                     }
-                    enemy.HP -= backstabDamage;
+                    enemy.HP = Math.Max(0, enemy.HP - backstabDamage);
                 }
                 break;
             
@@ -508,7 +508,7 @@ public class AbilityManager
                     PutOnCooldown(type, ability.CooldownTurns, player);
                     var pts = player.SpendComboPoints();
                     var flurryDamage = Math.Max(1, (int)((0.6 * pts) * player.Attack) - enemy.Defense);
-                    enemy.HP -= flurryDamage;
+                    enemy.HP = Math.Max(0, enemy.HP - flurryDamage);
                     
                     // Each "hit" has 30% chance to bleed
                     for (int i = 0; i < pts; i++)
@@ -534,7 +534,7 @@ public class AbilityManager
                     PutOnCooldown(type, ability.CooldownTurns, player);
                     var pts = player.SpendComboPoints();
                     var assassinateDamage = Math.Max(1, (int)((pts * 0.8) * player.Attack) - enemy.Defense);
-                    enemy.HP -= assassinateDamage;
+                    enemy.HP = Math.Max(0, enemy.HP - assassinateDamage);
                     
                     // Check for execute
                     if (enemy.HP <= enemy.MaxHP * 0.30 && !enemy.IsImmuneToEffects)
@@ -559,7 +559,7 @@ public class AbilityManager
                     if (player.HasSkill(Skill.HolyFervor))
                         baseDmg = (int)(baseDmg * 1.15);
                     var holyDmg = Math.Max(1, baseDmg - enemy.Defense);
-                    enemy.HP -= holyDmg;
+                    enemy.HP = Math.Max(0, enemy.HP - holyDmg);
                     display.ShowCombatMessage(enemy.IsUndead
                         ? $"Divine light sears the undead! Holy Strike deals {holyDmg} damage!"
                         : $"You channel holy power into your strike! ({holyDmg} damage)");
@@ -592,7 +592,7 @@ public class AbilityManager
                     if (player.HasSkill(Skill.HolyFervor))
                         baseDmg = (int)(baseDmg * 1.15);
                     var consecDmg = Math.Max(1, baseDmg - enemy.Defense);
-                    enemy.HP -= consecDmg;
+                    enemy.HP = Math.Max(0, enemy.HP - consecDmg);
                     statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
                     display.ShowCombatMessage($"Holy fire consecrates the ground! ({consecDmg} damage, Bleed applied)");
                     if (enemy.IsUndead && enemy.HP > 0)
@@ -608,7 +608,7 @@ public class AbilityManager
                     var baseDmg = (int)(player.Attack * 2.0);
                     var missingHpBonus = (int)((player.MaxHP - player.HP) * 0.5);
                     var judgDmg = Math.Max(1, baseDmg + missingHpBonus - enemy.Defense);
-                    enemy.HP -= judgDmg;
+                    enemy.HP = Math.Max(0, enemy.HP - judgDmg);
                     display.ShowCombatMessage($"JUDGMENT! ({judgDmg} damage, {missingHpBonus} bonus from missing HP)");
                     // Execute non-boss at ≤20% HP
                     if (enemy.HP > 0 && enemy.HP <= enemy.MaxHP * 0.20 && !enemy.IsImmuneToEffects)
@@ -628,7 +628,7 @@ public class AbilityManager
                     if (hasDoT)
                         baseDmg = (int)(player.Attack * 1.20);
                     var deathDmg = Math.Max(1, baseDmg - (enemy.Defense / 4)); // shadow magic pierces some defense
-                    enemy.HP -= deathDmg;
+                    enemy.HP = Math.Max(0, enemy.HP - deathDmg);
                     display.ShowCombatMessage(hasDoT
                         ? $"Shadow energy surges through the weakened foe! ({deathDmg} damage)"
                         : $"A bolt of necrotic energy tears through the enemy! ({deathDmg} damage)");
@@ -681,7 +681,7 @@ public class AbilityManager
             case AbilityType.LifeDrain:
                 {
                     var drainDmg = Math.Max(1, (int)(player.Attack * 0.70) - (enemy.Defense / 4));
-                    enemy.HP -= drainDmg;
+                    enemy.HP = Math.Max(0, enemy.HP - drainDmg);
                     // VampiricTouch passive: +15% extra heal
                     var healAmt = player.HasSkill(Skill.VampiricTouch)
                         ? (int)(drainDmg * 1.15)
@@ -703,7 +703,7 @@ public class AbilityManager
                     var totalMinionHp = player.ActiveMinions.Sum(m => m.MaxHP);
                     var explosionDmg = (int)(totalMinionHp * 1.5);
                     player.ActiveMinions.Clear();
-                    enemy.HP -= explosionDmg;
+                    enemy.HP = Math.Max(0, enemy.HP - explosionDmg);
                     display.ShowCombatMessage($"Your minions detonate in a shower of necrotic energy! ({explosionDmg} damage!)");
                 }
                 break;
@@ -719,7 +719,7 @@ public class AbilityManager
                     if (player.HasSkill(Skill.KeenEye))
                         baseDmg = (int)(baseDmg * 1.10);
                     var shotDmg = Math.Max(1, baseDmg - enemy.Defense);
-                    enemy.HP -= shotDmg;
+                    enemy.HP = Math.Max(0, enemy.HP - shotDmg);
                     display.ShowCombatMessage(hasStatus
                         ? $"You exploit the enemy's weakened state! ({shotDmg} damage)"
                         : $"A precisely aimed shot finds its mark! ({shotDmg} damage)");
@@ -798,14 +798,14 @@ public class AbilityManager
                     if (player.TrapTriggeredThisCombat)
                         baseDmg = (int)(baseDmg * 1.30);
                     var volleyDmg = Math.Max(1, baseDmg - enemy.Defense);
-                    enemy.HP -= volleyDmg;
+                    enemy.HP = Math.Max(0, enemy.HP - volleyDmg);
                     display.ShowCombatMessage($"You loose a volley of arrows! ({volleyDmg} damage)");
                     // Wolf companion also attacks
                     var wolf = player.ActiveMinions.FirstOrDefault(m => m.Name == "Wolf Companion" && m.HP > 0);
                     if (wolf != null && enemy.HP > 0)
                     {
                         var wolfDmg = Math.Max(1, wolf.ATK - enemy.Defense);
-                        enemy.HP -= wolfDmg;
+                        enemy.HP = Math.Max(0, enemy.HP - wolfDmg);
                         display.ShowCombatMessage($"Your wolf lunges at the enemy for {wolfDmg} damage!");
                     }
                 }
