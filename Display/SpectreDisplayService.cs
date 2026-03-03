@@ -270,24 +270,19 @@ public sealed class SpectreDisplayService : IDisplayService
             .AddColumn(new TableColumn("[bold grey]#[/]").NoWrap())
             .AddColumn(new TableColumn("[bold grey]Name[/]"))
             .AddColumn(new TableColumn("[bold grey]Type[/]").NoWrap())
-            .AddColumn(new TableColumn("[bold grey]Tier[/]").NoWrap())
-            .AddColumn(new TableColumn("[bold grey]E[/]").NoWrap());
+            .AddColumn(new TableColumn("[bold grey]Tier[/]").NoWrap());
 
         int idx = 1;
         foreach (var group in player.Inventory.GroupBy(i => i.Name))
         {
             var item      = group.First();
             var count     = group.Count();
-            var isEquipped = item == player.EquippedWeapon
-                          || item == player.EquippedAccessory
-                          || player.AllEquippedArmor.Contains(item);
             var tc        = TierColor(item.Tier);
             var nameMk    = $"[{tc}]{Markup.Escape(item.Name)}[/]" + (count > 1 ? $" [grey]×{count}[/]" : "");
-            var equip     = isEquipped ? "[green]✓[/]" : "";
             var typeLabel = item.Type == ItemType.Armor && item.Slot != ArmorSlot.None
                 ? item.Slot.ToString()
                 : item.Type.ToString();
-            table.AddRow(idx.ToString(), nameMk, Markup.Escape(typeLabel), $"[{tc}]{item.Tier}[/]", equip);
+            table.AddRow(idx.ToString(), nameMk, Markup.Escape(typeLabel), $"[{tc}]{item.Tier}[/]");
             idx++;
         }
 
