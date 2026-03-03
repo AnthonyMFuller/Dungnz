@@ -63,6 +63,7 @@ public static class EnemyFactory
     /// </returns>
     public static Enemy CreateRandom(Random rng)
     {
+        if (_enemyConfig == null) throw new InvalidOperationException("EnemyFactory.Initialize() must be called before creating enemies.");
         var type = rng.Next(9);
         var enemy = type switch
         {
@@ -99,6 +100,7 @@ public static class EnemyFactory
     /// <returns>A <see cref="DungeonBoss"/> instance ready for a boss-room encounter.</returns>
     public static Enemy CreateBoss(Random rng, int floor = 1)
     {
+        if (_enemyConfig == null) throw new InvalidOperationException("EnemyFactory.Initialize() must be called before creating enemies.");
         return floor switch
         {
             1 => new GoblinWarchief(_enemyConfig?.GetValueOrDefault("GoblinWarchief"), _itemConfig),

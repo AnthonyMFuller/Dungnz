@@ -1427,10 +1427,10 @@ public class CombatEngine : ICombatEngine
                 break;
 
             case "FlameBreath":
-                // InfernalDragon: apply Burn 5 turns + permanently gain +8 ATK
+                // InfernalDragon: apply Burn 5 turns + gain +4 ATK for rest of combat
                 _statusEffects.Apply(player, StatusEffect.Burn, 5);
-                boss.Attack += 8;
-                _display.ShowCombatMessage($"You are set ablaze! (Burn 5T) The {boss.Name} grows fiercer (+8 ATK)!");
+                boss.Attack += 4;
+                _display.ShowCombatMessage($"You are set ablaze! (Burn 5T) The {boss.Name} grows fiercer (+4 ATK)!");
                 break;
         }
     }
