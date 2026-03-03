@@ -72,6 +72,13 @@ public partial class Player
     public bool IsManaShieldActive { get; set; } = false;
 
     /// <summary>
+    /// Tracks whether the Overcharge passive bonus (+25% spell damage) has already been consumed
+    /// this turn. Reset at the start of each player turn so Overcharge can only amplify the first
+    /// spell cast per turn, not every ability cast while mana stays above 80%.
+    /// </summary>
+    public bool OverchargeUsedThisTurn { get; set; } = false;
+
+    /// <summary>
     /// Gets or sets whether the Evade ability is active (Rogue mechanic). Next enemy attack will miss.
     /// </summary>
     public bool EvadeNextAttack { get; set; } = false;
