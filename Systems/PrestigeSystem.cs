@@ -63,12 +63,16 @@ public static class PrestigeSystem
             }
             return data;
         }
-        catch { return new PrestigeData(); }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.TraceError($"[PrestigeSystem] Failed to load prestige data: {ex.Message}");
+            return new PrestigeData();
+        }
     }
 
     /// <summary>
     /// Persists the given <see cref="PrestigeData"/> to disk as JSON.
-    /// Silently swallows any I/O errors to avoid crashing the game on save failure.
+    /// I/O errors are traced via <see cref="System.Diagnostics.Trace"/> rather than crashing the game.
     /// </summary>
     /// <param name="data">The prestige data to save.</param>
     public static void Save(PrestigeData data)
@@ -78,7 +82,10 @@ public static class PrestigeSystem
             Directory.CreateDirectory(Path.GetDirectoryName(ActualSavePath)!);
             File.WriteAllText(ActualSavePath, JsonSerializer.Serialize(data, new JsonSerializerOptions { WriteIndented = true }));
         }
-        catch { /* silently fail */ }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Trace.TraceError($"[PrestigeSystem] Failed to save prestige data: {ex.Message}");
+        }
     }
 
     /// <summary>
