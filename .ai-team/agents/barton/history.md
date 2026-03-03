@@ -8,6 +8,65 @@
 
 ## Learnings
 
+### 2026-03-05 — P0 Combat Bug Fixes (#916, #917, #920, #923)
+
+**PRs opened:** #968, #969, #970, #971  
+**All branches:** squad/916-mana-shield-formula-fix, squad/917-cap-block-chance, squad/920-flurry-assassinate-cooldowns, squad/923-overcharge-state-reset
+
+**#916 — Mana Shield formula fix (PR #968)**
+- **File:** `Engine/CombatEngine.cs` line 1272
+- **Bug:** Formula `(player.Mana * 2 / 3)` was marked `// reverse calculation` — used ambiguous integer arithmetic
+- **Fix:** Changed to `(int)(player.Mana / 1.5f)` to explicitly match the stated absorption rate (1.5 mana = 1 HP) used on the full-absorption line above
+
+**#917 — Cap BlockChanceBonus (PR #969)**
+- **File:** `Models/PlayerCombat.cs` line 353
+- **Bug:** `BlockChanceBonus = allEquipped.Sum(i => i.BlockChanceBonus)` had no cap; stacking items could reach 1.0+ guaranteeing every hit is blocked
+- **Fix:** Added `Math.Min(0.95f, ...)` cap — preserves 5% minimum hit chance on all builds
+
+**#920 — Flurry/Assassinate cooldown design confirmation (PR #970)**
+- **File:** `Systems/AbilityManager.cs` lines 496, 522
+- **Finding:** Both abilities already call `PutOnCooldown()` on their success path; the bug in the hunt report was not present in current code
+- **Fix:** Expanded the comment on the auto-cooldown exclusion to document the design intent, preventing future regressions where someone removes the manual `PutOnCooldown()` calls thinking they are redundant
+
+**#923 — Overcharge per-turn reset (PR #971)**
+- **Files:** `Models/PlayerStats.cs`, `Models/PlayerSkillHelpers.cs`, `Systems/AbilityManager.cs`, `Engine/CombatEngine.cs`
+- **Bug:** `IsOverchargeActive()` was a pure mana-level check; every spell cast while mana > 80% received +25% bonus (permanent buff)
+- **Fix:** Added `OverchargeUsedThisTurn` flag; set true when any spell consumes the bonus (ArcaneBolt, FrostNova, Meteor); `IsOverchargeActive()` returns false while flag is set; `CombatEngine` resets flag at turn start
+
+**Key learnings:**
+- Bug hunt findings may not match current code — always read code before assuming the bug exists
+- Per-turn state flags need both a "consume" site (ability use) and a "reset" site (turn start in CombatEngine)
+- Math.Min(0.95f, ...) is the standard pattern for uncapped additive bonuses — apply consistently to all similar bonuses (DodgeBonus, HolyDamageVsUndead, EnemyDefReduction still need caps)
+
+---
+
+### 2026-03-04 — Bug Hunt Scan: Systems & Combat/Items/Skills
+
+**Scope:** Comprehensive scan of Systems/ directory + Models/Player*.cs  
+**Findings:** 18 bugs identified (3 CRITICAL, 8 HIGH, 5 MEDIUM, 2 LOW)  
+**Document:** `.ai-team/decisions/inbox/barton-bug-hunt-findings.md`
+
+**Key Patterns Discovered:**
+
+1. **Unbounded Bonus Stacking** — DodgeBonus, BlockChanceBonus, EnemyDefReduction, HolyDamageVsUndead all sum without maximum caps. A player with 5 dodge items can reach 150%+ dodge chance, achieving invulnerability. These bonuses are calculated in `PlayerCombat.RecalculateDerivedBonuses()` (line 336+) but never clamped.
+
+2. **Direct HP Mutation Bypass** — AbilityManager (lines 292, 316, 354, 388, 399, etc.) directly assigns `enemy.HP -= damage` instead of using validated methods. This bypasses on-damage effects, passive processors, death-cleanup logic, and leaves enemies at negative HP until CombatEngine catches it later. Can cause state inconsistency with revive mechanics and minion management.
+
+3. **Critical Formula Inversions** — Mana Shield damage reduction (line 1272) uses wrong formula: should subtract mana's protection but instead subtracts it, making shields weaker at low mana. LastStand threshold comparison (AbilityManager line 368) uses `>` when intent is `<=`, causing edge-case failures at exact threshold.
+
+4. **Missing Cooldown Assignments** — Flurry and Assassinate abilities (defined in AbilityManager constructor) are exempted from auto-cooldown (line 280-282), but their case blocks never call `PutOnCooldown()`. Result: infinite spam with no cooldown. Relentless passive reduction never applies.
+
+5. **Per-Turn State Accumulation** — Overcharge passive (IsOverchargeActive, line 76 PlayerSkillHelpers) grants +25% damage whenever mana > 80%, with no per-turn reset. Stays on every turn the mana threshold is met. LichsBargain (AbilityManager line 260-266) sets a flag true but never resets it, making abilities free for entire combat duration.
+
+6. **Missing Threshold Validation** — ArcaneSacrifice (HP-cost ability) and RecklessBlow (self-damage ability) lack safeguards to prevent killing the player. RecklessBlow's self-damage cap is ambiguous (line 356-359): scales down at low HP but doesn't document if 10% MaxHP or adaptive.
+
+**Recommended Actions:**
+- Immediate: Fix Mana Shield formula (line 1272), cap BlockChance/DodgeBonus (add .Min() in RecalculateDerivedBonuses)
+- Near-term: Centralize HP mutation to prevent negatives; add cooldown assignments to Flurry/Assassinate
+- Future: Refactor per-turn state tracking (Overcharge, LichsBargain) with explicit reset hooks in CombatEngine.TickCooldowns()
+
+---
+
 ### 2026-03-03 — Warrior UndyingWill Passive Implementation (#869)
 
 **PR:** #888 — `feat(combat): add Warrior UndyingWill passive ability`  

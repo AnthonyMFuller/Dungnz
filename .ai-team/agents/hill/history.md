@@ -8,6 +8,83 @@
 
 ## Learnings
 
+### 2026-03-05 — P1 Reliability Fixes (#928, #929, #930)
+
+**PRs:** #965, #966, #967
+
+**Issues addressed:**
+
+#### #928 — GameLoop null! field initialization risk (PR #965)
+**Branch:** `squad/928-gameloop-null-safety`
+- `_player`, `_currentRoom`, `_stats`, `_context` declared with `null!` and only set in `Run()`
+- Constructor accepted `display` and `combat` without null-checking despite non-nullable type
+- `ExitRun()` compared `_context != null!` — syntactically confusing (null-forgiving in comparison)
+- **Fix:** Added `ArgumentNullException.ThrowIfNull()` for `display`/`combat` in constructor; added same for `state.Player`/`state.CurrentRoom` in `Run(GameState)`; replaced `null!` comparison with `is not null`
+
+#### #929 — Silent exception swallowing in PrestigeSystem (PR #966)
+**Branch:** `squad/929-fix-silent-exceptions`
+- `PrestigeSystem.Load()` used bare `catch { return new PrestigeData(); }` — no trace, no log
+- `PrestigeSystem.Save()` used `catch { /* silently fail */ }` — prestige data loss with zero feedback
+- `SaveSystem.SaveGame()` was already correct (re-throws after cleanup); `LoadGame()` already wraps as `InvalidDataException`
+- **Fix:** Both catch blocks now capture `Exception ex` and call `Trace.TraceError()` with context+message. Non-crashing by design, but now observable via any configured trace listener
+
+#### #930 — Console.WriteLine in Systems layer (PR #967)
+**Branch:** `squad/930-remove-console-in-systems`
+- `PrestigeSystem.Load()` called `Console.WriteLine()` for a version mismatch warning — the only offending Console.* call in Engine/ and Systems/
+- **Fix:** Replaced with `Trace.TraceWarning()`. PrestigeSystem is static with no DI, so Trace is the right diagnostic channel
+
+**Key Learnings:**
+- Static systems without DI should use `System.Diagnostics.Trace` for diagnostics, not `Console.*`
+- `null!` (null-forgiving) is for suppressing nullable warnings — never use it in comparisons; use `is not null` instead
+- Bare `catch { }` is always wrong unless intentional; always capture `Exception ex` and trace/log it
+
+### 2026-03-04 — Bug and Quality Scan (#868)
+
+**Task:** Thorough scan of Engine/, Models/, and Program.cs for bugs and quality risks.
+
+**Findings (20 issues identified):**
+
+| Severity | Count | Key Issues |
+|----------|-------|-----------|
+| HIGH | 2 | Unvalidated fuzzy-match argument; Duplicated flee-state reset code |
+| MED | 7 | Null checks, edge cases, parameter typo, hardcoded dimensions, bounds checks |
+| LOW | 11 | Resource cleanup, magic numbers, type-system confidence, event handler leaks |
+
+**Top Patterns to Address:**
+
+1. **Duplicate flee-state reset** (CombatEngine.cs lines 436–490)
+   - Nearly identical 50-line code blocks; prone to divergence
+   - Fix: Extract `ResetFleeState(Player, Enemy)` helper
+
+2. **Hardcoded magic numbers** (DungeonGenerator.cs, GameLoop.cs)
+   - `width = 5, height = 4` and `FinalFloor = 8` scattered across logic
+   - Fix: Extract to `const` fields; centralize floor-scaling rules
+
+3. **Missing bounds checks** (DungeonGenerator.cs lines 193, 287)
+   - `eligibleRooms[specialIdx++]` without guard; room description pool access
+   - Fix: Guard before indexing; fallback descriptions
+
+4. **Mutable collection exposure** (Room.cs line 101)
+   - `Items` is public List; external code can mutate during iteration
+   - Fix: Return `IReadOnlyList<Item>` or expose copy
+
+5. **Event handler memory leak vector**
+   - `OnHealthChanged?.Invoke()` never unsubscribed
+   - Fix: Document event lifetime; consider weak-event pattern
+
+**Files to Review for Fixes:**
+- Engine/CombatEngine.cs (duplicate code, event leaks)
+- Engine/DungeonGenerator.cs (magic numbers, bounds checks)
+- Models/Room.cs (collection exposure)
+- Models/PlayerStats.cs (event cleanup)
+- Engine/GameLoop.cs (exit path cleanup, hardcoded constants)
+
+**Quality Assessment:** Code is defensive and well-structured overall. Most issues are maintainability debt (hardcoded values, duplicate code) or edge-case risks (bounds checks, null guards). No critical runtime bugs detected, but the patterns compound risk as codebase grows.
+
+---
+
+## Learnings
+
 ### 2026-03-03 — GameLoop Decomposition to ICommandHandler Pattern (#868)
 
 **PR:** #889 — `refactor: decompose GameLoop into ICommandHandler pattern`  

@@ -1080,3 +1080,80 @@ With `SelfHealCooldown=1` and check-first: fires on turn 2 (correct, matching as
 - **Active effects markup:** The `[[effect name t]]` pattern in ShowCombatStatus uses `Markup.Escape()` on the effect name and double brackets for the outer wrapper — verified no regressions.
 
 **Test Count:** 1422 baseline → 1430 with new tests (8 added)
+
+---
+
+### 2026-03-03 — Comprehensive Test Coverage Gap Analysis
+
+**Status:** Analysis complete — findings documented in `.ai-team/decisions/inbox/romanoff-bug-hunt-findings.md`
+
+**Methodology:**
+1. Walked all 80+ test files in Dungnz.Tests/ (19,103 lines of test code)
+2. Mapped against all 146 implementation files in Engine/, Systems/, Models/, Display/
+3. Analyzed test quality patterns (AAA structure, mocking, data-driven tests)
+4. Identified untested/undertested code paths via grep and code review
+5. Assessed for edge cases, error handling, integration gaps
+
+**High-Level Findings:**
+
+| Category | Status | Details |
+|----------|--------|---------|
+| Core combat | ✅ Good | CombatEngine 1v1 scenarios well-covered; ~350 Theory tests exist |
+| Inventory/Equipment | ✅ Good | Manager classes have solid unit tests |
+| Game loops & commands | ⚠️ Mixed | GameLoop integration tests solid, but 15+ command handlers have NO direct unit tests |
+| Narration systems | ❌ Zero tests | 4 untested: BossNarration (141 LOC), EnemyNarration (136 LOC), RoomDescriptions (408 LOC), ItemInteractionNarration |
+| Save/Load | ⚠️ Partial | Happy-path round-trips solid; missing: complex state (status effects, minions, traps, set bonuses) |
+| Ability interactions | ❌ Gaps | No tests for Silence/Stun blocking abilities, mana validation before ability fires |
+| Status effects | ⚠️ Partial | Basic effects covered; missing: IsImmuneToEffects logic, ChaosKnight stun immunity, Sentinel stun immunity |
+| Player HP boundaries | ❌ Gaps | No tests for HP clamping at 0, overflow healing past MaxHP |
+| Command handlers | ❌ Critical | ShopCommandHandler, LeaderboardCommandHandler, MapCommandHandler, LoadCommandHandler, etc. have 0 unit tests |
+| Floor transitions | ❌ Gaps | No test verifying TempAttackBonus resets on descent |
+
+**Critical Gaps Identified (20 detailed findings):**
+
+1. **Command Handler Integration Gaps (HIGH)** — 21 handlers exist; only ~2-3 have direct tests. ShopCommandHandler, LoadCommandHandler (exception paths), LeaderboardCommandHandler, MapCommandHandler untested.
+
+2. **Player HP Boundary Conditions (HIGH)** — No test for negative damage edge case, HP clamping to 0, overflow healing. Risk: HP could go below 0 and corrupt game state.
+
+3. **Narration Systems Zero Coverage (HIGH)** — BossNarration, EnemyNarration, RoomDescriptions, ItemInteractionNarration all untested. Risk: Null-ref crash if new boss type added without narration entry.
+
+4. **SaveSystem Complex State (HIGH)** — Tests exist but only basic cases. Missing: active status effects, minions, traps, set bonuses, item affix preservation across load.
+
+5. **Ability Edge Cases (HIGH)** — No tests for Silence/Stun blocking abilities, mana validation, cooldown logic.
+
+6. **Status Effect Special Cases (MED)** — IsImmuneToEffects, ChaosKnight stun immunity, Sentinel 4-piece immunity not directly tested.
+
+7. **Test Fragility (MED)** — Static field state not fully reset between tests; runs individually but fails in batch order.
+
+8. **Equipment Unequip Edge Cases (MED)** — No tests for unequipping with full inventory, nonexistent item, or unequip-to-inventory logic.
+
+9. **CraftingSystem Invalid Paths (MED)** — Null player guard, case-insensitive ingredient matching, zero-ingredient recipes not tested.
+
+10. **DungeonGenerator Reproducibility (MED)** — Connectivity tested but seed reproducibility (same seed = same dungeon) not explicitly tested.
+
+11. **Parameterization Opportunities (MED/QUALITY)** — 350 Theory tests exist but ~50 more repetitive unit tests could be collapsed into parameterized versions (15% test reduction).
+
+12. **Missing Negative Test Cases (MED/QUALITY)** — Null args, empty collections, negative stats, special-char strings mostly untested.
+
+13. **Test State Leakage (MED)** — ControlledRandom, LootTableTestsCollection share state; may fail in reordered test runs.
+
+14. **Prestige System Cross-Run State (MED)** — Prestige bonus application, stacking, multi-prestige scenarios partially tested.
+
+15. **Floor Transition Logic (MED)** — Temporary bonus reset on descent not explicitly tested.
+
+**Estimated Test Addition Needed:** 120-160 new unit tests across 5 priority tiers to close all HIGH and MED gaps. ~40-60 hours effort.
+
+**Key Patterns Discovered:**
+- ✅ AAA (Arrange-Act-Assert) structure consistent across tests
+- ✅ Helper builders (PlayerBuilder, EnemyBuilder, ItemBuilder) used effectively
+- ✅ FakeDisplayService, FakeInputReader, ControlledRandom mocks comprehensive
+- ⚠️ Some test collections use IDisposable but cleanup timing inconsistent
+- ❌ Command handlers delegated to services with untested error paths
+- ❌ Narration systems are data dictionaries with no validation tests
+
+**Recommendations:**
+1. Priority 1: Command handler unit tests (HIGH + fastest ROI)
+2. Priority 2: SaveSystem edge cases + ability interaction tests (HIGH impact)
+3. Priority 3: Refactor repeated tests into Theory/parameterized (debt reduction)
+4. Priority 4: Narration system existence validation (quick wins)
+5. Priority 5: Test naming standardization + fragility audit (polish)

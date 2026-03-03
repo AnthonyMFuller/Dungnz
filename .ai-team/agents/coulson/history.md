@@ -2266,3 +2266,118 @@ Both PRs reviewed and merged in Round 3 (see below).
 - `.ai-team/log/2026-03-03-retrospective.md` — Full ceremony summary
 - `.ai-team/decisions/inbox/coulson-retrospective-2026-03-03.md` — 5 proposed decisions
 
+---
+
+### 2026-03-XX: Comprehensive Architectural Audit & Bug Hunt
+
+**Scope:** Complete codebase scan of Engine/, Models/, Systems/, Display/, Data/, Program.cs (35,821 LOC)
+
+**Methodology:**
+- Systematic file-by-file review for layer violations, tight coupling, encapsulation breaks
+- Pattern search for magic strings, hardcoded values, duplicated logic
+- Null-safety analysis: FirstOrDefault checks, null! assertions, defensive null guards
+- State management review: mutable collections, static state, RNG injection
+- Error handling audit: silent exception swallowing, missing validation
+
+**Key Findings (17 issues total):**
+
+**CRITICAL DEBT (block all feature work):**
+1. **Mutable public collections expose state corruption** — Room.Exits, Player.Inventory, Player.ActiveMinions, etc. are List<>/Dictionary<> with public setters. External code can mutate without validation.
+   - Files: Room.cs, Player.cs (5 properties), CraftingRecipe, Merchant, DungeonBoss
+   - Fix: Wrap in IReadOnlyList/Dictionary; expose mutations only via validated methods
+
+2. **Silent file I/O exception swallowing loses player progress** — PrestigeSystem and SaveSystem use bare `catch { /* silently fail */ }`. Save failures don't notify player; data corruption goes unnoticed.
+   - Files: PrestigeSystem.cs (lines 66, 81), SaveSystem.cs (line 102)
+   - Fix: Log to SessionLogger; return error codes; show user message on critical failure
+
+3. **GameLoop fields initialized with null! without validation** — _player, _currentRoom, _stats, _context declared null! and only set in Run(). Any exception during setup can cause downstream NullReferenceException.
+   - File: GameLoop.cs (lines 25-27, 47)
+   - Fix: Validate in constructor or guard every public method
+
+4. **Console.WriteLine in Systems layer violates abstraction** — PrestigeSystem calls Console.WriteLine directly, breaking "display through IDisplayService" contract.
+   - File: PrestigeSystem.cs (line 61)
+   - Fix: Use ILogger or GameEventBus; never call Console in Systems
+
+**ENCAPSULATION & API DESIGN (medium priority):**
+5. **Hardcoded magic strings for item lookups across 6+ enemy files** — "BloodVial", "Bone Fragment", "Health Potion" appear as FirstOrDefault() string literals in BloodHound, BoneArcher, CarrionCrawler, CursedZombie, GiantRat, ShadowImp
+   - Fix: Central ItemConstants class or ItemConfig.FindByName()
+
+6. **FirstOrDefault() returns not checked before use** — Commands (Compare, Craft, Examine, Take, Use), DisplayService assume FirstOrDefault != null. Can crash on item not found.
+   - Files: 7 command handlers, 2 display classes
+   - Fix: Always guard FirstOrDefault with null-check or Find+Validate pattern
+
+7. **Partial classes fragment Player across 5 files** — Player split into Player, PlayerInventory, PlayerCombat, PlayerStats, PlayerSkills. No single place to see full interface. All properties still public (encapsulation not enforced).
+   - Fix: Merge into single file OR use composition (separate classes for Inventory, Combat state)
+
+8. **Stats mutations lack validation** — Direct assignments like `enemy.HP = (int)(enemy.MaxHP * 1.5)`, `player.Defense = ...` without bounds checking. HP can exceed MaxHP or go negative.
+   - Files: DungeonGenerator, EnemyFactory, CryptPriestAI, IntroSequence
+   - Fix: Provide methods (ModifyAttack, ApplyStatBonus) that validate invariants
+
+**TESTABILITY & RNG (lower priority but blocks testing):**
+9. **RNG not consistently injected** — DungeonGenerator, CombatEngine, NarrationService, SessionLogger create new Random() if not provided. Multiple independent RNG instances reduce seed reproducibility.
+   - Fix: Require RNG injection; single RNG per run
+
+10. **IntroSequence generates seed with new Random()** — Breaks reproducibility; seed generation not deterministic.
+    - File: IntroSequence.cs (line 51)
+    - Fix: Inject Random
+
+11. **Static shared state in LootTable** — _sharedTier1/2/3/Epic/Legendary caches owned by static SetTierPools(). Tests can pollute each other if SetTierPools called again.
+    - File: LootTable.cs (lines 17-21)
+    - Fix: Dependency injection; pass pools to constructor
+
+**PATTERN & CODE QUALITY (nice-to-have):**
+12. **CombatEngine has 50+ static message arrays** — Narration hardcoded as `static readonly string[]`. Can't localize or mod without recompiling.
+    - Fix: Load from Data/combat-messages.json
+
+13. **Room death tracking mixes null and HP patterns** — Code checks both `enemy != null` AND `enemy.HP > 0`. Design Review said "death = HP <= 0" but both patterns used inconsistently.
+    - Fix: Pick ONE pattern (null-on-death OR HP <= 0); standardize everywhere
+
+14. **DisplayService mixes IInputReader and IMenuNavigator** — Two separate input abstractions doing similar work.
+    - Fix: Consolidate into single IInputService
+
+15. **IDisplayService SelectInventoryItem couples to keyboard input** — ShowInventoryAndSelect uses Console.ReadKey implicitly, preventing UI abstraction.
+
+**RISK (edge cases that could cause crashes):**
+16. **NullReferenceException on missing class definition** — PlayerClassDefinition.All.FirstOrDefault used without null-check; if player.Class corrupted, crash.
+    - File: DisplayService.cs (line 231)
+    - Fix: Validate player.Class in constructor; guard lookup
+
+17. **Hardcoded fallback item lists in Models violate separation** — LootTable and Merchant have fallback lists; Models should not own data loading logic.
+    - Files: LootTable.cs, Merchant.cs
+    - Fix: Move fallbacks to Systems/config
+
+**Priority Matrix:**
+- **Phase 0 (BLOCK all work):** Items 1, 2, 3, 4 — Fix before any new features
+- **Phase 1 (UNBLOCK testing):** Items 5, 6, 7, 8, 9, 10, 11 — Required for v2 test infrastructure
+- **Phase 2 (POLISH):** Items 12-17 — Nice to have; document for future sprints
+
+**Summary Metrics:**
+- HIGH severity: 4 issues (all Phase 0)
+- MED severity: 7 issues (mostly Phase 1, some Phase 0)
+- LOW severity: 6 issues (Phase 2)
+- Affected files: 30+ across Engine, Models, Systems, Display
+- Estimated remediation effort: 40-50 hours for Phase 0/1
+
+**Key Pattern Violations Observed:**
+1. Mutable public collections → No defensive copying, breaks encapsulation
+2. Silent exceptions → No visibility into failures, data loss
+3. Magic strings → Maintainability nightmare, typos uncaught until runtime
+4. Null! assertions → Deferred validation, crashes in unexpected places
+5. FirstOrDefault unchecked → Silent nulls become runtime crashes
+6. RNG not injected → Testability and reproducibility lost
+7. Stats mutations → No invariant validation (HP bounds, stat bounds)
+8. Console calls in Systems → Violates layer separation principle
+9. Partial classes → Fragmented responsibility, unclear boundaries
+10. Hardcoded content → Not localizable, not moddable
+
+**Recommendations for Team:**
+- Adopt code review checklist: "Is this public collection IReadOnlyList? Is this exception logged? Are FirstOrDefault calls checked?"
+- Enforce RNG injection at DI bootstrap; don't allow parameterless constructors for random stuff
+- Extract method for "find and validate item" — too many copies of manual FirstOrDefault + null check
+- Create ItemRegistry/ItemConfig.FindOrThrow for safe item lookups
+- Move Player tests to single test class after merge; partial classes should not be tested separately
+
+**Artifacts:**
+- `.ai-team/decisions/inbox/coulson-bug-hunt-findings.md` — Full detailed findings with line numbers
+- This history entry — Pattern summary and recommendations
+

@@ -15886,3 +15886,37 @@ Issue #878 asked for a 78% coverage floor. The floor was **already present at 80
 ### OSX-x64 Release Artifact
 Added osx-x64 as a third publish target in squad-release.yml. Tested by inspection only — cross-compilation of self-contained executables is supported by .NET 10. Note: `PublishReadyToRun` may produce a warning for osx-x64 on ubuntu-latest runner (cross-OS R2R is limited); build won't fail but binary may not have R2R optimization.
 
+
+---
+
+# Bug Hunt Sprint — 2026-03-03
+
+**Conducted by:** Coulson, Hill, Barton, Romanoff  
+**Issues Created:** 49 total (#916–#964) | PRs Merged: 7 (#965–#971)
+
+## Summary
+
+Comprehensive audit of Engine/, Models/, Systems/, Display/. Key findings: unbounded bonus stacking (P0), null safety gaps (P1), test coverage holes (P2).
+
+## P0 Fixes Merged
+
+- **#916** — Mana Shield formula inverted (Barton)
+- **#917** — Block chance can exceed 100% (Barton)
+- **#920** — Flurry/Assassinate missing cooldown (Barton)
+- **#923** — Overcharge permanently active (Barton)
+- **#928** — GameLoop null! fields risky (Hill)
+- **#929** — Silent exception swallowing (Coulson)
+- **#930** — Console output in Systems (Coulson)
+
+## Enforcement Rules (Going Forward)
+
+1. All bonuses must cap at 95%
+2. Log all file I/O exceptions
+3. Null-check FirstOrDefault results
+4. No Console outside Display layer
+5. Clamp HP mutations to `Math.Max(0, ...)`
+6. Public collections must be IReadOnly
+7. Inject RNG, never instantiate
+8. Validate all public API parameters
+
+**Status:** Issues filed (#916–#964). Phase 0 (P0 fixes) underway.
