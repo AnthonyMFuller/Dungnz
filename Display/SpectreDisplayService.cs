@@ -308,7 +308,7 @@ public sealed class SpectreDisplayService : IDisplayService
         // Build selection list
         var items = player.Inventory.ToList();
         var prompt = new SelectionPrompt<string>()
-            .Title("[yellow]Select an item:[/]")
+            .Title("[yellow]Inspect an item:[/]")
             .PageSize(12)
             .MoreChoicesText("[grey](Move up and down to see more items)[/]")
             .AddChoices(items.Select(i => i.Name))
