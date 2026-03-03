@@ -25,15 +25,17 @@ internal sealed class TakeCommandHandler : ICommandHandler
                 context.Display.ShowError("There is nothing here to take.");
                 return;
             }
-            var selected = context.Display.ShowTakeMenuAndSelect(roomItems.AsReadOnly());
-            if (selected == null) { context.TurnConsumed = false; return; }
-            if (selected.Name == "__TAKE_ALL__")
+            var selection = context.Display.ShowTakeMenuAndSelect(roomItems.AsReadOnly());
+            if (selection == null) { context.TurnConsumed = false; return; }
+            switch (selection)
             {
-                TakeAllItems(context);
-                return;
+                case Models.TakeSelection.All:
+                    TakeAllItems(context);
+                    return;
+                case Models.TakeSelection.Single s:
+                    TakeSingleItem(s.Item, context);
+                    return;
             }
-            TakeSingleItem(selected, context);
-            return;
         }
 
         // Typed argument — exact then fuzzy match

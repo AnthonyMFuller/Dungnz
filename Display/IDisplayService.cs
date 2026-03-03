@@ -365,8 +365,8 @@ public interface IDisplayService
     /// <param name="usable">The list of usable items to display.</param>
     Item? ShowUseMenuAndSelect(IReadOnlyList<Item> usable);
 
-    /// <summary>Presents room items as an arrow-key menu. Returns selected item, a sentinel "__TAKE_ALL__" item (Name == "__TAKE_ALL__"), or null for cancel.</summary>
-    Item? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems);
+    /// <summary>Presents room items as an arrow-key menu. Returns a <see cref="Models.TakeSelection"/> or null for cancel.</summary>
+    Models.TakeSelection? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems);
 
     /// <summary>Shows the main startup menu. When <paramref name="hasSaves"/> is false, the Load Save option is omitted.</summary>
     StartupMenuOption ShowStartupMenu(bool hasSaves);

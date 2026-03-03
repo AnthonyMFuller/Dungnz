@@ -271,8 +271,7 @@ public class FakeDisplayService : IDisplayService
         return null;
     }
 
-    public Item? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems) => null;
-    
+    public TakeSelection? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems) => null;
     public void ShowCombatStart(Enemy enemy) { AllOutput.Add($"combat_start:{enemy.Name}"); }
     public void ShowCombatEntryFlags(Enemy enemy) { AllOutput.Add($"combat_flags:{enemy.Name}"); }
     public void ShowLevelUpChoice(Player player) { AllOutput.Add($"levelup_choice:{player.Level}"); }

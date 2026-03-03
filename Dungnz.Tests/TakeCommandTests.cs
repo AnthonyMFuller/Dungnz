@@ -12,10 +12,8 @@ namespace Dungnz.Tests;
 /// <summary>
 /// Tests for TAKE command enhancements:
 ///   1. No-argument TAKE → interactive menu via ShowTakeMenuAndSelect
-///   2. Take All sentinel (Name == "__TAKE_ALL__") → picks up every room item
+///   2. Take All (TakeSelection.All) → picks up every room item
 ///   3. Fuzzy Levenshtein matching for typed argument
-/// NOTE: These tests require Barton's squad/take-command-menu branch to be merged
-/// (adds ShowTakeMenuAndSelect to IDisplayService and FakeDisplayService).
 /// </summary>
 [Collection("PrestigeTests")]
 public class TakeCommandTests
@@ -23,17 +21,15 @@ public class TakeCommandTests
     /// <summary>
     /// Subclass that re-implements IDisplayService so the GameLoop's interface-typed
     /// _display field dispatches ShowTakeMenuAndSelect to this class, not FakeDisplayService.
-    /// Once Barton adds ShowTakeMenuAndSelect to FakeDisplayService, this override takes
-    /// precedence via C# interface re-implementation semantics.
     /// </summary>
     private sealed class TakeFakeDisplay : FakeDisplayService, IDisplayService
     {
         public bool ShowTakeMenuCalled { get; private set; }
-        public Item? ShowTakeMenuResult { get; set; }
+        public TakeSelection? ShowTakeMenuResult { get; set; }
 
         // Re-implements IDisplayService.ShowTakeMenuAndSelect, so interface dispatch
         // lands here even though GameLoop holds _display as IDisplayService.
-        public new Item? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems)
+        public new TakeSelection? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems)
         {
             ShowTakeMenuCalled = true;
             AllOutput.Add("take_menu");
@@ -116,7 +112,7 @@ public class TakeCommandTests
         var (player, room, display, combat) = MakeSetup();
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, Weight = 1 };
         room.Items.Add(potion);
-        display.ShowTakeMenuResult = potion; // user highlights and confirms this item
+        display.ShowTakeMenuResult = new TakeSelection.Single(potion); // user highlights and confirms this item
 
         var loop = MakeLoop(display, combat.Object, "take", "quit");
 
@@ -139,8 +135,7 @@ public class TakeCommandTests
         var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, Weight = 2 };
         room.Items.Add(potion);
         room.Items.Add(sword);
-        // Sentinel item signals "take everything"
-        display.ShowTakeMenuResult = new Item { Name = "__TAKE_ALL__" };
+        display.ShowTakeMenuResult = new TakeSelection.All();
 
         var loop = MakeLoop(display, combat.Object, "take", "quit");
 
@@ -165,7 +160,7 @@ public class TakeCommandTests
         var extra = new Item { Name = "Extra Crystal", Type = ItemType.Consumable, Weight = 1 };
         room.Items.Add(leftover);
         room.Items.Add(extra);
-        display.ShowTakeMenuResult = new Item { Name = "__TAKE_ALL__" };
+        display.ShowTakeMenuResult = new TakeSelection.All();
 
         var loop = MakeLoop(display, combat.Object, "take", "quit");
 

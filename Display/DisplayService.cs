@@ -1690,17 +1690,17 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <inheritdoc />
-    public Item? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems)
+    public Models.TakeSelection? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems)
     {
         var options = roomItems
             .Select(item =>
             {
                 var icon = ItemTypeIcon(item.Type);
                 var stat = PrimaryStatLabel(item);
-                return ($"{icon} {item.Name}  [{stat}]", (Item?)item);
+                return ($"{icon} {item.Name}  [{stat}]", (Models.TakeSelection?)new Models.TakeSelection.Single(item));
             })
-            .Prepend(("📦 Take All", (Item?)new Item { Name = "__TAKE_ALL__" }))
-            .Append(("↩  Cancel", (Item?)null))
+            .Prepend(("📦 Take All", (Models.TakeSelection?)new Models.TakeSelection.All()))
+            .Append(("↩  Cancel", (Models.TakeSelection?)null))
             .ToArray();
         return SelectFromMenu(options, _input, "=== TAKE — Choose an item ===");
     }

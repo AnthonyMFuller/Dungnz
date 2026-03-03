@@ -1312,15 +1312,14 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     /// <inheritdoc/>
-    public Item? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems)
+    public Models.TakeSelection? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems)
     {
-        var sentinel = new Item { Name = "__TAKE_ALL__" };
         var options = roomItems
             .Select(item => (
                 $"{ItemIcon(item)} {Markup.Escape(item.Name)}  [grey][[{Markup.Escape(PrimaryStatLabel(item))}]][/]",
-                (Item?)item))
-            .Prepend(("[yellow]📦 Take All[/]", (Item?)sentinel))
-            .Append(("[grey]↩  Cancel[/]", (Item?)null));
+                (Models.TakeSelection?)new Models.TakeSelection.Single(item)))
+            .Prepend(("[yellow]📦 Take All[/]", (Models.TakeSelection?)new Models.TakeSelection.All()))
+            .Append(("[grey]↩  Cancel[/]", (Models.TakeSelection?)null));
         return PromptFromMenu("[bold yellow]=== TAKE — Choose an item ===[/]", options);
     }
 
