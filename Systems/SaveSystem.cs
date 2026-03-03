@@ -187,7 +187,7 @@ public static class SaveSystem
             // Restore unlocked skills (bonuses already baked into saved stats)
             foreach (var skillName in saveData.UnlockedSkills)
             {
-                if (Enum.TryParse<Dungnz.Systems.Skill>(skillName, out var skill))
+                if (Enum.TryParse<Dungnz.Models.Skill>(skillName, out var skill))
                     saveData.Player.Skills.Unlock(skill);
             }
 

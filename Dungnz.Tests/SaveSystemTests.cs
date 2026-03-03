@@ -213,16 +213,16 @@ public class SaveSystemTests : IDisposable
     public void RoundTrip_UnlockedSkills_Preserved()
     {
         var player = new Player { Name = "Tester" };
-        player.Skills.Unlock(Dungnz.Systems.Skill.PowerStrike);
-        player.Skills.Unlock(Dungnz.Systems.Skill.Swiftness);
+        player.Skills.Unlock(Dungnz.Models.Skill.PowerStrike);
+        player.Skills.Unlock(Dungnz.Models.Skill.Swiftness);
         var state = new GameState(player, new Room { Description = "Skill Room" });
 
         SaveSystem.SaveGame(state, "skills");
         var loaded = SaveSystem.LoadGame("skills");
 
-        loaded.Player.Skills.IsUnlocked(Dungnz.Systems.Skill.PowerStrike).Should().BeTrue();
-        loaded.Player.Skills.IsUnlocked(Dungnz.Systems.Skill.Swiftness).Should().BeTrue();
-        loaded.Player.Skills.IsUnlocked(Dungnz.Systems.Skill.IronSkin).Should().BeFalse();
+        loaded.Player.Skills.IsUnlocked(Dungnz.Models.Skill.PowerStrike).Should().BeTrue();
+        loaded.Player.Skills.IsUnlocked(Dungnz.Models.Skill.Swiftness).Should().BeTrue();
+        loaded.Player.Skills.IsUnlocked(Dungnz.Models.Skill.IronSkin).Should().BeFalse();
     }
 
     [Theory]

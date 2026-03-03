@@ -1,7 +1,6 @@
-namespace Dungnz.Systems;
+namespace Dungnz.Models;
 
 using System.Text.Json;
-using Dungnz.Models;
 
 /// <summary>
 /// Raw per-floor merchant stock definition as read from merchant-inventory.json.
@@ -127,7 +126,11 @@ public static class MerchantInventoryConfig
         try
         {
             var json = File.ReadAllText(path);
-            _cachedData = JsonSerializer.Deserialize<MerchantInventoryData>(json, DataJsonOptions.Default);
+            _cachedData = JsonSerializer.Deserialize<MerchantInventoryData>(json, new JsonSerializerOptions
+            {
+                PropertyNameCaseInsensitive = true,
+                ReadCommentHandling = JsonCommentHandling.Skip
+            });
             return _cachedData;
         }
         catch

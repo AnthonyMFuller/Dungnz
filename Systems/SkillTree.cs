@@ -1,5 +1,5 @@
-namespace Dungnz.Systems;
-using Dungnz.Models;
+namespace Dungnz.Models;
+
 
 /// <summary>Passive skills that can be unlocked by a player once they reach the required level.</summary>
 public enum Skill
