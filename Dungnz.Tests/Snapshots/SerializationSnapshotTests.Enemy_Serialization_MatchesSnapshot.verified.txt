@@ -1,5 +1,5 @@
 ﻿{
-  "$type": "Goblin",
+  "$type": "goblin",
   "Name": "Goblin",
   "HP": 20,
   "MaxHP": 20,
