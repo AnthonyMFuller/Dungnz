@@ -126,9 +126,9 @@ public class LootTableTests
         }
         finally
         {
-            // Restore shared pools so this static mutation doesn't affect other tests
-            var placeholder = new List<Item> { new Item { Name = "Restore" } }.AsReadOnly();
-            LootTable.SetTierPools(placeholder, placeholder, placeholder);
+            // Reset to null so fallback lists are used — avoids contaminating other tests
+            // with single-tier placeholder items that skew distribution assertions.
+            LootTable.ResetTierPools();
         }
     }
 }
