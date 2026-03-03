@@ -276,7 +276,10 @@ public class AbilityManager
             player.ArcaneSurgeReady = true;
             display.ShowCombatMessage("Next ability will cost 1 less mana. [Arcane Surge]"); // Fix #545: message fires on set-ready
         }
-        // Abilities with pre-conditions manage their own cooldown inside the case
+        // Abilities with pre-conditions manage their own cooldown inside the case block.
+        // Flurry and Assassinate require ComboPoints; RaiseDead/CorpseExplosion require minion state;
+        // LastStand requires low HP. All five call PutOnCooldown() only on the success path so that
+        // a failed pre-condition check (early return) does NOT put the ability on cooldown. (#920)
         if (type is not AbilityType.LastStand and not AbilityType.Flurry and not AbilityType.Assassinate
                   and not AbilityType.RaiseDead and not AbilityType.CorpseExplosion)
             PutOnCooldown(type, ability.CooldownTurns, player);
