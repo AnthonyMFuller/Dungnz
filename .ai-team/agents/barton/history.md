@@ -1140,3 +1140,56 @@ All 5 were implemented (none removed) — the combat system already had the nece
 - `Engine/CombatEngine.cs` — 4 combat-time wires
 
 **Design note:** `ReviveCooldownBonus` required a new `PhoenixExtraChargeUsed` run-level flag on Player (not per-combat — phoenix is once-per-run). The existing `PhoenixUsedThisRun` was extended rather than replaced.
+
+---
+
+### 2026-03-02 — Boss AI Implementations (#882)
+
+**PR:** #902 — `feat: add InfernalDragonAI and LichAI implementations`  
+**Branch:** `squad/882-boss-ai`  
+**Files Created:**
+- `Engine/InfernalDragonAI.cs`
+- `Engine/LichKingAI.cs`
+**Files Modified:**
+- `Engine/GoblinShamanAI.cs` (added Breath and Resurrect to EnemyAction enum)
+
+**Requirement:**
+- Infernal Dragon and Lich King needed custom AI implementations for their top-tier boss encounters
+- Infernal Dragon: multi-phase AI with breath weapon mechanic
+- Lich King: undead resurrection mechanic
+
+**Implementation — InfernalDragonAI:**
+- Phase-based behavior tracking HP percentage
+- Phase 1 (>50% HP): breath weapon fires every 3 turns with 1.0x damage multiplier
+- Phase 2 (≤50% HP): enraged state, breath weapon fires every 2 turns with 1.5x damage multiplier
+- Phase transition resets cooldown to 1 turn to make breath available sooner
+- Exposes `LastAction` (Attack or Breath) and `BreathDamageMultiplier` for combat engine integration
+
+**Implementation — LichKingAI:**
+- Simple attack behavior during normal turns (delegates to standard attack logic)
+- Resurrection mechanic via `CheckResurrection` method
+  - Called externally by combat engine when HP reaches 0
+  - Resurrects once at 40% max HP
+  - Tracks resurrection with `_hasResurrected` flag to prevent multiple resurrections
+  - Exposes `LastAction` (Attack or Resurrect) and `ResurrectionHP` for narration
+
+**IEnemyAI Structure:**
+- Interface defines `TakeTurn(Enemy self, Player player, CombatContext context)` method
+- AI implementations are stateful classes that maintain their own state (cooldowns, flags)
+- Combat engine instantiates AI and calls TakeTurn each enemy turn
+- AI implementations set state but don't directly modify player/combat — that's done by combat engine based on AI's exposed properties
+
+**Key Design Decisions:**
+- **Breath weapon cooldown:** Phase 1 uses 3-turn interval for occasional dramatic effect, Phase 2 uses 2-turn for increased threat
+- **Phase transition at 50% HP:** Classic "enrage" threshold, signals to player that strategy must adapt
+- **Resurrection at 40% HP:** Not full resurrection — gives player advantage on second attempt but still challenging
+- **CheckResurrection pattern:** Allows combat engine to control when resurrection triggers (after damage calculation) rather than AI doing it autonomously
+- **Enum extensions:** Added Breath and Resurrect to EnemyAction to support new AI behaviors without breaking existing AI types
+
+**How AI hooks into combat engine:**
+- Combat engine creates AI instance for enemy at spawn time (or first combat turn)
+- Each enemy turn, engine calls `ai.TakeTurn(enemy, player, context)`
+- AI updates its internal state and sets `LastAction` property
+- Combat engine reads `LastAction` to determine what happened (Attack, Heal, Breath, Resurrect)
+- Combat engine executes appropriate logic based on action (damage calculation, healing, special effects)
+- For Lich King, combat engine also calls `ai.CheckResurrection(enemy)` after damage that would kill
