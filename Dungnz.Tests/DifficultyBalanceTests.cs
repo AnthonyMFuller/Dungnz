@@ -13,8 +13,13 @@ namespace Dungnz.Tests;
 /// Verifies that Casual/Normal/Hard settings apply correct multipliers to player damage,
 /// enemy damage, gold, XP, loot drops, merchant prices, healing, and starting conditions.
 /// </summary>
-public class DifficultyBalanceTests
+[Collection("LootTableTests")]
+public class DifficultyBalanceTests : IDisposable
 {
+    // Restore minimal non-empty pools after each test that calls SetTierPools,
+    // preventing contamination of LootDistributionSimulationTests which relies on
+    // the static tier pools being in a known state.
+    public void Dispose() => LootTable.ResetTierPools();
     // ── 1. DifficultySettings.For() values ────────────────────────────────────
 
     [Fact]
