@@ -75,11 +75,23 @@ jobs:
             /p:PublishReadyToRun=true \
             -o publish/win-x64
 
+      - name: Publish osx-x64
+        if: steps.check_tag.outputs.exists == 'false'
+        run: |
+          dotnet publish Dungnz.csproj \
+            -c Release \
+            -r osx-x64 \
+            --self-contained true \
+            /p:PublishSingleFile=true \
+            /p:PublishReadyToRun=true \
+            -o publish/osx-x64
+
       - name: Archive artifacts
         if: steps.check_tag.outputs.exists == 'false'
         run: |
           cd publish/linux-x64 && zip -j ../../dungnz-linux-x64.zip * && cd ../..
           cd publish/win-x64 && zip -j ../../dungnz-win-x64.zip * && cd ../..
+          cd publish/osx-x64 && zip -j ../../dungnz-osx-x64.zip * && cd ../..
 
       - name: Create GitHub Release
         if: steps.check_tag.outputs.exists == 'false'
@@ -89,6 +101,7 @@ jobs:
           gh release create "${{ steps.version.outputs.tag }}" \
             dungnz-linux-x64.zip \
             dungnz-win-x64.zip \
+            dungnz-osx-x64.zip \
             --title "${{ steps.version.outputs.tag }}" \
             --generate-notes \
             --latest

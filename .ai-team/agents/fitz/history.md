@@ -206,3 +206,31 @@ Implemented six CI/CD and infrastructure enhancements across multiple PRs:
 - `.config/dotnet-tools.json` — new file
 
 **Impact:** Faster CI builds, automated dependency management, consistent formatting, downloadable releases, reproducible testing, and security analysis.
+
+---
+
+### CI Improvements — Issues #876 #877 #878 (March 2026)
+
+**Branch:** `squad/876-877-878-ci-improvements`
+
+**#876 — osx-x64 publish target:**
+- Added `Publish osx-x64` step to `squad-release.yml` (alongside existing linux-x64 and win-x64)
+- Archives to `dungnz-osx-x64.zip` and attaches to GitHub Release
+
+**#877 — Stryker threshold raise:**
+- Could not run Stryker live (schedule-only workflow, takes 30+ minutes)
+- Previous threshold-break: 50. Raised to 65.
+- threshold-low raised 65 → 75 to maintain separation (break < low invariant)
+- threshold-high unchanged at 80
+- Rationale: 1,422 tests + ~80% line coverage gives confidence mutation score > 65
+- **If the first Monday run fails**, dial back to 60 and investigate
+
+**#878 — Coverage floor:**
+- **No change needed.** Coverage floor already exists in `squad-ci.yml` at 80% line coverage (set per Anthony directive in a prior session)
+- Verified current coverage: 80.01% (7,386/9,231 lines)
+- 80% > requested 78% — existing gate satisfies the issue; documented in comment
+- Updated comment in squad-ci.yml to reference #878
+
+**Safety margins applied:**
+- Stryker: raised conservatively, flagged for first-run verification
+- Coverage: existing 80% gate retained (not lowered to 78%)
