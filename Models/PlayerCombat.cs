@@ -49,6 +49,37 @@ public partial class Player
     public bool EquippedWeaponAppliesBleed => EquippedWeapon?.AppliesBleedOnHit ?? false;
 
     /// <summary>
+    /// Gets the total flat enemy-defense reduction from all equipped items.
+    /// Subtracted from enemy DEF (clamped to 0) when calculating player attack damage.
+    /// </summary>
+    public int EnemyDefReduction { get; set; }
+
+    /// <summary>
+    /// Gets the total holy-damage multiplier bonus from all equipped items.
+    /// Applied as a damage multiplier when attacking undead enemies.
+    /// </summary>
+    public float HolyDamageVsUndead { get; set; }
+
+    /// <summary>
+    /// Gets the total block chance bonus from all equipped items.
+    /// Represents the probability [0, 1] to completely block an incoming attack.
+    /// </summary>
+    public float BlockChanceBonus { get; set; }
+
+    /// <summary>
+    /// Gets whether any equipped item grants the phoenix revive an additional run charge.
+    /// </summary>
+    public bool HasReviveCooldownBonus { get; set; }
+
+    /// <summary>
+    /// Gets the total bonus periodic damage dealt to the enemy at the start of each combat turn.
+    /// </summary>
+    public int PeriodicDmgBonus { get; set; }
+
+    /// <summary>Tracks whether the extra phoenix-revive charge (from ReviveCooldownBonus) has been used this run.</summary>
+    public bool PhoenixExtraChargeUsed { get; set; } = false;
+
+    /// <summary>
     /// Equips an item from the player's inventory into the appropriate slot (weapon, armor, or
     /// accessory). If a different item already occupies that slot, it is unequipped and moved back
     /// into the inventory. Stat bonuses from the new item are applied immediately.
@@ -311,6 +342,17 @@ public partial class Player
         PoisonImmune = (EquippedWeapon?.PoisonImmunity ?? false)
                     || (EquippedAccessory?.PoisonImmunity ?? false)
                     || AllEquippedArmor.Any(a => a.PoisonImmunity);
+
+        var allEquipped = new[] { EquippedWeapon, EquippedAccessory }
+            .Concat(AllEquippedArmor)
+            .Where(i => i != null)
+            .Select(i => i!);
+
+        EnemyDefReduction = allEquipped.Sum(i => i.EnemyDefReduction);
+        HolyDamageVsUndead = allEquipped.Sum(i => i.HolyDamageVsUndead);
+        BlockChanceBonus = allEquipped.Sum(i => i.BlockChanceBonus);
+        HasReviveCooldownBonus = allEquipped.Any(i => i.ReviveCooldownBonus);
+        PeriodicDmgBonus = allEquipped.Sum(i => i.PeriodicDmgBonus);
     }
 
 }
