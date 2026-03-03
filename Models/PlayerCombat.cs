@@ -350,7 +350,7 @@ public partial class Player
 
         EnemyDefReduction = allEquipped.Sum(i => i.EnemyDefReduction);
         HolyDamageVsUndead = allEquipped.Sum(i => i.HolyDamageVsUndead);
-        BlockChanceBonus = allEquipped.Sum(i => i.BlockChanceBonus);
+        BlockChanceBonus = Math.Min(0.95f, allEquipped.Sum(i => i.BlockChanceBonus));
         HasReviveCooldownBonus = allEquipped.Any(i => i.ReviveCooldownBonus);
         PeriodicDmgBonus = allEquipped.Sum(i => i.PeriodicDmgBonus);
     }
