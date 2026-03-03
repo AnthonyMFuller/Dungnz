@@ -21,7 +21,7 @@ internal sealed class LoadCommandHandler : ICommandHandler
             context.CurrentFloor = state.CurrentFloor;
             context.Seed = state.Seed;
             context.RunStart = DateTime.UtcNow;
-            context.Rng = context.Seed.HasValue ? new Random(context.Seed.Value) : new Random();
+            context.Rng = context.Seed.HasValue ? new Random(context.Seed.Value) : new Random(); // RNG-ok: seed may be absent after loading a legacy save
             context.Stats = new RunStats();
             context.SessionStats = new SessionStats();
             context.Display.ShowMessage($"Loaded save '{argument}'.");
