@@ -17,7 +17,6 @@ public class GoblinShamanAI : IEnemyAI
     /// <summary>
     /// Executes Goblin Shaman turn: if HP below 50% and heal is off cooldown,
     /// self-heals for 20% MaxHP. Otherwise, defers to default attack.
-    /// Sets <see cref="TurnResult"/> to indicate what happened.
     /// </summary>
     public void TakeTurn(Enemy self, Player player, CombatContext context)
     {

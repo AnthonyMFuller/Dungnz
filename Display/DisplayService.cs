@@ -837,6 +837,7 @@ public class ConsoleDisplayService : IDisplayService
     /// <param name="currentRoom">
     /// The room the player currently occupies, placed at origin (0,0) on the map.
     /// </param>
+    /// <param name="floor">The current dungeon floor number, displayed in the map header.</param>
     public void ShowMap(Room currentRoom, int floor = 1)
     {
         // BFS to assign (x, y) coordinates to every reachable room

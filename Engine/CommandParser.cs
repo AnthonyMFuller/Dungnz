@@ -173,7 +173,7 @@ public static class CommandParser
 
     /// <summary>
     /// Attempts fuzzy matching when a command is not recognized.
-    /// If exactly one known verb has Levenshtein distance <= 1, returns that command.
+    /// If exactly one known verb has Levenshtein distance &lt;= 1, returns that command.
     /// Otherwise, returns Unknown command.
     /// </summary>
     private static ParsedCommand TryFuzzyMatch(string command, string argument)

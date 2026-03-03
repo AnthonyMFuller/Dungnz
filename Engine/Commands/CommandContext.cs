@@ -59,7 +59,7 @@ public class CommandContext
     public required Action<string> ExitRun { get; set; }
     /// <summary>Delegate that records the run outcome to history and evaluates achievements.</summary>
     public required Action<bool, string?> RecordRunEnd { get; set; }
-    /// <summary>Returns the item currently equipped in the slot that <paramref name="item"/> would occupy.</summary>
+    /// <summary>Returns the item currently equipped in the slot that the candidate item would occupy.</summary>
     public required Func<Player, Item?, Item?> GetCurrentlyEquippedForItem { get; set; }
     /// <summary>Returns a display-friendly label for the current difficulty setting.</summary>
     public required Func<string> GetDifficultyName { get; set; }
