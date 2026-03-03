@@ -1476,47 +1476,105 @@ public sealed class SpectreDisplayService : IDisplayService
     /// <inheritdoc />
     public Skill? ShowSkillTreeMenu(Player player)
     {
-        var allSkills = SkillTree.GetSkillsForClass(player);
-        var learnableSkills = allSkills
-            .Where(s => !player.Skills.IsUnlocked(s))
+        var allClassSkills = SkillTree.GetSkillsForClass(player);
+
+        var universalSkills = allClassSkills
+            .Where(s => { var (_, r) = SkillTree.GetSkillRequirements(s); return r == null; })
+            .ToList();
+        var classOnlySkills = allClassSkills
+            .Where(s => { var (_, r) = SkillTree.GetSkillRequirements(s); return r != null; })
+            .ToList();
+
+        string classEmoji = player.Class switch {
+            PlayerClass.Warrior     => "⚔️",
+            PlayerClass.Mage        => "🔮",
+            PlayerClass.Rogue       => "🗡️",
+            PlayerClass.Paladin     => "🛡️",
+            PlayerClass.Necromancer => "💀",
+            PlayerClass.Ranger      => "🏹",
+            _                       => "✨"
+        };
+
+        // Show an overview table with all class-appropriate skills and their statuses.
+        var table = new Table()
+            .Border(TableBorder.Rounded)
+            .Title($"[bold yellow]✨ Skill Tree — {Markup.Escape(player.Class.ToString())}[/]")
+            .AddColumn(new TableColumn("[grey]Status[/]"))
+            .AddColumn(new TableColumn("[grey]Skill[/]"))
+            .AddColumn(new TableColumn("[grey]Description[/]"))
+            .AddColumn(new TableColumn("[grey]Lv[/]").RightAligned());
+
+        table.AddRow(new Markup("[bold]⚔️ Universal Skills[/]"), new Markup(""), new Markup(""), new Markup(""));
+        foreach (var s in universalSkills)
+            AddSkillRow(table, s, player);
+
+        table.AddRow(new Markup($"[bold]{classEmoji} {Markup.Escape(player.Class.ToString())} Skills[/]"), new Markup(""), new Markup(""), new Markup(""));
+        foreach (var s in classOnlySkills)
+            AddSkillRow(table, s, player);
+
+        AnsiConsole.Write(table);
+
+        // Only learnable skills (level met, not yet unlocked) appear in the selection prompt.
+        var learnableSkills = allClassSkills
+            .Where(s => {
+                var (minLevel, _) = SkillTree.GetSkillRequirements(s);
+                return player.Level >= minLevel && !player.Skills.IsUnlocked(s);
+            })
             .ToList();
 
         if (learnableSkills.Count == 0)
         {
-            AnsiConsole.MarkupLine("[yellow]No skills available to learn right now.[/]");
+            AnsiConsole.MarkupLine("[grey]No skills available to learn right now.[/]");
             return null;
         }
 
-        var choices = learnableSkills
-            .Select(s => {
-                var (minLevel, _) = SkillTree.GetSkillRequirements(s);
-                var locked = player.Level < minLevel;
-                return locked
-                    ? $"[grey]{s} (Req. Lv{minLevel}) — {SkillTree.GetDescription(s)}[/]"
-                    : $"{s} — {SkillTree.GetDescription(s)}";
-            })
-            .Append("[grey]Cancel[/]")
-            .ToList();
+        var labelToSkill    = new Dictionary<string, Skill>();
+        var universalLabels = new List<string>();
+        var classLabels     = new List<string>();
 
-        var selection = AnsiConsole.Prompt(
-            new SelectionPrompt<string>()
-                .Title("[bold]Skill Tree — choose a skill to learn:[/]")
-                .AddChoices(choices));
-
-        if (selection.Contains("Cancel")) return null;
-
-        var selectedSkill = learnableSkills
-            .FirstOrDefault(s => selection.Contains(s.ToString()));
-
-        if (selectedSkill == default) return null;
-
-        var (reqLevel, _) = SkillTree.GetSkillRequirements(selectedSkill);
-        if (player.Level < reqLevel)
+        foreach (var s in learnableSkills)
         {
-            AnsiConsole.MarkupLine($"[red]You need level {reqLevel} to learn {selectedSkill}.[/]");
-            return null;
+            var (minLevel, classRestriction) = SkillTree.GetSkillRequirements(s);
+            var label = $"[yellow]🔓[/] [bold]{Markup.Escape(s.ToString())}[/] (Lv{minLevel}) [grey]— {Markup.Escape(SkillTree.GetDescription(s))}[/]";
+            labelToSkill[label] = s;
+            if (classRestriction == null) universalLabels.Add(label);
+            else classLabels.Add(label);
         }
 
-        return selectedSkill;
+        const string cancelLabel = "[grey]« Cancel »[/]";
+
+        var prompt = new SelectionPrompt<string>()
+            .Title("[yellow]Choose a skill to learn:[/]")
+            .PageSize(12)
+            .MoreChoicesText("[grey](Move up and down to see more)[/]");
+
+        if (universalLabels.Count > 0)
+            prompt.AddChoiceGroup("⚔️ Universal Skills", universalLabels);
+        if (classLabels.Count > 0)
+            prompt.AddChoiceGroup($"{classEmoji} {player.Class} Skills", classLabels);
+
+        prompt.AddChoices(cancelLabel);
+
+        var selection = AnsiConsole.Prompt(prompt);
+        if (selection == cancelLabel) return null;
+
+        return labelToSkill.TryGetValue(selection, out var chosen) ? chosen : (Skill?)null;
+    }
+
+    private static void AddSkillRow(Table table, Skill skill, Player player)
+    {
+        var (minLevel, _) = SkillTree.GetSkillRequirements(skill);
+        bool unlocked  = player.Skills.IsUnlocked(skill);
+        bool available = player.Level >= minLevel;
+
+        var status = unlocked  ? new Markup("[green]✅ Unlocked[/]")
+                   : available ? new Markup($"[yellow]🔓 Available (Lv{minLevel})[/]")
+                               : new Markup($"[grey]🔒 Locked (need Lv{minLevel})[/]");
+
+        table.AddRow(
+            status,
+            new Markup($"[bold]{Markup.Escape(skill.ToString())}[/]"),
+            new Markup(Markup.Escape(SkillTree.GetDescription(skill))),
+            new Markup($"[grey]{minLevel}[/]"));
     }
 }
