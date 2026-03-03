@@ -128,4 +128,18 @@ public partial class Player
 
     /// <summary>Sentinel 4-piece: player cannot be stunned.</summary>
     public bool IsStunImmune { get; set; } = false;
+
+    // ── 2/3-piece set bonus stat modifiers (set by SetBonusManager.ApplySetBonuses) ──────
+
+    /// <summary>Aggregate defense bonus from set bonuses.</summary>
+    public int SetBonusDefense { get; set; }
+
+    /// <summary>Aggregate max HP bonus from set bonuses.</summary>
+    public int SetBonusMaxHP { get; set; }
+
+    /// <summary>Aggregate max mana bonus from set bonuses.</summary>
+    public int SetBonusMaxMana { get; set; }
+
+    /// <summary>Aggregate dodge chance bonus from set bonuses (0.0–1.0).</summary>
+    public float SetBonusDodge { get; set; }
 }

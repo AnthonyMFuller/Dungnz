@@ -1157,3 +1157,53 @@ With `SelfHealCooldown=1` and check-first: fires on turn 2 (correct, matching as
 3. Priority 3: Refactor repeated tests into Theory/parameterized (debt reduction)
 4. Priority 4: Narration system existence validation (quick wins)
 5. Priority 5: Test naming standardization + fragility audit (polish)
+
+---
+
+### 2026-03-04 — Deep Test Coverage Gap Analysis (Beyond Filed Issues)
+
+**Status:** Analysis complete — 22 NEW gaps identified beyond issues #943–#954
+
+**Methodology:**
+1. Cross-referenced all 1,430 tests against every public method in Engine/, Models/, Systems/, Display/
+2. Read every production file to identify untested branches and error paths
+3. Checked for missing negative tests, boundary conditions, and integration gaps
+4. Focused exclusively on gaps NOT already covered by issues #943–#954
+
+**Key NEW Findings (not covered by existing issues):**
+
+| # | Class/Method | Severity | Category | Gap |
+|---|-------------|----------|----------|-----|
+| 1 | LichAI.CheckResurrection / LichKingAI.CheckResurrection | P0 | missing-test | Zero unit tests for resurrection mechanic — AI classes have no dedicated tests |
+| 2 | InfernalDragonAI.TakeTurn | P1 | missing-test | Zero tests for phase transition, breath cooldown, damage multiplier |
+| 3 | Player.FortifyMaxHP / FortifyMaxMana | P1 | missing-test | Zero direct tests — proportional heal + MaxHP raise behavior untested |
+| 4 | Player.ModifyAttack / ModifyDefense | P1 | missing-test | Zero direct tests for stat modification methods |
+| 5 | Player.AddGold / SpendGold | P1 | missing-test | No unit tests for negative amount throws or insufficient gold throws |
+| 6 | SetBonusManager.IsArcaneSurgeActive / IsShadowDanceActive / IsUnyieldingActive | P1 | missing-test | Zero tests for conditional bonus query methods |
+| 7 | SetBonusManager.GetActiveBonusDescription | P2 | missing-test | No test for description output formatting |
+| 8 | AffixRegistry.ApplyRandomAffix | P1 | missing-test | Only tested as part of integration — no isolated unit tests for stat application logic |
+| 9 | AffixRegistry.Load (missing file path) | P2 | missing-test | No test for graceful no-op when file absent |
+| 10 | DungeonBoss.CheckEnrage | P1 | missing-test | Zero tests — enrage threshold and attack boost untested |
+| 11 | Merchant.CreateRandom | P1 | missing-test | Zero unit tests — fallback stock generation untested |
+| 12 | SessionLogger.LogSession | P2 | missing-test | Only LogBalanceSummary tested; LogSession (file I/O path) has zero tests |
+| 13 | RunStats.GetTopRuns | P2 | quality-issue | Only asserts NotBeNull — no test for sorting, count limit, or empty history |
+| 14 | CombatNarration / RoomStateNarration | P2 | missing-test | Zero tests for these static narration arrays |
+| 15 | FloorSpawnPools.GetEliteChanceForFloor | P2 | missing-test | GetRandomEnemyForFloor tested but GetEliteChanceForFloor has zero tests |
+| 16 | Player.GetLastStandThreshold / GetEvadeComboPointGrant / ShouldTriggerBackstabBonus / IsOverchargeActive / ShouldTriggerUndyingWill | P1 | missing-test | 5 PlayerSkillHelper methods with zero direct tests |
+| 17 | Room hazard system (LavaSeam/CorruptedGround/BlessedClearing) | P1 | integration-gap | RoomHazard enum + BlessedHealApplied have no tests for behavior |
+| 18 | GameLoop.ApplyRoomHazard / HandleTrapRoom / HandleSpecialRoom | P1 | integration-gap | All private but no integration tests drive these paths |
+| 19 | CraftingRecipe.ToItem | P2 | missing-test | No test for the method that converts recipe to an Item instance |
+| 20 | DisplayService.ShowMap / ShowVictory / ShowGameOver | P2 | missing-test | Only 8 display smoke tests; 40+ IDisplayService methods lack any coverage |
+| 21 | AchievementSystem persistence edge cases | P2 | quality-issue | No test for corrupted achievement file, concurrent access, or max achievements |
+| 22 | Item.Clone deep-copy fidelity | P2 | quality-issue | Property test exists but doesn't verify ALL 25+ properties are cloned correctly |
+
+**Estimated effort:** ~80 new tests across 22 findings, ~25-35 hours
+
+**Learnings:**
+- AI classes (LichAI, LichKingAI, InfernalDragonAI) are completely untested — resurrection mechanic is P0
+- PlayerStats utility methods (Fortify*, Modify*) have zero direct tests despite being called from combat
+- SetBonusManager conditional queries (IsArcaneSurgeActive etc.) are complex yet untested
+- Room hazard system paths (LavaSeam, CorruptedGround, BlessedClearing) have no test coverage
+- PlayerSkillHelpers has 5 public methods with zero direct tests — all behavior-defining combat helpers
+- Static narration arrays (CombatNarration, RoomStateNarration) have no existence validation
+- Merchant.CreateRandom fallback path has zero coverage

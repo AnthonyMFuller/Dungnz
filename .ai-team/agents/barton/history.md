@@ -1252,3 +1252,31 @@ All 5 were implemented (none removed) — the combat system already had the nece
 - Combat engine reads `LastAction` to determine what happened (Attack, Heal, Breath, Resurrect)
 - Combat engine executes appropriate logic based on action (damage calculation, healing, special effects)
 - For Lich King, combat engine also calls `ai.CheckResurrection(enemy)` after damage that would kill
+
+---
+
+### 2026-03-06 — Deep Code Audit: Combat, Items, Loot, Skills, Game Mechanics
+
+**Scope:** Full audit of Engine/CombatEngine.cs, all Engine/*AI.cs, all Systems/*.cs, all Models/Player*.cs, Models/Enemy.cs, Models/LootTable.cs, Models/Item.cs  
+**Excluded (already filed):** #931 (ComboPoints negative), #933 (static LootTable pools), #935 (direct stat mutations), #956 (magic strings enemy loot), #957 (hardcoded fallback lists), #961 (combat narration static arrays)
+
+**Key files read:**
+- Engine/CombatEngine.cs (1709 lines), Engine/GoblinShamanAI.cs, Engine/CryptPriestAI.cs, Engine/InfernalDragonAI.cs, Engine/LichAI.cs, Engine/LichKingAI.cs
+- Systems/AbilityManager.cs (835 lines), Systems/StatusEffectManager.cs, Systems/SkillTree.cs, Systems/EquipmentManager.cs, Systems/InventoryManager.cs
+- Systems/PassiveEffectProcessor.cs, Systems/SetBonusManager.cs, Systems/CraftingSystem.cs, Systems/AffixRegistry.cs, Systems/PrestigeSystem.cs
+- Models/PlayerCombat.cs, Models/PlayerStats.cs, Models/PlayerSkillHelpers.cs, Models/LootTable.cs, Models/Enemy.cs, Models/Item.cs, Models/Player.cs
+
+**Patterns and findings documented in audit output below.**
+
+
+## Learnings
+
+### Deep Audit (Combat, Items, Loot, Skills)
+
+- SetBonusManager computes 2pc stats then discards them (lines 228-231)
+- Item.CritChance and Item.HPOnHit are dead stats never used in combat
+- Meteor ignores DEF entirely; Necromancer MaxMana grows unbounded
+- Boss FlameBreath permanent +8 ATK compounds with Enrage 1.5x
+- player.Mana directly mutated in 2 CombatEngine locations
+- IEnemyAI implementations are all dead code
+- Key file paths: Engine/CombatEngine.cs, Systems/AbilityManager.cs, Systems/SetBonusManager.cs, Systems/StatusEffectManager.cs, Systems/PassiveEffectProcessor.cs

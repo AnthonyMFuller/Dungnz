@@ -2381,3 +2381,39 @@ Both PRs reviewed and merged in Round 3 (see below).
 - `.ai-team/decisions/inbox/coulson-bug-hunt-findings.md` — Full detailed findings with line numbers
 - This history entry — Pattern summary and recommendations
 
+
+### 2025-07-21: Deep Architecture Audit
+
+**Scope:** Full file-by-file audit of Engine/, Models/, Systems/, Display/, Program.cs
+**Trigger:** Anthony requested thorough structural audit beyond prior bug hunt
+
+**Key Findings (19 new issues):**
+
+1. **Boss loot scaling completely broken (P1)** — `HandleLootAndXP` calls `RollDrop` without `isBossRoom` or `dungeonFloor`, so bosses never get guaranteed Legendary drops and floor-scaled Epic chances never fire
+2. **Enemy HP can go negative (P1)** — Direct `enemy.HP -= dmg` without clamping inflates DamageDealt stats 
+3. **Boss phase abilities skip DamageTaken tracking (P1)** — Reinforcements, TentacleBarrage, TidalSlam all deal damage without incrementing RunStats.DamageTaken
+4. **SetBonusManager 2-piece stat bonuses never applied (P1)** — ApplySetBonuses computes totalDef/HP/Mana/Dodge then discards them with `_ = totalDef`
+5. **SoulHarvest dual implementation (P1)** — Inline heal in CombatEngine + unused GameEventBus-based SoulHarvestPassive; if bus ever wired, heals double
+6. **FinalFloor duplicated 4x across command handlers** — Should be a shared constant
+7. **Hazard narration arrays duplicated** — GameLoop and GoCommandHandler have identical static arrays
+8. **CombatEngine = 1,709 line god class** — PerformPlayerAttack ~220 lines, PerformEnemyTurn ~460 lines
+9. **GameEventBus never wired** — Exists alongside GameEvents; neither fully connected
+10. **DescendCommandHandler doesn't pass playerLevel** — Enemies on floor 2+ ignore player's actual level for scaling
+
+**Architecture Patterns Discovered:**
+- Two parallel event systems (GameEventBus + GameEvents) coexist without clear ownership
+- CommandContext is a 30+ field bag-of-everything that couples all handlers to GameLoop internals
+- Boss variant constructors ignore their `stats` parameter, duplicating hardcoded values
+- SetBonusManager was designed but never fully wired — stat application is a no-op
+- CombatEngine holds the floor via no parameter — floor context is not threaded through for loot
+
+**Key File Paths:**
+- `Engine/CombatEngine.cs` — 1,709 lines, combat god class; handles attacks, abilities, boss phases, loot, XP, leveling
+- `Engine/Commands/` — Command handler pattern with CommandContext; GoCommandHandler is the main room-transition handler
+- `Systems/SetBonusManager.cs` — Manages equipment set bonuses; 2-piece bonuses computed but discarded
+- `Systems/SoulHarvestPassive.cs` — Dead code (GameEventBus never instantiated in Program.cs)
+- `Engine/StubCombatEngine.cs` — Dead code from early development
+- `Models/LootTable.cs` — Static tier pools, RollDrop with isBossRoom/dungeonFloor params that callers don't use
+
+**Artifacts:**
+- `.ai-team/decisions/inbox/coulson-deep-dive-audit.md` — Full 19-finding audit report with file/line references

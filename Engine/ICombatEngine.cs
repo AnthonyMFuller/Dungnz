@@ -8,6 +8,9 @@ using Dungnz.Systems;
 /// </summary>
 public interface ICombatEngine
 {
+    /// <summary>The current dungeon floor, used for loot scaling.</summary>
+    int DungeonFloor { get; set; }
+
     /// <summary>
     /// Executes a full combat encounter between <paramref name="player"/> and <paramref name="enemy"/>,
     /// processing turns until the player wins, flees, or is killed.

@@ -124,6 +124,20 @@ public partial class Player
     }
 
     /// <summary>
+    /// Forcibly drains mana from the player, clamping at 0. Unlike <see cref="SpendMana"/>,
+    /// this always succeeds — used for enemy mana-drain effects.
+    /// </summary>
+    /// <param name="amount">The positive amount of mana to drain.</param>
+    /// <returns>The actual amount of mana drained.</returns>
+    public int DrainMana(int amount)
+    {
+        if (amount < 0) throw new ArgumentException("Amount cannot be negative.", nameof(amount));
+        int drained = Math.Min(Mana, amount);
+        Mana = Math.Max(0, Mana - amount);
+        return drained;
+    }
+
+    /// <summary>
     /// Reduces the player's HP by the specified damage amount, clamping at 0.
     /// Fires <see cref="OnHealthChanged"/> if HP actually changes.
     /// </summary>

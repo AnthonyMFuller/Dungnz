@@ -41,7 +41,7 @@ internal sealed class DescendCommandHandler : ICommandHandler
         float floorMult = 1.0f + (context.CurrentFloor - 1) * 0.5f;
         var floorSeed = context.Seed.HasValue ? context.Seed.Value + context.CurrentFloor : (int?)null;
         var gen = new DungeonGenerator(floorSeed, context.AllItems);
-        var (newStart, _) = gen.Generate(floorMultiplier: floorMult, difficulty: context.Difficulty, floor: context.CurrentFloor);
+        var (newStart, _) = gen.Generate(playerLevel: context.Player.Level, floorMultiplier: floorMult, difficulty: context.Difficulty, floor: context.CurrentFloor);
         context.CurrentRoom = newStart;
         context.CurrentRoom.Visited = true;
         context.Display.ShowMessage($"Floor {context.CurrentFloor}");

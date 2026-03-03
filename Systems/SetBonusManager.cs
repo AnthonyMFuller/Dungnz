@@ -222,13 +222,11 @@ public static class SetBonusManager
         int totalMana = active.Sum(b => b.MaxManaBonus);
         float totalDodge = active.Sum(b => b.DodgeChanceBonus);
 
-        // Store the resulting bonuses so callers can query them.
-        // Actual stat application is handled in CombatEngine / EquipmentManager
-        // as the set bonuses are combat-time modifiers rather than permanent stat changes.
-        _ = totalDef;
-        _ = totalHP;
-        _ = totalMana;
-        _ = totalDodge;
+        // Apply 2/3-piece stat bonuses to dedicated player fields so combat systems can read them.
+        player.SetBonusDefense  = totalDef;
+        player.SetBonusMaxHP    = totalHP;
+        player.SetBonusMaxMana  = totalMana;
+        player.SetBonusDodge    = totalDodge;
 
         // Wire 4-piece set bonus flags onto the player so combat systems can read them.
         player.DamageReflectPercent = active.Sum(b => b.DamageReflectPercent);

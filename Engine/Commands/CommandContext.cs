@@ -39,6 +39,8 @@ public class CommandContext
     public required IReadOnlyList<Item> AllItems { get; set; }
     /// <summary>Difficulty multipliers for the current run.</summary>
     public required DifficultySettings Difficulty { get; set; }
+    /// <summary>The selected difficulty level enum for the current run.</summary>
+    public Difficulty DifficultyLevel { get; set; } = Models.Difficulty.Normal;
     /// <summary>Structured logger for game events.</summary>
     public required ILogger Logger { get; set; }
     /// <summary>Optional event bus for broadcasting game events.</summary>

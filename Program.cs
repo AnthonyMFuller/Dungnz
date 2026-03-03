@@ -62,7 +62,7 @@ switch (result)
 
     case StartupResult.LoadedGame lg:
     {
-        var difficultySettings = DifficultySettings.For(Difficulty.Normal);
+        var difficultySettings = DifficultySettings.For(lg.State.Difficulty);
         var combat = new CombatEngine(display, inputReader, difficulty: difficultySettings);
         var gameLoop = new GameLoop(display, combat, inputReader, seed: lg.State.Seed,
             difficulty: difficultySettings, allItems: allItems,
