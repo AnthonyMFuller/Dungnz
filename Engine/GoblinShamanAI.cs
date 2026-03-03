@@ -50,5 +50,9 @@ public enum EnemyAction
     /// <summary>The enemy performed a standard attack.</summary>
     Attack,
     /// <summary>The enemy healed itself.</summary>
-    Heal
+    Heal,
+    /// <summary>The enemy used a breath weapon.</summary>
+    Breath,
+    /// <summary>The enemy resurrected from death.</summary>
+    Resurrect
 }
