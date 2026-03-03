@@ -335,9 +335,9 @@ public partial class Player
 
     private void RecalculateDerivedBonuses()
     {
-        DodgeBonus = (EquippedWeapon?.DodgeBonus ?? 0f)
+        DodgeBonus = Math.Min(0.95f, (EquippedWeapon?.DodgeBonus ?? 0f)
                    + (EquippedAccessory?.DodgeBonus ?? 0f)
-                   + AllEquippedArmor.Sum(a => a.DodgeBonus);
+                   + AllEquippedArmor.Sum(a => a.DodgeBonus));
 
         PoisonImmune = (EquippedWeapon?.PoisonImmunity ?? false)
                     || (EquippedAccessory?.PoisonImmunity ?? false)
