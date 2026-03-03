@@ -71,14 +71,14 @@
         ]
     },
     "DungeonBoss": {
-        "Name": "Dungeon Boss",
+        "Name": "Malachar the Undying",
         "MaxHP": 100,
         "Attack": 22,
         "Defense": 15,
         "XPValue": 100,
         "MinGold": 50,
         "MaxGold": 100,
-        "Lore": "The Dungeon Boss is not a creature that wandered into the dungeon — it is a creature of the dungeon, a focal point where the structure's malice has condensed into singular, violent will. It has broken every adventuring party that reached this chamber, and it remembers each one. The trophies on its walls are not decorations; they are a catalogue.",
+        "Lore": "Malachar was once a warlord who conquered half the known world before his obsession with immortality consumed him. He descended into this dungeon centuries ago seeking an ancient rite of undeath — and found it. Now he is neither alive nor dead, bound to this chamber by the ritual that granted him endless life at the cost of everything else. He has broken every adventuring party that reached this chamber, and he remembers each one. The trophies on his walls are not decorations; they are a catalogue. He will break you too, and remember you the same way.",
         "AsciiArt": [
             " _______",
             "| O   O |",
