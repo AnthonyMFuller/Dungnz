@@ -6,3 +6,5 @@ obj/
 *.trx
 **/TestResults/
 coverage.opencover.xml
+coverage.cobertura.xml
+**/coverage/
