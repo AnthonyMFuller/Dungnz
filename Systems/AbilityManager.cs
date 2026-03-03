@@ -382,7 +382,10 @@ public class AbilityManager
                 {
                     var baseDmg = (int)((player.Attack * 1.5) + (manaBeforeCast / 10));
                     if (player.IsOverchargeActive())
+                    {
                         baseDmg = (int)(baseDmg * 1.25);
+                        player.OverchargeUsedThisTurn = true;
+                    }
                     // Magic damage bypasses defense (or reduces it significantly)
                     var arcaneDamage = Math.Max(1, baseDmg - (enemy.Defense / 4));
                     enemy.HP -= arcaneDamage;
@@ -394,7 +397,10 @@ public class AbilityManager
                 {
                     var baseDmg = (int)(player.Attack * 1.2);
                     if (player.IsOverchargeActive())
+                    {
                         baseDmg = (int)(baseDmg * 1.25);
+                        player.OverchargeUsedThisTurn = true;
+                    }
                     var frostDamage = Math.Max(1, baseDmg - (enemy.Defense / 4));
                     enemy.HP -= frostDamage;
                     statusEffects.Apply(enemy, StatusEffect.Slow, 2);
@@ -431,7 +437,10 @@ public class AbilityManager
                 {
                     var baseDmg = (player.Attack * 3) + 20;
                     if (player.IsOverchargeActive())
+                    {
                         baseDmg = (int)(baseDmg * 1.25);
+                        player.OverchargeUsedThisTurn = true;
+                    }
                     var meteorDamage = Math.Max(1, baseDmg);
                     enemy.HP -= meteorDamage;
                     

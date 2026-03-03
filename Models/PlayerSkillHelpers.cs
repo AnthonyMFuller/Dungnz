@@ -73,7 +73,7 @@ public partial class Player
     /// </summary>
     public bool IsOverchargeActive()
     {
-        return HasSkill(Skill.Overcharge) && Mana > MaxMana * 0.80f;
+        return HasSkill(Skill.Overcharge) && Mana > MaxMana * 0.80f && !OverchargeUsedThisTurn;
     }
 
     /// <summary>

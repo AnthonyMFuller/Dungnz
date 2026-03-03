@@ -338,6 +338,9 @@ public class CombatEngine : ICombatEngine
             // ── Passive effects: turn start (belt_regen, warding_ring, etc.) ──
             _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnTurnStart, enemy, 0);
 
+            // Reset per-turn Overcharge flag so the passive can trigger at most once per turn (#923)
+            player.OverchargeUsedThisTurn = false;
+
             // Periodic damage bonus from equipped affixes (e.g. "of Storms")
             if (player.PeriodicDmgBonus > 0 && enemy.HP > 0)
             {
