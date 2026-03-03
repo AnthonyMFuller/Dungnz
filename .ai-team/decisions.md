@@ -15592,3 +15592,36 @@ Added 4 missing property definitions to the schema:
 - PR: https://github.com/AnthonyMFuller/Dungnz/pull/850
 - Merged to: master (squashed)
 - Commit: 3c1a8a2
+
+---
+
+# Decision: Always Escape Literal Brackets in Spectre.Console Strings
+
+**Date:** 2025-07-01  
+**Author:** Hill
+
+## Pattern
+
+When passing any user-facing string to Spectre.Console APIs (`MarkupLine`, `table.AddRow`, etc.), any literal `[` or `]` characters must be escaped — otherwise Spectre interprets them as markup tags and throws `InvalidOperationException`.
+
+## Escape Convention
+
+Use Spectre's double-bracket convention in string literals:
+- `[` → `[[`
+- `]` → `]]`
+
+Or wrap dynamic strings in `Markup.Escape(str)`.
+
+## When This Applies
+
+- Command syntax strings in help text (e.g., `"go [[north|south|east|west]]"`)
+- Any dynamic content that might contain brackets (e.g., item names, player input echoes)
+- Table rows, panel content, markup lines
+
+## What NOT to Escape
+
+Intentional Spectre markup tags like `[bold]`, `[red]`, `[grey]...[/]` should never be escaped — these are the valid markup syntax.
+
+## Reference
+
+Fixed in PR #854 (issue #853) — `ShowHelp()` in `Display/SpectreDisplayService.cs`.

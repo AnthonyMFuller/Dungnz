@@ -839,7 +839,7 @@ public sealed class SpectreDisplayService : IDisplayService
         };
         AnsiConsole.Write(panel);
         AnsiConsole.MarkupLine("[yellow][[ Press Enter to begin your descent... ]][/]");
-        Console.ReadLine();
+        AnsiConsole.Console.Input.ReadKey(false);
         AnsiConsole.WriteLine();
         return false;
     }
