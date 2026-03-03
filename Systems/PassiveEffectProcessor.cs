@@ -217,9 +217,18 @@ public class PassiveEffectProcessor
     private int ApplyPhoenixRevive(Player player, PassiveEffectTrigger trigger)
     {
         if (trigger != PassiveEffectTrigger.OnPlayerWouldDie) return 0;
-        if (player.PhoenixUsedThisRun) return 0;
 
-        player.PhoenixUsedThisRun = true;
+        if (player.PhoenixUsedThisRun)
+        {
+            // Extra charge from ReviveCooldownBonus affix (e.g. "of the Phoenix" suffix)
+            if (!player.HasReviveCooldownBonus || player.PhoenixExtraChargeUsed) return 0;
+            player.PhoenixExtraChargeUsed = true;
+        }
+        else
+        {
+            player.PhoenixUsedThisRun = true;
+        }
+
         var reviveHp = Math.Max(1, (int)(player.MaxHP * 0.30));
         player.SetHPDirect(reviveHp);
         _display.ShowColoredCombatMessage($"🔥 Amulet of the Phoenix — you are reborn from the ashes at {reviveHp} HP!", ColorCodes.Yellow);

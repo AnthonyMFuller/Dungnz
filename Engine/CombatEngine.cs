@@ -338,6 +338,13 @@ public class CombatEngine : ICombatEngine
             // ── Passive effects: turn start (belt_regen, warding_ring, etc.) ──
             _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnTurnStart, enemy, 0);
 
+            // Periodic damage bonus from equipped affixes (e.g. "of Storms")
+            if (player.PeriodicDmgBonus > 0 && enemy.HP > 0)
+            {
+                enemy.HP -= player.PeriodicDmgBonus;
+                _display.ShowColoredCombatMessage($"⚡ Periodic damage — {player.PeriodicDmgBonus} arcane damage sears {enemy.Name}!", ColorCodes.BrightRed);
+            }
+
             // Fix #210: player death has priority over enemy death in simultaneous-tick kills
             if (player.HP <= 0) return CombatResult.PlayerDied;
             // Fix #209: guard against enraging/acting on an enemy killed by a DoT tick
@@ -774,7 +781,8 @@ public class CombatEngine : ICombatEngine
         else
         {
             var playerEffAtk = player.Attack + _statusEffects.GetStatModifier(player, "Attack");
-            var playerDmg = Math.Max(1, playerEffAtk - enemy.Defense);
+            var effectiveDef = Math.Max(0, enemy.Defense - player.EnemyDefReduction);
+            var playerDmg = Math.Max(1, playerEffAtk - effectiveDef);
 
             // SiegeOgre thick hide
             if (enemy.ThickHideHitsRemaining > 0)
@@ -838,6 +846,12 @@ public class CombatEngine : ICombatEngine
             if (enemy is IronSentinel sentinel)
                 playerDmg = Math.Max(1, (int)(playerDmg * (1.0 - sentinel.ProtectionDR)));
 
+            // Holy damage bonus vs undead enemies
+            if (enemy.IsUndead && player.HolyDamageVsUndead > 0f)
+            {
+                playerDmg = Math.Max(1, (int)(playerDmg * (1f + player.HolyDamageVsUndead)));
+                _display.ShowColoredCombatMessage($"✨ Holy damage — +{(int)(player.HolyDamageVsUndead * 100)}% vs undead!", ColorCodes.Yellow);
+            }
             playerDmg = Math.Max(1, (int)(playerDmg * _difficulty.PlayerDamageMultiplier));
             enemy.HP -= playerDmg;
             _stats.DamageDealt += playerDmg;
@@ -1093,6 +1107,11 @@ public class CombatEngine : ICombatEngine
         else if (RollPlayerDodge(player))
         {
             _display.ShowCombatMessage(_narration.Pick(_playerDodgeMessages, enemy.Name));
+            _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
+        }
+        else if (player.BlockChanceBonus > 0 && _rng.NextDouble() < player.BlockChanceBonus)
+        {
+            _display.ShowColoredCombatMessage($"🛡 Blocked! Your defenses absorb {enemy.Name}'s attack!", ColorCodes.Cyan);
             _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
         }
         else
