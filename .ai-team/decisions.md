@@ -15754,3 +15754,135 @@ These five decisions emerged from the 2026-03-03 team retrospective. Each addres
 - **D5:** Content surfacing gap (enemy lore)
 
 All are marked **Proposed** pending team review and formal adoption.
+
+---
+
+## Decision: All 5 Unwired Affix Properties Implemented (not removed)
+
+**Author:** Barton  
+**Date:** 2026-03-03  
+**Status:** Accepted  
+**Issue:** #871  
+
+All 5 previously-dead affix properties (`EnemyDefReduction`, `HolyDamageVsUndead`, `BlockChanceBonus`, `ReviveCooldownBonus`, `PeriodicDmgBonus`) are now fully wired. None were removed from loot tables.
+
+**Rationale:**
+The combat system had sufficient hooks for all 5 to be implemented cleanly:
+- `EnemyDefReduction` and `HolyDamageVsUndead` fit naturally into the player damage calculation section
+- `BlockChanceBonus` slots cleanly next to the existing dodge check
+- `PeriodicDmgBonus` fits in `OnTurnStart` (same place as `belt_regen`)
+- `ReviveCooldownBonus` extended the existing `phoenix_revive` passive — required a new run-level flag `PhoenixExtraChargeUsed` on Player
+
+**Impact for other agents:**
+- **Romanoff (Tester):** New fields on `Item` and `Player` are testable. Key scenarios: (1) enemy DEF reduction clamped to 0 when reduction > enemy.Defense, (2) holy damage only fires when `enemy.IsUndead = true`, (3) block is independent of dodge (both can exist), (4) phoenix extra charge consumes `PhoenixExtraChargeUsed` not `PhoenixUsedThisRun`.
+- **Hill:** No Player model structural changes — only new auto-properties on `PlayerCombat.cs` partial class. `RecalculateDerivedBonuses()` now sums all 5 new item fields from equipped gear.
+
+---
+
+## Decision: JsonDerivedType Discriminator Casing Convention
+
+**Author:** Hill  
+**Date:** 2026-03-03  
+**Status:** Accepted  
+**Related Issue:** #873  
+**Related PR:** #891  
+
+All `[JsonDerivedType]` discriminator strings must use **all-lowercase** with no separators.
+
+**Rule:** Take the class name, lowercase every character, concatenate. No underscores, no hyphens, no PascalCase.
+
+Examples:
+- `DarkKnight` → `"darkknight"`
+- `GoblinShaman` → `"goblinshaman"`
+- `VampireLord` → `"vampirelord"`
+
+**Rationale:**
+`System.Text.Json` polymorphic deserialization is **case-sensitive** by default. Mixed casing (some PascalCase, some lowercase) causes silent deserialization failures — wrong-type or null results with no exception thrown. This creates hard-to-debug save corruption.
+
+All-lowercase is already used by the majority of our enemy discriminators (31 out of 41 before this fix). Standardizing eliminates the inconsistency.
+
+**Backward Compatibility Impact:**
+Save files written with the old PascalCase discriminators ("Goblin", "Skeleton", "Troll", "DarkKnight", "Mimic", "StoneGolem", "VampireLord", "Wraith", "DungeonBoss", "DungeonBoss") will **not** deserialize correctly after this change.
+
+No migration tooling added. Saves are ephemeral in the current dev phase. If this becomes customer-facing before a migration is implemented, a JsonConverter shim with a case-insensitive fallback should be added.
+
+**Applies To:**
+- `Models/Enemy.cs` — `Enemy` base class `[JsonDerivedType]` attributes
+- Any future base class using `[JsonPolymorphic]` + `[JsonDerivedType]`
+
+---
+
+## Decision: AnsiConsole Capture Pattern is Established Standard
+
+**Author:** Romanoff (Tester)  
+**Date:** 2026-03-03  
+**Status:** Accepted  
+**Issue:** #875 — DisplayService smoke tests  
+
+The `AnsiConsole.Console` swap pattern used in `HelpDisplayRegressionTests` (#870) is now **confirmed and established** as the standard approach for all Spectre.Console display method tests in this project.
+
+**Pattern:**
+```csharp
+[Collection("console-output")]
+public sealed class MyTests : IDisposable
+{
+    private readonly IAnsiConsole _originalConsole;
+    private readonly StringWriter _writer;
+
+    public MyTests()
+    {
+        _originalConsole = AnsiConsole.Console;
+        _writer = new StringWriter();
+        AnsiConsole.Console = AnsiConsole.Create(new AnsiConsoleSettings
+        {
+            Ansi        = AnsiSupport.No,
+            ColorSystem = ColorSystemSupport.NoColors,
+            Out         = new AnsiConsoleOutput(_writer),
+            Interactive = InteractionSupport.No,
+        });
+    }
+
+    public void Dispose()
+    {
+        AnsiConsole.Console = _originalConsole;
+        _writer.Dispose();
+    }
+}
+```
+
+**Rules:**
+1. **Always use `[Collection("console-output")]`** on any test class that redirects `AnsiConsole.Console`. Parallel execution without this causes races.
+2. **`MarkupException` is the primary failure mode** for unescaped brackets — `Should().NotThrow()` catches this automatically.
+3. **For `ShowSkillTreeMenu`:** use a level ≤ 2 player to avoid the interactive `AnsiConsole.Prompt()` call. All skills require level 3+.
+4. **For interactive prompts in other methods** (e.g., `ShowInventoryAndSelect`): do not test with `SpectreDisplayService` directly — use `FakeDisplayService` instead.
+
+**Coverage Added (#875):**
+- `ShowInventory` (with items, empty)
+- `ShowEquipment` (with gear, all empty)
+- `ShowSkillTreeMenu` (no-learnable-skills path)
+- `ShowHelp`
+- `ShowCombatStatus` (no effects, active effects on both sides)
+
+---
+
+## Decision: CI Improvements — Stryker Threshold, Coverage Floor, OSX Release
+
+**Author:** Fitz  
+**Date:** 2026-03-03  
+**Status:** Accepted  
+**Related Issues:** #876, #877, #878  
+**Related PR:** #894–#896  
+
+### Stryker Threshold Adjustment
+Raised `--threshold-break` from 50 → 65 in `squad-stryker.yml`.  
+Also raised `--threshold-low` from 65 → 75 to maintain proper separation.
+
+**Risk:** Cannot verify current mutation score without a live run (Stryker is schedule-only, ~30 min runtime). Confidence based on 1,422 tests + 80% line coverage.  
+**Action if first Monday run fails:** Dial threshold back to 60 and file an issue for Romanoff to improve mutation coverage.
+
+### Coverage Floor #878
+Issue #878 asked for a 78% coverage floor. The floor was **already present at 80%** (Anthony directive from prior session). No threshold change was made — 80% > 78% so it already satisfies the ask. Documented in squad-ci.yml comment.
+
+### OSX-x64 Release Artifact
+Added osx-x64 as a third publish target in squad-release.yml. Tested by inspection only — cross-compilation of self-contained executables is supported by .NET 10. Note: `PublishReadyToRun` may produce a warning for osx-x64 on ubuntu-latest runner (cross-OS R2R is limited); build won't fail but binary may not have R2R optimization.
+
