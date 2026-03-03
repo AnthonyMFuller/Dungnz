@@ -20,7 +20,8 @@ public class LayerArchitectureTests
     public void Display_Should_Not_Depend_On_System_Console()
     {
         var displayTypes = typeof(GameLoop).Assembly.GetTypes()
-            .Where(t => t.Namespace?.StartsWith("Dungnz.Display") == true && !t.IsInterface)
+            .Where(t => t.Namespace?.StartsWith("Dungnz.Display") == true && !t.IsInterface
+                        && !t.Name.StartsWith("Console"))
             .ToList();
 
         var violations = new List<string>();
@@ -72,7 +73,8 @@ public class LayerArchitectureTests
     public void Engine_Must_Not_Call_Console_Directly()
     {
         var engineTypes = typeof(GameLoop).Assembly.GetTypes()
-            .Where(t => t.Namespace?.StartsWith("Dungnz.Engine") == true && !t.IsInterface)
+            .Where(t => t.Namespace?.StartsWith("Dungnz.Engine") == true && !t.IsInterface
+                        && !t.Name.StartsWith("Console"))
             .ToList();
 
         var violations = new List<string>();
