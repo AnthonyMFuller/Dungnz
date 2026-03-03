@@ -2,6 +2,7 @@ namespace Dungnz.Engine;
 
 using System;
 using Dungnz.Display;
+using Dungnz.Engine.Commands;
 using Dungnz.Models;
 using Dungnz.Systems;
 using Microsoft.Extensions.Logging;
@@ -42,13 +43,8 @@ public class GameLoop
 
     private const int FinalFloor = 8;
 
-    private static readonly string[] _postCombatLines =
-    {
-        "The room falls silent. Nothing moves but the dust settling around the fallen {0}.",
-        "You stand over {0}'s body, catching your breath. The dungeon feels momentarily less hostile.",
-        "The echo of combat fades. {0} is dead. You survived.",
-        "Silence returns. {0} won't be troubling anyone else."
-    };
+    private readonly Dictionary<CommandType, ICommandHandler> _handlers;
+    private CommandContext _context = null!;
 
     private static readonly string[] _spikeHazardLines =
     {
@@ -66,14 +62,6 @@ public class GameLoop
     {
         "A gout of magical fire roars from runes on the floor — you're caught in the blast! ({0} damage)",
         "The floor glows red. Then the fire trap activates with a WHOMP that singes your eyebrows. ({0} damage)"
-    };
-
-    private static readonly string[] _lootLines =
-    {
-        "Every bit helps down here.",
-        "You tuck it away carefully.",
-        "Useful. Or sellable. Either way, it's yours now.",
-        "Into the pack it goes."
     };
 
     /// <summary>
@@ -121,6 +109,34 @@ public class GameLoop
         _allItems = allItems ?? [];
         _navigator = navigator;
         _logger = logger ?? Microsoft.Extensions.Logging.Abstractions.NullLogger<GameLoop>.Instance;
+
+        _handlers = new Dictionary<CommandType, ICommandHandler>
+        {
+            [CommandType.Go]          = new GoCommandHandler(),
+            [CommandType.Look]        = new LookCommandHandler(),
+            [CommandType.Examine]     = new ExamineCommandHandler(),
+            [CommandType.Take]        = new TakeCommandHandler(),
+            [CommandType.Use]         = new UseCommandHandler(),
+            [CommandType.Inventory]   = new InventoryCommandHandler(),
+            [CommandType.Stats]       = new StatsCommandHandler(),
+            [CommandType.Help]        = new HelpCommandHandler(),
+            [CommandType.Save]        = new SaveCommandHandler(),
+            [CommandType.Load]        = new LoadCommandHandler(),
+            [CommandType.ListSaves]   = new ListSavesCommandHandler(),
+            [CommandType.Descend]     = new DescendCommandHandler(),
+            [CommandType.Map]         = new MapCommandHandler(),
+            [CommandType.Shop]        = new ShopCommandHandler(),
+            [CommandType.Sell]        = new SellCommandHandler(),
+            [CommandType.Prestige]    = new PrestigeCommandHandler(),
+            [CommandType.Skills]      = new SkillsCommandHandler(),
+            [CommandType.Learn]       = new LearnCommandHandler(),
+            [CommandType.Craft]       = new CraftCommandHandler(),
+            [CommandType.Leaderboard] = new LeaderboardCommandHandler(),
+            [CommandType.Compare]     = new CompareCommandHandler(),
+            [CommandType.Equip]       = new EquipCommandHandler(),
+            [CommandType.Unequip]     = new UnequipCommandHandler(),
+            [CommandType.Equipment]   = new EquipmentCommandHandler(),
+        };
     }
 
     /// <summary>
@@ -144,6 +160,7 @@ public class GameLoop
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
 
+        InitContext();
         RunLoop();
     }
 
@@ -166,7 +183,44 @@ public class GameLoop
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
 
+        InitContext();
         RunLoop();
+    }
+
+    private void InitContext()
+    {
+        _context = new CommandContext
+        {
+            Player              = _player,
+            CurrentRoom         = _currentRoom,
+            Rng                 = _rng,
+            Stats               = _stats,
+            SessionStats        = _sessionStats,
+            RunStart            = _runStart,
+            Display             = _display,
+            Combat              = _combat,
+            Equipment           = _equipment,
+            InventoryManager    = _inventoryManager,
+            Narration           = _narration,
+            Achievements        = _achievements,
+            AllItems            = _allItems,
+            Difficulty          = _difficulty,
+            Logger              = _logger,
+            Events              = _events,
+            Navigator           = _navigator,
+            Seed                = _seed,
+            CurrentFloor        = _currentFloor,
+            TurnConsumed        = true,
+            GameOver            = false,
+            ExitRun             = cause => ExitRun(cause),
+            RecordRunEnd        = (won, ov) => RecordRunEnd(won, ov),
+            GetCurrentlyEquippedForItem = (player, item) => GetCurrentlyEquippedForItem(player, item),
+            GetDifficultyName   = () => GetDifficultyName(),
+            HandleShrine        = () => { _currentRoom = _context.CurrentRoom; HandleShrine(); },
+            HandleContestedArmory = () => { _currentRoom = _context.CurrentRoom; HandleContestedArmory(); },
+            HandlePetrifiedLibrary = () => { _currentRoom = _context.CurrentRoom; HandlePetrifiedLibrary(); },
+            HandleTrapRoom      = () => { _currentRoom = _context.CurrentRoom; HandleTrapRoom(); },
+        };
     }
 
     private void RunLoop()
@@ -176,294 +230,40 @@ public class GameLoop
             _display.ShowCommandPrompt();
             var input = _input.ReadLine() ?? string.Empty;
             var cmd = CommandParser.Parse(input);
-            _turnConsumed = true;
+            _context.TurnConsumed = true;
 
-            switch (cmd.Type)
+            if (cmd.Type == CommandType.Quit)
             {
-                case CommandType.Go:
-                    HandleGo(cmd.Argument);
-                    break;
-                case CommandType.Look:
-                    HandleLook();
-                    break;
-                case CommandType.Examine:
-                    HandleExamine(cmd.Argument);
-                    break;
-                case CommandType.Take:
-                    HandleTake(cmd.Argument);
-                    break;
-                case CommandType.Use:
-                    HandleUse(cmd.Argument);
-                    break;
-                case CommandType.Inventory:
-                    var selectedItem = _display.ShowInventoryAndSelect(_player);
-                    _turnConsumed = false;
-                    if (selectedItem != null)
-                    {
-                        _display.ShowItemDetail(selectedItem);
-                        if (selectedItem.IsEquippable)
-                        {
-                            var equipped = GetCurrentlyEquippedForItem(selectedItem);
-                            _display.ShowEquipmentComparison(_player, equipped, selectedItem);
-                        }
-                    }
-                    break;
-                case CommandType.Stats:
-                    _display.ShowPlayerStats(_player);
-                    _display.ShowMessage($"Floor: {_currentFloor} / {FinalFloor}");
-                    break;
-                case CommandType.Equip:
-                    _equipment.HandleEquip(_player, cmd.Argument);
-                    break;
-                case CommandType.Unequip:
-                    _equipment.HandleUnequip(_player, cmd.Argument);
-                    break;
-                case CommandType.Equipment:
-                    _equipment.ShowEquipment(_player);
-                    break;
-                case CommandType.Help:
-                    _display.ShowHelp();
-                    break;
-                case CommandType.Save:
-                    HandleSave(cmd.Argument);
-                    break;
-                case CommandType.Load:
-                    HandleLoad(cmd.Argument);
-                    break;
-                case CommandType.ListSaves:
-                    HandleListSaves();
-                    break;
-                case CommandType.Quit:
-                    _stats.FinalLevel = _player.Level;
-                    _stats.TimeElapsed = DateTime.UtcNow - _runStart;
-                    RecordRunEnd(won: false, outcomeOverride: "Quit");
-                    _display.ShowMessage("Thanks for playing!");
-                    return;
-                case CommandType.Descend:
-                    HandleDescend();
-                    break;
-                case CommandType.Map:
-                    _display.ShowMap(_currentRoom, _currentFloor);
-                    break;
-                case CommandType.Shop:
-                    HandleShop();
-                    break;
-                case CommandType.Sell:
-                    HandleSell();
-                    break;
-                case CommandType.Prestige:
-                    HandlePrestige();
-                    break;
-                case CommandType.Skills:
-                    HandleSkills();
-                    break;
-                case CommandType.Learn:
-                    HandleLearnSkill(cmd.Argument);
-                    break;
-                case CommandType.Craft:
-                    HandleCraft(cmd.Argument);
-                    break;
-                case CommandType.Leaderboard:
-                    HandleLeaderboard();
-                    break;
-                case CommandType.Compare:
-                    HandleCompare(cmd.Argument);
-                    break;
-                default:
-                    _display.ShowError("Unknown command. Type HELP for commands.");
-                    break;
+                _stats.FinalLevel = _player.Level;
+                _stats.TimeElapsed = DateTime.UtcNow - _runStart;
+                RecordRunEnd(won: false, outcomeOverride: "Quit");
+                _display.ShowMessage("Thanks for playing!");
+                return;
             }
+
+            if (_handlers.TryGetValue(cmd.Type, out var handler))
+                handler.Handle(cmd.Argument, _context);
+            else
+                _display.ShowError("Unknown command. Type HELP for commands.");
+
+            // Sync back mutable context state to GameLoop fields
+            _player        = _context.Player;
+            _currentRoom   = _context.CurrentRoom;
+            _currentFloor  = _context.CurrentFloor;
+            _seed          = _context.Seed;
+            _runStart      = _context.RunStart;
+            _rng           = _context.Rng;
+            _stats         = _context.Stats;
+            _sessionStats  = _context.SessionStats;
+            _turnConsumed  = _context.TurnConsumed;
+            _gameOver      = _context.GameOver;
+
             if (_turnConsumed) _stats.TurnsTaken++;
             if (_turnConsumed && !_gameOver) ApplyRoomHazard(_currentRoom, _player);
             if (_player.HP <= 0 && !_gameOver)
                 ExitRun("environmental hazard");
             if (_gameOver) break;
         }
-    }
-
-    private void HandleGo(string directionStr)
-    {
-        if (string.IsNullOrWhiteSpace(directionStr))
-        {
-            _turnConsumed = false;
-            _display.ShowError("Go where? Specify a direction (north, south, east, west).");
-            return;
-        }
-
-        Direction direction;
-        switch (directionStr.ToLowerInvariant())
-        {
-            case "north":
-            case "n":
-                direction = Direction.North;
-                break;
-            case "south":
-            case "s":
-                direction = Direction.South;
-                break;
-            case "east":
-            case "e":
-                direction = Direction.East;
-                break;
-            case "west":
-            case "w":
-                direction = Direction.West;
-                break;
-            default:
-                _turnConsumed = false;
-                _display.ShowError($"Invalid direction: {directionStr}");
-                return;
-        }
-
-        if (!_currentRoom.Exits.TryGetValue(direction, out var nextRoom))
-        {
-            _turnConsumed = false;
-            _display.ShowError("You can't go that way.");
-            return;
-        }
-
-        // Move to new room
-        var previousRoom = _currentRoom;
-        _currentRoom = nextRoom;
-
-        // ~15% chance of a brief atmospheric flavor message before the room description
-        if (_narration.Chance(0.15))
-            _display.ShowMessage(_narration.Pick(AmbientEvents.ForFloor(_currentFloor)));
-
-        // Show revisit flavor when returning to an already-explored room
-        if (_currentRoom.Visited)
-        {
-            _display.ShowMessage(_narration.Pick(RoomStateNarration.RevisitedRoom));
-            _currentRoom.State = RoomState.Revisited;
-        }
-
-        _display.ShowRoom(_currentRoom);
-        _currentRoom.Visited = true;
-        _events?.RaiseRoomEntered(_player, _currentRoom, previousRoom);
-        _logger.LogDebug("Player entered room at {RoomId}", _currentRoom.Id);
-
-        // Apply environmental hazard damage
-        if (_currentRoom.Hazard != HazardType.None)
-        {
-            var dmg = _currentRoom.Hazard switch {
-                HazardType.Spike => 5,
-                HazardType.Poison => 3,
-                HazardType.Fire => 7,
-                _ => 0
-            };
-            _player.TakeDamage(dmg);
-            _stats.DamageTaken += dmg;
-            string hazardMsg = _currentRoom.Hazard switch
-            {
-                HazardType.Spike  => _narration.Pick(_spikeHazardLines, dmg),
-                HazardType.Poison => _narration.Pick(_poisonHazardLines, dmg),
-                HazardType.Fire   => _narration.Pick(_fireHazardLines, dmg),
-                _                 => $"You trigger a hazard and take {dmg} damage!"
-            };
-            _display.ShowMessage($"⚠ {hazardMsg} HP: {_player.HP}/{_player.MaxHP}");
-            if (_player.HP <= 0)
-            {
-                ExitRun("a dungeon trap");
-                return;
-            }
-        }
-
-        // Notify about merchant if present
-        if (_currentRoom.Merchant != null)
-        {
-            _display.ShowMessage("🛒 A merchant is here! Type SHOP to browse, or SELL to sell items.");
-        }
-
-        // Check for enemy encounter
-        if (_currentRoom.Enemy != null && _currentRoom.Enemy.HP > 0)
-        {
-            var killerName = _currentRoom.Enemy.Name;
-            _logger.LogInformation("Combat started with {EnemyName}", _currentRoom.Enemy.Name);
-            var result = _combat.RunCombat(_player, _currentRoom.Enemy, _stats);
-            _logger.LogInformation("Combat ended: {Result}", result);
-            
-            if (result == CombatResult.PlayerDied)
-            {
-                ExitRun(killerName);
-                return;
-            }
-            
-            if (result == CombatResult.Won)
-            {
-                _sessionStats.EnemiesKilled++;
-                if (_currentRoom.Enemy is Systems.Enemies.DungeonBoss
-                    || _currentRoom.Enemy is Systems.Enemies.ArchlichSovereign
-                    || _currentRoom.Enemy is Systems.Enemies.AbyssalLeviathan
-                    || _currentRoom.Enemy is Systems.Enemies.InfernalDragon)
-                    _sessionStats.BossKills++;
-                var enemyName = _currentRoom.Enemy!.Name;
-                _currentRoom.Enemy = null;
-                _display.ShowMessage(_narration.Pick(_postCombatLines, enemyName));
-                _currentRoom.State = RoomState.Cleared;
-                _display.ShowMessage(_narration.Pick(RoomStateNarration.ClearedRoom));
-            }
-
-            if (result == CombatResult.Fled)
-            {
-                _display.ShowMessage("You flee back to the previous room!");
-                _currentRoom = previousRoom;
-                return;
-            }
-        }
-
-        if (_player.HP < _player.MaxHP * 0.2) _logger.LogWarning("Player HP critically low: {HP}/{MaxHP}", _player.HP, _player.MaxHP);
-
-        // Check win/floor condition
-        if (_currentRoom.IsExit && _currentRoom.Enemy == null)
-        {
-            if (_currentFloor >= FinalFloor)
-            {
-                _stats.FinalLevel = _player.Level;
-                _stats.TimeElapsed = DateTime.UtcNow - _runStart;
-                ShowVictory();
-                _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
-                if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
-                _stats.Display(_display.ShowMessage);
-                RecordRunEnd(won: true);
-                _gameOver = true;
-                return;
-            }
-            else
-            {
-                var clearedVariant = DungeonVariant.ForFloor(_currentFloor);
-                if (!string.IsNullOrEmpty(clearedVariant.ExitMessage))
-                    _display.ShowMessage(clearedVariant.ExitMessage);
-                _display.ShowMessage($"You cleared Floor {_currentFloor}! Type DESCEND to go deeper.");
-            }
-        }
-
-        // Prompt for shrine if present and not yet used
-        if (_currentRoom.HasShrine && !_currentRoom.ShrineUsed)
-        {
-            _display.ShowMessage("✨ There is a Shrine in this room. Type USE SHRINE to interact.");
-        }
-
-        // Auto-trigger PetrifiedLibrary on first entry
-        if (_currentRoom.Type == RoomType.PetrifiedLibrary && !_currentRoom.SpecialRoomUsed)
-        {
-            _currentRoom.SpecialRoomUsed = true;
-            HandlePetrifiedLibrary();
-        }
-
-        // Auto-trigger TrapRoom on first entry
-        if (_currentRoom.Type == RoomType.TrapRoom && !_currentRoom.SpecialRoomUsed)
-            HandleTrapRoom();
-
-        // Prompt for ContestedArmory
-        if (_currentRoom.Type == RoomType.ContestedArmory && !_currentRoom.SpecialRoomUsed)
-        {
-            _display.ShowMessage("⚔ Trapped weapons line the walls. (USE ARMORY to approach)");
-        }
-    }
-
-    private void HandleLook()
-    {
-        _display.ShowRoom(_currentRoom);
     }
 
     private void ApplyRoomHazard(Room room, Player player)
@@ -491,506 +291,19 @@ public class GameLoop
         }
     }
 
-    private void HandleExamine(string target)
-    {
-        if (string.IsNullOrWhiteSpace(target))
-        {
-            _turnConsumed = false;
-            _display.ShowError("Examine what?");
-            return;
-        }
-
-        var targetLower = target.ToLowerInvariant();
-
-        // Check for enemy
-        if (_currentRoom.Enemy != null && _currentRoom.Enemy.HP > 0 && 
-            _currentRoom.Enemy.Name.ToLowerInvariant().Contains(targetLower))
-        {
-            _display.ShowMessage($"{_currentRoom.Enemy.Name} - HP: {_currentRoom.Enemy.HP}/{_currentRoom.Enemy.MaxHP}, Attack: {_currentRoom.Enemy.Attack}, Defense: {_currentRoom.Enemy.Defense}");
-            return;
-        }
-
-        // Check items in room
-        var roomItem = _currentRoom.Items.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(targetLower));
-        if (roomItem != null)
-        {
-            _display.ShowItemDetail(roomItem);
-            return;
-        }
-
-        // Check items in inventory
-        var invItem = _player.Inventory.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(targetLower));
-        if (invItem != null)
-        {
-            _display.ShowItemDetail(invItem);
-            
-            // If equippable, show comparison vs. currently equipped
-            if (invItem.IsEquippable)
-            {
-                Item? currentlyEquipped = GetCurrentlyEquippedForItem(invItem);
-                _display.ShowEquipmentComparison(_player, currentlyEquipped, invItem);
-            }
-            
-            return;
-        }
-
-        _turnConsumed = false;
-        _display.ShowError($"You don't see any '{target}' here.");
-    }
-
-    private void HandleTake(string itemName)
-    {
-        var roomItems = _currentRoom.Items;
-
-        if (string.IsNullOrWhiteSpace(itemName))
-        {
-            if (roomItems.Count == 0)
-            {
-                _turnConsumed = false;
-                _display.ShowError("There is nothing here to take.");
-                return;
-            }
-            var selected = _display.ShowTakeMenuAndSelect(roomItems.AsReadOnly());
-            if (selected == null) { _turnConsumed = false; return; }
-            if (selected.Name == "__TAKE_ALL__")
-            {
-                TakeAllItems();
-                return;
-            }
-            TakeSingleItem(selected);
-            return;
-        }
-
-        // Typed argument — exact then fuzzy match
-        var itemNameLower = itemName.ToLowerInvariant();
-        var item = roomItems.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(itemNameLower));
-
-        if (item == null)
-        {
-            int tolerance = Math.Max(2, itemNameLower.Length / 2);
-            var candidates = roomItems
-                .Select(i => (Item: i, Distance: Systems.EquipmentManager.LevenshteinDistance(itemNameLower, i.Name.ToLowerInvariant())))
-                .Where(x => x.Distance <= tolerance)
-                .OrderBy(x => x.Distance)
-                .ToList();
-            if (candidates.Count > 0)
-                item = candidates[0].Item;
-        }
-
-        if (item == null)
-        {
-            _turnConsumed = false;
-            _display.ShowError($"There is no '{itemName}' here.");
-            return;
-        }
-
-        TakeSingleItem(item);
-    }
-
-    private void TakeSingleItem(Item item)
-    {
-        _currentRoom.Items.Remove(item);
-        if (!_inventoryManager.TryAddItem(_player, item))
-        {
-            _currentRoom.Items.Add(item);
-            _turnConsumed = false;
-            _display.ShowError("❌ Inventory full!");
-            return;
-        }
-        int slotsCurrent = _player.Inventory.Count;
-        int weightCurrent = _player.Inventory.Sum(i => i.Weight);
-        _display.ShowItemPickup(item, slotsCurrent, Player.MaxInventorySize, weightCurrent, Systems.InventoryManager.MaxWeight);
-        _display.ShowMessage(_narration.Pick(_lootLines));
-        _display.ShowMessage(Systems.ItemInteractionNarration.PickUp(item));
-        _events?.RaiseItemPicked(_player, item, _currentRoom);
-        _stats.ItemsFound++;
-        if (item.Type == ItemType.Gold) { _stats.GoldCollected += item.StatModifier; _sessionStats.GoldEarned += item.StatModifier; }
-    }
-
-    private void TakeAllItems()
-    {
-        var items = _currentRoom.Items.ToList();
-        if (items.Count == 0)
-        {
-            _turnConsumed = false;
-            _display.ShowError("There is nothing here to take.");
-            return;
-        }
-        int taken = 0;
-        foreach (var item in items)
-        {
-            _currentRoom.Items.Remove(item);
-            if (!_inventoryManager.TryAddItem(_player, item))
-            {
-                _currentRoom.Items.Add(item);
-                _display.ShowError($"❌ Inventory full! {item.Name} left behind.");
-                break;
-            }
-            int slotsCurrent = _player.Inventory.Count;
-            int weightCurrent = _player.Inventory.Sum(i => i.Weight);
-            _display.ShowItemPickup(item, slotsCurrent, Player.MaxInventorySize, weightCurrent, Systems.InventoryManager.MaxWeight);
-            _display.ShowMessage(Systems.ItemInteractionNarration.PickUp(item));
-            _events?.RaiseItemPicked(_player, item, _currentRoom);
-            _stats.ItemsFound++;
-            if (item.Type == ItemType.Gold) { _stats.GoldCollected += item.StatModifier; _sessionStats.GoldEarned += item.StatModifier; }
-            taken++;
-        }
-        if (taken > 0)
-            _display.ShowMessage(_narration.Pick(_lootLines));
-    }
-
-    private void HandleUse(string itemName)
-    {
-        if (string.IsNullOrWhiteSpace(itemName))
-        {
-            _turnConsumed = false;
-            var usable = _player.Inventory.Where(i => i.Type == ItemType.Consumable).ToList();
-            if (usable.Count == 0)
-            {
-                _display.ShowError("You have no usable items in your inventory.");
-                return;
-            }
-            var selected = _display.ShowUseMenuAndSelect(usable.AsReadOnly());
-            if (selected == null) return;
-            itemName = selected.Name;
-        }
-
-        // Special: USE SHRINE
-        if (itemName.Equals("shrine", StringComparison.OrdinalIgnoreCase))
-        {
-            HandleShrine();
-            return;
-        }
-
-        // Special: USE ARMORY
-        if (itemName.Equals("armory", StringComparison.OrdinalIgnoreCase))
-        {
-            HandleContestedArmory();
-            return;
-        }
-
-        var itemNameLower = itemName.ToLowerInvariant();
-        var item = _player.Inventory.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(itemNameLower));
-
-        if (item == null)
-        {
-            // Pass 2: fuzzy Levenshtein distance match
-            int tolerance = Math.Max(3, itemNameLower.Length / 2);
-            var candidates = _player.Inventory
-                .Select(i => (Item: i, Distance: Systems.EquipmentManager.LevenshteinDistance(itemNameLower, i.Name.ToLowerInvariant())))
-                .Where(x => x.Distance <= tolerance)
-                .ToList();
-
-            if (candidates.Count == 0)
-            {
-                _turnConsumed = false;
-                _display.ShowError($"You don't have '{itemName}'.");
-                return;
-            }
-
-            int bestDistance = candidates.Min(x => x.Distance);
-            var bestCandidates = candidates.Where(x => x.Distance == bestDistance).ToList();
-
-            if (bestCandidates.Count > 1)
-            {
-                _turnConsumed = false;
-                var names = string.Join(", ", bestCandidates.Select(x => x.Item.Name));
-                _display.ShowError($"Did you mean one of: {names}? Please be more specific.");
-                return;
-            }
-
-            item = bestCandidates[0].Item;
-            _display.ShowMessage($"(Did you mean \"{item.Name}\"?)");
-        }
-
-        switch (item.Type)
-        {
-            case ItemType.Consumable:
-                if (!string.IsNullOrEmpty(item.Description))
-                    _display.ShowMessage(item.Description);
-                if (item.HealAmount > 0)
-                {
-                    var healAmt = Math.Max(1, (int)(item.HealAmount * _difficulty.HealingMultiplier));
-                    var oldHP = _player.HP;
-                    _player.Heal(healAmt);
-                    var healedAmount = _player.HP - oldHP;
-                    _player.Inventory.Remove(item);
-                    _display.ShowMessage($"You use {item.Name} and restore {healedAmount} HP. Current HP: {_player.HP}/{_player.MaxHP}");
-                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, healedAmount));
-                }
-                else if (item.ManaRestore > 0)
-                {
-                    var oldMana = _player.Mana;
-                    _player.RestoreMana(item.ManaRestore);
-                    var restoredMana = _player.Mana - oldMana;
-                    _player.Inventory.Remove(item);
-                    _display.ShowMessage($"You use {item.Name} and restore {restoredMana} mana. Mana: {_player.Mana}/{_player.MaxMana}");
-                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
-                }
-                else if (item.AttackBonus > 0)
-                {
-                    _player.ModifyAttack(item.AttackBonus);
-                    _player.Inventory.Remove(item);
-                    _display.ShowMessage($"You use {item.Name}. Attack permanently +{item.AttackBonus}. Attack: {_player.Attack}");
-                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
-                }
-                else if (item.DefenseBonus > 0)
-                {
-                    _player.ModifyDefense(item.DefenseBonus);
-                    _player.Inventory.Remove(item);
-                    _display.ShowMessage($"You use {item.Name}. Defense permanently +{item.DefenseBonus}. Defense: {_player.Defense}");
-                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
-                }
-                else if (item.PassiveEffectId == "bone_flute")
-                {
-                    _player.ActiveMinions.Add(new Models.Minion { Name = "Skeletal Ally", HP = 60, MaxHP = 60, ATK = 15, AttackFlavorText = "The Skeletal Ally rattles forward and strikes!" });
-                    _player.Inventory.Remove(item);
-                    _display.ShowMessage("The flute's hollow note summons a Skeletal Ally to fight alongside you!");
-                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
-                }
-                else if (item.PassiveEffectId == "dragonheart_elixir")
-                {
-                    _player.FortifyMaxHP(100);
-                    _player.Inventory.Remove(item);
-                    _display.ShowMessage($"Dragonheart warmth spreads through you. MaxHP +100! ({_player.MaxHP} MaxHP)");
-                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
-                }
-                else if (item.PassiveEffectId == "cure_all")
-                {
-                    _player.ActiveEffects.RemoveAll(e => e.IsDebuff);
-                    _player.Heal(_player.MaxHP);
-                    _player.Inventory.Remove(item);
-                    _display.ShowMessage($"The Panacea purges all ailments and restores you to full health. HP: {_player.HP}/{_player.MaxHP}");
-                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
-                }
-                else if (item.PassiveEffectId == "berserk_buff")
-                {
-                    int atkGain = Math.Max(1, _player.Attack / 2);
-                    int defLoss = Math.Max(1, _player.Defense * 3 / 10);
-                    _player.ModifyAttack(atkGain);
-                    _player.TempAttackBonus += atkGain;
-                    _player.ModifyDefense(-defLoss);
-                    _player.TempDefenseBonus -= defLoss;
-                    _player.Inventory.Remove(item);
-                    _display.ShowMessage($"Rage floods your veins. ATK +{atkGain}, DEF -{defLoss} until next floor. ATK: {_player.Attack}, DEF: {_player.Defense}");
-                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
-                }
-                else if (item.PassiveEffectId == "stone_skin_buff")
-                {
-                    int defGain = Math.Max(1, _player.Defense * 2 / 5);
-                    _player.ModifyDefense(defGain);
-                    _player.TempDefenseBonus += defGain;
-                    _player.Inventory.Remove(item);
-                    _display.ShowMessage($"Your skin hardens to granite. DEF +{defGain} until next floor. DEF: {_player.Defense}");
-                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
-                }
-                else if (item.PassiveEffectId == "swiftness_buff")
-                {
-                    int atkGain = Math.Max(1, _player.Attack / 4);
-                    _player.ModifyAttack(atkGain);
-                    _player.TempAttackBonus += atkGain;
-                    _player.Inventory.Remove(item);
-                    _display.ShowMessage($"The world slows; you do not. ATK +{atkGain} until next floor. ATK: {_player.Attack}");
-                    _display.ShowMessage(Systems.ItemInteractionNarration.UseConsumable(item, 0));
-                }
-                else
-                {
-                    _turnConsumed = false;
-                    _display.ShowMessage("Nothing happened.");
-                    _display.ShowError($"You can't use {item.Name} right now.");
-                }
-                break;
-
-            case ItemType.Weapon:
-            case ItemType.Armor:
-            case ItemType.Accessory:
-                _turnConsumed = false;
-                _display.ShowError($"Use 'EQUIP {item.Name}' to equip this item.");
-                break;
-
-            case ItemType.CraftingMaterial:
-                _turnConsumed = false;
-                _display.ShowError($"{item.Name} is a crafting material and cannot be used directly. Use it at a crafting station.");
-                break;
-
-            default:
-                _turnConsumed = false;
-                _display.ShowError($"You can't use {item.Name}.");
-                break;
-        }
-    }
-
-    private void HandleSave(string saveName)
-    {
-        if (string.IsNullOrWhiteSpace(saveName))
-        {
-            _turnConsumed = false;
-            _display.ShowError("Save as what? Usage: SAVE <name>");
-            return;
-        }
-        SaveSystem.SaveGame(new GameState(_player, _currentRoom, _currentFloor, _seed), saveName);
-        _logger.LogInformation("Game saved to {SaveFile}", saveName);
-        _display.ShowMessage($"Game saved as '{saveName}'.");
-    }
-
-    private void HandleLoad(string saveName)
-    {
-        if (string.IsNullOrWhiteSpace(saveName))
-        {
-            _turnConsumed = false;
-            _display.ShowError("Load which save? Usage: LOAD <name>");
-            return;
-        }
-        try
-        {
-            var state = SaveSystem.LoadGame(saveName);
-            _player = state.Player;
-            _currentRoom = state.CurrentRoom;
-            _currentFloor = state.CurrentFloor;
-            _seed = state.Seed;
-            _runStart = DateTime.UtcNow;
-            _rng = _seed.HasValue ? new Random(_seed.Value) : new Random();
-            _stats = new RunStats();
-            _sessionStats = new SessionStats();
-            _display.ShowMessage($"Loaded save '{saveName}'.");
-            _logger.LogInformation("Game loaded from {SaveFile}", saveName);
-            _display.ShowRoom(_currentRoom);
-        }
-        catch (FileNotFoundException)
-        {
-            _turnConsumed = false;
-            _display.ShowError($"Save '{saveName}' not found.");
-        }
-        catch (Exception ex)
-        {
-            _turnConsumed = false;
-            _logger.LogError(ex, "Failed to load save '{SaveFile}'", saveName);
-            _display.ShowError($"Failed to load save: {ex.Message}");
-        }
-    }
-
-    private void HandleListSaves()
-    {
-        var saves = SaveSystem.ListSaves();
-        if (saves.Length == 0)
-        {
-            _display.ShowMessage("No saved games found.");
-            return;
-        }
-        _display.ShowMessage("=== Saved Games ===");
-        foreach (var s in saves)
-            _display.ShowMessage($"  {s}");
-    }
-
     /// <summary>
     /// Returns the currently equipped item in the slot that <paramref name="item"/> would occupy.
     /// Logic mirrors Systems/EquipmentManager.DoEquip slot resolution.
     /// </summary>
-    private Item? GetCurrentlyEquippedForItem(Item item)
+    private Item? GetCurrentlyEquippedForItem(Player player, Item? item)
     {
-        return item.Type switch
+        return item?.Type switch
         {
-            ItemType.Weapon    => _player.EquippedWeapon,
-            ItemType.Armor     => _player.GetArmorSlotItem(item.Slot == ArmorSlot.None ? ArmorSlot.Chest : item.Slot),
-            ItemType.Accessory => _player.EquippedAccessory,
+            ItemType.Weapon    => player.EquippedWeapon,
+            ItemType.Armor     => player.GetArmorSlotItem(item.Slot == ArmorSlot.None ? ArmorSlot.Chest : item.Slot),
+            ItemType.Accessory => player.EquippedAccessory,
             _                  => null
         };
-    }
-
-    /// <summary>
-    /// Handles the COMPARE command: displays side-by-side stats for an inventory item
-    /// vs. currently equipped gear. Shows interactive menu if no argument provided.
-    /// </summary>
-    private void HandleCompare(string itemName)
-    {
-        if (string.IsNullOrWhiteSpace(itemName))
-        {
-            // Interactive selection: show equippable items only
-            var equippable = _player.Inventory.Where(i => i.IsEquippable).ToList();
-            if (equippable.Count == 0)
-            {
-                _turnConsumed = false;
-                _display.ShowError("You have no equippable items to compare.");
-                return;
-            }
-            
-            var selected = _display.ShowEquipMenuAndSelect(equippable.AsReadOnly());
-            if (selected == null)
-            {
-                _turnConsumed = false;
-                return; // User cancelled
-            }
-            
-            itemName = selected.Name;
-        }
-        
-        // Find item by name (case-insensitive contains match)
-        var itemNameLower = itemName.ToLowerInvariant();
-        var item = _player.Inventory.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(itemNameLower));
-        
-        if (item == null)
-        {
-            _turnConsumed = false;
-            _display.ShowError($"You don't have '{itemName}' in your inventory.");
-            return;
-        }
-        
-        if (!item.IsEquippable)
-        {
-            _turnConsumed = false;
-            _display.ShowError($"{item.Name} cannot be equipped, so there's nothing to compare.");
-            return;
-        }
-        
-        // Get currently equipped item in target slot
-        Item? currentlyEquipped = GetCurrentlyEquippedForItem(item);
-        
-        // Show comparison
-        _display.ShowEquipmentComparison(_player, currentlyEquipped, item);
-    }
-
-    private void HandleDescend()
-    {
-        if (!_currentRoom.IsExit || _currentRoom.Enemy != null)
-        {
-            _turnConsumed = false;
-            _display.ShowError("You can only descend at a cleared exit room.");
-            return;
-        }
-
-        if (_currentFloor >= FinalFloor)
-        {
-            _stats.FinalLevel = _player.Level;
-            _stats.TimeElapsed = DateTime.UtcNow - _runStart;
-            ShowVictory();
-            _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
-            if (_seed.HasValue) _display.ShowMessage($"Run seed: {_seed.Value}");
-            _stats.Display(_display.ShowMessage);
-            RecordRunEnd(won: true);
-            _gameOver = true;
-            return;
-        }
-
-        _currentFloor++;
-        _stats.FloorsVisited = _currentFloor;
-        if (_player.TempAttackBonus > 0) { _player.ModifyAttack(-_player.TempAttackBonus); _player.TempAttackBonus = 0; }
-        if (_player.TempDefenseBonus != 0) { _player.ModifyDefense(-_player.TempDefenseBonus); _player.TempDefenseBonus = 0; }
-        _player.WardingVeilActive = false;
-        foreach (var line in FloorTransitionNarration.GetSequence(_currentFloor))
-            _display.ShowMessage(line);
-        _display.ShowMessage($"You descend deeper into the dungeon... Floor {_currentFloor}");
-
-        float floorMult = 1.0f + (_currentFloor - 1) * 0.5f;
-        var floorSeed = _seed.HasValue ? _seed.Value + _currentFloor : (int?)null;
-        var gen = new DungeonGenerator(floorSeed, _allItems);
-        var (newStart, _) = gen.Generate(floorMultiplier: floorMult, difficulty: _difficulty, floor: _currentFloor);
-        _currentRoom = newStart;
-        _currentRoom.Visited = true;
-        _display.ShowMessage($"Floor {_currentFloor}");
-        var descendVariant = DungeonVariant.ForFloor(_currentFloor);
-        _display.ShowMessage($"=== {descendVariant.Name} ===");
-        _display.ShowMessage(descendVariant.EntryMessage);
-        _display.ShowRoom(_currentRoom);
     }
 
     /// <summary>Returns a display-friendly label for the current difficulty setting.</summary>
@@ -1076,18 +389,6 @@ public class GameLoop
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantNothing));
                 break;
         }
-    }
-
-    private void HandlePrestige()
-    {
-        var data = PrestigeSystem.Load();
-        _display.ShowMessage("=== PRESTIGE STATUS ===");
-        _display.ShowMessage($"Prestige Level: {data.PrestigeLevel}");
-        _display.ShowMessage($"Total Wins: {data.TotalWins} | Total Runs: {data.TotalRuns}");
-        if (data.PrestigeLevel > 0)
-            _display.ShowMessage($"Bonuses: +{data.BonusStartAttack} Attack, +{data.BonusStartDefense} Defense, +{data.BonusStartHP} Max HP");
-        else
-            _display.ShowMessage("Win 3 runs to earn your first Prestige level!");
     }
 
     private void HandleForgottenShrine()
@@ -1373,185 +674,6 @@ public class GameLoop
         return null;
     }
 
-    private void HandleShop()
-    {
-        if (_currentRoom.Merchant == null)
-        {
-            _turnConsumed = false;
-            _display.ShowError("There is no merchant here.");
-            return;
-        }
-
-        var merchant = _currentRoom.Merchant;
-
-        // Keep the shop open in a loop so the player can sell then buy (or vice versa)
-        while (true)
-        {
-            _display.ShowMessage($"=== MERCHANT SHOP ({merchant.Name}) ===");
-            _display.ShowMessage(Systems.MerchantNarration.GetFloorGreeting(_currentFloor));
-            var shopChoice = _display.ShowShopWithSellAndSelect(
-                merchant.Stock.Select(mi => (mi.Item, mi.Price)), _player.Gold);
-
-            if (shopChoice == 0)  // Leave
-            {
-                _display.ShowMessage("You leave the shop.");
-                _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.NoBuy));
-                return;
-            }
-
-            if (shopChoice == -1)  // Sell
-            {
-                HandleSell();
-                continue;
-            }
-
-            // shopChoice is 1-based item index
-            if (shopChoice >= 1 && shopChoice <= merchant.Stock.Count)
-            {
-                var selected = merchant.Stock[shopChoice - 1];
-                if (_player.Gold < selected.Price)
-                {
-                    _display.ShowMessage(Systems.MerchantNarration.GetCantAfford());
-                }
-                else
-                {
-                    _player.SpendGold(selected.Price);
-                    if (!_inventoryManager.TryAddItem(_player, selected.Item))
-                    {
-                        _player.AddGold(selected.Price); // refund — inventory was full or too heavy
-                        _display.ShowMessage(Systems.MerchantNarration.GetInventoryFull());
-                    }
-                    else
-                    {
-                        merchant.Stock.RemoveAt(shopChoice - 1);
-                        _display.ShowMessage($"You bought {selected.Item.Name} for {selected.Price}g. Gold remaining: {_player.Gold}g");
-                        _display.ShowMessage(_narration.Pick(Systems.MerchantNarration.AfterPurchase));
-                    }
-                }
-                // Re-display shop after buying so player can continue shopping
-                continue;
-            }
-        }
-    }
-
-    private void HandleSell()
-    {
-        if (_currentRoom.Merchant == null)
-        {
-            _display.ShowError("There is no merchant here.");
-            return;
-        }
-
-        // Items in _player.Inventory are already unequipped; exclude Gold-type items
-        var sellable = _player.Inventory
-            .Where(i => i.Type != ItemType.Gold)
-            .ToList();
-
-        if (!sellable.Any())
-        {
-            _display.ShowMessage(MerchantNarration.GetNoSell());
-            return;
-        }
-
-        var idx = _display.ShowSellMenuAndSelect(sellable.Select(i => (i, MerchantInventoryConfig.ComputeSellPrice(i))), _player.Gold);
-        if (idx == 0)
-            return;
-
-        var item = sellable[idx - 1];
-        int price = MerchantInventoryConfig.ComputeSellPrice(item);
-
-        if (!_display.ShowConfirmMenu($"Sell {item.Name} for {price}g?"))
-        {
-            _display.ShowMessage("Changed your mind.");
-            return;
-        }
-
-        _player.Inventory.Remove(item);
-        _player.AddGold(price);
-        _display.ShowMessage($"You sold {item.Name} for {price}g. Gold remaining: {_player.Gold}g");
-        if (item.Tier == Models.ItemTier.Legendary)
-            _display.ShowMessage(Systems.MerchantNarration.GetLegendarySold());
-        else
-            _display.ShowMessage(MerchantNarration.GetAfterSale());
-    }
-
-    private void HandleSkills()
-    {
-        var skillToLearn = _display.ShowSkillTreeMenu(_player);
-        if (skillToLearn.HasValue)
-        {
-            HandleLearnSpecificSkill(skillToLearn.Value);
-        }
-        _turnConsumed = false;
-    }
-
-    private void HandleLearnSpecificSkill(Skill skill)
-    {
-        var success = _player.Skills.TryUnlock(_player, skill);
-        if (success)
-            _display.ShowMessage($"You learned {skill}!");
-        else
-            _display.ShowMessage($"Cannot learn {skill} right now.");
-        _turnConsumed = false;
-    }
-
-    private void HandleLearnSkill(string skillName)
-    {
-        if (!Enum.TryParse<Skill>(skillName, ignoreCase: true, out var skill))
-        {
-            _turnConsumed = false;
-            _display.ShowError($"Unknown skill: {skillName}");
-            return;
-        }
-        HandleLearnSpecificSkill(skill);
-    }
-    private void HandleCraft(string recipeName)
-    {
-        if (string.IsNullOrWhiteSpace(recipeName))
-        {
-            _turnConsumed = false;
-
-            // Build (recipeName, canCraft) pairs for the selection menu
-            var menuEntries = CraftingSystem.Recipes.Select(r =>
-            {
-                bool canCraft = r.Ingredients.All(ing =>
-                    _player.Inventory.Count(i => i.Name.Equals(ing.DisplayName, StringComparison.OrdinalIgnoreCase)) >= ing.Count);
-                return (r.Name, canCraft);
-            }).ToList();
-
-            int selectedIndex = _display.ShowCraftMenuAndSelect(menuEntries);
-            if (selectedIndex == 0) return; // cancelled
-
-            // Show the full recipe card for the selected recipe before crafting
-            var chosen = CraftingSystem.Recipes[selectedIndex - 1];
-            var ingredientsWithAvailability = chosen.Ingredients
-                .Select(ing => (
-                    $"{ing.Count}x {ing.DisplayName}",
-                    _player.Inventory.Count(i => i.Name.Equals(ing.DisplayName, StringComparison.OrdinalIgnoreCase)) >= ing.Count
-                ))
-                .ToList();
-            _display.ShowCraftRecipe(chosen.Name, chosen.Result.ToItem(), ingredientsWithAvailability);
-
-            var (success, msg) = CraftingSystem.TryCraft(_player, chosen);
-            if (success) _display.ShowMessage(msg);
-            else _display.ShowError(msg);
-            return;
-        }
-
-        var recipe = CraftingSystem.Recipes.FirstOrDefault(r =>
-            r.Name.Contains(recipeName, StringComparison.OrdinalIgnoreCase));
-        if (recipe == null)
-        {
-            _turnConsumed = false;
-            _display.ShowError($"Unknown recipe: {recipeName}");
-            return;
-        }
-
-        var (success2, msg2) = CraftingSystem.TryCraft(_player, recipe);
-        if (success2) _display.ShowMessage(msg2);
-        else _display.ShowError(msg2);
-    }
-
     /// <summary>
     /// Records the end of a run: persists to history, updates prestige, and (on win)
     /// evaluates and displays any newly unlocked achievements. Must be called after
@@ -1592,6 +714,7 @@ public class GameLoop
         ShowGameOver(killedBy: killedBy);
         RecordRunEnd(won: false);
         _gameOver = true;
+        if (_context != null!) _context.GameOver = true;
     }
 
     /// <summary>
@@ -1606,23 +729,6 @@ public class GameLoop
         _display.ShowGameOver(_player, killedBy, _stats);
     }
 
-    private void HandleLeaderboard()
-    {
-        _display.ShowMessage("=== TOP RUNS ===");
-        var top = RunStats.GetTopRuns(5);
-        if (top.Count == 0)
-        {
-            _display.ShowMessage("No completed runs yet. Be the first!");
-            return;
-        }
-        for (int i = 0; i < top.Count; i++)
-        {
-            var r = top[i];
-            var won = r.Won ? "✅" : "💀";
-            _display.ShowMessage($"#{i + 1} {won} Level {r.FinalLevel} | {r.EnemiesDefeated} enemies | {r.GoldCollected}g");
-        }
-    }
-
     /// <summary>
     /// Displays the class-aware victory banner and run summary when the player wins the run.
     /// Must be called after <see cref="RunStats.FinalLevel"/> and <see cref="RunStats.TimeElapsed"/>
@@ -1632,5 +738,4 @@ public class GameLoop
     {
         _display.ShowVictory(_player, _currentFloor, _stats);
     }
-
 }
