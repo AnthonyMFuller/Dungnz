@@ -33,7 +33,8 @@
 **Agenda:**
 1. What went well?
 2. What could be improved?
-3. Action items for next iteration
+3. **What single change or addition do you think would most improve the solution?** (each member answers)
+4. Action items for next iteration
 
 ---
 
