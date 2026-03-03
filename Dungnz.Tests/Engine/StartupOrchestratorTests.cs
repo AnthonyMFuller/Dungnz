@@ -11,6 +11,7 @@ namespace Dungnz.Tests.Engine;
 /// <summary>
 /// Tests for StartupOrchestrator: menu flow, cancellation, save loading, and error handling.
 /// </summary>
+[Collection("save-system")]
 public class StartupOrchestratorTests : IDisposable
 {
     private readonly string _testSaveDir;

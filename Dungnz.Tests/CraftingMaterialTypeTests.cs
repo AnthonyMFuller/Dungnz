@@ -12,6 +12,7 @@ namespace Dungnz.Tests;
 /// the 9 reclassified items (goblin-ear, skeleton-dust, troll-blood, wraith-essence,
 /// dragon-scale, wyvern-fang, soul-gem, iron-ore, rodent-pelt) have the correct type.
 /// </summary>
+[Collection("console-output")]
 public class CraftingMaterialTypeTests
 {
     private static Player MakePlayer()

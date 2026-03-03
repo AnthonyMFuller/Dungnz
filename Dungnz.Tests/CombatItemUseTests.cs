@@ -13,6 +13,7 @@ using Xunit;
 namespace Dungnz.Tests;
 
 /// <summary>Tests for the Use Item (I) combat feature added in #649.</summary>
+[Collection("console-output")]
 public class CombatItemUseTests
 {
     // ── helpers ──────────────────────────────────────────────────────────────
