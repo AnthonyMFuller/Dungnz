@@ -295,4 +295,5 @@ public class FakeDisplayService : IDisplayService
     public StartupMenuOption ShowStartupMenu(bool hasSaves) => StartupMenuOption.NewGame;
     public string? SelectSaveToLoad(string[] saveNames) => saveNames.FirstOrDefault();
     public int? ReadSeed() => null;
+    public Skill? ShowSkillTreeMenu(Player player) => null;
 }

@@ -1472,4 +1472,51 @@ public sealed class SpectreDisplayService : IDisplayService
         StatusEffect.Curse     => "@",
         _                      => "●"
     };
+
+    /// <inheritdoc />
+    public Skill? ShowSkillTreeMenu(Player player)
+    {
+        var allSkills = SkillTree.GetSkillsForClass(player);
+        var learnableSkills = allSkills
+            .Where(s => !player.Skills.IsUnlocked(s))
+            .ToList();
+
+        if (learnableSkills.Count == 0)
+        {
+            AnsiConsole.MarkupLine("[yellow]No skills available to learn right now.[/]");
+            return null;
+        }
+
+        var choices = learnableSkills
+            .Select(s => {
+                var (minLevel, _) = SkillTree.GetSkillRequirements(s);
+                var locked = player.Level < minLevel;
+                return locked
+                    ? $"[grey]{s} (Req. Lv{minLevel}) — {SkillTree.GetDescription(s)}[/]"
+                    : $"{s} — {SkillTree.GetDescription(s)}";
+            })
+            .Append("[grey]Cancel[/]")
+            .ToList();
+
+        var selection = AnsiConsole.Prompt(
+            new SelectionPrompt<string>()
+                .Title("[bold]Skill Tree — choose a skill to learn:[/]")
+                .AddChoices(choices));
+
+        if (selection.Contains("Cancel")) return null;
+
+        var selectedSkill = learnableSkills
+            .FirstOrDefault(s => selection.Contains(s.ToString()));
+
+        if (selectedSkill == default) return null;
+
+        var (reqLevel, _) = SkillTree.GetSkillRequirements(selectedSkill);
+        if (player.Level < reqLevel)
+        {
+            AnsiConsole.MarkupLine($"[red]You need level {reqLevel} to learn {selectedSkill}.[/]");
+            return null;
+        }
+
+        return selectedSkill;
+    }
 }

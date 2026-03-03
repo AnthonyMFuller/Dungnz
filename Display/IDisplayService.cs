@@ -376,4 +376,13 @@ public interface IDisplayService
 
     /// <summary>Prompts for a 6-digit seed (100000–999999). Returns the seed or null if cancelled.</summary>
     int? ReadSeed();
+
+    /// <summary>
+    /// Presents an arrow-key navigable skill tree menu showing all skills available to the player's class.
+    /// Locked skills (level requirement not met) are displayed but cannot be selected.
+    /// Already-unlocked skills are excluded entirely.
+    /// Returns the <see cref="Systems.Skill"/> the player wants to learn, or <c>null</c> if cancelled.
+    /// </summary>
+    /// <param name="player">The player viewing the skill tree.</param>
+    Systems.Skill? ShowSkillTreeMenu(Player player);
 }
