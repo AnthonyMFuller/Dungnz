@@ -2222,3 +2222,47 @@ Both PRs reviewed and merged in Round 3 (see below).
 - Romanoff's tests on separate branch (`squad/846-inspect-compare-tests`) ensure feature coverage without code duplication
 - PR history: feat commit (88a4476) + docs (c46050e) + tests (5620c9c) — logically separated, clean squash
 - All error cases properly handled; no edge cases missed
+
+
+---
+
+### 2026-03-03: Team Retrospective — Post-Phase Review
+
+**Context:** Facilitated full team retrospective covering emoji/icon alignment, startup menu, inspect/compare, skill tree, HELP crash fix, and test suite restoration (6 failures → 0, 1420 passing).
+
+**Key Themes Identified:**
+
+1. **God Classes are consensus #1 debt** — Hill and Barton independently flagged `GameLoop.cs` (1,635 lines) and `CombatEngine.cs` (1,200+ lines) as unsustainable. Both recommend decomposition via handler/processor patterns.
+
+2. **Content exists but is not surfaced** — Fury noted item descriptions, lore, and tooltips are written but invisible. The Inspect & Compare feature is a model for fixing this pattern.
+
+3. **Test coverage clusters away from display code** — Romanoff identified `DisplayService.cs` at 39.6% coverage, `ConsoleMenuNavigator.cs` at 0%. The hardest-to-test code is the least tested.
+
+4. **Incomplete systems create silent bugs** — 5 unwired affix properties, missing `UndyingWill` passive, placeholder boss name. Features that look done but have gaps.
+
+**Decisions Proposed:**
+- D1: Command Handler Pattern for GameLoop decomposition
+- D2: Passive Effect Registry Pattern for combat passives
+- D3: Display Method Smoke Test Requirement
+- D4: Release Tag Must Include Commit SHA
+- D5: Enemy Data Must Include Lore Field
+
+**Action Items Generated:** 17 total across P0/P1/P2 priorities
+
+**Team Dynamics Observed:**
+- Hill and Coulson aligned on architecture decomposition priorities
+- Barton ready to consolidate passive systems he owns
+- Romanoff has clear visibility into coverage gaps with practical solutions
+- Fury's content work is mature; gap is surfacing it to players
+- Fitz has solid DevOps foundation with small reliability edge cases to fix
+
+**Learnings for Future Ceremonies:**
+- Parallel sub-task spawning (3 at a time) works well for gathering independent input
+- Team members give more specific feedback when provided with concrete recent work context
+- Top Improvement Pick format forces prioritization — everyone must choose ONE thing
+- Cross-functional perspectives surface issues no single role would identify
+
+**Artifacts:**
+- `.ai-team/log/2026-03-03-retrospective.md` — Full ceremony summary
+- `.ai-team/decisions/inbox/coulson-retrospective-2026-03-03.md` — 5 proposed decisions
+

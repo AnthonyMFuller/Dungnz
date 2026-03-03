@@ -15625,3 +15625,132 @@ Intentional Spectre markup tags like `[bold]`, `[red]`, `[grey]...[/]` should ne
 ## Reference
 
 Fixed in PR #854 (issue #853) — `ShowHelp()` in `Display/SpectreDisplayService.cs`.
+
+---
+
+# Retrospective Decisions — 2026-03-03
+
+**Author:** Coulson  
+**Source:** Team Retrospective  
+**Date:** 2026-03-03
+
+---
+
+## Decision: Command Handler Pattern for GameLoop Decomposition
+
+**Status:** Proposed
+
+**Decision:**
+Adopt `ICommandHandler` as the standard pattern for all GameLoop command handling. New commands MUST be implemented as separate handler classes registered in a `Dictionary<CommandType, ICommandHandler>`. Existing `Handle*` methods should be extracted during normal churn.
+
+**Interface:**
+```csharp
+public interface ICommandHandler
+{
+    bool CanHandle(CommandType command);
+    void Handle(GameContext ctx);
+}
+```
+
+**Rationale:**
+- `GameLoop.cs` is 1,635 lines and growing with every feature
+- Each handler becomes independently unit-testable
+- Enables architecture tests to enforce layer boundaries per handler
+- Makes onboarding contributors dramatically easier
+
+**Proposed by:** Hill, Coulson
+
+---
+
+## Decision: Passive Effect Registry Pattern
+
+**Status:** Proposed
+
+**Decision:**
+Consolidate all passive effect implementations behind an `IPassiveEffect` interface with a central registry. Replace raw string `PassiveEffectId` with validated enum or registry key.
+
+**Interface:**
+```csharp
+public interface IPassiveEffect
+{
+    PassiveEffectId Id { get; }
+    PassiveTrigger Trigger { get; } // OnHit, OnTakeDamage, OnKill, OnCombatStart, OnWouldDie
+    void Apply(CombatContext context);
+}
+```
+
+**Rationale:**
+- Passives currently scattered across `PassiveEffectProcessor`, `SoulHarvestPassive`, and `SkillTree`
+- Raw string IDs allow typos that wire to nothing with no diagnostic
+- `UndyingWill` TODO has been open since Phase 4 — Warrior class ships with documented hole
+- Unified registry makes every future passive follow same pattern
+
+**Proposed by:** Barton
+
+---
+
+## Decision: Display Method Smoke Test Requirement
+
+**Status:** Proposed
+
+**Decision:**
+All `IDisplayService` methods that render Spectre.Console markup MUST have at least one smoke test that:
+1. Instantiates real `SpectreDisplayService` against captured `AnsiConsoleOutput`
+2. Calls the method with representative inputs
+3. Asserts no `MarkupException` is thrown
+4. Asserts no unescaped `[` characters in markup context
+
+**Rationale:**
+- `DisplayService.cs` is at 39.6% line coverage
+- HELP crash shipped without regression test catching it
+- All recent display bugs (alignment, markup, emoji) were caught manually, not by tests
+- Spectre provides `AnsiConsoleOutput` specifically for this pattern
+
+**Proposed by:** Romanoff
+
+---
+
+## Decision: Release Tag Must Include Commit SHA
+
+**Status:** Proposed
+
+**Decision:**
+Release tags MUST include commit SHA suffix to ensure every merge produces a unique release.
+
+**Format:** `v$(date +%Y.%m.%d)-$(git rev-parse --short HEAD)`
+
+**Rationale:**
+- Current date-only format silently skips second release when two PRs merge same day
+- No error, no warning — pipeline looks green but nothing shipped
+- SHA suffix adds auditability while keeping human-readable dates
+
+**Proposed by:** Fitz
+
+---
+
+## Decision: Enemy Data Must Include Lore Field
+
+**Status:** Proposed
+
+**Decision:**
+All enemy entries in `enemy-stats.json` MUST include a `Lore` field with at least two sentences describing what the enemy is, why it exists, and/or its behavior.
+
+**Rationale:**
+- 31 enemies currently have zero lore in data layer
+- One Bestiary or INSPECT-enemy feature away from shipping empty descriptions
+- Lore transforms stat checks into story beats for players
+- Architecture cost is trivial (one JSON field)
+
+**Proposed by:** Fury
+
+---
+
+## Retrospective Summary
+
+These five decisions emerged from the 2026-03-03 team retrospective. Each addresses a recurring theme:
+- **D1, D2:** God Class decomposition (`GameLoop`, scattered effects)
+- **D3:** Test coverage in hard-to-test display code
+- **D4:** Delivery reliability edge case (release tagging)
+- **D5:** Content surfacing gap (enemy lore)
+
+All are marked **Proposed** pending team review and formal adoption.
