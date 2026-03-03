@@ -1568,3 +1568,34 @@ Parameter was spelled `dungeoonFloor` (double 'o') in signature, XML doc, and me
 
 `dotnet build --nologo` — 0 errors on all branches.
 `dotnet test --nologo -q` — 1430/1430 passed on all branches.
+
+### 2026-03-05 — Deep Code Audit (Engine + Models)
+
+**Task:** Systematic audit of all Engine/ and Models/ files for bugs, data integrity, resource issues, edge cases, code quality, and serialization.
+
+**Scope:** GameLoop.cs, CombatEngine.cs, DungeonGenerator.cs, CommandParser.cs, EnemyFactory.cs, all AI files, all command handlers, all model files (Player*.cs, Enemy.cs, Item.cs, Room.cs, LootTable.cs, etc.), SaveSystem.cs, Program.cs.
+
+**Findings (13 new issues identified):**
+
+| # | Severity | Category | File | Summary |
+|---|----------|----------|------|---------|
+| 1 | P1 | bug | Program.cs:65 | Loaded game always uses Normal difficulty |
+| 2 | P1 | bug | DescendCommandHandler.cs:44 | playerLevel not passed to DungeonGenerator |
+| 3 | P1 | bug | SaveSystem.cs (SaveData) | Difficulty not persisted in save file |
+| 4 | P1 | bug | SaveSystem.cs (RoomSaveData) | Room.State not saved/loaded |
+| 5 | P1 | bug | CombatEngine.cs:1322-1325 | ManaLeech drains mana via direct mutation bypassing SpendMana |
+| 6 | P2 | bug | DungeonGenerator.cs:259 | CreateRandomItem creates LINQ pool per call — allocates on every room |
+| 7 | P2 | tech-debt | CombatEngine.cs:25 | _turnLog grows unbounded across combats (never shrunk) |
+| 8 | P2 | design-smell | EnemyFactory.cs:15-16 | Static mutable state not thread-safe, no Initialize guard |
+| 9 | P2 | tech-debt | CombatEngine.cs:891-1344 | PerformEnemyTurn is 450+ lines with deeply nested branches |
+| 10 | P2 | bug | GoblinShamanAI.cs | AI class exists but CombatEngine has inline shaman logic that shadows it |
+| 11 | P2 | design-smell | Room.cs:101 | Items is mutable public List<Item> |
+| 12 | P3 | code-smell | CombatEngine.cs:908-909 | Duplicate shaman heal cooldown tracked in both AI class and engine field |
+| 13 | P3 | code-smell | LichAI.cs + LichKingAI.cs | Identical classes — should share a base or be unified |
+
+**Key patterns:**
+- Save system does not preserve difficulty or room narrative state
+- Loaded games silently downgrade to Normal difficulty
+- DungeonGenerator.Generate() defaults playerLevel=1 and both callers omit it
+- CombatEngine has grown to 1709 lines with inline enemy AI that duplicates dedicated AI classes
+- EnemyFactory relies on static mutable state with no re-entrance or initialization guard

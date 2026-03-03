@@ -59,6 +59,7 @@ public static class SaveSystem
             CurrentRoomId = state.CurrentRoom.Id,
             CurrentFloor = state.CurrentFloor,
             Seed = state.Seed,
+            Difficulty = state.Difficulty,
             UnlockedSkills = state.Player.Skills.UnlockedSkills.Select(s => s.ToString()).ToList(),
             StatusEffects = state.Player.ActiveEffects.ToList(),
             Version = SaveData.CurrentVersion,
@@ -81,6 +82,7 @@ public static class SaveSystem
                 BlessedHealApplied = r.BlessedHealApplied,
                 EnvironmentalHazard = r.EnvironmentalHazard,
                 Trap = r.Trap,
+                State = r.State,
                 BossState = r.Enemy is Dungnz.Systems.Enemies.DungeonBoss boss
                     ? new BossSaveState
                     {
@@ -158,7 +160,8 @@ public static class SaveSystem
                     SpecialRoomUsed = roomData.SpecialRoomUsed,
                     BlessedHealApplied = roomData.BlessedHealApplied,
                     EnvironmentalHazard = roomData.EnvironmentalHazard,
-                    Trap = roomData.Trap
+                    Trap = roomData.Trap,
+                    State = roomData.State
                 };
                 if (roomData.BossState is { } bossState &&
                     room.Enemy is Dungnz.Systems.Enemies.DungeonBoss dungeonBoss)
@@ -195,7 +198,7 @@ public static class SaveSystem
             saveData.Player.ActiveEffects.Clear();
             saveData.Player.ActiveEffects.AddRange(saveData.StatusEffects);
 
-            return new GameState(saveData.Player, currentRoom, saveData.CurrentFloor, saveData.Seed);
+            return new GameState(saveData.Player, currentRoom, saveData.CurrentFloor, saveData.Seed, saveData.Difficulty);
         }
         catch (JsonException ex)
         {
@@ -291,6 +294,9 @@ public class GameState
     /// <summary>The seed used to generate this dungeon, or null if no seed was specified.</summary>
     public int? Seed { get; }
 
+    /// <summary>The difficulty level chosen when this run began.</summary>
+    public Difficulty Difficulty { get; }
+
     /// <summary>
     /// Creates a new game state with the given player, current room, and floor number.
     /// </summary>
@@ -298,13 +304,15 @@ public class GameState
     /// <param name="currentRoom">The room the player is currently in.</param>
     /// <param name="currentFloor">The floor number the player is currently on. Defaults to 1.</param>
     /// <param name="seed">The seed used to generate the dungeon. Defaults to null.</param>
+    /// <param name="difficulty">The difficulty level for this run. Defaults to Normal.</param>
     /// <exception cref="ArgumentNullException">Thrown when either <paramref name="player"/> or <paramref name="currentRoom"/> is <see langword="null"/>.</exception>
-    public GameState(Player player, Room currentRoom, int currentFloor = 1, int? seed = null)
+    public GameState(Player player, Room currentRoom, int currentFloor = 1, int? seed = null, Difficulty difficulty = Difficulty.Normal)
     {
         Player = player ?? throw new ArgumentNullException(nameof(player));
         CurrentRoom = currentRoom ?? throw new ArgumentNullException(nameof(currentRoom));
         CurrentFloor = currentFloor;
         Seed = seed;
+        Difficulty = difficulty;
     }
 }
 
@@ -328,6 +336,9 @@ internal class SaveData
 
     /// <summary>The seed used to generate the dungeon, or null if no seed was specified.</summary>
     public int? Seed { get; init; }
+
+    /// <summary>The difficulty level selected when this run was started.</summary>
+    public Difficulty Difficulty { get; init; } = Difficulty.Normal;
 
     /// <summary>Save format version. 0 = pre-v3 legacy save; 1 = v3+.</summary>
     [System.Text.Json.Serialization.JsonPropertyName("version")]
@@ -369,6 +380,9 @@ internal class RoomSaveData
     /// <summary>The trap variant for TrapRoom rooms, or null if none.</summary>
     [System.Text.Json.Serialization.JsonConverter(typeof(System.Text.Json.Serialization.JsonStringEnumConverter))]
     public TrapVariant? Trap { get; init; }
+
+    /// <summary>The narrative state of the room (Fresh, Cleared, Revisited).</summary>
+    public RoomState State { get; init; } = RoomState.Fresh;
 
     /// <summary>
     /// Persisted combat flags for a <see cref="Dungnz.Systems.Enemies.DungeonBoss"/>.

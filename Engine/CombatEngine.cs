@@ -28,6 +28,9 @@ public class CombatEngine : ICombatEngine
     private int _baseEliteDefense;
     private int _shamanHealCooldown;
     private int _combatTurn;
+
+    /// <summary>The current dungeon floor, used for loot scaling. Set by the caller before combat.</summary>
+    public int DungeonFloor { get; set; } = 1;
     private bool _undyingWillUsed;
     private string? _pendingAchievement;
     private const int MaxLevel = 20; // Fix #183
@@ -744,7 +747,7 @@ public class CombatEngine : ICombatEngine
                     _display.ShowCombatMessage($"The {enemy.Name}'s thick hide absorbs some of the blow!");
             }
 
-            var isCrit = RollCrit();
+            var isCrit = RollCrit(player);
             if (isCrit)
             {
                 playerDmg *= 2;
@@ -802,8 +805,18 @@ public class CombatEngine : ICombatEngine
                 _display.ShowColoredCombatMessage($"✨ Holy damage — +{(int)(player.HolyDamageVsUndead * 100)}% vs undead!", ColorCodes.Yellow);
             }
             playerDmg = Math.Max(1, (int)(playerDmg * _difficulty.PlayerDamageMultiplier));
-            enemy.HP -= playerDmg;
+            enemy.HP = Math.Max(0, enemy.HP - playerDmg);
             _stats.DamageDealt += playerDmg;
+
+            // HPOnHit: heal player for aggregate equipped-item HP-on-hit value
+            int hpOnHit = (int)((player.EquippedWeapon?.HPOnHit ?? 0)
+                        + (player.EquippedAccessory?.HPOnHit ?? 0)
+                        + player.AllEquippedArmor.Sum(a => a.HPOnHit));
+            if (hpOnHit > 0 && player.HP < player.MaxHP)
+            {
+                player.Heal(hpOnHit);
+                _display.ShowColoredCombatMessage($"💚 HP on Hit: +{hpOnHit} HP", ColorCodes.Green);
+            }
 
             // Fix #542: physical damage breaks Freeze
             _statusEffects.NotifyPhysicalDamage(enemy);
@@ -1065,7 +1078,7 @@ public class CombatEngine : ICombatEngine
         }
         else
         {
-            var playerEffDef = player.Defense + _statusEffects.GetStatModifier(player, "Defense"); // Fix #197: +50% DEF from Fortified via stat modifier system
+            var playerEffDef = player.Defense + player.SetBonusDefense + _statusEffects.GetStatModifier(player, "Defense"); // Fix #197: +50% DEF from Fortified via stat modifier system
 
             // FrostWyvern: every 3rd attack is Frost Breath (ignores DEF, applies Slow)
             enemy.AttackCount++;
@@ -1219,7 +1232,7 @@ public class CombatEngine : ICombatEngine
                 {
                     // Shield breaks, take remaining as HP damage
                     var remainingDamage = enemyDmgFinal - (int)(player.Mana / 1.5f);
-                    player.Mana = 0;
+                    player.DrainMana(player.Mana);
                     player.IsManaShieldActive = false;
                     enemyDmgFinal = Math.Max(1, remainingDamage);
                     _display.ShowCombatMessage("Your mana shield shatters!");
@@ -1275,7 +1288,7 @@ public class CombatEngine : ICombatEngine
                 int reflected = (int)Math.Round(enemyDmgFinal * player.DamageReflectPercent);
                 if (reflected > 0 && enemy.HP > 0)
                 {
-                    enemy.HP -= reflected;
+                    enemy.HP = Math.Max(0, enemy.HP - reflected);
                     _display.ShowColoredCombatMessage($"[Ironclad] Reflected {reflected} damage!", ColorCodes.BrightCyan);
                 }
             }
@@ -1283,7 +1296,7 @@ public class CombatEngine : ICombatEngine
             // ── Passive effects: on player take damage ──────────────────────
             int reflectDamage = _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerTakeDamage, enemy, enemyDmgFinal);
             if (reflectDamage > 0 && enemy.HP > 0)
-                enemy.HP -= reflectDamage;
+                enemy.HP = Math.Max(0, enemy.HP - reflectDamage);
 
 
             // ── survive-at-one / phoenix-revive intercept ───────────────────
@@ -1321,8 +1334,7 @@ public class CombatEngine : ICombatEngine
             // ManaLeech: drain player mana on hit
             if (enemy.ManaDrainPerHit > 0)
             {
-                int drained = Math.Min(player.Mana, enemy.ManaDrainPerHit);
-                player.Mana -= drained;
+                int drained = player.DrainMana(enemy.ManaDrainPerHit);
                 if (drained > 0)
                     _display.ShowCombatMessage($"The {enemy.Name} drains {drained} mana from you!");
             }
@@ -1356,6 +1368,7 @@ public class CombatEngine : ICombatEngine
                 // GoblinWarchief: deal 10 bonus damage + narrative message
                 int reinforceDmg = Math.Max(1, 10 - player.Defense);
                 player.TakeDamage(reinforceDmg);
+                _stats.DamageTaken += reinforceDmg;
                 _display.ShowCombatMessage($"Goblin reinforcements swarm you for {reinforceDmg} damage!");
                 break;
 
@@ -1379,11 +1392,10 @@ public class CombatEngine : ICombatEngine
 
             case "BloodDrain":
                 // CrimsonVampire: drain 10 MP from player, heal boss 15 HP
-                int drained = Math.Min(player.Mana, 10);
-                player.Mana = Math.Max(0, player.Mana - 10);
+                int drainedMp = player.DrainMana(10);
                 int vampHeal = Math.Min(15, boss.MaxHP - boss.HP);
                 boss.HP = Math.Min(boss.MaxHP, boss.HP + 15);
-                _display.ShowCombatMessage($"The {boss.Name} drains {drained} MP and heals {vampHeal} HP!");
+                _display.ShowCombatMessage($"The {boss.Name} drains {drainedMp} MP and heals {vampHeal} HP!");
                 break;
 
             case "DeathShroud":
@@ -1399,6 +1411,7 @@ public class CombatEngine : ICombatEngine
                 {
                     int tentDmg = Math.Max(1, (int)(boss.Attack * 0.4f) - player.Defense);
                     player.TakeDamage(tentDmg);
+                    _stats.DamageTaken += tentDmg;
                     _display.ShowCombatMessage(ColorizeDamage($"A tentacle lashes you for {tentDmg} damage!", tentDmg));
                     if (player.HP <= 0) break;
                 }
@@ -1408,6 +1421,7 @@ public class CombatEngine : ICombatEngine
                 // AbyssalLeviathan: periodic 150% ATK slam + Slow (every 3rd turn from TurnActions table)
                 int slamDmg = Math.Max(1, (int)(boss.Attack * 1.5f) - player.Defense);
                 player.TakeDamage(slamDmg);
+                _stats.DamageTaken += slamDmg;
                 _statusEffects.Apply(player, StatusEffect.Slow, 2);
                 _display.ShowCombatMessage(ColorizeDamage($"⚡ The Leviathan erupts with a Tidal Slam! {slamDmg} damage + Slow!", slamDmg));
                 break;
@@ -1426,7 +1440,7 @@ public class CombatEngine : ICombatEngine
         foreach (var minion in player.ActiveMinions.Where(m => m.HP > 0).ToList())
         {
             var dmg = Math.Max(1, minion.ATK - enemy.Defense);
-            enemy.HP -= dmg;
+            enemy.HP = Math.Max(0, enemy.HP - dmg);
             _stats.DamageDealt += dmg;
             var minionMsg = minion.AttackFlavorText.Replace("{dmg}", dmg.ToString());
             _display.ShowCombatMessage(ColorizeDamage($"{minionMsg}", dmg));
@@ -1443,7 +1457,7 @@ public class CombatEngine : ICombatEngine
         trap.TriggerCount++;
         player.TrapTriggeredThisCombat = true;
         var dmg = Math.Max(1, (int)(player.Attack * trap.DamagePercent));
-        enemy.HP -= dmg;
+        enemy.HP = Math.Max(0, enemy.HP - dmg);
         _stats.DamageDealt += dmg;
         var flavorMsg = trap.FlavorText.Replace("{dmg}", dmg.ToString());
         _display.ShowCombatMessage(ColorizeDamage(flavorMsg, dmg));
@@ -1473,16 +1487,16 @@ public class CombatEngine : ICombatEngine
     {
         player.LastKilledEnemyHp = enemy.MaxHP;
 
-        // Soul Harvest (Necromancer passive) — gain 2 max mana on each enemy kill
-        if (player.Class == PlayerClass.Necromancer)
+        // Soul Harvest (Necromancer passive) — gain 2 max mana on each enemy kill (capped at 80)
+        if (player.Class == PlayerClass.Necromancer && player.MaxMana < 80)
         {
-            player.MaxMana += 2;
+            player.MaxMana = Math.Min(player.MaxMana + 2, 80);
             player.Mana = Math.Min(player.Mana + 2, player.MaxMana);
         }
 
         if (enemy.LootTable != null)
         {
-        var loot = enemy.LootTable.RollDrop(enemy, player.Level, lootDropMultiplier: _difficulty.LootDropMultiplier);
+        var loot = enemy.LootTable.RollDrop(enemy, player.Level, isBossRoom: enemy is DungeonBoss, dungeonFloor: DungeonFloor, lootDropMultiplier: _difficulty.LootDropMultiplier);
         if (loot.Gold > 0)
         {
             var scaledGold = (int)(loot.Gold * _difficulty.GoldMultiplier);
@@ -1629,7 +1643,8 @@ public class CombatEngine : ICombatEngine
         // Bug #85: add flat equipment and class bonuses on top of DEF-based chance
         float dodgeChance = player.Defense / (player.Defense + 20f)
                           + player.DodgeBonus
-                          + player.ClassDodgeBonus;
+                          + player.ClassDodgeBonus
+                          + player.SetBonusDodge;
         // Bug #86: Swiftness skill passive — +5% dodge chance
         if (player.Skills.IsUnlocked(Skill.Swiftness))
             dodgeChance += 0.05f;
@@ -1643,9 +1658,17 @@ public class CombatEngine : ICombatEngine
         return _rng.NextDouble() < dodgeChance;
     }
     
-    private bool RollCrit()
+    private bool RollCrit(Player? player = null)
     {
-        return _rng.NextDouble() < 0.15;
+        float baseCrit = 0.15f;
+        if (player != null)
+        {
+            float bonus = (player.EquippedWeapon?.CritChance ?? 0)
+                        + (player.EquippedAccessory?.CritChance ?? 0)
+                        + player.AllEquippedArmor.Sum(a => a.CritChance);
+            baseCrit += bonus;
+        }
+        return _rng.NextDouble() < baseCrit;
     }
 
     /// <summary>Returns true when any of the player's equipped items has the given passive effect id.</summary>

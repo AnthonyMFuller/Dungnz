@@ -6,6 +6,8 @@ using Dungnz.Systems;
 // Temporary stub — replaced when Barton delivers CombatEngine
 internal class StubCombatEngine : ICombatEngine
 {
+    public int DungeonFloor { get; set; } = 1;
+
     public CombatResult RunCombat(Player player, Enemy enemy, RunStats? stats = null)
     {
         // Instant win for testing until real combat is wired

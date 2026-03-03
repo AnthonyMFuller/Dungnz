@@ -443,7 +443,7 @@ public class AbilityManager
                         baseDmg = (int)(baseDmg * 1.25);
                         player.OverchargeUsedThisTurn = true;
                     }
-                    var meteorDamage = Math.Max(1, baseDmg);
+                    var meteorDamage = Math.Max(1, baseDmg - enemy.Defense / 4);
                     enemy.HP = Math.Max(0, enemy.HP - meteorDamage);
                     
                     // Check for execute

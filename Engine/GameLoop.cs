@@ -22,6 +22,7 @@ public class GameLoop
     private readonly GameEvents? _events;
     private int? _seed;
     private readonly DifficultySettings _difficulty;
+    private Difficulty _difficultyLevel = Difficulty.Normal;
     private Player _player = null!;
     private Room _currentRoom = null!;
     private RunStats _stats = null!;
@@ -157,6 +158,9 @@ public class GameLoop
         _runStart = DateTime.UtcNow;
         _rng = _seed.HasValue ? new Random(_seed.Value) : new Random();
         _currentFloor = 1;
+        _difficultyLevel = _difficulty.EnemyStatMultiplier < 1.0f ? Difficulty.Casual
+                         : _difficulty.EnemyStatMultiplier > 1.0f ? Difficulty.Hard
+                         : Difficulty.Normal;
         _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
         _display.ShowMessage($"Floor {_currentFloor}");
         _display.ShowRoom(_currentRoom);
@@ -179,6 +183,7 @@ public class GameLoop
         _currentRoom = state.CurrentRoom;
         _currentFloor = state.CurrentFloor;
         _seed = state.Seed;
+        _difficultyLevel = state.Difficulty;
         _stats = new RunStats();
         _sessionStats = new SessionStats();
         _runStart = DateTime.UtcNow;
@@ -210,6 +215,7 @@ public class GameLoop
             Achievements        = _achievements,
             AllItems            = _allItems,
             Difficulty          = _difficulty,
+            DifficultyLevel     = _difficultyLevel,
             Logger              = _logger,
             Events              = _events,
             Navigator           = _navigator,
@@ -226,6 +232,8 @@ public class GameLoop
             HandlePetrifiedLibrary = () => { _currentRoom = _context.CurrentRoom; HandlePetrifiedLibrary(); },
             HandleTrapRoom      = () => { _currentRoom = _context.CurrentRoom; HandleTrapRoom(); },
         };
+
+        _combat.DungeonFloor = _currentFloor;
     }
 
     private void RunLoop()
@@ -255,6 +263,7 @@ public class GameLoop
             _player        = _context.Player;
             _currentRoom   = _context.CurrentRoom;
             _currentFloor  = _context.CurrentFloor;
+            _combat.DungeonFloor = _currentFloor;
             _seed          = _context.Seed;
             _runStart      = _context.RunStart;
             _rng           = _context.Rng;
