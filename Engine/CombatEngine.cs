@@ -341,10 +341,10 @@ public class CombatEngine : ICombatEngine
             // Reset per-turn Overcharge flag so the passive can trigger at most once per turn (#923)
             player.OverchargeUsedThisTurn = false;
 
-            // Periodic damage bonus from equipped affixes (e.g. "of Storms")
-            if (player.PeriodicDmgBonus > 0 && enemy.HP > 0)
+            // Periodic damage bonus from equipped affixes (e.g. "of Storms") — procs every 3 turns (#927)
+            if (player.PeriodicDmgBonus > 0 && enemy.HP > 0 && _combatTurn % 3 == 1)
             {
-                enemy.HP -= player.PeriodicDmgBonus;
+                enemy.HP = Math.Max(0, enemy.HP - player.PeriodicDmgBonus);
                 _display.ShowColoredCombatMessage($"⚡ Periodic damage — {player.PeriodicDmgBonus} arcane damage sears {enemy.Name}!", ColorCodes.BrightRed);
             }
 
