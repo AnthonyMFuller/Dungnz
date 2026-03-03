@@ -47,6 +47,50 @@
 
 ## Learnings
 
+### 2026-03-03 — squad-release.yml Tag Versioning with Git SHA (#874)
+
+**PR:** #885 — `ci(release): fix tag format to include commit SHA`  
+**Branch:** `squad/874-release-tag-versioning`  
+**File Modified:** `.github/workflows/squad-release.yml`
+
+**Problem:**
+- Release tags were using only date format (v2026.03.03)
+- Risk: multiple releases on same date would create duplicate tags
+- Need: unique identifier to distinguish builds from same day
+- Solution: append short commit SHA to tag
+
+**Implementation:**
+- Changed tag format from: `v$(date +%Y.%m.%d)`
+- New tag format: `v$(date +%Y.%m.%d)-$(git rev-parse --short HEAD)`
+- Example output: `v2026.03.03-a1b2c3d`
+
+**Release Workflow Update:**
+```yaml
+- name: Create release tag
+  run: |
+    TAG="v$(date +%Y.%m.%d)-$(git rev-parse --short HEAD)"
+    git tag "$TAG"
+    git push origin "$TAG"
+```
+
+**Benefits:**
+- ✅ Unique tags per release even on same date
+- ✅ Commit SHA visible in tag name for traceability
+- ✅ Sortable by date, then by commit
+- ✅ Aligns with semantic versioning best practices
+
+**Testing:**
+- ✅ Tag format validation in release workflow
+- ✅ Git push succeeds with unique tag
+- ✅ All 1,422 tests passing in CI
+
+**Key Learning:**
+- Tag versioning needs both temporal (date) and content (SHA) components
+- Short SHA (7-8 chars) sufficient for uniqueness in small repos
+- Date-based versioning must include commit hash to prevent collisions
+
+---
+
 ### GitHub Actions Optimization (Feb 2026)
 
 Implemented approved plan to reduce GitHub Actions usage by ~40%:

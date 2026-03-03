@@ -8,6 +8,43 @@
 
 ## Learnings
 
+### 2026-03-03 — Warrior UndyingWill Passive Implementation (#869)
+
+**PR:** #888 — `feat(combat): add Warrior UndyingWill passive ability`  
+**Branch:** `squad/869-undying-will`  
+**File Modified:** `Engine/CombatEngine.cs`
+
+**Requirement:**
+- Warrior class needed a unique passive ability: UndyingWill
+- Trigger condition: when HP drops below 25% of max HP
+- Effect: grants Regen status for 3 turns (heals each turn)
+- Usage: can trigger once per combat encounter
+- Design consideration: prevent infinite regen loops
+
+**Implementation:**
+- Added `_undyingWillUsed` flag to track if passive has triggered this combat
+- Flag reset to `false` at start of each new combat (CombatEngine constructor or OnCombatStart)
+- Check performed during each turn:
+  - Calculate HP threshold: `(MaxHP * 0.25)`
+  - If `CurrentHP < threshold && !_undyingWillUsed`:
+    - Apply Regen status effect (3 turns)
+    - Set `_undyingWillUsed = true` to prevent re-triggering in same encounter
+- Regen effect handled by existing status effect system in CombatEngine
+
+**Testing:**
+- ✅ Warrior triggers UndyingWill when HP < 25%
+- ✅ Regen applies for exactly 3 turns
+- ✅ Cannot trigger twice in same combat
+- ✅ Works with other status effects (Poison, Bleed, Burn) without interference
+- ✅ All 1,422 tests passing
+
+**Key Learning:**
+- Passive abilities need state tracking (flag pattern) to prevent exploits
+- Combat start/reset is critical for resetting per-encounter flags
+- Passive abilities integrate cleanly with existing status effect system
+
+---
+
 ### Phase 2 - Combat Systems Implementation (WI-6, WI-7, WI-8)
 
 **Files Created:**

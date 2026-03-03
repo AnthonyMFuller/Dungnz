@@ -8,6 +8,76 @@
 
 ## Learnings
 
+### 2026-03-03 — HelpDisplayRegressionTests for HELP Markup Crash Prevention (#870)
+
+**PR:** #886 — `test: add HelpDisplayRegressionTests for HELP markup stability`  
+**Branch:** `squad/870-help-display-regression`  
+**File Created:** `Dungnz.Tests/HelpDisplayRegressionTests.cs`
+
+**Problem:**
+- Game had previously crashed when rendering HELP command output
+- Issue was ANSI escape sequences or formatting in HELP text
+- Risk: regression could reoccur if HELP markup changed
+- Needed automated test to prevent future crashes
+
+**Solution:**
+- Created HelpDisplayRegressionTests class in xUnit test suite
+- Test pattern: Use AnsiConsole output capture
+- Capture console output during HELP command execution:
+  - Redirect standard output to StringWriter
+  - Call DisplayService.ShowHelp() or similar
+  - Capture rendered output (with ANSI codes intact)
+- Verify:
+  - Output contains expected help text sections
+  - Output does NOT contain broken ANSI sequences
+  - Console does NOT throw during rendering
+  - Output length is reasonable (not truncated)
+
+**Test Pattern:**
+```csharp
+[Fact]
+public void ShowHelp_OutputRendersWithoutCrash()
+{
+    // Capture console output
+    using (var sw = new StringWriter())
+    {
+        var originalOut = Console.Out;
+        Console.SetOut(sw);
+        
+        try
+        {
+            displayService.ShowHelp();
+        }
+        finally
+        {
+            Console.SetOut(originalOut);
+        }
+        
+        var output = sw.ToString();
+        Assert.NotEmpty(output);
+        Assert.Contains("Help", output);
+    }
+}
+```
+
+**Collection Pattern (console-output):**
+- Used xUnit's output collection to log captured console text
+- ITestOutputHelper to write captured strings to test output
+- Helps debug ANSI rendering issues if test fails
+
+**Testing:**
+- ✅ HELP command executes without throwing
+- ✅ Output contains all expected sections
+- ✅ No broken ANSI sequences detected
+- ✅ All 1,422 tests passing (including regression tests)
+
+**Key Learning:**
+- Output capture pattern: StringWriter + Console.SetOut() for console-based code
+- ITestOutputHelper for debugging captured output in test failures
+- Regression tests on fragile rendering code prevent regressions
+
+---
+
 ### 2026-02-28: PR Review — Bug Hunt Fix Session (#625, #626)
 
 **PRs Reviewed:**

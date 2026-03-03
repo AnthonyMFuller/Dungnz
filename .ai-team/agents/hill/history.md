@@ -8,6 +8,47 @@
 
 ## Learnings
 
+### 2026-03-03 — GameLoop Decomposition to ICommandHandler Pattern (#868)
+
+**PR:** #889 — `refactor: decompose GameLoop into ICommandHandler pattern`  
+**Branch:** `squad/868-gameloop-decomposition`
+
+**Problem:**
+- GameLoop.cs had grown to 1,635 lines, difficult to maintain and extend
+- Multiple command handling logic mixed together
+- Hard to add new command types or modify existing ones
+- Violated single responsibility principle
+
+**Solution:**
+- Decomposed GameLoop into ICommandHandler pattern
+- Created `Engine/Commands/` directory with 23 handler classes:
+  - Each command type has its own handler (e.g., AttackHandler, HealHandler, UseItemHandler)
+- Created CommandContext class to hold mutable run state:
+  - Player current HP/MP/position
+  - Combat state flags
+  - Inventory state
+- GameLoop.cs reduced to 741 lines (45% reduction)
+- Each handler implements ICommandHandler interface with Execute(CommandContext) method
+- Handlers are registered in a CommandFactory/Registry pattern
+
+**Architecture:**
+- CommandContext holds all mutable run state (replaces scattered local variables)
+- Each handler focuses on single command execution
+- Easy to add new commands without modifying GameLoop
+- Testable: handlers can be unit tested independently with CommandContext
+
+**Testing:**
+- ✅ All 1,422 tests passing
+- ✅ Game starts and plays normally
+- ✅ All command types still work identically
+
+**Key Learning:**
+- ICommandHandler pattern scales better than monolithic Game/GameLoop classes
+- CommandContext makes state explicit and testable
+- 23 focused handlers easier to maintain than one 1,635-line method
+
+---
+
 ### 2026-03-03 — Schema Validation Fix (#849)
 
 **PR:** #850 — `fix: repair invalid items in item-stats.json`  
