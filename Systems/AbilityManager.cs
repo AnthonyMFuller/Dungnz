@@ -356,9 +356,8 @@ public class AbilityManager
                     var recklessDamage = Math.Max(1, (int)(player.Attack * 2.5) - effectiveEnemyDef);
                     enemy.HP = Math.Max(0, enemy.HP - recklessDamage);
                     
-                    var selfDamage = Math.Max(1, (int)(player.MaxHP * 0.1));
-                    if (player.HP - selfDamage < 1)
-                        selfDamage = player.HP - 1;
+                    // Self-damage is always 10% MaxHP but is clamped so it cannot kill the player.
+                    var selfDamage = Math.Clamp((int)(player.MaxHP * 0.1), 1, Math.Max(0, player.HP - 1));
                     player.TakeDamage(selfDamage);
                     
                     display.ShowCombatMessage($"You throw caution aside and swing with everything! ({recklessDamage} damage, {selfDamage} self-damage)");
