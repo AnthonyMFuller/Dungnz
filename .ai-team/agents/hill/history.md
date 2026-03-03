@@ -1517,3 +1517,54 @@ Pre-push hook required README update due to Engine/ changes — addressed by upd
 ### Coordination Note
 
 Romanoff already implemented unit tests on branch `squad/846-inspect-compare-tests` (commit `9759491`). This implementation branch (`squad/844-845-846-inspect-compare`) contains only production code. Tests will merge separately to avoid conflicts.
+
+---
+
+# P1 Reliability Bug Sprint — 2026-03-04
+
+**Issues:** #932, #937, #939, #941, #964
+**PRs Opened:** #973 (AddXP overflow), #974 (empty room pool), #976 (LootTable typo)
+
+## Summary
+
+Worked five P1 structural/reliability issues in order. Two were already fixed in the codebase; three required minimal targeted fixes.
+
+## Issue #932 — FirstOrDefault unchecked (ALREADY FIXED)
+
+Audited all five command handlers (Compare, Craft, Examine, Use, Take) plus InventoryManager, EquipmentManager, CombatEngine, and StatusEffectManager. Every `FirstOrDefault` result was already followed by a null check before use. Closed with comment.
+
+## Issue #937 — DungeonGenerator bounds check (ALREADY FIXED)
+
+DungeonGenerator.cs lines 195–205 already have `specialIdx < eligibleRooms.Count` guards on every special-room assignment. The fix was in place before this sprint. Closed with comment.
+
+## Issue #939 — AddXP int overflow risk → PR #973
+
+**Branch:** `squad/939-addxp-overflow-guard`
+**File:** `Models/PlayerStats.cs`
+
+`XP += amount` with no overflow cap. On a very long run, XP near `int.MaxValue` would silently wrap to a negative value, breaking level-up comparisons.
+
+**Fix:** `XP = (int)Math.Min((long)XP + amount, int.MaxValue);` — widened to long for the addition, then clamped and cast back. XML doc updated.
+
+## Issue #941 — Empty room description pool → PR #974
+
+**Branch:** `squad/941-empty-room-description-guard`
+**File:** `Engine/DungeonGenerator.cs`
+
+`roomPool[_rng.Next(roomPool.Length)]` throws `ArgumentOutOfRangeException` when `roomPool.Length == 0` (e.g. unrecognised floor).
+
+**Fix:** `roomPool.Length > 0 ? roomPool[_rng.Next(roomPool.Length)] : string.Empty`
+
+## Issue #964 — LootTable parameter typo → PR #976
+
+**Branch:** `squad/964-loot-table-typo-fix`
+**Files:** `Models/LootTable.cs`, `Dungnz.Tests/LootTableAdditionalTests.cs`
+
+Parameter was spelled `dungeoonFloor` (double 'o') in signature, XML doc, and method body. Tests used the named argument so also needed updating.
+
+**Fix:** Renamed parameter to `dungeonFloor` in signature, XML doc `<param>`, three body references, and five test named-argument call sites.
+
+## Build & Test
+
+`dotnet build --nologo` — 0 errors on all branches.
+`dotnet test --nologo -q` — 1430/1430 passed on all branches.
