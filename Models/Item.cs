@@ -151,6 +151,36 @@ public class Item
     public string? PassiveEffectId { get; set; }
 
     /// <summary>
+    /// Gets or sets the flat amount by which enemy defense is reduced during damage calculation
+    /// while this item is equipped (e.g. <c>3</c> reduces enemy DEF by 3 for the player's attacks).
+    /// </summary>
+    public int EnemyDefReduction { get; set; }
+
+    /// <summary>
+    /// Gets or sets the damage multiplier bonus applied against undead enemies while this item
+    /// is equipped (e.g. <c>0.20</c> = +20% damage vs undead).
+    /// </summary>
+    public float HolyDamageVsUndead { get; set; }
+
+    /// <summary>
+    /// Gets or sets the flat chance to block incoming enemy attacks entirely while this item is
+    /// equipped, expressed as a fraction in [0, 1] (e.g. <c>0.10</c> = 10% block chance).
+    /// </summary>
+    public float BlockChanceBonus { get; set; }
+
+    /// <summary>
+    /// Gets or sets whether this item grants the phoenix-revive passive an additional charge per run,
+    /// allowing the player to survive lethal damage a second time.
+    /// </summary>
+    public bool ReviveCooldownBonus { get; set; }
+
+    /// <summary>
+    /// Gets or sets the bonus periodic damage dealt to the enemy at the start of each combat turn
+    /// while this item is equipped.
+    /// </summary>
+    public int PeriodicDmgBonus { get; set; }
+
+    /// <summary>
     /// Creates a shallow copy of this item with all properties duplicated. Used when adding
     /// crafted items to inventory to avoid sharing references.
     /// </summary>

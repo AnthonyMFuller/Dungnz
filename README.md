@@ -367,7 +367,7 @@ Shop rooms contain a **Merchant** (`shop` command). Floor 1–5 stock staples (H
 119 items are available across **five tiers**: Common, Uncommon, Rare, Epic, and **Legendary**.
 
 - **Legendaries** (14 items) carry unique passive effects — e.g. *Aegis of the Immortal* (survive at 1 HP once per combat), *Ironheart Plate* (reflect 25% damage), *Lifedrinker* (vampiric strike on hit).
-- **Uncommon+** items have a ~10% chance per affix slot to roll a **Prefix** or **Suffix**, adding bonus stats (e.g. "Keen Iron Sword", "Iron Sword of the Bear").
+- **Uncommon+** items have a ~10% chance per affix slot to roll a **Prefix** or **Suffix**, adding bonus stats (e.g. "Keen Iron Sword", "Iron Sword of the Bear").  Available affix bonuses include: ATK/DEF/HP/Mana flat bonuses, dodge/crit chance, HP-on-hit, on-hit Bleed, enemy DEF reduction, holy damage vs undead, block chance, phoenix revive extra charge, and per-turn periodic damage.
 - **Equipment sets** (Shadowstalker, Ironclad, Arcanist) grant cumulative bonuses for 2- and 3-piece combinations — checked automatically on equip/unequip.
 - Many items carry **Class Restrictions** (e.g. Warrior-only, Mage/Necromancer only).
 
