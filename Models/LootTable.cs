@@ -160,10 +160,10 @@ public class LootTable
     /// <param name="enemy">The defeated enemy, used to check <see cref="Enemy.IsElite"/> for tier escalation.</param>
     /// <param name="playerLevel">The player's current level, used to select the appropriate item tier pool.</param>
     /// <param name="isBossRoom">When <see langword="true"/>, guarantees a Legendary drop from the boss pool.</param>
-    /// <param name="dungeoonFloor">Current dungeon floor (1-8); floors 6-8 have a 5% Legendary chance.</param>
+    /// <param name="dungeonFloor">Current dungeon floor (1-8); floors 6-8 have a 5% Legendary chance.</param>
     /// <param name="lootDropMultiplier">Multiplier applied to drop chances (from DifficultySettings).</param>
     /// <returns>A <see cref="LootResult"/> containing the optional item drop and the gold amount.</returns>
-    public LootResult RollDrop(Enemy enemy, int playerLevel = 1, bool isBossRoom = false, int dungeoonFloor = 1, float lootDropMultiplier = 1.0f)
+    public LootResult RollDrop(Enemy enemy, int playerLevel = 1, bool isBossRoom = false, int dungeonFloor = 1, float lootDropMultiplier = 1.0f)
     {
         int gold = _minGold == _maxGold ? _minGold : _rng.Next(_minGold, _maxGold + 1);
 
@@ -184,15 +184,15 @@ public class LootTable
 
         // Floors 5-8: Epic drop chance (8% on floors 5-6, 15% on floors 7-8)
         var epicPool = _sharedEpic ?? FallbackEpic;
-        if (dropped == null && dungeoonFloor >= 5 && epicPool.Count > 0)
+        if (dropped == null && dungeonFloor >= 5 && epicPool.Count > 0)
         {
-            double epicChance = dungeoonFloor >= 7 ? 0.15 : 0.08;
+            double epicChance = dungeonFloor >= 7 ? 0.15 : 0.08;
             if (_rng.NextDouble() < epicChance)
                 dropped = epicPool[_rng.Next(epicPool.Count)].Clone();
         }
 
         // Floors 6-8: 5% Legendary chance
-        if (dropped == null && dungeoonFloor >= 6 && legendaryPool.Count > 0 && _rng.NextDouble() < 0.05)
+        if (dropped == null && dungeonFloor >= 6 && legendaryPool.Count > 0 && _rng.NextDouble() < 0.05)
         {
             dropped = legendaryPool[_rng.Next(legendaryPool.Count)].Clone();
         }
