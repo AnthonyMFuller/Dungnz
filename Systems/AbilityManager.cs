@@ -368,7 +368,7 @@ public class AbilityManager
             case AbilityType.LastStand:
                 {
                     var threshold = player.GetLastStandThreshold();
-                    if (player.HP > player.MaxHP * threshold)
+                    if (player.HP >= player.MaxHP * threshold)
                     {
                         display.ShowCombatMessage("You must be gravely wounded to use Last Stand!");
                         player.RestoreMana(effectiveCost); // refund mana
