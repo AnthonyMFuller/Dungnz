@@ -1269,7 +1269,7 @@ public class CombatEngine : ICombatEngine
                 else
                 {
                     // Shield breaks, take remaining as HP damage
-                    var remainingDamage = enemyDmgFinal - (player.Mana * 2 / 3); // reverse calculation
+                    var remainingDamage = enemyDmgFinal - (int)(player.Mana / 1.5f);
                     player.Mana = 0;
                     player.IsManaShieldActive = false;
                     enemyDmgFinal = Math.Max(1, remainingDamage);
