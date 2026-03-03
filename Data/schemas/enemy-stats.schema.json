@@ -13,7 +13,8 @@
       "XPValue":  { "type": "integer", "minimum": 0 },
       "MinGold":  { "type": "integer", "minimum": 0 },
       "MaxGold":  { "type": "integer", "minimum": 0 },
-      "AsciiArt": { "type": "array", "items": { "type": "string" } }
+      "AsciiArt": { "type": "array", "items": { "type": "string" } },
+      "Lore":     { "type": "string", "minLength": 1 }
     }
   }
 }
