@@ -75,7 +75,7 @@ public class DungeonGenerator
             {
                 grid[y, x] = new Room
                 {
-                    Description = roomPool[_rng.Next(roomPool.Length)]
+                    Description = roomPool.Length > 0 ? roomPool[_rng.Next(roomPool.Length)] : string.Empty
                 };
             }
         }
