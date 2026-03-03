@@ -58,7 +58,7 @@ public static class PrestigeSystem
             var data = JsonSerializer.Deserialize<PrestigeData>(json) ?? new PrestigeData();
             if (data.Version != 1)
             {
-                Console.WriteLine($"[PrestigeSystem] Warning: prestige file version {data.Version} is unexpected. Resetting to defaults.");
+                System.Diagnostics.Trace.TraceWarning($"[PrestigeSystem] prestige file version {data.Version} is unexpected. Resetting to defaults.");
                 return new PrestigeData();
             }
             return data;
