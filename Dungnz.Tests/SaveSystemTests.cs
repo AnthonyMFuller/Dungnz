@@ -5,6 +5,7 @@ using Xunit;
 
 namespace Dungnz.Tests;
 
+[Collection("save-system")]
 public class SaveSystemTests : IDisposable
 {
     private readonly string _saveDir;
