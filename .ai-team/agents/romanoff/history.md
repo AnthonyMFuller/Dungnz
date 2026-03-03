@@ -1080,3 +1080,83 @@ With `SelfHealCooldown=1` and check-first: fires on turn 2 (correct, matching as
 - **Active effects markup:** The `[[effect name t]]` pattern in ShowCombatStatus uses `Markup.Escape()` on the effect name and double brackets for the outer wrapper — verified no regressions.
 
 **Test Count:** 1422 baseline → 1430 with new tests (8 added)
+
+---
+
+### 2026-03-02 — Test File Naming Convention Proposed and Documented (#884)
+
+**Issue:** #884 — "test: Propose and document test file naming convention"  
+**Branch:** `squad/884-test-naming-convention`  
+**Deliverables:**
+- `Dungnz.Tests/TESTING.md` — Comprehensive convention documentation
+- `.ai-team/skills/test-naming-convention/SKILL.md` — Reusable team skill
+- `.ai-team/decisions/inbox/romanoff-test-naming.md` — Decision document
+
+**Problem:**
+- Test suite (97 files) uses inconsistent naming patterns
+- Navigation becomes harder as suite grows
+- Developers unclear when to create new test file vs. extend existing one
+
+**Inventory Findings:**
+- Total test files: 97
+- Root-level tests: 81 files (most named `{System}Tests.cs` correctly)
+- Nested tests: 6 files (Display/, Engine/, Architecture/, PropertyBased/, Snapshots/)
+- Helper files: 10 files (Builders/, Helpers/)
+- Naming patterns mostly consistent; only phase-based and vague names need attention
+
+**Proposed Convention:**
+
+1. **Primary Rule:** `{SystemUnderTest}Tests.cs` — Each test file tests exactly one system
+
+2. **Supplementary Suffixes:**
+   - Additional — Edge cases, extended scenarios
+   - Regression — Previously fixed bugs
+   - Coverage — Coverage gaps, branch testing
+   - Fuzzy — Property-based, generative tests
+   - Simulation — Statistical/balance tests
+
+3. **Directory Structure — Mirror Production:**
+   - Dungnz/Engine/ → Dungnz.Tests/Engine/
+   - Dungnz/Display/ → Dungnz.Tests/Display/
+   - Dungnz/Systems/ → Dungnz.Tests/Systems/ (when needed)
+   - Dungnz/Models/ → Dungnz.Tests/ (root; widely used)
+
+4. **xUnit Collections (No changes):**
+   - console-output, EnemyFactory, LootTableTests, PrestigeTests, save-system, RunStatsFileIO
+
+5. **Test Structure:** All tests use Arrange-Act-Assert pattern with naming `{Method}_{Scenario}_{ExpectedOutcome}`
+
+**Migration Strategy:**
+- Opportunistic, not big-bang: Files renamed during normal maintenance
+- Phase-based tests kept for now; rename later when feature matures
+- Vague names split when touched; don't force split immediately
+- Golden rule: No PR should have renaming as its only purpose
+- Adoption timeline: 6–12 months natural migration as code is maintained
+
+**Documentation Provided:**
+
+1. **TESTING.md** — Complete convention documentation
+   - Quick reference, detailed sections, inventory, migration plan, checklist
+2. **SKILL.md** — Reusable team skill
+   - Pattern reference, directory structure, collections, migration strategy, examples
+3. **Decision Document** — Formal decision record
+   - Problem, solution, impact analysis, success metrics
+
+**Key Findings:**
+1. Naming already mostly correct (81/97 files follow primary rule)
+2. Collections are well-designed; no changes needed
+3. Directory structure partially complete; can be added opportunistically
+4. Opportunity for clarification: Vague names and phase-based tests
+
+**Impact:**
+- Zero code changes (documentation only)
+- Zero test changes (all existing files keep current names)
+- Zero build impact (new markdown files)
+- Immediate adoption (new test files follow convention)
+- Gradual improvement (1–2 files per month opportunistically)
+
+**Test Suite Status:**
+- All 1,430 tests continue to pass
+- No test changes required
+- No collection changes required
+- Naming convention ready for immediate adoption
