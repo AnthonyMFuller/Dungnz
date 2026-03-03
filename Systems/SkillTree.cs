@@ -204,47 +204,47 @@ public class SkillTree
     /// <param name="skill">The skill to describe.</param>
     /// <returns>A string describing the skill's effect.</returns>
     public static string GetDescription(Skill skill) => skill switch {
-        Skill.PowerStrike => "+15% attack damage",
-        Skill.IronSkin => "+3 Defense (immediate)",
-        Skill.Swiftness => "+5% dodge chance",
-        Skill.ManaFlow => "+10 max mana, +5 mana/turn",
-        Skill.BattleHardened => "Take 5% less damage",
+        Skill.PowerStrike => "Your attacks deal 15% bonus damage on all hits.",
+        Skill.IronSkin => "Permanently increases your Defense by 3 when unlocked.",
+        Skill.Swiftness => "Increases your dodge chance by 5%.",
+        Skill.ManaFlow => "Increases MaxMana by 10 and grants 5 mana regeneration per turn.",
+        Skill.BattleHardened => "Reduces all incoming damage by 5%.",
 
         // Warrior passives
-        Skill.IronConstitution => "Years of being hit have made you hard to kill. (+15 MaxHP, +5% damage reduction)",
-        Skill.UndyingWill => "The body gives out. The will does not. (Regen when HP < 25%)",
-        Skill.BerserkersEdge => "The closer to death, the more dangerous you become. (+10% damage per 25% HP missing)",
-        Skill.Unbreakable => "When the odds are worst, you find another gear. (Last Stand at ≤50% HP)",
+        Skill.IronConstitution => "Increases MaxHP by 15 and reduces all incoming damage by 5%. Warriors who endure become harder to break.",
+        Skill.UndyingWill => "When HP drops below 25%, gain Regen status for 2 turns (once per combat). The body gives out. The will does not.",
+        Skill.BerserkersEdge => "Gain +10% damage for each 25% HP missing (stacks up to +40%). The closer to death, the more dangerous you become.",
+        Skill.Unbreakable => "Last Stand ability can be activated at ≤50% HP instead of 40%. When the odds are worst, you find another gear.",
 
         // Mage passives
-        Skill.ArcaneReservoir => "You've learned to hold more of the void inside you. (+20 MaxMana)",
-        Skill.SpellWeaver => "Magic bends to your will, not the other way around. (Spells cost 10% less mana)",
-        Skill.LeyConduit => "The dungeon's energy bleeds into you with every breath. (+5 mana regen/turn)",
-        Skill.Overcharge => "A full well casts the longest shadow. (+25% spell damage when mana > 80%)",
+        Skill.ArcaneReservoir => "Increases MaxMana by 20. You've learned to hold more of the void inside you.",
+        Skill.SpellWeaver => "All spells cost 10% less mana (rounded down, minimum 1). Magic bends to your will, not the other way around.",
+        Skill.LeyConduit => "Increases mana regeneration by 5 per turn. The dungeon's energy bleeds into you with every breath.",
+        Skill.Overcharge => "When mana is above 80% of maximum, all spell damage is increased by 25%. A full well casts the longest shadow.",
 
         // Rogue passives
-        Skill.QuickReflexes => "You've survived this long by moving first. (+5% dodge)",
-        Skill.Opportunist => "You never let an opening go to waste. (Backstab bonus on Poisoned enemies)",
-        Skill.Relentless => "Rest is for the dead. (Flurry/Assassinate cooldowns -1)",
-        Skill.ShadowMaster => "You were never really there. (Evade grants 2 Combo Points)",
+        Skill.QuickReflexes => "Increases dodge chance by 5%. You've survived this long by moving first.",
+        Skill.Opportunist => "Backstab bonus damage also triggers when target has Poison status (in addition to Slow/Stun/Bleed). You never let an opening go to waste.",
+        Skill.Relentless => "Flurry and Assassinate cooldowns are reduced by 1 turn. Rest is for the dead.",
+        Skill.ShadowMaster => "Evade grants 2 Combo Points instead of 1. You were never really there.",
 
         // Paladin passives
-        Skill.BlessedArmor => "Your armor is blessed with holy light. (+3 Defense)",
-        Skill.AuraOfProtection => "A holy aura shields you from harm. (5% damage reduction)",
-        Skill.HolyFervor => "Holy power surges through your strikes. (HolyStrike and Consecrate +15% damage)",
-        Skill.MartyrResolve => "The closer to death, the more righteous your wrath. (HP < 20%: ATK +20%, heals +25%)",
+        Skill.BlessedArmor => "Permanently increases Defense by 3 when unlocked. Your armor is blessed with holy light.",
+        Skill.AuraOfProtection => "Reduces all incoming damage by 5%. A holy aura shields you from harm.",
+        Skill.HolyFervor => "HolyStrike and Consecrate abilities deal 15% bonus damage. Holy power surges through your strikes.",
+        Skill.MartyrResolve => "When HP is below 20%: Attack is increased by 20% and all healing received is increased by 25%. The closer to death, the more righteous your wrath.",
 
         // Necromancer passives
-        Skill.UndyingServants => "Your servants refuse to truly die. (Minion HP +20%)",
-        Skill.VampiricTouch => "You drink deeply from your fallen foes. (LifeDrain heals +15% extra)",
-        Skill.MasterOfDeath => "Death itself bends to your will. (RaiseDead CD -1, minion ATK +10%)",
-        Skill.LichsBargain => "The lich offers power at a terrible price. (HP < 15%: free abilities for 1 turn)",
+        Skill.UndyingServants => "Raised minions have 20% more HP. Your servants refuse to truly die.",
+        Skill.VampiricTouch => "LifeDrain ability heals for 15% more HP. You drink deeply from your fallen foes.",
+        Skill.MasterOfDeath => "RaiseDead cooldown reduced by 1 turn, and minions have 10% more Attack. Death itself bends to your will.",
+        Skill.LichsBargain => "When HP drops below 15%, all abilities cost 0 mana for 1 turn. The lich offers power at a terrible price.",
 
         // Ranger passives
-        Skill.KeenEye => "Years of hunting have sharpened your aim. (PreciseShot +10% damage)",
-        Skill.PackTactics => "You and your wolf move as one. (Wolf ATK +15%)",
-        Skill.TrapMastery => "You've learned to make your traps last. (Traps trigger twice)",
-        Skill.ApexPredator => "You always finish what you start. (Enemy HP < 40%: +20% damage)",
+        Skill.KeenEye => "PreciseShot ability deals 10% bonus damage. Years of hunting have sharpened your aim.",
+        Skill.PackTactics => "Wolf companion's Attack is increased by 15%. You and your wolf move as one.",
+        Skill.TrapMastery => "Traps can trigger twice before expiring. You've learned to make your traps last.",
+        Skill.ApexPredator => "When enemy HP is below 40%, all Ranger attacks deal 20% bonus damage. You always finish what you start.",
 
         _ => ""
     };
