@@ -98,6 +98,8 @@ public class GameLoop
     /// </param>
     public GameLoop(IDisplayService display, ICombatEngine combat, IInputReader? input = null, GameEvents? events = null, int? seed = null, DifficultySettings? difficulty = null, IReadOnlyList<Item>? allItems = null, IMenuNavigator? navigator = null, ILogger<GameLoop>? logger = null)
     {
+        ArgumentNullException.ThrowIfNull(display);
+        ArgumentNullException.ThrowIfNull(combat);
         _display = display;
         _combat = combat;
         _input = input ?? new ConsoleInputReader();
@@ -170,6 +172,9 @@ public class GameLoop
     /// </summary>
     public void Run(GameState state)
     {
+        ArgumentNullException.ThrowIfNull(state);
+        ArgumentNullException.ThrowIfNull(state.Player);
+        ArgumentNullException.ThrowIfNull(state.CurrentRoom);
         _player = state.Player;
         _currentRoom = state.CurrentRoom;
         _currentFloor = state.CurrentFloor;
@@ -714,7 +719,7 @@ public class GameLoop
         ShowGameOver(killedBy: killedBy);
         RecordRunEnd(won: false);
         _gameOver = true;
-        if (_context != null!) _context.GameOver = true;
+        if (_context is not null) _context.GameOver = true;
     }
 
     /// <summary>
