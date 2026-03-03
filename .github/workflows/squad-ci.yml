@@ -9,6 +9,8 @@ on:
 
 permissions:
   contents: read
+  pull-requests: write
+  checks: write
 
 jobs:
   test:
@@ -41,7 +43,26 @@ jobs:
         # Lowered from 80% → 70% after P0/P1 code additions (boss AI, passive system,
         # command handlers) outpaced test additions; actual coverage ~73.65%.
         # Tracking issue filed to restore to 80%+ (#906).
-        run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover /p:Threshold=70 /p:ThresholdType=line
+        # Outputs: opencover to coverage/coverage.opencover.xml, cobertura to coverage/coverage.cobertura.xml
+        run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover%2ccobertura /p:CoverletOutput=./coverage/ /p:Threshold=70 /p:ThresholdType=line
+
+      - name: Upload coverage artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-reports
+          path: |
+            Dungnz.Tests/coverage/
+          retention-days: 5
+
+      - name: Code Coverage Summary
+        if: github.event_name == 'pull_request'
+        uses: 5monkeys/cobertura-action@master
+        with:
+          path: Dungnz.Tests/coverage/coverage.cobertura.xml
+          minimum_coverage: 70
+          show_line: true
+          show_branch: true
 
       - name: Enforce PR closes-issue reference
         if: github.event_name == 'pull_request'

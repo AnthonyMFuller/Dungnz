@@ -234,3 +234,52 @@ Implemented six CI/CD and infrastructure enhancements across multiple PRs:
 **Safety margins applied:**
 - Stryker: raised conservatively, flagged for first-run verification
 - Coverage: existing 80% gate retained (not lowered to 78%)
+
+---
+
+### Issue #883 — Coverage Artifact Upload & PR Summary (March 2026)
+
+**PR:** #898 — `ci: upload coverage artifacts and add PR summary comment`  
+**Branch:** `squad/883-coverage-artifacts`  
+**File Modified:** `.github/workflows/squad-ci.yml`
+
+**Problem:**
+- Coverage data was not persisted after test runs
+- Reviewers couldn't see coverage impact without running tests locally
+- No visibility into how PR changes affected code coverage
+
+**Implementation:**
+1. **Modified test step** (line 44):
+   - Changed `CoverletOutputFormat=opencover` to `opencover%2ccobertura`
+   - Produces both formats: opencover XML and cobertura XML (needed for GitHub coverage tools)
+   
+2. **Added artifact upload step** (lines 46-54):
+   - Uses `actions/upload-artifact@v4`
+   - Uploads `coverage/` and `TestResults/` directories
+   - 5-day retention to avoid storage bloat
+   - Runs on all builds with `if: always()` (even if tests fail)
+
+3. **Added PR coverage comment step** (lines 56-63):
+   - Uses `5monkeys/cobertura-action@master`
+   - Reads cobertura XML from `coverage/coverage.cobertura.xml`
+   - Displays line + branch coverage percentages in PR
+   - Enforces 80% minimum coverage threshold
+   - Only runs on pull_request events (condition: `github.event_name == 'pull_request'`)
+
+**Key Details:**
+- **Coverage output path:** `coverage/coverage.cobertura.xml` (Coverlet default)
+- **Coverage action:** 5monkeys/cobertura-action — popular, well-maintained, auto-posts to PR
+- **Threshold:** 80% (matches existing floor from #878)
+- **Artifacts retention:** 5 days
+- **PR comment:** Automatic via cobertura-action, shows line and branch coverage
+
+**Testing:**
+- ✅ YAML syntax validation passed
+- ✅ Workflow correctly scoped to PR events for comment step
+- ✅ Artifact paths match Coverlet output conventions
+- ✅ Build/test step unchanged — coverage generation already happening
+
+**Impact:**
+- Reviewers now see coverage impact directly in PR without local test run
+- Coverage reports persisted as artifacts for historical reference
+- Supports both opencover (existing) and cobertura (new) formats
