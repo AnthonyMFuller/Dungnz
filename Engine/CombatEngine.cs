@@ -28,6 +28,7 @@ public class CombatEngine : ICombatEngine
     private int _baseEliteDefense;
     private int _shamanHealCooldown;
     private int _combatTurn;
+    private bool _undyingWillUsed;
     private string? _pendingAchievement;
     private const int MaxLevel = 20; // Fix #183
 
@@ -301,6 +302,7 @@ public class CombatEngine : ICombatEngine
         // ── Passive effects: combat start ────────────────────────────────────
         PassiveEffectProcessor.ResetCombatState(player);
         player.ResetCombatPassives();
+        _undyingWillUsed = false;
         _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnCombatStart, enemy, 0);
 
         // Ring of Haste: reduce cooldowns on combat start
@@ -1323,8 +1325,13 @@ public class CombatEngine : ICombatEngine
                 // If HP was restored above 0 by aegis/phoenix, combat continues
             }
 
-            // TODO: Phase 4 — Check player.ShouldTriggerUndyingWill() and apply Regen status if needed
-            // Requires tracking "once per combat" flag for UndyingWill passive
+            // UndyingWill: once per combat, trigger Regen when HP drops below 25%
+            if (!_undyingWillUsed && player.ShouldTriggerUndyingWill())
+            {
+                _undyingWillUsed = true;
+                _statusEffects.Apply(player, StatusEffect.Regen, 3);
+                _display.ShowColoredCombatMessage("Undying Will activates — regeneration begins!", ColorCodes.Green);
+            }
 
             string? statusApplied = null;
 

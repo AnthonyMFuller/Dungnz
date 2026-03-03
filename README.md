@@ -230,6 +230,15 @@ Universal skills (available to all classes):
 | ManaFlow | 4 | +10 max mana, +5 mana/turn |
 | BattleHardened | 6 | Take 5% less damage |
 
+**Warrior** class skills:
+
+| Skill | Min Level | Effect |
+|-------|-----------|--------|
+| IronConstitution | 3 | +15 MaxHP, +5% damage reduction |
+| UndyingWill | 5 | Apply Regen for 3 turns when HP drops below 25% (once per combat) |
+| BerserkersEdge | 6 | +10% damage per 25% HP missing |
+| Unbreakable | 8 | Last Stand triggers at ≤50% HP (default 40%) |
+
 ### Prestige
 
 Prestige data is saved to `%AppData%/Dungnz/prestige.json` and persists across all runs.
