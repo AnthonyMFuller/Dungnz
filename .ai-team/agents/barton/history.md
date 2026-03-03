@@ -1110,3 +1110,33 @@ Adding ASCII art for enemies is **highly feasible**. The project's existing data
 ---
 
 📌 **Team update (2026-03-01):** Retro action items adopted by team — stub-gap policy (new IDisplayService methods must have same-day stubs in FakeDisplayService and TestDisplayService before merge); sentinel pattern ban (use typed discriminated records or result enums; replace existing __TAKE_ALL__ sentinel, P1); cross-layer domain sync required (15-min upfront sync before work on features spanning display + game loop + systems); same-day push rule (completed work must be pushed with draft PR by end of session); pre-existing red tests are P0 (triage within same iteration); content review for player-facing strings. — decided by Coulson (Retrospective)
+
+### 2026-03-03 — Affix Audit: Wire 5 Unwired Properties (#871)
+
+**PR:** #894 — `fix: wire 5 unwired affix properties`
+**Branch:** `squad/871-wire-affix-properties`
+
+## Learnings
+
+**What the 5 affix properties were:**
+All 5 were defined in `Systems/AffixRegistry.cs` as `AffixDefinition` fields and in `Data/item-affixes.json`, but `ApplyAffixStats()` had TODO comments instead of actually writing them to `Item` fields — so no equipped item ever had non-zero values for these stats.
+
+**Which were wired vs removed:**
+All 5 were implemented (none removed) — the combat system already had the necessary hooks:
+
+| Property | Where wired | Mechanism |
+|---|---|---|
+| `EnemyDefReduction` | `Engine/CombatEngine.cs` | `Math.Max(0, enemy.Defense - player.EnemyDefReduction)` before damage calc |
+| `HolyDamageVsUndead` | `Engine/CombatEngine.cs` | Damage multiplier when `enemy.IsUndead` |
+| `BlockChanceBonus` | `Engine/CombatEngine.cs` | Roll after dodge check — fully negates incoming hit |
+| `ReviveCooldownBonus` | `Systems/PassiveEffectProcessor.cs` | `ApplyPhoenixRevive` now allows a 2nd per-run charge via `PhoenixExtraChargeUsed` flag |
+| `PeriodicDmgBonus` | `Engine/CombatEngine.cs` | Flat damage to enemy at `OnTurnStart` |
+
+**Key file paths touched:**
+- `Models/Item.cs` — added 5 new fields
+- `Models/PlayerCombat.cs` — 5 computed player properties (summed from equipment in `RecalculateDerivedBonuses`), `PhoenixExtraChargeUsed` flag
+- `Systems/AffixRegistry.cs` — removed TODO stubs, wrote to item fields
+- `Systems/PassiveEffectProcessor.cs` — `ApplyPhoenixRevive` extra charge logic
+- `Engine/CombatEngine.cs` — 4 combat-time wires
+
+**Design note:** `ReviveCooldownBonus` required a new `PhoenixExtraChargeUsed` run-level flag on Player (not per-combat — phoenix is once-per-run). The existing `PhoenixUsedThisRun` was extended rather than replaced.

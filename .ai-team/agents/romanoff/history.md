@@ -1044,3 +1044,39 @@ With `SelfHealCooldown=1` and check-first: fires on turn 2 (correct, matching as
 - Interactive menu tests inject input via FakeInputReader passed to FakeDisplayService constructor
 
 **Test Count:** Not yet run due to build errors (Hill needs to add XML doc comments). Tests are structurally complete and ready.
+
+---
+
+### 2026-03-03 — DisplayServiceSmokeTests for Markup Rendering (#875)
+
+**PR:** #895 — `test: add DisplayService smoke test suite`
+**Branch:** `squad/875-display-smoke-tests`
+**File Created:** `Dungnz.Tests/Display/DisplayServiceSmokeTests.cs`
+
+**Problem:**
+- ShowInventory, ShowEquipment, ShowSkillTree, ShowHelp, ShowCombatStatus had zero test coverage
+- Markup regressions (unescaped `[...]` in content passed to Spectre) only caught by manual play
+- Issue #870 (ShowHelp crash) proved the risk is real — needs automated guard for all 5 methods
+
+**Solution:**
+- 8 smoke tests using the AnsiConsole output-capture pattern from HelpDisplayRegressionTests
+- Swap `AnsiConsole.Console` with a non-interactive no-color writer backed by `StringWriter`; restore in `Dispose()`
+- Call the display method; if any unescaped bracket exists in markup, Spectre throws `MarkupException` — test catches it via `Should().NotThrow()`
+
+**Tests Written:**
+- `ShowInventory_WithItems_DoesNotThrow` — 3-item inventory (weapon, consumable, armor), full table render path
+- `ShowInventory_WhenEmpty_DoesNotThrow` — empty state branch, asserts "empty" in output
+- `ShowEquipment_WithGear_DoesNotThrow` — weapon + chest equipped; asserts item names in output
+- `ShowEquipment_AllSlotsEmpty_DoesNotThrow` — all null slots; exercises AddSlot null branch
+- `ShowSkillTreeMenu_NoLearnableSkills_DoesNotThrow` — Level 2 player (all skills require L3+); no interactive Prompt triggered
+- `ShowHelp_DoesNotThrow` — reinforces #870 regression guard
+- `ShowCombatStatus_NoEffects_DoesNotThrow` — bare HP table, no effects badges
+- `ShowCombatStatus_WithActiveEffects_DoesNotThrow` — Poison+Bleed on player, Burn on enemy; exercises effect-badge markup path
+
+**Key Learnings:**
+- **AnsiConsole capture pattern CONFIRMED:** Replace `AnsiConsole.Console` via `AnsiConsole.Create(new AnsiConsoleSettings { Ansi = AnsiSupport.No, ColorSystem = ColorSystemSupport.NoColors, Out = new AnsiConsoleOutput(writer), Interactive = InteractionSupport.No })`. Restore in Dispose. This is now the established standard.
+- **ShowSkillTreeMenu interactive prompt avoidance:** Level 2 player has no learnable skills (min is L3), so the method returns null without calling `AnsiConsole.Prompt()`. Any level 1-2 player is safe for smoke testing this method.
+- **`[Collection("console-output")]`** is mandatory — prevents parallel test races when multiple test classes redirect `AnsiConsole.Console`.
+- **Active effects markup:** The `[[effect name t]]` pattern in ShowCombatStatus uses `Markup.Escape()` on the effect name and double brackets for the outer wrapper — verified no regressions.
+
+**Test Count:** 1422 baseline → 1430 with new tests (8 added)

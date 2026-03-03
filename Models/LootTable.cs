@@ -60,6 +60,20 @@ public class LootTable
     }
 
     /// <summary>
+    /// Resets all shared tier pools to <see langword="null"/> so that subsequent
+    /// <see cref="RollTier"/> and <see cref="RollDrop"/> calls fall back to the
+    /// hardcoded fallback lists. Intended for test cleanup only.
+    /// </summary>
+    internal static void ResetTierPools()
+    {
+        _sharedTier1 = null;
+        _sharedTier2 = null;
+        _sharedTier3 = null;
+        _sharedLegendary = null;
+        _sharedEpic = null;
+    }
+
+    /// <summary>
     /// Picks a random item of the specified tier from the shared tier pools.
     /// Returns <see langword="null"/> if the tier pool is empty.
     /// </summary>
