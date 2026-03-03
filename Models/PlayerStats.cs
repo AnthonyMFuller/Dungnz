@@ -190,6 +190,7 @@ public partial class Player
     /// <summary>
     /// Adds the specified amount of experience points to the player's cumulative XP total.
     /// Does not automatically trigger a level-up; callers must compare XP against thresholds.
+    /// XP is clamped to <see cref="int.MaxValue"/> to prevent overflow on long runs.
     /// </summary>
     /// <param name="amount">The positive amount of XP to award.</param>
     /// <exception cref="ArgumentException">Thrown when <paramref name="amount"/> is negative.</exception>
@@ -197,7 +198,7 @@ public partial class Player
     {
         if (amount < 0)
             throw new ArgumentException("XP amount cannot be negative.", nameof(amount));
-        XP += amount;
+        XP = (int)Math.Min((long)XP + amount, int.MaxValue);
     }
 
     /// <summary>
