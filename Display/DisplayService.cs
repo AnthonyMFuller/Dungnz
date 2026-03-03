@@ -1748,17 +1748,17 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <inheritdoc />
-    public Systems.Skill? ShowSkillTreeMenu(Models.Player player)
+    public Skill? ShowSkillTreeMenu(Models.Player player)
     {
-        var allSkills = Systems.SkillTree.GetSkillsForClass(player);
+        var allSkills = SkillTree.GetSkillsForClass(player);
         ShowMessage("=== SKILL TREE ===");
         ShowMessage($"Your level: {player.Level}");
         foreach (var s in allSkills)
         {
             if (player.Skills.IsUnlocked(s)) continue;
-            var (minLevel, _) = Systems.SkillTree.GetSkillRequirements(s);
+            var (minLevel, _) = SkillTree.GetSkillRequirements(s);
             var status = player.Level >= minLevel ? "Available" : $"Req. Lv{minLevel}";
-            ShowMessage($"  {s}: {Systems.SkillTree.GetDescription(s)} [{status}]");
+            ShowMessage($"  {s}: {SkillTree.GetDescription(s)} [{status}]");
         }
         ShowMessage("Type LEARN <skill> to unlock a skill.");
         return null;

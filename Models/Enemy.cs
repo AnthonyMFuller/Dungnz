@@ -48,6 +48,7 @@ namespace Dungnz.Models;
 [JsonDerivedType(typeof(ArchlichSovereign), "archlichsovereign")]
 [JsonDerivedType(typeof(AbyssalLeviathan), "abyssalleviathan")]
 [JsonDerivedType(typeof(InfernalDragon), "infernaldragon")]
+[JsonDerivedType(typeof(GenericEnemy), "genericenemy")]
 public abstract class Enemy
 {
     /// <summary>Gets or sets the enemy's display name used in combat and room descriptions.</summary>

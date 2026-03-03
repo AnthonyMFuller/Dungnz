@@ -1,7 +1,5 @@
 namespace Dungnz.Models;
 
-using Dungnz.Systems;
-
 /// <summary>Represents a single item in a merchant's stock along with its sale price.</summary>
 public class MerchantItem
 {

@@ -384,5 +384,5 @@ public interface IDisplayService
     /// Returns the <see cref="Systems.Skill"/> the player wants to learn, or <c>null</c> if cancelled.
     /// </summary>
     /// <param name="player">The player viewing the skill tree.</param>
-    Systems.Skill? ShowSkillTreeMenu(Player player);
+    Skill? ShowSkillTreeMenu(Player player);
 }
