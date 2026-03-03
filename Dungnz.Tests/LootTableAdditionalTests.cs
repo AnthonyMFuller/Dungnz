@@ -168,7 +168,7 @@ public class LootTableAdditionalTests : IDisposable
 
         var table = new LootTable(new ControlledRandom(0.95), minGold: 10, maxGold: 10);
         // No explicit drops, boss room, so legendary should drop
-        var result = table.RollDrop(null!, playerLevel: 1, isBossRoom: true, dungeoonFloor: 1);
+        var result = table.RollDrop(null!, playerLevel: 1, isBossRoom: true, dungeonFloor: 1);
 
         result.Item.Should().NotBeNull("boss room guarantees legendary");
         result.Item!.Name.Should().Be("Boss Relic");
@@ -180,7 +180,7 @@ public class LootTableAdditionalTests : IDisposable
         LootTable.SetTierPools(new List<Item>(), new List<Item>(), new List<Item>(), legendary: new List<Item>());
 
         var table = new LootTable(new ControlledRandom(0.95), minGold: 5, maxGold: 5);
-        var result = table.RollDrop(null!, isBossRoom: true, dungeoonFloor: 1);
+        var result = table.RollDrop(null!, isBossRoom: true, dungeonFloor: 1);
 
         // No drop forced since legendary pool is empty; 95% rng prevents 30% tiered roll
         result.Gold.Should().Be(5);
@@ -236,7 +236,7 @@ public class LootTableAdditionalTests : IDisposable
         for (int seed = 0; seed < 100; seed++)
         {
             var table = new LootTable(new Random(seed), minGold: 0, maxGold: 0);
-            var result = table.RollDrop(null!, dungeoonFloor: 6);
+            var result = table.RollDrop(null!, dungeonFloor: 6);
             if (result.Item?.Name == "Legendary Artifact") { legendaryDropped = true; break; }
         }
         legendaryDropped.Should().BeTrue("floor 6+ has 5% legendary chance; should trigger in 100 attempts");
@@ -259,7 +259,7 @@ public class LootTableAdditionalTests : IDisposable
         for (int seed = 0; seed < 200; seed++)
         {
             var table = new LootTable(new Random(seed), minGold: 0, maxGold: 0);
-            var result = table.RollDrop(null!, dungeoonFloor: 5);
+            var result = table.RollDrop(null!, dungeonFloor: 5);
             if (result.Item?.Name == "Epic Armor") { epicDropped = true; break; }
         }
         epicDropped.Should().BeTrue("floor 5+ has 8% epic chance; should trigger within 200 attempts");
@@ -275,7 +275,7 @@ public class LootTableAdditionalTests : IDisposable
         for (int seed = 0; seed < 200; seed++)
         {
             var table = new LootTable(new Random(seed), minGold: 0, maxGold: 0);
-            var result = table.RollDrop(null!, dungeoonFloor: 7);
+            var result = table.RollDrop(null!, dungeonFloor: 7);
             if (result.Item?.Name == "High Epic") { epicDropped = true; break; }
         }
         epicDropped.Should().BeTrue("floor 7+ has 15% epic chance; should trigger within 200 attempts");
