@@ -41,8 +41,8 @@ jobs:
         # Lowered from 80% → 70% after P0/P1 code additions (boss AI, passive system,
         # command handlers) outpaced test additions; actual coverage ~73.65%.
         # Tracking issue filed to restore to 80%+ (#906).
-        # Outputs: opencover format to TestResults/coverage.opencover.xml, cobertura to coverage/coverage.cobertura.xml
-        run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover%2ccobertura /p:Threshold=70 /p:ThresholdType=line
+        # Outputs: opencover to coverage/coverage.opencover.xml, cobertura to coverage/coverage.cobertura.xml
+        run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover%2ccobertura /p:CoverletOutput=./coverage/ /p:Threshold=70 /p:ThresholdType=line
 
       - name: Upload coverage artifacts
         if: always()
