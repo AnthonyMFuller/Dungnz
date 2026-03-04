@@ -1207,3 +1207,42 @@ With `SelfHealCooldown=1` and check-first: fires on turn 2 (correct, matching as
 - PlayerSkillHelpers has 5 public methods with zero direct tests — all behavior-defining combat helpers
 - Static narration arrays (CombatNarration, RoomStateNarration) have no existence validation
 - Merchant.CreateRandom fallback path has zero coverage
+
+---
+
+### 2026-03-03 — Batch test coverage for 6 issues (#944, #947, #948, #949, #950, #943)
+
+**PR:** #1009 — `test: Batch test coverage (#944, #947, #948, #949, #950, #943)`
+**Branch:** `squad/batch-romanoff-tests-3`
+
+**Files Created:**
+- `Dungnz.Tests/PlayerHPBoundaryTests.cs` — 20 tests for HP clamping, healing, damage, events
+- `Dungnz.Tests/CombatAbilityInteractionTests.cs` — 14 tests for Silence, Stun, Freeze, Curse interactions
+- `Dungnz.Tests/StatusEffectEdgeCaseTests.cs` — 13 tests for immunity, duration extension, stacking
+- `Dungnz.Tests/EquipmentUnequipEdgeCaseTests.cs` — 12 tests for stat reversal, equip swapping, slots
+- `Dungnz.Tests/CraftingSystemInvalidPathTests.cs` — 9 tests for missing ingredients, full inventory, null recipe
+- `Dungnz.Tests/CommandHandlerSmokeTests.cs` — 19 tests for Look, Go, Use, Equip, Stats, Help, Examine handlers
+
+**Key Learnings:**
+- Test framework: xUnit with FluentAssertions, Arrange-Act-Assert pattern
+- Builders: `PlayerBuilder`, `ItemBuilder` in `Dungnz.Tests/Builders/` — fluent API for test setup
+- Stubs: `Enemy_Stub` (CombatEngineTests.cs:400), `ImmuneEnemy_Stub` (StatusEffectManagerTests.cs:219)
+- Display fakes: `TestDisplayService` (no-op for most methods) and `FakeDisplayService` (with input reader)
+- `InternalsVisibleTo("Dungnz.Tests")` is set — command handlers (internal sealed) are testable directly
+- `Player.HP` has internal setter — use `SetHPDirect()` or `PlayerBuilder.WithHP()` for test setup
+- `StatusEffectManager.Apply()` extends duration (max) for same effect, doesn't stack duplicates
+- `CraftingSystem` is static — recipes loaded at class init, tests use default built-in recipes
+- `TestDisplayService.ShowItemDetail` is a no-op — can't assert on its output, assert on error absence
+- Integer division in `GetStatModifier` for Curse: enemy needs DEF ≥ 4 for non-zero modifier
+- Command handlers need full `CommandContext` — many required delegates (ExitRun, RecordRunEnd, etc.)
+- Test parallelization is disabled assembly-wide (shared static state in LootTable, StatusEffectRegistry)
+
+**Key File Paths:**
+- `Models/PlayerStats.cs` — TakeDamage, Heal, SetHPDirect, FortifyMaxHP
+- `Models/PlayerCombat.cs` — EquipItem, UnequipItem, ApplyStatBonuses, RemoveStatBonuses
+- `Models/PlayerInventory.cs` — MaxInventorySize, Gold, SpendGold
+- `Systems/StatusEffectManager.cs` — Apply, ProcessTurnStart, HasEffect, GetStatModifier
+- `Systems/CraftingSystem.cs` — TryCraft (static), BuildDefaultRecipes
+- `Systems/EquipmentManager.cs` — HandleEquip, HandleUnequip, LevenshteinDistance
+- `Engine/Commands/CommandContext.cs` — all required fields for handler tests
+- `Engine/Commands/*.cs` — individual handlers (internal sealed classes)
