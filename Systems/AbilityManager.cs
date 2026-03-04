@@ -594,7 +594,7 @@ public class AbilityManager
                     enemy.HP = Math.Max(0, enemy.HP - consecDmg);
                     statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
                     display.ShowCombatMessage($"Holy fire consecrates the ground! ({consecDmg} damage, Bleed applied)");
-                    if (enemy.IsUndead && enemy.HP > 0)
+                    if (enemy.IsUndead && !enemy.IsDead)
                     {
                         statusEffects.Apply(enemy, StatusEffect.Stun, 1);
                         display.ShowCombatMessage("The undead recoils from the holy ground! (Stunned)");
@@ -610,7 +610,7 @@ public class AbilityManager
                     enemy.HP = Math.Max(0, enemy.HP - judgDmg);
                     display.ShowCombatMessage($"JUDGMENT! ({judgDmg} damage, {missingHpBonus} bonus from missing HP)");
                     // Execute non-boss at ≤20% HP
-                    if (enemy.HP > 0 && enemy.HP <= enemy.MaxHP * 0.20 && !enemy.IsImmuneToEffects)
+                    if (!enemy.IsDead && enemy.HP <= enemy.MaxHP * 0.20 && !enemy.IsImmuneToEffects)
                     {
                         enemy.HP = 0;
                         display.ShowCombatMessage("The Light passes judgment — the enemy is smote from existence!");
@@ -801,7 +801,7 @@ public class AbilityManager
                     display.ShowCombatMessage($"You loose a volley of arrows! ({volleyDmg} damage)");
                     // Wolf companion also attacks
                     var wolf = player.ActiveMinions.FirstOrDefault(m => m.Name == "Wolf Companion" && m.HP > 0);
-                    if (wolf != null && enemy.HP > 0)
+                    if (wolf != null && !enemy.IsDead)
                     {
                         var wolfDmg = Math.Max(1, wolf.ATK - enemy.Defense);
                         enemy.HP = Math.Max(0, enemy.HP - wolfDmg);
