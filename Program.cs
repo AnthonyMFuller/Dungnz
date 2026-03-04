@@ -126,6 +126,9 @@ if (useTui)
         }
     });
     
+    // Signal UI readiness after first MainLoop tick to unblock early InvokeOnUiThread calls (#1043)
+    layout.MainWindow.Loaded += () => GameThreadBridge.SetUiReady();
+
     // Run Terminal.Gui on main thread (blocks until RequestStop)
     Application.Run(layout.MainWindow);
     Application.Shutdown();
