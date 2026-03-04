@@ -16358,3 +16358,71 @@ Application.Shutdown()
 - **Terminal.Gui v2** (NuGet: `Terminal.Gui >= 2.0.0`)
 - **.NET 10.0** (already in use)
 - **No changes to:** IDisplayService, IInputReader, IMenuNavigator, GameLoop, CombatEngine, any command handlers, any models, any systems
+### 2026-03-04: TUI audit and remediation plan
+**By:** Coulson
+**What:** Audited TUI implementation, found 9 issues, created GitHub issues #1036–#1044
+**Why:** Anthony reported blank panels, zero contrast — TUI is unusable as shipped
+
+---
+
+## Issues and Assignments
+
+### P0 — Blockers (TUI unusable without these)
+
+- **#1036: TUI: No ColorScheme on any panel — zero contrast, unreadable** → **Hill**
+  - TuiLayout.cs sets no ColorScheme on any view. Default Terminal.Gui colors create unreadable panels.
+  - Fix: Define explicit high-contrast ColorScheme objects for each panel type.
+
+- **#1038: TUI: Map panel blank until MAP command — no auto-populate on room entry** → **Hill**
+  - ShowRoom() only updates content panel, never map panel. Map stays empty until player types MAP.
+  - Fix: TerminalGuiDisplayService.ShowRoom() should also refresh the map panel (store room/floor reference).
+
+- **#1039: TUI: Stats panel blank until STATS command — no auto-update** → **Hill+Barton**
+  - ShowPlayerStats() only called from StatsCommandHandler. Stats panel empty during normal play.
+  - Fix: ShowRoom() should also refresh stats. Requires storing Player reference in the display service.
+  - Hill handles the display-side changes; Barton reviews game-loop integration to ensure stats refresh after combat/equip/level-up.
+
+### P1 — Major Functional Gaps
+
+- **#1037: TUI: Color system dead — TuiColorMapper never called, ShowColored* strip all color** → **Hill**
+  - TuiColorMapper.cs exists with 5 mapping methods but is never imported or called. ShowColoredMessage/ShowColoredCombatMessage/ShowColoredStat all ignore their color parameter.
+  - Fix: Wire TuiColorMapper into display service. Use mapped colors for health bars, item tiers, room types, and combat messages.
+
+- **#1040: TUI: ShowSkillTreeMenu returns null unconditionally — skill tree broken** → **Hill**
+  - Returns null with a TODO comment. SKILLS command does nothing in TUI mode.
+  - Fix: Implement using TuiMenuDialog<Skill?> pattern (same as 15+ other selection methods in the file).
+
+### P2 — Quality and Correctness
+
+- **#1041: TUI: BuildColoredHpBar dead code — barChar computed but never used** → **Hill**
+  - Computes health-threshold bar character (█/▓/▒) but line 1280 always uses █.
+  - Fix: Use the computed barChar in bar construction.
+
+- **#1042: TUI: SetMap/SetStats destroy and recreate child views on every call** → **Hill**
+  - RemoveAll()+new TextView on every update instead of reusing existing views. Causes potential flicker.
+  - Fix: Create persistent TextViews in constructor, update .Text property like ContentPanel/MessageLogPanel.
+
+- **#1043: TUI: Race condition — InvokeOnUiThread silently drops early display calls** → **Hill**
+  - Game thread starts before Application.Run() initializes MainLoop. Fire-and-forget display calls drop silently.
+  - Fix: Add ManualResetEventSlim synchronization so game thread waits for MainLoop readiness.
+
+- **#1044: TUI: Architecture doc describes non-existent API** → **Hill**
+  - docs/TUI-ARCHITECTURE.md documents methods (ConcurrentQueue, FlushMessages, QueueStateUpdate, EnqueueCommand) that don't exist in the actual implementation.
+  - Fix: Update docs to match actual Application.Invoke() + BlockingCollection pattern.
+
+---
+
+## Execution Order
+
+1. **#1036** (ColorScheme) — Must be first; everything else is hard to visually verify without contrast.
+2. **#1042** (persistent TextViews) — Structural fix that #1038/#1039 build on.
+3. **#1038** (map auto-populate) + **#1039** (stats auto-populate) — Can be done in parallel once #1042 is done.
+4. **#1037** (color system wiring) — Once panels are visible and auto-populating.
+5. **#1041** (HP bar fix) — Quick fix, anytime.
+6. **#1040** (skill tree) — Independent, anytime.
+7. **#1043** (race condition) — Can be done independently.
+8. **#1044** (docs) — Last, after implementation stabilizes.
+
+## Work Distribution Summary
+- **Hill:** #1036, #1037, #1038, #1040, #1041, #1042, #1043, #1044 (8 issues — all display/layout/initialization)
+- **Barton:** #1039 (co-own with Hill — review game-loop integration for stats refresh points)

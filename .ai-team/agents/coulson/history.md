@@ -2476,3 +2476,43 @@ Both PRs reviewed and merged in Round 3 (see below).
 **Artifacts:**
 - `.ai-team/decisions/inbox/coulson-terminal-gui-architecture.md` — Full architecture document with 6 architectural decisions, threading model, layout diagrams, rollback strategy
 - GitHub issues #1015–#1028 — Complete issue set with descriptions, acceptance criteria, dependencies, and assignees
+
+### 2026-03-04: TUI Usability Audit
+
+**Trigger:** Anthony ran the game with `--tui` and reported: blank Map panel, blank Stats panel, zero contrast. TUI is unusable.
+
+**Scope:** Full audit of all 6 files in `Display/Tui/` plus TUI integration in `Program.cs`
+
+**Root Causes Found:**
+
+1. **Zero contrast (P0):** `TuiLayout.cs` sets no `ColorScheme` on any panel. All views use Terminal.Gui defaults, which produce unreadable foreground/background combinations on most terminals.
+
+2. **Map panel blank (P0):** `ShowMap()` is only called from `MapCommandHandler` (when player types MAP). `ShowRoom()` updates the content panel only — never touches the map panel. `GameLoop.Run()` never calls `ShowMap()` on startup.
+
+3. **Stats panel blank (P0):** `ShowPlayerStats()` is only called from `StatsCommandHandler` (when player types STATS). No automatic refresh on game start, combat, equip, level-up, or room entry.
+
+4. **Color system dead (P1):** `TuiColorMapper.cs` exists with 5 mapping methods but is **never imported or called** from `TerminalGuiDisplayService.cs`. `ShowColoredMessage()`, `ShowColoredCombatMessage()`, and `ShowColoredStat()` all ignore their color parameters and strip ANSI codes.
+
+5. **Skill tree broken (P1):** `ShowSkillTreeMenu()` returns `null` unconditionally — a stub that was never implemented.
+
+6. **BuildColoredHpBar dead code (P2):** Computes `barChar` based on health % (█/▓/▒) but line 1280 always uses `█`, ignoring the computed value.
+
+7. **View recreation flicker (P2):** `SetMap()`/`SetStats()` in TuiLayout call `RemoveAll()` + create new `TextView` on every update, instead of reusing persistent views like `ContentPanel`/`MessageLogPanel`.
+
+8. **Race condition (P2):** `InvokeOnUiThread()` silently drops actions if `Application.MainLoop` is null (before `Application.Run()` starts). Game thread starts via `Task.Run()` before MainLoop is initialized.
+
+9. **Stale architecture docs (P2):** `docs/TUI-ARCHITECTURE.md` documents `ConcurrentQueue`, `FlushMessages()`, `QueueStateUpdate()`, `EnqueueCommand()` — none of which exist in the actual `GameThreadBridge.cs` implementation.
+
+**Issues Created:** #1036–#1044 (9 issues)
+
+**Assignments:**
+- Hill: #1036, #1037, #1038, #1040, #1041, #1042, #1043, #1044 (display/layout/docs)
+- Barton: #1039 co-owned with Hill (stats panel game-loop integration)
+
+**Work Plan:** `.ai-team/decisions/inbox/coulson-tui-audit-plan.md`
+
+**Key Patterns Discovered:**
+- TuiColorMapper was designed correctly but never wired in — a classic "last mile" integration miss
+- The TUI layout was built with dedicated panels (map, stats) but the display service never updates them proactively
+- The architecture doc was written during design and never updated after implementation diverged
+- The dual-thread model works (BlockingCollection + Application.Invoke) but has a startup race condition
