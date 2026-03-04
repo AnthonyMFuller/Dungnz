@@ -1323,3 +1323,38 @@ All 5 were implemented (none removed) — the combat system already had the nece
 - `IEnemyAI` interface exists but is not wired into the game loop — CombatEngine handles all enemy AI inline
 - Serialization snapshot tests exist; new public properties on Enemy need `[JsonIgnore]` if computed
 - Project uses `#pragma warning disable CS1591` for files with many self-documenting constants
+
+---
+
+### 2026-03-03 — TUI Color System via Prefix Markers (#1050)
+
+**PR:** #1055 — `feat: TUI color distinction — prefix markers + colored message log`
+**Branch:** `squad/1050-tui-color-system`
+
+**Goal:** Make different message types visually distinct in TUI content panel (monochromatic TextView)
+
+**Implementation:**
+- **File:** `Display/Tui/TerminalGuiDisplayService.cs`
+- **Method:** `ShowColoredMessage()` — Added Unicode prefix markers based on TuiColor mapping:
+  - `✖ ` for errors (Red/BrightRed)
+  - `✦ ` for loot/success (Green/BrightGreen, Magenta)
+  - `⚠ ` for warnings (Brown/Yellow)
+  - `◈ ` for info (Cyan/BrightCyan)
+  - `  ` (2 spaces) for default
+- **Method:** `ShowColoredCombatMessage()` — Added combat-specific prefix:
+  - `✖ ` for errors (Red/BrightRed)
+  - `⚔ ` for all other combat messages
+
+**Approach Rationale:**
+- Terminal.Gui v1.x `TextView` widgets render uniformly — no inline ANSI color support
+- Originally planned Part 2: Replace message log `TextView` with colored `Label` widgets in a container
+- **Part 2 skipped:** Removed `MessageLogPanel` property broke 13 unit tests in `Dungnz.Tests/TuiTests/`
+- Delivered Part 1 only: Prefix markers provide immediate visual improvement without breaking changes
+
+**Key learnings:**
+- TUI layout public properties (`MessageLogPanel`, `ContentPanel`, etc.) are referenced by unit tests
+- Breaking TUI API surface requires test updates across multiple test files
+- Prefix markers (Part 1 alone) provide sufficient visual distinction for the content panel
+- The message log panel already has emoji-based type prefixes (❌ error, ⚔ combat, 💰 loot, ℹ info)
+- Future color-coding improvements should maintain backward compatibility or coordinate with Romanoff (test owner)
+
