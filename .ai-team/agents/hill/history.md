@@ -8,7 +8,65 @@
 
 ## Learnings
 
-### 2026-03-05 — P1 Reliability Fixes (#928, #929, #930)
+### 2026-03-05 — TUI Usability Fixes (#1036–#1044)
+
+**PR:** #1045 — `fix: TUI usability — contrast, auto-populating panels, color system, skill tree`
+**Branch:** `squad/1036-tui-usability-fixes`
+
+**Issues addressed (all 9 — triaged by Coulson):**
+
+#### #1036 — No ColorScheme on any TUI panel
+- `TuiLayout.cs`: Defined 5 high-contrast `ColorScheme` objects (normal/map/stats/log/input)
+- Applied to all panels: bright green on black for Map, bright cyan on black for Stats, white on blue for content, bright yellow on black for command input
+- Used `Terminal.Gui.Color` enum values — no `BrightWhite` exists in v1.19, used `Color.White` instead
+- Added `MakeAttr()` private helper with null-guard on `Application.Driver` so tests (which don't call `Application.Init()`) don't NullReferenceException
+
+#### #1042 — SetMap/SetStats destroy and recreate child views
+- `TuiLayout.cs`: Added private `_mapView` and `_statsView` TextViews created once in constructor
+- `SetMap()` and `SetStats()` now just update `.Text` property — no `RemoveAll()` + `new TextView` churn
+
+#### #1038 + #1039 — Map and Stats panels blank on room entry
+- `TerminalGuiDisplayService.cs`: Added `_player`, `_currentRoom`, `_currentFloor` fields
+- `ShowPlayerStats(player)` caches `_player`; `ShowMap(room, floor)` caches `_currentRoom` / `_currentFloor`
+- `ShowRoom(room)` now calls `BuildAsciiMap` and `_layout.SetMap()` automatically after rendering the room description; also calls `BuildStatsText(_player)` and `_layout.SetStats()` if player is cached
+- Extracted `BuildStatsText(Player)` as a private static helper (reused by both `ShowPlayerStats` and the auto-refresh in `ShowRoom`)
+
+#### #1037 — TuiColorMapper never called, ShowColored* ignores color
+- `ShowColoredMessage(message, color)`: Now calls `TuiColorMapper.MapAnsiToTuiColor(color)` and maps the result to a log type (error/loot/info) — message appears in the log with appropriate prefix icon
+- `ShowColoredCombatMessage(message, color)`: Routes to log with type `"combat"` so it gets the ⚔ prefix
+- Terminal.Gui TextViews still don't support inline ANSI; color distinction is via log message type
+
+#### #1041 — BuildColoredHpBar/MpBar dead code (barChar computed but unused)
+- Fixed `BuildColoredHpBar`: `barChar` is now a `char` and `new string(barChar, filled)` uses it properly
+- Fixed `BuildColoredMpBar`: same pattern — bar density reflects mana percentage (`█`/`▓`/`▒`)
+
+#### #1040 — ShowSkillTreeMenu returns null unconditionally
+- Implemented using `TuiMenuDialog<Skill?>`: lists all `Skill` enum values not yet unlocked by the player, plus a Cancel option. Returns selected skill or null.
+
+#### #1043 — Race condition: InvokeOnUiThread drops early calls
+- `GameThreadBridge.cs`: Added `static ManualResetEventSlim _uiReady`
+- Added `static SetUiReady()` method that sets the event
+- `InvokeOnUiThread()` now waits up to 5 s for `_uiReady` when `MainLoop` is null before falling through
+- `Program.cs`: `layout.MainWindow.Loaded += () => GameThreadBridge.SetUiReady()` — fires after first Application.Run tick
+
+#### #1044 — TUI-ARCHITECTURE.md describes non-existent API
+- Rewrote `docs/TUI-ARCHITECTURE.md` to match actual implementation:
+  - Replaced `ConcurrentQueue`/`FlushMessages`/`EnqueueCommand` fiction with `BlockingCollection`, `InvokeOnUiThread`, `Application.MainLoop.Invoke()`
+  - Added `ManualResetEventSlim` / `SetUiReady` documentation
+  - Added panel color table and auto-population notes
+  - Corrected initialization sequence (5 steps → 9 steps)
+
+**Build & Test Status:**
+- ✅ `dotnet build --nologo -v q` — 0 errors, 0 warnings
+- ✅ `dotnet test --nologo` — 1785/1785 passing
+
+**Key Learnings:**
+- Terminal.Gui v1.19 `Color` enum: no `BrightWhite` — use `Color.White`. Available bright variants: BrightBlue, BrightCyan, BrightGreen, BrightMagenta, BrightRed, BrightYellow
+- `Application.Driver` is null before `Application.Init()` — guard with null-check when used in constructors that tests instantiate directly
+- `new string(char, count)` not `new string(string, count)` — C# string repeat takes a `char`, not a `string`
+- `Terminal.Gui.Attribute` conflicts with `System.Attribute` — use fully qualified name `Terminal.Gui.Attribute` when both namespaces are in scope
+
+
 
 **PRs:** #965, #966, #967
 
