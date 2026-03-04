@@ -4,10 +4,22 @@ using Dungnz.Models;
 namespace Dungnz.Display;
 
 /// <summary>
-/// Defines all output (and one input) operations the game uses to communicate
+/// Defines all output and input operations the game uses to communicate
 /// with the player, separating presentation logic from game logic so that the
 /// console implementation can be swapped for a test stub or a GUI renderer.
 /// </summary>
+/// <remarks>
+/// <para><strong>Design note — input-coupled methods:</strong> Several members of this
+/// interface (e.g. <c>ShowInventoryAndSelect</c>, <c>ShowShopAndSelect</c>,
+/// <c>ShowCombatMenuAndSelect</c>, <c>SelectDifficulty</c>, <c>SelectClass</c>,
+/// <c>ReadPlayerName</c>, <c>ReadSeed</c>, and other <c>*AndSelect</c> / <c>Select*</c>
+/// methods) combine display rendering with user-input collection. This couples
+/// presentation to navigation logic, making the interface harder to implement for
+/// non-console renderers and harder to test without mocking input.</para>
+/// <para>These methods are intentionally left in place for now; splitting them into
+/// pure-display and pure-input halves is deferred to the planned HUD/Dashboard
+/// refactor phase.</para>
+/// </remarks>
 public interface IDisplayService
 {
     /// <summary>
@@ -65,6 +77,7 @@ public interface IDisplayService
     /// Displays the inventory list, then presents an arrow-key navigable menu for selecting an item.
     /// Returns the selected item, or null if the player cancels.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     /// <param name="player">The player whose inventory to display and select from.</param>
     Item? ShowInventoryAndSelect(Player player);
 
@@ -144,6 +157,7 @@ public interface IDisplayService
     /// Prompts the player to enter their character's name at game start and
     /// returns the value they typed.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     /// <returns>
     /// The name entered by the player, or a default fallback name if none was provided.
     /// </returns>
@@ -216,6 +230,7 @@ public interface IDisplayService
     /// Renders the shop and handles arrow-key selection. Returns the 1-based index of the
     /// selected item, or 0 if the player cancels.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     int ShowShopAndSelect(IEnumerable<(Dungnz.Models.Item item, int price)> stock, int playerGold);
 
     /// <summary>
@@ -228,6 +243,7 @@ public interface IDisplayService
     /// Renders the sell menu and handles arrow-key selection. Returns the 1-based index of the
     /// selected item, or 0 if the player cancels.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     int ShowSellMenuAndSelect(IEnumerable<(Dungnz.Models.Item item, int sellPrice)> items, int playerGold);
 
     /// <summary>
@@ -299,6 +315,7 @@ public interface IDisplayService
     /// player's selection as a 1-based index (1 = +5 Max HP, 2 = +2 Attack, 3 = +2 Defense).
     /// Falls back to numbered text input when arrow-key input is unavailable.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     int ShowLevelUpChoiceAndSelect(Player player);
 
     /// <summary>
@@ -306,6 +323,7 @@ public interface IDisplayService
     /// as a single uppercase letter: "A" (Attack), "B" (Ability), or "F" (Flee).
     /// Falls back to numbered text input when arrow-key input is unavailable.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     string ShowCombatMenuAndSelect(Player player, Enemy enemy);
 
     /// <summary>
@@ -313,6 +331,7 @@ public interface IDisplayService
     /// 1-based index of the chosen recipe, or 0 if the player cancels.
     /// Falls back to numbered text input when arrow-key input is unavailable.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes);
 
     /// <summary>Presents the Shrine blessing choices as an arrow-key menu and returns 1–4 or 0 (leave).</summary>
@@ -322,6 +341,7 @@ public interface IDisplayService
     /// Presents the shop menu with merchant stock, a Sell Items option, and Leave.
     /// Returns the selected item index (1-based for buying), -1 for Sell, or 0 to Leave.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     int ShowShopWithSellAndSelect(IEnumerable<(Dungnz.Models.Item item, int price)> stock, int playerGold);
 
     /// <summary>Presents a Yes/No confirmation menu. Returns true if Yes selected.</summary>
@@ -340,6 +360,7 @@ public interface IDisplayService
     /// Presents the ability menu. Unavailable abilities shown as info lines.
     /// Returns selected Ability, or null for cancel.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     Ability? ShowAbilityMenuAndSelect(
         IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities,
         IEnumerable<Ability> availableAbilities);
@@ -348,6 +369,7 @@ public interface IDisplayService
     /// Presents an arrow-key navigable consumable item selection menu during combat.
     /// Returns the selected <see cref="Item"/>, or <c>null</c> if the player cancels.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     /// <param name="consumables">The list of consumable items the player can use.</param>
     Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables);
 
@@ -355,6 +377,7 @@ public interface IDisplayService
     /// Presents an arrow-key navigable menu of equippable items from the player's inventory.
     /// Returns the selected <see cref="Item"/>, or <c>null</c> if the player cancels.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     /// <param name="equippable">The list of equippable items to display.</param>
     Item? ShowEquipMenuAndSelect(IReadOnlyList<Item> equippable);
 
@@ -362,6 +385,7 @@ public interface IDisplayService
     /// Presents an arrow-key navigable menu of usable (consumable) items from the player's inventory.
     /// Returns the selected <see cref="Item"/>, or <c>null</c> if the player cancels.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     /// <param name="usable">The list of usable items to display.</param>
     Item? ShowUseMenuAndSelect(IReadOnlyList<Item> usable);
 
@@ -383,6 +407,7 @@ public interface IDisplayService
     /// Already-unlocked skills are excluded entirely.
     /// Returns the <see cref="Skill"/> the player wants to learn, or <c>null</c> if cancelled.
     /// </summary>
+    /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     /// <param name="player">The player viewing the skill tree.</param>
     Skill? ShowSkillTreeMenu(Player player);
 }
