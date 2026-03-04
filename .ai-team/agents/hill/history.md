@@ -1813,3 +1813,56 @@ Created complete Terminal.Gui TUI foundation in `Display/Tui/` directory:
 - All 1641 tests pass
 - Clean build in 3.68s
 
+
+---
+
+### 2026-03-04 — TUI Display Quality Fixes (#1048–#1054)
+
+**PR:** #1056 — `fix: TUI stats panel refresh + display quality fixes`
+**Branch:** `squad/1048-tui-display-fixes`
+**Issues:** #1048, #1049, #1051, #1052, #1053, #1054
+
+**Goal:** Fix 6 TUI display bugs affecting stats panel staleness, content growth, and visual clarity.
+
+**Changes made:**
+
+1. **Issue #1048 — Stats panel stale after equip/unequip**
+   - `Systems/EquipmentManager.cs`: Added `ShowPlayerStats()` after equip and unequip operations
+   
+2. **Issue #1049 — Stats panel stale after shrine/combat/level-up**
+   - `Engine/GameLoop.cs`: Added `ShowPlayerStats()` after:
+     - All shrine interactions (heal, bless, fortify, meditate, sacred ground auto-heal)
+     - Forgotten shrine attack buff
+     - Room hazards (lava, corrupted ground, blessed clearing)
+     - Library XP/MaxHP bonuses
+   - `Engine/Commands/SellCommandHandler.cs`: Added after selling items
+   - `Engine/Commands/ShopCommandHandler.cs`: Added after buying items
+   - `Engine/Commands/CraftCommandHandler.cs`: Added after successful crafts
+
+3. **Issue #1051 — Content panel grows unbounded**
+   - `Display/Tui/TuiLayout.cs`: Capped `AppendContent()` at 500 lines
+   - Uses `lines.Skip(lines.Length - 500)` pattern from message log
+
+4. **Issue #1052 — ShowEquipment missing item stats**
+   - `Display/Tui/TerminalGuiDisplayService.cs`: Enhanced `ShowEquipment()` to show stat bonuses
+   - Format: `Weapon:    Iron Sword       (+5 ATK)`
+   - Uses existing `GetPrimaryStatLabel()` helper
+
+5. **Issue #1053 — ShowColoredStat ignores color**
+   - `Display/Tui/TerminalGuiDisplayService.cs`: Routed to `AppendLog()` with type mapping
+   - Red/BrightRed → "error", Green/BrightGreen → "loot", default → "info"
+
+6. **Issue #1054 — Missing Application.Refresh() after panel updates**
+   - `Display/Tui/TuiLayout.cs`: Added `Application.Refresh()` to:
+     - `SetMap()`, `SetStats()`, `AppendContent()`, `AppendLog()`
+   - Guarded with `if (Application.Driver is not null)` for test compatibility
+
+**Key learnings:**
+- ShowPlayerStats must be called after ANY player stat change (HP, gold, XP, level, ATK, DEF, MaxHP, MaxMana)
+- GameLoop has many stat-changing code paths: shrines, hazards, special rooms, merchants, crafting
+- ShowRoom() already calls ShowPlayerStats internally, so don't duplicate after ShowRoom()
+- Application.Refresh() forces Terminal.Gui immediate repaint; critical for background-thread updates
+- Content panel line cap prevents memory growth; mirrors message log's 100-line cap pattern
+
+**Files changed:** 7 files, +56 lines
+**Tests:** All 1988 tests pass
