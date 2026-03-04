@@ -1,14 +1,27 @@
 using Dungnz.Display.Tui;
 using FluentAssertions;
+using Terminal.Gui;
 
 namespace Dungnz.Tests.TuiTests;
 
 /// <summary>
-/// Tests for TuiMenuDialog verifying menu creation and selection logic without requiring
-/// Terminal.Gui Application.Init() (tests the constructor and data structures).
+/// Tests for TuiMenuDialog verifying menu creation and selection logic.
+/// Uses Terminal.Gui's FakeDriver for headless testing.
 /// </summary>
-public class TuiMenuDialogTests
+public class TuiMenuDialogTests : IDisposable
 {
+    /// <summary>Initializes Terminal.Gui with FakeDriver before each test.</summary>
+    public TuiMenuDialogTests()
+    {
+        Application.Init(new FakeDriver());
+    }
+
+    /// <summary>Shuts down Terminal.Gui after each test.</summary>
+    public void Dispose()
+    {
+        Application.Shutdown();
+    }
+
     [Fact]
     public void Constructor_CreatesDialog_WithValidOptions()
     {

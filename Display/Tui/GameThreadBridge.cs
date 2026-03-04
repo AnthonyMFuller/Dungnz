@@ -75,8 +75,13 @@ public sealed class GameThreadBridge
     /// <param name="action">The action to execute on the UI thread.</param>
     public static void InvokeOnUiThreadAndWait(Action action)
     {
+        if (Application.MainLoop is null)
+        {
+            action();
+            return;
+        }
         var tcs = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
-        Application.MainLoop?.Invoke(() =>
+        Application.MainLoop.Invoke(() =>
         {
             try
             {
@@ -100,8 +105,12 @@ public sealed class GameThreadBridge
     /// <returns>The result of the query.</returns>
     public static T InvokeOnUiThreadAndWait<T>(Func<T> func)
     {
+        if (Application.MainLoop is null)
+        {
+            return func();
+        }
         var tcs = new TaskCompletionSource<T>(TaskCreationOptions.RunContinuationsAsynchronously);
-        Application.MainLoop?.Invoke(() =>
+        Application.MainLoop.Invoke(() =>
         {
             try
             {
