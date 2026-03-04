@@ -13,6 +13,10 @@ public sealed class TuiLayout
     private readonly List<string> _messageHistory = new();
     private const int MaxMessageHistory = 100;
 
+    // Persistent TextViews for map and stats — updated in place, never recreated (#1042)
+    private readonly TextView _mapView;
+    private readonly TextView _statsView;
+
     /// <summary>Gets the main application window that hosts all panels.</summary>
     public Toplevel MainWindow { get; }
 
@@ -38,7 +42,53 @@ public sealed class TuiLayout
     /// </summary>
     public TuiLayout()
     {
-        MainWindow = new Toplevel();
+        // High-contrast color schemes (#1036)
+        var normalScheme = new ColorScheme
+        {
+            Normal   = Application.Driver.MakeAttribute(Color.White, Color.Blue),
+            Focus    = Application.Driver.MakeAttribute(Color.White, Color.Blue),
+            HotNormal = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Blue),
+            HotFocus  = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Blue),
+            Disabled  = Application.Driver.MakeAttribute(Color.Gray, Color.Blue)
+        };
+
+        var mapScheme = new ColorScheme
+        {
+            Normal   = Application.Driver.MakeAttribute(Color.BrightGreen, Color.Black),
+            Focus    = Application.Driver.MakeAttribute(Color.BrightGreen, Color.Black),
+            HotNormal = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
+            HotFocus  = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
+            Disabled  = Application.Driver.MakeAttribute(Color.Gray, Color.Black)
+        };
+
+        var statsScheme = new ColorScheme
+        {
+            Normal   = Application.Driver.MakeAttribute(Color.BrightCyan, Color.Black),
+            Focus    = Application.Driver.MakeAttribute(Color.BrightCyan, Color.Black),
+            HotNormal = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
+            HotFocus  = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
+            Disabled  = Application.Driver.MakeAttribute(Color.Gray, Color.Black)
+        };
+
+        var logScheme = new ColorScheme
+        {
+            Normal   = Application.Driver.MakeAttribute(Color.White, Color.Black),
+            Focus    = Application.Driver.MakeAttribute(Color.White, Color.Black),
+            HotNormal = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
+            HotFocus  = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
+            Disabled  = Application.Driver.MakeAttribute(Color.Gray, Color.Black)
+        };
+
+        var inputScheme = new ColorScheme
+        {
+            Normal   = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
+            Focus    = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
+            HotNormal = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
+            HotFocus  = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
+            Disabled  = Application.Driver.MakeAttribute(Color.Gray, Color.Black)
+        };
+
+        MainWindow = new Toplevel { ColorScheme = normalScheme };
 
         // Top row: Map (left 60%) and Stats (right 40%), taking 30% of height
         MapPanel = new FrameView("🗺  Dungeon Map")
@@ -46,16 +96,42 @@ public sealed class TuiLayout
             X = 0,
             Y = 0,
             Width = Dim.Percent(60),
-            Height = Dim.Percent(30)
+            Height = Dim.Percent(30),
+            ColorScheme = mapScheme
         };
+
+        // Persistent map TextView (#1042)
+        _mapView = new TextView
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            ReadOnly = true,
+            ColorScheme = mapScheme
+        };
+        MapPanel.Add(_mapView);
 
         StatsPanel = new FrameView("⚔  Player Stats")
         {
             X = Pos.Right(MapPanel),
             Y = 0,
             Width = Dim.Fill(),
-            Height = Dim.Percent(30)
+            Height = Dim.Percent(30),
+            ColorScheme = statsScheme
         };
+
+        // Persistent stats TextView (#1042)
+        _statsView = new TextView
+        {
+            X = 0,
+            Y = 0,
+            Width = Dim.Fill(),
+            Height = Dim.Fill(),
+            ReadOnly = true,
+            ColorScheme = statsScheme
+        };
+        StatsPanel.Add(_statsView);
 
         // Middle: Content area (50% height)
         var contentFrame = new FrameView("📜 Adventure")
@@ -63,7 +139,8 @@ public sealed class TuiLayout
             X = 0,
             Y = Pos.Bottom(MapPanel),
             Width = Dim.Fill(),
-            Height = Dim.Percent(50)
+            Height = Dim.Percent(50),
+            ColorScheme = normalScheme
         };
 
         ContentPanel = new TextView
@@ -73,17 +150,19 @@ public sealed class TuiLayout
             Width = Dim.Fill(),
             Height = Dim.Fill(),
             ReadOnly = true,
-            WordWrap = true
+            WordWrap = true,
+            ColorScheme = normalScheme
         };
         contentFrame.Add(ContentPanel);
 
-        // Message log (20% height)
+        // Message log (15% height)
         var logFrame = new FrameView("📋 Message Log")
         {
             X = 0,
             Y = Pos.Bottom(contentFrame),
             Width = Dim.Fill(),
-            Height = Dim.Percent(15)
+            Height = Dim.Percent(15),
+            ColorScheme = logScheme
         };
 
         MessageLogPanel = new TextView
@@ -93,17 +172,19 @@ public sealed class TuiLayout
             Width = Dim.Fill(),
             Height = Dim.Fill(),
             ReadOnly = true,
-            WordWrap = true
+            WordWrap = true,
+            ColorScheme = logScheme
         };
         logFrame.Add(MessageLogPanel);
 
-        // Command input (5% height, bottom)
+        // Command input (bottom)
         var inputFrame = new FrameView("⌨  Command")
         {
             X = 0,
             Y = Pos.Bottom(logFrame),
             Width = Dim.Fill(),
-            Height = Dim.Fill()
+            Height = Dim.Fill(),
+            ColorScheme = inputScheme
         };
 
         CommandInput = new TextField
@@ -111,7 +192,8 @@ public sealed class TuiLayout
             X = 0,
             Y = 0,
             Width = Dim.Fill(),
-            Height = 1
+            Height = 1,
+            ColorScheme = inputScheme
         };
         inputFrame.Add(CommandInput);
 
@@ -153,58 +235,38 @@ public sealed class TuiLayout
             "loot" => "💰",
             _ => "ℹ"
         };
-        
+
         var logLine = $"[{timestamp}] {prefix} {message}";
         _messageHistory.Add(logLine);
-        
+
         // Keep only last 100 messages
         if (_messageHistory.Count > MaxMessageHistory)
         {
             _messageHistory.RemoveAt(0);
         }
-        
+
         // Update the log panel
         MessageLogPanel.Text = string.Join("\n", _messageHistory);
-        
+
         // Auto-scroll to bottom
         MessageLogPanel.MoveEnd();
     }
 
     /// <summary>
-    /// Sets the map panel content.
+    /// Sets the map panel content by updating the persistent TextView (#1042).
     /// </summary>
     /// <param name="mapText">The ASCII map text.</param>
     public void SetMap(string mapText)
     {
-        MapPanel.RemoveAll();
-        var mapView = new TextView
-        {
-            X = 0,
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(),
-            ReadOnly = true,
-            Text = mapText
-        };
-        MapPanel.Add(mapView);
+        _mapView.Text = mapText;
     }
 
     /// <summary>
-    /// Sets the stats panel content.
+    /// Sets the stats panel content by updating the persistent TextView (#1042).
     /// </summary>
     /// <param name="statsText">The stats text.</param>
     public void SetStats(string statsText)
     {
-        StatsPanel.RemoveAll();
-        var statsView = new TextView
-        {
-            X = 0,
-            Y = 0,
-            Width = Dim.Fill(),
-            Height = Dim.Fill(),
-            ReadOnly = true,
-            Text = statsText
-        };
-        StatsPanel.Add(statsView);
+        _statsView.Text = statsText;
     }
 }
