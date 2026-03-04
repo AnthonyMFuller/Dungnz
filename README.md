@@ -41,6 +41,28 @@ The game features an immersive introduction with:
 - **Interactive class selection** with ASCII stat bars showing HP, Attack, Defense, and Mana with prestige bonuses highlighted
 - **Difficulty cards** with clear mechanical impact summaries (enemy power, loot, and gold multipliers)
 
+### TUI Mode (Experimental)
+
+An optional split-screen TUI display powered by [Terminal.Gui](https://github.com/gui-cs/Terminal.Gui) is available.
+
+```bash
+dotnet run -- --tui
+```
+
+**Features:**
+- Real-time split-screen layout: map (top-left), player stats (top-right), content area (bottom), and message log (persistent footer)
+- Live dungeon map visualization with your position marked
+- Responsive inventory and menu interfaces
+- Improved visual separation of game information
+
+**Requirements:**
+- Terminal supporting Unicode/UTF-8 (Linux/macOS shells, Windows Terminal, ConEmu, etc.)
+- Minimum terminal size: 100×30 characters recommended
+
+**Note:** TUI mode is **experimental** and optional. The default display uses [Spectre.Console](https://spectreconsole.net/) and remains the stable choice. If you encounter issues with TUI rendering, either resize your terminal or use the default mode (`dotnet run`).
+
+For detailed TUI architecture and troubleshooting, see [docs/TUI-ARCHITECTURE.md](docs/TUI-ARCHITECTURE.md). For rollback instructions, see [docs/ROLLBACK.md](docs/ROLLBACK.md).
+
 ---
 
 ## Gameplay
