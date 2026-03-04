@@ -460,13 +460,26 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         {
             var cleaned = StripAnsiCodes(message);
             var tuiColor = TuiColorMapper.MapAnsiToTuiColor(color);
+            
+            // Add visual prefix based on color for distinction in monochrome content panel (#1050)
+            var prefix = tuiColor switch
+            {
+                Color.Red or Color.BrightRed => "✖ ",
+                Color.Green or Color.BrightGreen => "✦ ",
+                Color.Brown => "⚠ ",   // Yellow
+                Color.Cyan or Color.BrightCyan => "◈ ",
+                Color.Magenta => "✦ ",
+                _ => "  "
+            };
+            
             var logType = tuiColor switch
             {
                 Color.Red or Color.BrightRed => "error",
                 Color.Green or Color.BrightGreen => "loot",
                 _ => "info"
             };
-            _layout.AppendContent(cleaned + "\n");
+            
+            _layout.AppendContent(prefix + cleaned + "\n");
             _layout.AppendLog(cleaned, logType);
         });
     }
@@ -478,7 +491,16 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             var cleaned = StripAnsiCodes(message);
-            _layout.AppendContent($"  {cleaned}\n");
+            var tuiColor = TuiColorMapper.MapAnsiToTuiColor(color);
+            
+            // Add visual prefix based on color for combat messages (#1050)
+            var prefix = tuiColor switch
+            {
+                Color.Red or Color.BrightRed => "✖ ",
+                _ => "⚔ "
+            };
+            
+            _layout.AppendContent($"  {prefix}{cleaned}\n");
             _layout.AppendLog(cleaned, "combat");
         });
     }
@@ -489,6 +511,13 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             _layout.AppendContent($"{label} {value}\n");
+            var logType = TuiColorMapper.MapAnsiToTuiColor(valueColor) switch
+            {
+                Color.Red or Color.BrightRed => "error",
+                Color.Green or Color.BrightGreen => "loot",
+                _ => "info"
+            };
+            _layout.AppendLog($"{label} {value}", logType);
         });
     }
 
@@ -542,12 +571,12 @@ public sealed class TerminalGuiDisplayService : IDisplayService
             sb.AppendLine("            EQUIPMENT");
             sb.AppendLine("═══════════════════════════════════════");
 
-            sb.AppendLine($"Weapon:    {player.EquippedWeapon?.Name ?? "(none)"}");
-            sb.AppendLine($"Chest:     {player.EquippedChest?.Name ?? "(none)"}");
-            sb.AppendLine($"Head:      {player.EquippedHead?.Name ?? "(none)"}");
-            sb.AppendLine($"Hands:     {player.EquippedHands?.Name ?? "(none)"}");
-            sb.AppendLine($"Feet:      {player.EquippedFeet?.Name ?? "(none)"}");
-            sb.AppendLine($"Accessory: {player.EquippedAccessory?.Name ?? "(none)"}");
+            sb.AppendLine($"Weapon:    {(player.EquippedWeapon != null ? $"{player.EquippedWeapon.Name,-20} ({GetPrimaryStatLabel(player.EquippedWeapon)})" : "(none)")}");
+            sb.AppendLine($"Chest:     {(player.EquippedChest != null ? $"{player.EquippedChest.Name,-20} ({GetPrimaryStatLabel(player.EquippedChest)})" : "(none)")}");
+            sb.AppendLine($"Head:      {(player.EquippedHead != null ? $"{player.EquippedHead.Name,-20} ({GetPrimaryStatLabel(player.EquippedHead)})" : "(none)")}");
+            sb.AppendLine($"Hands:     {(player.EquippedHands != null ? $"{player.EquippedHands.Name,-20} ({GetPrimaryStatLabel(player.EquippedHands)})" : "(none)")}");
+            sb.AppendLine($"Feet:      {(player.EquippedFeet != null ? $"{player.EquippedFeet.Name,-20} ({GetPrimaryStatLabel(player.EquippedFeet)})" : "(none)")}");
+            sb.AppendLine($"Accessory: {(player.EquippedAccessory != null ? $"{player.EquippedAccessory.Name,-20} ({GetPrimaryStatLabel(player.EquippedAccessory)})" : "(none)")}");
 
             _layout.SetContent(sb.ToString());
         });
