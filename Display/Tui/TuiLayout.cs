@@ -42,50 +42,50 @@ public sealed class TuiLayout
     /// </summary>
     public TuiLayout()
     {
-        // High-contrast color schemes (#1036)
+        // High-contrast color schemes (#1036) — null-safe for test environments
         var normalScheme = new ColorScheme
         {
-            Normal   = Application.Driver.MakeAttribute(Color.White, Color.Blue),
-            Focus    = Application.Driver.MakeAttribute(Color.White, Color.Blue),
-            HotNormal = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Blue),
-            HotFocus  = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Blue),
-            Disabled  = Application.Driver.MakeAttribute(Color.Gray, Color.Blue)
+            Normal   = MakeAttr(Color.White, Color.Blue),
+            Focus    = MakeAttr(Color.White, Color.Blue),
+            HotNormal = MakeAttr(Color.BrightYellow, Color.Blue),
+            HotFocus  = MakeAttr(Color.BrightYellow, Color.Blue),
+            Disabled  = MakeAttr(Color.Gray, Color.Blue)
         };
 
         var mapScheme = new ColorScheme
         {
-            Normal   = Application.Driver.MakeAttribute(Color.BrightGreen, Color.Black),
-            Focus    = Application.Driver.MakeAttribute(Color.BrightGreen, Color.Black),
-            HotNormal = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
-            HotFocus  = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
-            Disabled  = Application.Driver.MakeAttribute(Color.Gray, Color.Black)
+            Normal   = MakeAttr(Color.BrightGreen, Color.Black),
+            Focus    = MakeAttr(Color.BrightGreen, Color.Black),
+            HotNormal = MakeAttr(Color.BrightYellow, Color.Black),
+            HotFocus  = MakeAttr(Color.BrightYellow, Color.Black),
+            Disabled  = MakeAttr(Color.Gray, Color.Black)
         };
 
         var statsScheme = new ColorScheme
         {
-            Normal   = Application.Driver.MakeAttribute(Color.BrightCyan, Color.Black),
-            Focus    = Application.Driver.MakeAttribute(Color.BrightCyan, Color.Black),
-            HotNormal = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
-            HotFocus  = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
-            Disabled  = Application.Driver.MakeAttribute(Color.Gray, Color.Black)
+            Normal   = MakeAttr(Color.BrightCyan, Color.Black),
+            Focus    = MakeAttr(Color.BrightCyan, Color.Black),
+            HotNormal = MakeAttr(Color.BrightYellow, Color.Black),
+            HotFocus  = MakeAttr(Color.BrightYellow, Color.Black),
+            Disabled  = MakeAttr(Color.Gray, Color.Black)
         };
 
         var logScheme = new ColorScheme
         {
-            Normal   = Application.Driver.MakeAttribute(Color.White, Color.Black),
-            Focus    = Application.Driver.MakeAttribute(Color.White, Color.Black),
-            HotNormal = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
-            HotFocus  = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
-            Disabled  = Application.Driver.MakeAttribute(Color.Gray, Color.Black)
+            Normal   = MakeAttr(Color.White, Color.Black),
+            Focus    = MakeAttr(Color.White, Color.Black),
+            HotNormal = MakeAttr(Color.BrightYellow, Color.Black),
+            HotFocus  = MakeAttr(Color.BrightYellow, Color.Black),
+            Disabled  = MakeAttr(Color.Gray, Color.Black)
         };
 
         var inputScheme = new ColorScheme
         {
-            Normal   = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
-            Focus    = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
-            HotNormal = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
-            HotFocus  = Application.Driver.MakeAttribute(Color.BrightYellow, Color.Black),
-            Disabled  = Application.Driver.MakeAttribute(Color.Gray, Color.Black)
+            Normal   = MakeAttr(Color.BrightYellow, Color.Black),
+            Focus    = MakeAttr(Color.BrightYellow, Color.Black),
+            HotNormal = MakeAttr(Color.BrightYellow, Color.Black),
+            HotFocus  = MakeAttr(Color.BrightYellow, Color.Black),
+            Disabled  = MakeAttr(Color.Gray, Color.Black)
         };
 
         MainWindow = new Toplevel { ColorScheme = normalScheme };
@@ -268,5 +268,16 @@ public sealed class TuiLayout
     public void SetStats(string statsText)
     {
         _statsView.Text = statsText;
+    }
+
+    /// <summary>
+    /// Creates a Terminal.Gui Attribute safely, returning a default when Application.Driver
+    /// is not initialized (e.g., during unit tests).
+    /// </summary>
+    private static Terminal.Gui.Attribute MakeAttr(Color fg, Color bg)
+    {
+        return Application.Driver is not null
+            ? Application.Driver.MakeAttribute(fg, bg)
+            : new Terminal.Gui.Attribute();
     }
 }
