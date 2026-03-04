@@ -1,4 +1,5 @@
 namespace Dungnz.Engine;
+using Dungnz.Data;
 using Dungnz.Models;
 using Dungnz.Display;
 using Dungnz.Systems;
@@ -35,138 +36,7 @@ public class CombatEngine : ICombatEngine
     private string? _pendingAchievement;
     private const int MaxLevel = 20; // Fix #183
 
-    private static readonly string[] _playerHitMessages =
-    {
-        "You strike {0} for {1} damage!",
-        "Your blade finds a gap — {1} damage on {0}!",
-        "A solid blow connects! {0} takes {1} damage!",
-        "You tear through {0}'s guard for {1} damage!",
-        "{0} staggers back — {1} damage!"
-    };
-
-    private static readonly string[] _warriorHitMessages =
-    {
-        "You drive your blade deep — {0} takes {1} damage!",
-        "A bone-crunching blow! {0} reels back — {1} damage!",
-        "You hammer through {0}'s guard with brute force — {1} damage!",
-        "Pure power behind the swing — {0} staggers for {1} damage!",
-        "You crash into {0} like a battering ram — {1} damage!"
-    };
-
-    private static readonly string[] _mageHitMessages =
-    {
-        "Arcane force tears through {0} — {1} damage!",
-        "Eldritch energy crackles as it strikes {0} for {1} damage!",
-        "You channel raw magic into a focused bolt — {1} damage to {0}!",
-        "Reality bends around your attack — {0} takes {1} damage!",
-        "Your spell finds its mark — {1} crackling damage to {0}!"
-    };
-
-    private static readonly string[] _rogueHitMessages =
-    {
-        "You dart in for a precise cut — {0} takes {1} damage!",
-        "A lightning-quick strike to the weak point — {1} damage!",
-        "You find the gap in {0}'s defenses — {1} damage!",
-        "Quick as shadow — {0} barely registers the blow until it hurts. {1} damage!",
-        "A surgical strike — {0} bleeds from a wound it didn't see coming. {1} damage!"
-    };
-
-    private static readonly string[] _playerMissMessages =
-    {
-        "{0} sidesteps your attack!",
-        "Your blow glances off harmlessly.",
-        "You swing wide — {0} ducks back!",
-        "{0} twists away at the last moment!",
-        "Your strike finds nothing but air."
-    };
-
-    private static readonly string[] _warriorMissMessages =
-    {
-        "You swing with power but {0} isn't where you thought!",
-        "Too slow — {0} sidesteps your heavy blow!"
-    };
-
-    private static readonly string[] _mageMissMessages =
-    {
-        "Your spell fizzles at the last moment.",
-        "The incantation slips — {0} escapes unscathed!"
-    };
-
-    private static readonly string[] _rogueMissMessages =
-    {
-        "{0} anticipates your angle — the strike finds nothing.",
-        "You dart in but {0} reads your movement!"
-    };
-
-    private static readonly string[] _critMessages =
-    {
-        "💥 Critical hit! You slam {0} for {1} damage!",
-        "💥 Devastating blow! {1} damage to {0}!",
-        "💥 Perfect strike — {1} crushing damage!",
-        "💥 You find the weak point! {1} damage on {0}!"
-    };
-
-    private static readonly string[] _warriorCritMessages =
-    {
-        "💥 CRUSHING BLOW! You put your entire body into it — {1} devastating damage to {0}!",
-        "💥 SHATTERING STRIKE! {0} is sent reeling — {1} damage!"
-    };
-
-    private static readonly string[] _mageCritMessages =
-    {
-        "💥 ARCANE SURGE! Your spell overloads and detonates — {1} damage on {0}!",
-        "💥 CRITICAL RESONANCE! The magic tears through {0} for {1} damage!"
-    };
-
-    private static readonly string[] _rogueCritMessages =
-    {
-        "💥 VITAL STRIKE! You find the perfect spot — {1} piercing damage to {0}!",
-        "💥 BACKSTAB! {0} never saw it coming — {1} damage!"
-    };
-
-    private static readonly string[] _paladinHitMessages =
-    {
-        "You bring your holy weapon down upon {0} — {1} damage!",
-        "Justice is served — {0} takes {1} damage!",
-        "The Light guides your hand — {1} damage to {0}!",
-        "A righteous blow strikes {0} for {1} damage!",
-        "You smite {0} with holy fury — {1} damage!"
-    };
-
-    private static readonly string[] _necromancerHitMessages =
-    {
-        "Necrotic energy flows through your strike — {0} takes {1} damage!",
-        "You channel dark power into a blow — {1} damage to {0}!",
-        "Death magic crackles as you hit {0} for {1} damage!",
-        "Shadow and decay tear through {0} — {1} damage!",
-        "You strike with the power of the grave — {1} damage on {0}!"
-    };
-
-    private static readonly string[] _rangerHitMessages =
-    {
-        "A precise strike finds the gap — {0} takes {1} damage!",
-        "Hunter's instinct guides your aim — {1} damage to {0}!",
-        "You strike with practiced efficiency — {1} damage on {0}!",
-        "Years of tracking this prey pay off — {0} takes {1} damage!",
-        "Swift and sure — {0} takes {1} damage!"
-    };
-
-    private static readonly string[] _enemyHitMessages =
-    {
-        "{0} strikes you for {1} damage!",
-        "{0} lands a hit — {1} damage!",
-        "You take {1} damage from {0}'s attack!",
-        "{0}'s blow connects! {1} damage!",
-        "You fail to dodge — {0} deals {1} damage!"
-    };
-
-    private static readonly string[] _playerDodgeMessages =
-    {
-        "You dodge {0}'s attack!",
-        "You sidestep {0}'s blow just in time!",
-        "{0} swings and misses — you're too quick!",
-        "You slip past {0}'s strike!"
-    };
+    // Narration message arrays are in Data/CombatNarration.cs
 
     /// <summary>
     /// Initialises a new <see cref="CombatEngine"/> with the required display and input
@@ -213,7 +83,7 @@ public class CombatEngine : ICombatEngine
     {
         _display = display;
         _input = input ?? new ConsoleInputReader();
-        _rng = rng ?? new Random();
+        _rng = rng ?? Random.Shared;
         _events = events;
         _statusEffects = statusEffects ?? new StatusEffectManager(display);
         _abilities = abilities ?? new AbilityManager();
@@ -712,10 +582,10 @@ public class CombatEngine : ICombatEngine
         if (dodged)
         {
             var missPool = player.Class switch {
-                PlayerClass.Warrior => _warriorMissMessages,
-                PlayerClass.Mage    => _mageMissMessages,
-                PlayerClass.Rogue   => _rogueMissMessages,
-                _                   => _playerMissMessages
+                PlayerClass.Warrior => CombatNarration.WarriorMissMessages,
+                PlayerClass.Mage    => CombatNarration.MageMissMessages,
+                PlayerClass.Rogue   => CombatNarration.RogueMissMessages,
+                _                   => CombatNarration.PlayerMissMessages
             };
             _display.ShowCombatMessage(_narration.Pick(missPool, enemy.Name));
             _turnLog.Add(new CombatTurn("You", "Attack", 0, false, true, null));
@@ -838,19 +708,19 @@ public class CombatEngine : ICombatEngine
             }
 
             var hitPool = player.Class switch {
-                PlayerClass.Warrior => _warriorHitMessages,
-                PlayerClass.Mage    => _mageHitMessages,
-                PlayerClass.Rogue   => _rogueHitMessages,
-                PlayerClass.Paladin => _paladinHitMessages,
-                PlayerClass.Necromancer => _necromancerHitMessages,
-                PlayerClass.Ranger  => _rangerHitMessages,
-                _                   => _playerHitMessages
+                PlayerClass.Warrior => CombatNarration.WarriorHitMessages,
+                PlayerClass.Mage    => CombatNarration.MageHitMessages,
+                PlayerClass.Rogue   => CombatNarration.RogueHitMessages,
+                PlayerClass.Paladin => CombatNarration.PaladinHitMessages,
+                PlayerClass.Necromancer => CombatNarration.NecromancerHitMessages,
+                PlayerClass.Ranger  => CombatNarration.RangerHitMessages,
+                _                   => CombatNarration.PlayerHitMessages
             };
             var critPool = player.Class switch {
-                PlayerClass.Warrior => _warriorCritMessages,
-                PlayerClass.Mage    => _mageCritMessages,
-                PlayerClass.Rogue   => _rogueCritMessages,
-                _                   => _critMessages
+                PlayerClass.Warrior => CombatNarration.WarriorCritMessages,
+                PlayerClass.Mage    => CombatNarration.MageCritMessages,
+                PlayerClass.Rogue   => CombatNarration.RogueCritMessages,
+                _                   => CombatNarration.CritMessages
             };
             if (isCrit)
             {
@@ -1068,7 +938,7 @@ public class CombatEngine : ICombatEngine
         }
         else if (RollPlayerDodge(player))
         {
-            _display.ShowCombatMessage(_narration.Pick(_playerDodgeMessages, enemy.Name));
+            _display.ShowCombatMessage(_narration.Pick(CombatNarration.PlayerDodgeMessages, enemy.Name));
             _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, false, true, null));
         }
         else if (player.BlockChanceBonus > 0 && _rng.NextDouble() < player.BlockChanceBonus)
@@ -1241,7 +1111,7 @@ public class CombatEngine : ICombatEngine
             
             player.TakeDamage(enemyDmgFinal);
             _stats.DamageTaken += enemyDmgFinal;
-            _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(_enemyHitMessages, enemy.Name, enemyDmgFinal), enemyDmgFinal));
+            _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(CombatNarration.EnemyHitMessages, enemy.Name, enemyDmgFinal), enemyDmgFinal));
 
             // Near-death atmospheric flavor (HP < 25%, ~50% chance to avoid spam)
             if (player.HP > 0 && player.HP < player.MaxHP * 0.25f && _rng.NextDouble() < 0.5)

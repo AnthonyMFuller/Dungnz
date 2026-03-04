@@ -36,9 +36,13 @@ public class DungeonGenerator
     /// All available items used to populate merchant stock. When <see langword="null"/>,
     /// merchants fall back to a hardcoded default set.
     /// </param>
-    public DungeonGenerator(int? seed, IReadOnlyList<Item> allItems)
+    /// <param name="rng">
+    /// Optional pre-seeded <see cref="Random"/> instance for deterministic testing.
+    /// When provided, overrides the <paramref name="seed"/> parameter.
+    /// </param>
+    public DungeonGenerator(int? seed, IReadOnlyList<Item> allItems, Random? rng = null)
     {
-        _rng = seed.HasValue ? new Random(seed.Value) : new Random();
+        _rng = rng ?? (seed.HasValue ? new Random(seed.Value) : Random.Shared);
         _allItems = allItems;
     }
 
