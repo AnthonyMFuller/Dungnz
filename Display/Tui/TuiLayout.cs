@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using Terminal.Gui;
 
 namespace Dungnz.Display.Tui;
@@ -8,6 +10,9 @@ namespace Dungnz.Display.Tui;
 /// </summary>
 public sealed class TuiLayout
 {
+    private readonly List<string> _messageHistory = new();
+    private const int MaxMessageHistory = 100;
+
     /// <summary>Gets the main application window that hosts all panels.</summary>
     public Toplevel MainWindow { get; }
 
@@ -134,13 +139,35 @@ public sealed class TuiLayout
     }
 
     /// <summary>
-    /// Appends a line to the message log panel.
+    /// Appends a line to the message log panel with timestamp and color-coding.
     /// </summary>
     /// <param name="message">The message to log.</param>
-    public void AppendLog(string message)
+    /// <param name="type">The message type for color-coding (error, combat, info, loot).</param>
+    public void AppendLog(string message, string type = "info")
     {
-        var current = MessageLogPanel.Text.ToString() ?? string.Empty;
-        MessageLogPanel.Text = current + message + "\n";
+        var timestamp = DateTime.Now.ToString("HH:mm:ss");
+        var prefix = type switch
+        {
+            "error" => "❌",
+            "combat" => "⚔",
+            "loot" => "💰",
+            _ => "ℹ"
+        };
+        
+        var logLine = $"[{timestamp}] {prefix} {message}";
+        _messageHistory.Add(logLine);
+        
+        // Keep only last 100 messages
+        if (_messageHistory.Count > MaxMessageHistory)
+        {
+            _messageHistory.RemoveAt(0);
+        }
+        
+        // Update the log panel
+        MessageLogPanel.Text = string.Join("\n", _messageHistory);
+        
+        // Auto-scroll to bottom
+        MessageLogPanel.MoveEnd();
     }
 
     /// <summary>
