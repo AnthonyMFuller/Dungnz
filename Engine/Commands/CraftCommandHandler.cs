@@ -32,7 +32,11 @@ internal sealed class CraftCommandHandler : ICommandHandler
             context.Display.ShowCraftRecipe(chosen.Name, chosen.Result.ToItem(), ingredientsWithAvailability);
 
             var (success, msg) = CraftingSystem.TryCraft(context.Player, chosen);
-            if (success) context.Display.ShowMessage(msg);
+            if (success)
+            {
+                context.Display.ShowMessage(msg);
+                context.Display.ShowPlayerStats(context.Player);
+            }
             else context.Display.ShowError(msg);
             return;
         }
@@ -47,7 +51,11 @@ internal sealed class CraftCommandHandler : ICommandHandler
         }
 
         var (success2, msg2) = CraftingSystem.TryCraft(context.Player, recipe);
-        if (success2) context.Display.ShowMessage(msg2);
+        if (success2)
+        {
+            context.Display.ShowMessage(msg2);
+            context.Display.ShowPlayerStats(context.Player);
+        }
         else context.Display.ShowError(msg2);
     }
 }

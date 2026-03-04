@@ -136,6 +136,7 @@ public class EquipmentManager
             _display.ShowMessage(ItemInteractionNarration.Equip(item));
             if (!string.IsNullOrEmpty(item.Description))
                 _display.ShowMessage($"  {item.Description}");
+            _display.ShowPlayerStats(player);
         }
         catch (ArgumentException ex)
         {
@@ -157,6 +158,7 @@ public class EquipmentManager
             var item = player.UnequipItem(slotName);
             SetBonusManager.ApplySetBonuses(player);
             _display.ShowMessage($"You unequip {item!.Name} and return it to your inventory.");
+            _display.ShowPlayerStats(player);
         }
         catch (InvalidOperationException ex)
         {

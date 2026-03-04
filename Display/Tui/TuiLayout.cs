@@ -208,7 +208,18 @@ public sealed class TuiLayout
     public void AppendContent(string text)
     {
         var current = ContentPanel.Text.ToString() ?? string.Empty;
-        ContentPanel.Text = current + text;
+        var combined = current + text;
+        
+        // Cap at 500 lines to prevent unbounded growth
+        var lines = combined.Split('\n');
+        if (lines.Length > 500)
+        {
+            combined = string.Join("\n", lines.Skip(lines.Length - 500));
+        }
+        
+        ContentPanel.Text = combined;
+        if (Application.Driver is not null)
+            Application.Refresh();
     }
 
     /// <summary>
@@ -250,6 +261,8 @@ public sealed class TuiLayout
 
         // Auto-scroll to bottom
         MessageLogPanel.MoveEnd();
+        if (Application.Driver is not null)
+            Application.Refresh();
     }
 
     /// <summary>
@@ -259,6 +272,8 @@ public sealed class TuiLayout
     public void SetMap(string mapText)
     {
         _mapView.Text = mapText;
+        if (Application.Driver is not null)
+            Application.Refresh();
     }
 
     /// <summary>
@@ -268,6 +283,8 @@ public sealed class TuiLayout
     public void SetStats(string statsText)
     {
         _statsView.Text = statsText;
+        if (Application.Driver is not null)
+            Application.Refresh();
     }
 
     /// <summary>
