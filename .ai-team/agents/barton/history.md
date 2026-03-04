@@ -1280,3 +1280,46 @@ All 5 were implemented (none removed) — the combat system already had the nece
 - player.Mana directly mutated in 2 CombatEngine locations
 - IEnemyAI implementations are all dead code
 - Key file paths: Engine/CombatEngine.cs, Systems/AbilityManager.cs, Systems/SetBonusManager.cs, Systems/StatusEffectManager.cs, Systems/PassiveEffectProcessor.cs
+
+---
+
+### 2026-03-03 — Batch Bug Fixes & Tech Debt (#931, #935, #997, #998, #956, #962)
+
+**PR:** #1010 — `fix: Batch Barton fixes (#931, #935, #997, #998, #956, #962)`
+**Branch:** `squad/batch-barton-fixes`
+
+**#931 — ComboPoints negative validation**
+- **File:** `Models/PlayerStats.cs` line 260
+- **Fix:** Changed `Math.Min(5, ComboPoints + amount)` to `Math.Clamp(ComboPoints + amount, 0, 5)` to prevent negative combo points
+
+**#935 — Direct stat mutations bypass validation**
+- **Files:** `Engine/IntroSequence.cs`, `Engine/CombatEngine.cs`, `Systems/SkillTree.cs`
+- **Fix:** Replaced direct `player.Mana =` assignments with `player.RestoreMana()`, direct `player.Attack +=` with `player.ModifyAttack()`, and direct `player.Defense =` / `+=` with `player.ModifyDefense()`
+
+**#997 — 5 dead IEnemyAI implementations**
+- **Deleted:** `Engine/GoblinShamanAI.cs`, `Engine/CryptPriestAI.cs`, `Engine/InfernalDragonAI.cs`, `Engine/LichAI.cs`, `Engine/LichKingAI.cs`
+- **Updated:** `Dungnz.Tests/EnemyAITests.cs` — removed tests for deleted classes, kept CombatContext test
+- All 5 AI classes were never instantiated by game code; enemy AI runs inline in CombatEngine
+
+**#998 — Duplicate SoulHarvest heal**
+- **Deleted:** `Systems/SoulHarvestPassive.cs` — event-bus-based implementation never registered in game code
+- **Updated:** `Dungnz.Tests/GameEventBusTests.cs` — removed 3 orphaned tests
+- The inline CombatEngine implementation (line ~829) is the active code path
+
+**#956 — Magic strings in enemy loot**
+- **Created:** `Systems/ItemNames.cs` — 33 constants for all item names used in loot tables
+- **Updated:** 27 enemy files in `Systems/Enemies/` + `Systems/ItemConfig.cs`
+- Pattern: `i.Name == "Rusty Sword"` → `i.Name == ItemNames.RustySword`
+
+**#962 — Enemy dead state standardization**
+- **Added:** `Enemy.IsDead` property (`HP <= 0`) with `[JsonIgnore]` to `Models/Enemy.cs`
+- **Updated:** `Engine/CombatEngine.cs`, `Systems/AbilityManager.cs`, `Engine/Commands/ExamineCommandHandler.cs`, `Engine/Commands/GoCommandHandler.cs`
+- Replaced `enemy.HP <= 0` with `enemy.IsDead` and `enemy.HP > 0` with `!enemy.IsDead`
+
+**Key learnings:**
+- `Models/PlayerStats.cs` has validated methods for all stat mutations: TakeDamage/Heal (HP), RestoreMana/SpendMana/DrainMana (Mana), ModifyAttack/ModifyDefense (ATK/DEF)
+- Enemy death should always be checked via `enemy.IsDead`, not raw HP comparisons
+- Item name strings should use `Systems/ItemNames.cs` constants, not literals
+- `IEnemyAI` interface exists but is not wired into the game loop — CombatEngine handles all enemy AI inline
+- Serialization snapshot tests exist; new public properties on Enemy need `[JsonIgnore]` if computed
+- Project uses `#pragma warning disable CS1591` for files with many self-documenting constants
