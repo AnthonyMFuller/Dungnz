@@ -42,7 +42,7 @@ public class GameLoop
     /// <summary>Set to <see langword="true"/> when the run ends (win, death) to break the Run() loop.</summary>
     private bool _gameOver = false;
 
-    private const int FinalFloor = 8;
+    private const int FinalFloor = DungeonGenerator.FinalFloor;
 
     private readonly Dictionary<CommandType, ICommandHandler> _handlers;
     private CommandContext _context = null!;

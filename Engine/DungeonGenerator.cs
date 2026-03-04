@@ -18,6 +18,9 @@ public class DungeonGenerator
     /// <summary>Default number of rooms along the vertical axis.</summary>
     public const int DefaultHeight = 4;
 
+    /// <summary>The final floor of the dungeon. Reaching this floor and defeating the boss wins the run.</summary>
+    public const int FinalFloor = 8;
+
     private readonly Random _rng;
     private readonly IReadOnlyList<Item> _allItems = Array.Empty<Item>();
 
