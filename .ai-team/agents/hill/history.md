@@ -1645,3 +1645,113 @@ Parameter was spelled `dungeoonFloor` (double 'o') in signature, XML doc, and me
 - `Systems/GameEventBus.cs` — generic pub/sub with Subscribe/Unsubscribe/Clear
 - `Systems/GameEvents.cs` — standard C# event hub with ClearAll cleanup
 - `Systems/SoulHarvestPassive.cs` — event bus consumer with Register/Unregister pattern
+
+### 2026-03-06 — Terminal.Gui TUI Core Infrastructure (PR #1030)
+
+**Task:** Implement Phase 1 TUI core infrastructure for Terminal.Gui migration (Issues #1017-#1021).
+
+**Branch:** `squad/1017-1021-tui-core`
+
+**Implementation:**
+
+Created complete Terminal.Gui TUI foundation in `Display/Tui/` directory:
+
+1. **TuiLayout.cs** — Split-screen layout with 5 panels:
+   - Map Panel (top-left, 60% width × 30% height) — dungeon map display
+   - Stats Panel (top-right, 40% width × 30% height) — player HP/MP/stats/equipment
+   - Content Panel (middle, 100% width × 50% height) — room descriptions, combat text, menus
+   - Message Log Panel (lower, 100% width × 15% height) — scrollable message history
+   - Command Input (bottom, 100% width × 5% height) — text field for player commands
+
+2. **GameThreadBridge.cs** — Dual-thread coordination:
+   - Terminal.Gui runs on main thread via `Application.Run()`
+   - GameLoop runs on background thread
+   - `Application.MainLoop.Invoke()` marshals UI updates from game thread
+   - `BlockingCollection<string>` queues commands from UI to game thread
+   - `TaskCompletionSource<T>` pattern for synchronous input methods
+
+3. **TerminalGuiInputReader.cs** — IInputReader implementation:
+   - `ReadLine()` blocks on `_bridge.WaitForCommand()` until user types in TUI
+   - `ReadKey()` returns null (TUI uses modal dialogs, not Console.ReadKey)
+   - `IsInteractive` returns false (TUI controls its own focus)
+
+4. **TuiMenuDialog.cs** — Reusable modal dialog:
+   - Generic `TuiMenuDialog<T>` for type-safe option selection
+   - Terminal.Gui `Dialog` + `ListView` for arrow-key navigation
+   - Helper methods: `Show()` for strings, `ShowIndexed()` for 1-based indices, `ShowConfirm()` for Yes/No
+
+5. **TerminalGuiDisplayService.cs** — Full IDisplayService implementation:
+   - All 73 methods implemented
+   - Pure output methods use `GameThreadBridge.InvokeOnUiThread()` to update panels
+   - 19 input-coupled methods use `GameThreadBridge.InvokeOnUiThreadAndWait()` + `TuiMenuDialog`
+   - Simplified map rendering (full BFS-based map deferred to later phase)
+   - Simplified ShowSkillTreeMenu (complex skill UI deferred to later phase)
+
+## Learnings
+
+### Terminal.Gui v1.x Architecture Patterns
+
+**Thread-safe UI updates:**
+- Terminal.Gui v1.x uses `Application.MainLoop.Invoke(Action)` (not `Application.Invoke()` as in v2 docs)
+- All UI updates from non-UI threads MUST be marshaled via `MainLoop.Invoke()`
+- `TaskCompletionSource` with `TaskCreationOptions.RunContinuationsAsynchronously` prevents deadlocks
+
+**Event handlers and return values:**
+- `Button.Clicked` event expects `Action` (void return), not `Func<T>`
+- Cannot use `return value` inside event lambda — must capture result in outer variable
+- Pattern: `int? result = null; okButton.Clicked += () => { result = Parse(...); RequestStop(); }; return result;`
+
+**Dialog lifecycle:**
+- `Application.Run(dialog)` blocks until `Application.RequestStop()` is called
+- Dialog must call `RequestStop()` in button handlers to unblock
+- Result variables captured before `Run()` are available after it returns
+
+### Model Property Mapping
+
+**Player properties:**
+- `player.Class` (enum) → `.ToString()` for display, NOT `player.ClassName`
+- XP to next level: `100 * player.Level` (calculated, not a property)
+- Equipment slots: `EquippedHead`, `EquippedHands`, `EquippedFeet` (not Helm/Gloves/Boots)
+- Inventory max: `Player.MaxInventorySize` (const, not instance property)
+- Skills: `player.Skills.IsUnlocked(id)` (SkillTree, not `player.UnlockedSkills`)
+
+**Enemy properties:**
+- `AsciiArt` is `string[]`, not `string` — use `string.Join("\n", enemy.AsciiArt)`
+- No `Description` property on Enemy base class
+
+**RunStats properties:**
+- `GoldCollected` and `ItemsFound` (not GoldEarned/ItemsCollected)
+
+**ItemType enum:**
+- Values: `Weapon`, `Armor`, `Accessory`, `Consumable`, `CraftingMaterial`, `Gold`
+- No `Chest`, `Helm`, `Gloves`, `Boots` (those are ArmorSlot, not ItemType)
+
+### Nullable Reference Type Patterns
+
+**Generic dialog options:**
+- `TuiMenuDialog<Item?>` options must be typed as `(string Label, Item? Value)`
+- LINQ: `.Select(i => (i.Name, (Item?)i))` casts to nullable explicitly
+- Null-coalescing on structs: `Difficulty` is struct, `?? Difficulty.Normal` illegal
+
+**Enum return defaults:**
+- `StartupMenuOption` and `Difficulty` are non-nullable value types
+- Cannot use `?? default` — just return the result directly
+
+### Display/Tui Architecture Decisions
+
+**Simplified implementations:**
+- Map rendering: Shows current room position + exits only (full BFS map requires dungeon registry access)
+- ShowSkillTreeMenu: Returns null (complex skill UI deferred to panel implementation phase)
+- These are marked for enhancement in later PRs
+
+**Additive-only changes:**
+- All TUI code in `Display/Tui/` — NO changes to existing Display/ files
+- SpectreDisplayService, IDisplayService, IInputReader remain untouched
+- Zero regression risk: default Spectre.Console path unchanged
+
+**Build/test metrics:**
+- 1796 lines of new code (5 files)
+- 0 errors, 0 warnings
+- All 1641 tests pass
+- Clean build in 3.68s
+
