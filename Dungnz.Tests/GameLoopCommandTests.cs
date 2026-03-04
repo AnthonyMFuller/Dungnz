@@ -269,7 +269,7 @@ public class GameLoopCommandTests
     {
         var (player, room, display, combat) = MakeSetup();
         var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true };
-        room.Items.Add(sword);
+        room.AddItem(sword);
 
         var loop = MakeLoop(display, combat.Object, "examine iron sword", "quit");
         loop.Run(player, room);

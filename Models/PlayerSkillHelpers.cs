@@ -1,5 +1,8 @@
 namespace Dungnz.Models;
 
+/// <summary>
+/// Skill-dependent helper methods: threshold calculations and cooldown reductions based on unlocked skills.
+/// </summary>
 public partial class Player
 {
     /// <summary>

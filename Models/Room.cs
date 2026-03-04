@@ -95,10 +95,17 @@ public class Room
     public Enemy? Enemy { get; set; }
 
     /// <summary>
-    /// Gets or sets the list of items lying on the floor of this room that the player can pick up.
-    /// Items are removed from this list when the player takes them.
+    /// Gets the read-only list of items lying on the floor of this room that the player can pick up.
+    /// Use <see cref="AddItem"/> and <see cref="RemoveItem"/> to modify the collection.
     /// </summary>
-    public List<Item> Items { get; set; } = new();
+    public IReadOnlyList<Item> Items => _items;
+    private readonly List<Item> _items = new();
+
+    /// <summary>Adds an item to this room's floor.</summary>
+    public void AddItem(Item item) => _items.Add(item);
+
+    /// <summary>Removes an item from this room's floor. Returns <c>true</c> if the item was found and removed.</summary>
+    public bool RemoveItem(Item item) => _items.Remove(item);
 
     /// <summary>
     /// Gets or sets whether this room is the dungeon's exit. Reaching an exit room with no living

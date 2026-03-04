@@ -74,7 +74,7 @@ public class TakeCommandTests
     {
         // Arrange
         var (player, room, display, combat) = MakeSetup();
-        room.Items.Add(new Item { Name = "Health Potion", Type = ItemType.Consumable });
+        room.AddItem(new Item { Name = "Health Potion", Type = ItemType.Consumable });
         display.ShowTakeMenuResult = null; // user cancels — we only care that menu appeared
 
         var loop = MakeLoop(display, combat.Object, "take", "quit");
@@ -92,7 +92,7 @@ public class TakeCommandTests
         // Arrange
         var (player, room, display, combat) = MakeSetup();
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable };
-        room.Items.Add(potion);
+        room.AddItem(potion);
         display.ShowTakeMenuResult = null; // user cancels (Escape / null return)
 
         var loop = MakeLoop(display, combat.Object, "take", "quit");
@@ -111,7 +111,7 @@ public class TakeCommandTests
         // Arrange
         var (player, room, display, combat) = MakeSetup();
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, Weight = 1 };
-        room.Items.Add(potion);
+        room.AddItem(potion);
         display.ShowTakeMenuResult = new TakeSelection.Single(potion); // user highlights and confirms this item
 
         var loop = MakeLoop(display, combat.Object, "take", "quit");
@@ -133,8 +133,8 @@ public class TakeCommandTests
         var (player, room, display, combat) = MakeSetup();
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, Weight = 1 };
         var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, Weight = 2 };
-        room.Items.Add(potion);
-        room.Items.Add(sword);
+        room.AddItem(potion);
+        room.AddItem(sword);
         display.ShowTakeMenuResult = new TakeSelection.All();
 
         var loop = MakeLoop(display, combat.Object, "take", "quit");
@@ -158,8 +158,8 @@ public class TakeCommandTests
 
         var leftover = new Item { Name = "Leftover Gem", Type = ItemType.Consumable, Weight = 1 };
         var extra = new Item { Name = "Extra Crystal", Type = ItemType.Consumable, Weight = 1 };
-        room.Items.Add(leftover);
-        room.Items.Add(extra);
+        room.AddItem(leftover);
+        room.AddItem(extra);
         display.ShowTakeMenuResult = new TakeSelection.All();
 
         var loop = MakeLoop(display, combat.Object, "take", "quit");
@@ -182,7 +182,7 @@ public class TakeCommandTests
         // Arrange
         var (player, room, display, combat) = MakeSetup();
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, Weight = 1 };
-        room.Items.Add(potion);
+        room.AddItem(potion);
 
         var loop = MakeLoop(display, combat.Object, "take potion", "quit");
 
@@ -201,7 +201,7 @@ public class TakeCommandTests
         // Levenshtein("potoin", "potion") == 1; tolerance == Max(3, 6/2) == 3 → within range
         var (player, room, display, combat) = MakeSetup();
         var potion = new Item { Name = "Potion", Type = ItemType.Consumable, Weight = 1 };
-        room.Items.Add(potion);
+        room.AddItem(potion);
 
         var loop = MakeLoop(display, combat.Object, "take potoin", "quit");
 
@@ -219,7 +219,7 @@ public class TakeCommandTests
         // Arrange — "axe" is far from "Health Potion"; no fuzzy match possible
         var (player, room, display, combat) = MakeSetup();
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable };
-        room.Items.Add(potion);
+        room.AddItem(potion);
 
         var loop = MakeLoop(display, combat.Object, "take axe", "quit");
 
@@ -240,7 +240,7 @@ public class TakeCommandTests
             player.Inventory.Add(new Item { Name = $"Filler {i}", Type = ItemType.Consumable, Weight = 0 });
 
         var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, Weight = 5 };
-        room.Items.Add(sword);
+        room.AddItem(sword);
 
         var loop = MakeLoop(display, combat.Object, "take sword", "quit");
 

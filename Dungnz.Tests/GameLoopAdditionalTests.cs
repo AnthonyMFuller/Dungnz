@@ -187,8 +187,8 @@ public class GameLoopAdditionalTests
     public void TakeCommand_WhenRoomHasMultipleItems_PicksNamedItem()
     {
         var (player, room, display, combat) = MakeSetup();
-        room.Items.Add(new Item { Name = "Gold Coin", Type = ItemType.Consumable });
-        room.Items.Add(new Item { Name = "Iron Shield", Type = ItemType.Armor });
+        room.AddItem(new Item { Name = "Gold Coin", Type = ItemType.Consumable });
+        room.AddItem(new Item { Name = "Iron Shield", Type = ItemType.Armor });
         var loop = MakeLoop(display, combat.Object, "take Gold Coin", "quit");
         loop.Run(player, room);
         display.Messages.Should().NotBeEmpty();
@@ -247,7 +247,7 @@ public class GameLoopAdditionalTests
     {
         var (player, room, display, combat) = MakeSetup();
         var newRoom = new Room { Description = "Treasure room" };
-        newRoom.Items.Add(new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 30 });
+        newRoom.AddItem(new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 30 });
         room.Exits[Direction.North] = newRoom;
         var loop = MakeLoop(display, combat.Object, "north", "quit");
         loop.Run(player, room);

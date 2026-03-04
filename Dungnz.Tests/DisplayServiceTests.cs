@@ -155,7 +155,7 @@ public class DisplayServiceTests : IDisposable
     {
         var svc = new ConsoleDisplayService();
         var room = new Room { Description = "Test room" };
-        room.Items.Add(new Item { Name = "Sword" });
+        room.AddItem(new Item { Name = "Sword" });
         svc.ShowRoom(room);
         Output.Should().Contain("Sword");
     }

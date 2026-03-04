@@ -308,7 +308,8 @@ public class CommandHandlerSmokeTests
     {
         var display = new TestDisplayService();
         var potion = new ItemBuilder().Named("Magic Potion").WithHeal(10).WithDescription("Sparkles blue.").Build();
-        var room = new Room { Description = "Alchemy room", Items = new List<Item> { potion } };
+        var room = new Room { Description = "Alchemy room" };
+        room.AddItem(potion);
         var ctx = MakeContext(display: display, room: room);
         var handler = new ExamineCommandHandler();
 

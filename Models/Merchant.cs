@@ -1,5 +1,7 @@
 namespace Dungnz.Models;
 
+using Dungnz.Data;
+
 /// <summary>Represents a single item in a merchant's stock along with its sale price.</summary>
 public class MerchantItem
 {
@@ -47,20 +49,9 @@ public class Merchant
         // Fallback: if JSON loading yielded nothing, use a minimal hardcoded set
         if (stock.Count == 0)
         {
-            stock = GetFallbackStock(difficulty);
+            stock = DefaultItems.GetFallbackMerchantStock(difficulty);
         }
 
         return new Merchant { Stock = stock };
-    }
-
-    private static List<MerchantItem> GetFallbackStock(DifficultySettings? difficulty = null)
-    {
-        var multiplier = difficulty?.MerchantPriceMultiplier ?? 1.0f;
-        return
-        [
-            new() { Item = new Item { Name = "Health Potion", Type = ItemType.Consumable, HealAmount = 20, Description = "Restores 20 HP.", Tier = ItemTier.Common }, Price = Math.Max(1, (int)(25 * multiplier)) },
-            new() { Item = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true, Description = "A sturdy iron blade.", Tier = ItemTier.Common }, Price = Math.Max(1, (int)(50 * multiplier)) },
-            new() { Item = new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 3, IsEquippable = true, Description = "Basic leather protection.", Tier = ItemTier.Common }, Price = Math.Max(1, (int)(40 * multiplier)) },
-        ];
     }
 }

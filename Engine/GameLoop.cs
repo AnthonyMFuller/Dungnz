@@ -251,6 +251,7 @@ public class GameLoop
                 _stats.TimeElapsed = DateTime.UtcNow - _runStart;
                 RecordRunEnd(won: false, outcomeOverride: "Quit");
                 _display.ShowMessage("Thanks for playing!");
+                Cleanup();
                 return;
             }
 
@@ -280,6 +281,18 @@ public class GameLoop
                 ExitRun("environmental hazard");
             if (_gameOver) break;
         }
+
+        Cleanup();
+    }
+
+    /// <summary>
+    /// Performs end-of-run cleanup: clears event subscriptions and logs the session end.
+    /// Called before every exit path in <see cref="RunLoop"/>.
+    /// </summary>
+    private void Cleanup()
+    {
+        _events?.ClearAll();
+        _logger.LogInformation("Game loop cleanup complete — session ended");
     }
 
     private void ApplyRoomHazard(Room room, Player player)

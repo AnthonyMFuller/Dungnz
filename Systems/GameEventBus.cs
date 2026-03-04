@@ -1,8 +1,11 @@
 namespace Dungnz.Systems;
 
 /// <summary>
-/// A simple generic pub/sub event bus. Systems subscribe to event types
-/// and are notified when those events are published. Thread-safe.
+/// A generic, type-safe pub/sub event bus for decoupled inter-system communication.
+/// Subscribers register handlers by event type; publishers broadcast events to all
+/// matching handlers. Thread-safe. This bus uses the <see cref="IGameEvent"/> marker
+/// interface and is available as reusable infrastructure — the primary game loop uses
+/// <see cref="GameEvents"/> (a domain-specific C# event hub) for its runtime events.
 /// </summary>
 public class GameEventBus
 {
