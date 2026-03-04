@@ -1,5 +1,8 @@
 namespace Dungnz.Models;
 
+/// <summary>
+/// Core combat and progression stats: class, HP, attack, defense, mana, XP, and levelling.
+/// </summary>
 public partial class Player
 {
     /// <summary>

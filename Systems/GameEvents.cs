@@ -3,9 +3,10 @@ namespace Dungnz.Systems;
 using Dungnz.Models;
 
 /// <summary>
-/// Central event hub that broadcasts significant game occurrences — combat outcomes, item pickups,
-/// level-ups, and room transitions — to any registered subscribers. Decouples game systems
-/// from each other by letting them react to events without direct references.
+/// The primary domain-specific event hub used by <see cref="Dungnz.Engine.GameLoop"/> and
+/// <see cref="Dungnz.Engine.CombatEngine"/> at runtime. Broadcasts combat outcomes, item pickups,
+/// level-ups, room transitions, and achievement unlocks via standard C# events. For a generic
+/// type-based pub/sub alternative, see <see cref="GameEventBus"/>.
 /// </summary>
 public class GameEvents
 {

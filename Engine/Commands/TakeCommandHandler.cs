@@ -25,7 +25,7 @@ internal sealed class TakeCommandHandler : ICommandHandler
                 context.Display.ShowError("There is nothing here to take.");
                 return;
             }
-            var selection = context.Display.ShowTakeMenuAndSelect(roomItems.AsReadOnly());
+            var selection = context.Display.ShowTakeMenuAndSelect(roomItems);
             if (selection == null) { context.TurnConsumed = false; return; }
             switch (selection)
             {
@@ -66,10 +66,10 @@ internal sealed class TakeCommandHandler : ICommandHandler
 
     private void TakeSingleItem(Item item, CommandContext context)
     {
-        context.CurrentRoom.Items.Remove(item);
+        context.CurrentRoom.RemoveItem(item);
         if (!context.InventoryManager.TryAddItem(context.Player, item))
         {
-            context.CurrentRoom.Items.Add(item);
+            context.CurrentRoom.AddItem(item);
             context.TurnConsumed = false;
             context.Display.ShowError("❌ Inventory full!");
             return;
@@ -96,10 +96,10 @@ internal sealed class TakeCommandHandler : ICommandHandler
         int taken = 0;
         foreach (var item in items)
         {
-            context.CurrentRoom.Items.Remove(item);
+            context.CurrentRoom.RemoveItem(item);
             if (!context.InventoryManager.TryAddItem(context.Player, item))
             {
-                context.CurrentRoom.Items.Add(item);
+                context.CurrentRoom.AddItem(item);
                 context.Display.ShowError($"❌ Inventory full! {item.Name} left behind.");
                 break;
             }

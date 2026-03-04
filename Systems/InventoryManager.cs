@@ -115,7 +115,7 @@ public class InventoryManager
             return false;
         }
 
-        room.Items.Remove(item);
+        room.RemoveItem(item);
         player.Inventory.Add(item);
         _display.ShowMessage($"You picked up {item.Name}.");
         return true;

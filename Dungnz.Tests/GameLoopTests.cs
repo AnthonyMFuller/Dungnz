@@ -105,7 +105,7 @@ public class GameLoopTests
     {
         var (player, room, display, combat) = MakeSetup();
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable };
-        room.Items.Add(potion);
+        room.AddItem(potion);
 
         var loop = MakeLoop(display, combat.Object, "take potion", "quit");
         loop.Run(player, room);
@@ -183,7 +183,7 @@ public class GameLoopTests
     {
         var (player, room, display, combat) = MakeSetup();
         var sword = new Item { Name = "Iron Sword", Description = "A sturdy blade", Type = ItemType.Weapon };
-        room.Items.Add(sword);
+        room.AddItem(sword);
 
         var loop = MakeLoop(display, combat.Object, "examine sword", "quit");
         loop.Run(player, room);

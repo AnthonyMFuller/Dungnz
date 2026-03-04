@@ -1,5 +1,7 @@
 namespace Dungnz.Models;
 
+using Dungnz.Data;
+
 /// <summary>
 /// Defines the drop pool for a specific enemy, combining a configurable list of chance-based
 /// item drops (e.g., boss keys) with a tiered random item system that scales with player level.
@@ -13,35 +15,12 @@ public class LootTable
     private readonly Random _rng;
 
     // Shared tier pools loaded from item-stats.json — set once via SetTierPools().
-    // When null, RollDrop falls back to the small hardcoded lists below.
+    // When null, RollDrop falls back to the DefaultItems constants in the Data layer.
     private static IReadOnlyList<Item>? _sharedTier1;
     private static IReadOnlyList<Item>? _sharedTier2;
     private static IReadOnlyList<Item>? _sharedTier3;
     private static IReadOnlyList<Item>? _sharedEpic;
     private static IReadOnlyList<Item>? _sharedLegendary;
-
-    private static readonly IReadOnlyList<Item> FallbackEpic    = new List<Item>();
-    private static readonly IReadOnlyList<Item> FallbackLegendary = new List<Item>();
-
-    private static readonly IReadOnlyList<Item> FallbackTier1 = new List<Item>
-    {
-        new Item { Name = "Short Sword", Type = ItemType.Weapon, AttackBonus = 2, Description = "A basic blade.", IsEquippable = true, Tier = ItemTier.Common },
-        new Item { Name = "Leather Armor", Type = ItemType.Armor, DefenseBonus = 5, Description = "Light protection.", IsEquippable = true, Tier = ItemTier.Common }
-    };
-    private static readonly IReadOnlyList<Item> FallbackTier2 = new List<Item>
-    {
-        new Item { Name = "Steel Sword", Type = ItemType.Weapon, AttackBonus = 5, Description = "A quality weapon.", IsEquippable = true, Tier = ItemTier.Uncommon },
-        new Item { Name = "Chain Mail", Type = ItemType.Armor, DefenseBonus = 10, Description = "Solid protection.", IsEquippable = true, Tier = ItemTier.Uncommon },
-        new Item { Name = "Sword of Flames", Type = ItemType.Weapon, AttackBonus = 5, Description = "Burns with inner fire. Applies Bleed on hit.", IsEquippable = true, AppliesBleedOnHit = true, Tier = ItemTier.Uncommon },
-        new Item { Name = "Armor of the Turtle", Type = ItemType.Armor, DefenseBonus = 15, Description = "Heavy shell. Grants Poison immunity.", IsEquippable = true, PoisonImmunity = true, Tier = ItemTier.Uncommon }
-    };
-    private static readonly IReadOnlyList<Item> FallbackTier3 = new List<Item>
-    {
-        new Item { Name = "Mythril Blade", Type = ItemType.Weapon, AttackBonus = 8, Description = "Razor-sharp alloy.", IsEquippable = true, Tier = ItemTier.Rare },
-        new Item { Name = "Plate Armor", Type = ItemType.Armor, DefenseBonus = 15, Description = "Near-impenetrable.", IsEquippable = true, Tier = ItemTier.Rare },
-        new Item { Name = "Ring of Focus", Type = ItemType.Accessory, StatModifier = 0, Description = "+15 MaxMana, -20% ability cooldowns.", IsEquippable = true, MaxManaBonus = 15, Tier = ItemTier.Rare },
-        new Item { Name = "Cloak of Shadows", Type = ItemType.Accessory, Description = "+10% dodge chance.", IsEquippable = true, DodgeBonus = 0.10f, Tier = ItemTier.Rare }
-    };
 
     /// <summary>
     /// Populates the shared tier pools from the loaded item catalog so that all
@@ -83,12 +62,12 @@ public class LootTable
     {
         IReadOnlyList<Item>? pool = tier switch
         {
-            ItemTier.Common    => _sharedTier1 ?? FallbackTier1,
-            ItemTier.Uncommon  => _sharedTier2 ?? FallbackTier2,
-            ItemTier.Rare      => _sharedTier3 ?? FallbackTier3,
-            ItemTier.Epic      => _sharedEpic ?? FallbackEpic,
-            ItemTier.Legendary => _sharedLegendary ?? FallbackLegendary,
-            _                  => _sharedTier2 ?? FallbackTier2
+            ItemTier.Common    => _sharedTier1 ?? DefaultItems.FallbackTier1,
+            ItemTier.Uncommon  => _sharedTier2 ?? DefaultItems.FallbackTier2,
+            ItemTier.Rare      => _sharedTier3 ?? DefaultItems.FallbackTier3,
+            ItemTier.Epic      => _sharedEpic ?? DefaultItems.FallbackEpic,
+            ItemTier.Legendary => _sharedLegendary ?? DefaultItems.FallbackLegendary,
+            _                  => _sharedTier2 ?? DefaultItems.FallbackTier2
         };
         if (pool.Count == 0) return null;
         return pool[Random.Shared.Next(pool.Count)].Clone();
@@ -105,12 +84,12 @@ public class LootTable
     {
         IReadOnlyList<Item>? fullPool = tier switch
         {
-            ItemTier.Common    => _sharedTier1 ?? FallbackTier1,
-            ItemTier.Uncommon  => _sharedTier2 ?? FallbackTier2,
-            ItemTier.Rare      => _sharedTier3 ?? FallbackTier3,
-            ItemTier.Epic      => _sharedEpic ?? FallbackEpic,
-            ItemTier.Legendary => _sharedLegendary ?? FallbackLegendary,
-            _                  => _sharedTier2 ?? FallbackTier2
+            ItemTier.Common    => _sharedTier1 ?? DefaultItems.FallbackTier1,
+            ItemTier.Uncommon  => _sharedTier2 ?? DefaultItems.FallbackTier2,
+            ItemTier.Rare      => _sharedTier3 ?? DefaultItems.FallbackTier3,
+            ItemTier.Epic      => _sharedEpic ?? DefaultItems.FallbackEpic,
+            ItemTier.Legendary => _sharedLegendary ?? DefaultItems.FallbackLegendary,
+            _                  => _sharedTier2 ?? DefaultItems.FallbackTier2
         };
         if (fullPool.Count == 0) return null;
 
@@ -176,14 +155,14 @@ public class LootTable
         }
 
         // Boss rooms: guaranteed Legendary drop (overrides tiered roll if Legendary pool available)
-        var legendaryPool = _sharedLegendary ?? FallbackLegendary;
+        var legendaryPool = _sharedLegendary ?? DefaultItems.FallbackLegendary;
         if (dropped == null && isBossRoom && legendaryPool.Count > 0)
         {
             dropped = legendaryPool[_rng.Next(legendaryPool.Count)].Clone();
         }
 
         // Floors 5-8: Epic drop chance (8% on floors 5-6, 15% on floors 7-8)
-        var epicPool = _sharedEpic ?? FallbackEpic;
+        var epicPool = _sharedEpic ?? DefaultItems.FallbackEpic;
         if (dropped == null && dungeonFloor >= 5 && epicPool.Count > 0)
         {
             double epicChance = dungeonFloor >= 7 ? 0.15 : 0.08;
@@ -200,12 +179,12 @@ public class LootTable
         // 30% chance of a tiered item drop if none already rolled
         if (dropped == null && _rng.NextDouble() < 0.30 * lootDropMultiplier)
         {
-            var pool = playerLevel >= 7 ? (_sharedTier3 ?? FallbackTier3)
-                     : playerLevel >= 4 ? (_sharedTier2 ?? FallbackTier2)
-                     : (_sharedTier1 ?? FallbackTier1);
+            var pool = playerLevel >= 7 ? (_sharedTier3 ?? DefaultItems.FallbackTier3)
+                     : playerLevel >= 4 ? (_sharedTier2 ?? DefaultItems.FallbackTier2)
+                     : (_sharedTier1 ?? DefaultItems.FallbackTier1);
 
             // Elite enemies guarantee tier-2+ drop
-            if (enemy?.IsElite == true && playerLevel < 4) pool = _sharedTier2 ?? FallbackTier2;
+            if (enemy?.IsElite == true && playerLevel < 4) pool = _sharedTier2 ?? DefaultItems.FallbackTier2;
 
             if (pool.Count > 0) // Fix #612: guard against empty pool to prevent ArgumentOutOfRangeException
                 dropped = pool[_rng.Next(pool.Count)].Clone();

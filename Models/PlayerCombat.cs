@@ -1,5 +1,8 @@
 namespace Dungnz.Models;
 
+/// <summary>
+/// Equipment slots: weapon and 8 armor body slots (head, shoulders, chest, hands, legs, feet, back, off-hand).
+/// </summary>
 public partial class Player
 {
     /// <summary>Gets the weapon currently equipped by the player, or <c>null</c> if the weapon slot is empty.</summary>

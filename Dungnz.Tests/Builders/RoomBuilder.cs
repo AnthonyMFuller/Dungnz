@@ -34,7 +34,7 @@ public class RoomBuilder
             HasShrine = _hasShrine
         };
         foreach (var item in _items)
-            room.Items.Add(item);
+            room.AddItem(item);
         foreach (var (dir, target) in _exits)
             room.Exits[dir] = target;
         return room;

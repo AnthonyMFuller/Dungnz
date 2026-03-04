@@ -22,7 +22,7 @@ public class InventoryManagerTests
     {
         var (player, room, display, manager) = Make();
         var item = new Item { Name = "Health Potion", Type = ItemType.Consumable };
-        room.Items.Add(item);
+        room.AddItem(item);
 
         var result = manager.TakeItem(player, room, "potion");
 

@@ -1,9 +1,7 @@
 namespace Dungnz.Models;
 
 /// <summary>
-/// Represents the player character, tracking combat stats, inventory, equipment, mana, and
-/// progression throughout the dungeon crawl. Exposes methods for taking damage, healing,
-/// managing gold and XP, equipping items, and levelling up.
+/// Core identity and state: name, active status effects, minions, and trap tracking.
 /// </summary>
 public partial class Player
 {

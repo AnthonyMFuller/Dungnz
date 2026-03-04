@@ -69,7 +69,7 @@ public static class SaveSystem
                 Description = r.Description,
                 ExitIds = r.Exits.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Id),
                 Enemy = r.Enemy,
-                Items = r.Items,
+                Items = r.Items.ToList(),
                 IsExit = r.IsExit,
                 Visited = r.Visited,
                 Looted = r.Looted,
@@ -157,7 +157,6 @@ public static class SaveSystem
                     Id = roomData.Id,
                     Description = roomData.Description ?? string.Empty,
                     Enemy = roomData.Enemy,
-                    Items = (roomData.Items ?? new List<Item>()).ToList(),
                     IsExit = roomData.IsExit,
                     Visited = roomData.Visited,
                     Looted = roomData.Looted,
@@ -172,6 +171,8 @@ public static class SaveSystem
                     Trap = roomData.Trap,
                     State = roomData.State
                 };
+                foreach (var item in roomData.Items ?? new List<Item>())
+                    room.AddItem(item);
                 if (roomData.BossState is { } bossState &&
                     room.Enemy is Dungnz.Systems.Enemies.DungeonBoss dungeonBoss)
                 {

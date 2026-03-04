@@ -11,10 +11,11 @@
 
   <ItemGroup>
     <Compile Remove="Dungnz.Tests/**" />
+    <Content Remove="Data/**/*.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Data/**">
+    <Content Include="Data/**" Exclude="Data/**/*.cs">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
