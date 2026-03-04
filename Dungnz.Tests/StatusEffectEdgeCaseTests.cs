@@ -128,6 +128,7 @@ public class StatusEffectEdgeCaseTests
 
         mgr.Apply(enemy, StatusEffect.Silence, 0);
 
+        // Effect is technically "active" but with 0 remaining turns
         // ProcessTurnStart decrements and removes effects with remaining <= 0
         mgr.ProcessTurnStart(enemy);
 
@@ -200,3 +201,6 @@ public class StatusEffectEdgeCaseTests
         mgr.GetStatModifier(stranger, "Attack").Should().Be(0);
     }
 }
+
+// These stubs must match the internal stubs defined elsewhere in the test project.
+// ImmuneEnemy_Stub and Enemy_Stub are defined in StatusEffectManagerTests.cs and CombatEngineTests.cs.

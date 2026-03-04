@@ -2,7 +2,7 @@ namespace Dungnz.Engine.Commands;
 
 internal sealed class StatsCommandHandler : ICommandHandler
 {
-    private const int FinalFloor = 8;
+    private const int FinalFloor = DungeonGenerator.FinalFloor;
 
     public void Handle(string argument, CommandContext context)
     {

@@ -57,20 +57,20 @@ public class IntroSequence
     {
         var player = new Player { Name = name };
         player.Class = classDef.Class;
-        player.Attack += classDef.BonusAttack;
-        player.Defense = Math.Max(0, player.Defense + classDef.BonusDefense);
+        player.ModifyAttack(classDef.BonusAttack);
+        player.ModifyDefense(classDef.BonusDefense);
         player.MaxHP = Math.Max(1, player.MaxHP + classDef.BonusMaxHP);
         player.SetHPDirect(player.MaxHP);
         player.MaxMana = Math.Max(0, player.MaxMana + classDef.BonusMaxMana);
-        player.Mana = player.MaxMana;
+        player.RestoreMana(player.MaxMana);
 
         if (classDef.Class == PlayerClass.Rogue)
             player.ClassDodgeBonus = 0.10f;
 
         if (prestige.PrestigeLevel > 0)
         {
-            player.Attack += prestige.BonusStartAttack;
-            player.Defense += prestige.BonusStartDefense;
+            player.ModifyAttack(prestige.BonusStartAttack);
+            player.ModifyDefense(prestige.BonusStartDefense);
             player.MaxHP += prestige.BonusStartHP;
             player.SetHPDirect(player.MaxHP);
         }

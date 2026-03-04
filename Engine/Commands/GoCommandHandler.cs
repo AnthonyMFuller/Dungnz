@@ -6,7 +6,7 @@ using Microsoft.Extensions.Logging;
 
 internal sealed class GoCommandHandler : ICommandHandler
 {
-    private const int FinalFloor = 8;
+    private const int FinalFloor = DungeonGenerator.FinalFloor;
 
     private static readonly string[] _postCombatLines =
     {

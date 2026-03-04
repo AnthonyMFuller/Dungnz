@@ -183,7 +183,7 @@ public class SkillTree
                 break;
             case Skill.ManaFlow:
                 player.MaxMana += 10;
-                player.Mana = Math.Min(player.Mana + 10, player.MaxMana);
+                player.RestoreMana(10);
                 break;
             case Skill.IronConstitution:
                 player.FortifyMaxHP(15);

@@ -1491,7 +1491,7 @@ public class CombatEngine : ICombatEngine
         if (player.Class == PlayerClass.Necromancer && player.MaxMana < 80)
         {
             player.MaxMana = Math.Min(player.MaxMana + 2, 80);
-            player.Mana = Math.Min(player.Mana + 2, player.MaxMana);
+            player.RestoreMana(2);
         }
 
         if (enemy.LootTable != null)

@@ -172,13 +172,14 @@ public class CombatAbilityInteractionTests
         defMod.Should().BeGreaterThan(0);
     }
 
-    // ── Curse reduces attack and defense ──────────────────────────────────────
+    // ── Curse reduces both attack and defense ─────────────────────────────────
 
     [Fact]
     public void Curse_ReducesAttack()
     {
         var display = new TestDisplayService();
         var mgr = new StatusEffectManager(display);
+        // Enemy needs enough ATK and DEF for integer division to produce non-zero modifiers
         var enemy = new Enemy_Stub(80, 20, 20, 15);
         mgr.Apply(enemy, StatusEffect.Curse, 4);
 

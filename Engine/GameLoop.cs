@@ -42,7 +42,7 @@ public class GameLoop
     /// <summary>Set to <see langword="true"/> when the run ends (win, death) to break the Run() loop.</summary>
     private bool _gameOver = false;
 
-    private const int FinalFloor = 8;
+    private const int FinalFloor = DungeonGenerator.FinalFloor;
 
     private readonly Dictionary<CommandType, ICommandHandler> _handlers;
     private CommandContext _context = null!;
@@ -256,8 +256,10 @@ public class GameLoop
 
             if (_handlers.TryGetValue(cmd.Type, out var handler))
                 handler.Handle(cmd.Argument, _context);
-            else
+            else if (cmd.Type == CommandType.Unknown)
                 _display.ShowError("Unknown command. Type HELP for commands.");
+            else
+                _logger.LogWarning("No handler registered for command type {CommandType}", cmd.Type);
 
             // Sync back mutable context state to GameLoop fields
             _player        = _context.Player;
