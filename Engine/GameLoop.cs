@@ -256,8 +256,10 @@ public class GameLoop
 
             if (_handlers.TryGetValue(cmd.Type, out var handler))
                 handler.Handle(cmd.Argument, _context);
-            else
+            else if (cmd.Type == CommandType.Unknown)
                 _display.ShowError("Unknown command. Type HELP for commands.");
+            else
+                _logger.LogWarning("No handler registered for command type {CommandType}", cmd.Type);
 
             // Sync back mutable context state to GameLoop fields
             _player        = _context.Player;
