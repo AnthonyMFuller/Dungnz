@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Threading;
 using Terminal.Gui;
 
 namespace Dungnz.Display.Tui;
@@ -12,13 +13,16 @@ namespace Dungnz.Display.Tui;
 /// is a blocking synchronous loop that cannot run on the UI thread without
 /// deadlocking. This bridge enables:
 /// <list type="bullet">
-/// <item>Game thread → UI thread: via Application.Invoke() for all display updates</item>
-/// <item>UI thread → Game thread: via TaskCompletionSource or BlockingCollection for input</item>
+/// <item>Game thread → UI thread: via Application.MainLoop.Invoke() for all display updates</item>
+/// <item>UI thread → Game thread: via BlockingCollection for input</item>
 /// </list>
 /// </remarks>
 public sealed class GameThreadBridge
 {
     private readonly BlockingCollection<string> _commandQueue = new();
+
+    // Signals that Application.MainLoop is ready to accept Invoke() calls (#1043)
+    private static readonly ManualResetEventSlim _uiReady = new ManualResetEventSlim(false);
 
     /// <summary>
     /// Posts a command from the UI thread to the game thread.
@@ -59,12 +63,28 @@ public sealed class GameThreadBridge
     }
 
     /// <summary>
+    /// Signals that the Terminal.Gui MainLoop is ready to receive Invoke() calls.
+    /// Must be called from the UI thread after Application.Run() has started (#1043).
+    /// </summary>
+    public static void SetUiReady()
+    {
+        _uiReady.Set();
+    }
+
+    /// <summary>
     /// Marshals a UI update action to the Terminal.Gui main thread.
+    /// If MainLoop is not yet ready, waits up to 5 seconds before giving up (#1043).
     /// Safe to call from any thread.
     /// </summary>
     /// <param name="action">The action to execute on the UI thread.</param>
     public static void InvokeOnUiThread(Action action)
     {
+        if (Application.MainLoop is null)
+        {
+            // Wait up to 5 seconds for the UI to become ready (#1043)
+            _uiReady.Wait(TimeSpan.FromSeconds(5));
+        }
+
         Application.MainLoop?.Invoke(action);
     }
 

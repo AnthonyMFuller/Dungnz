@@ -1,213 +1,136 @@
 # TUI Architecture: Terminal.Gui Integration
 
-This document describes the Terminal.Gui TUI (Text User Interface) implementation, including the dual-thread model, display coordination, and file structure.
+This document describes the Terminal.Gui TUI implementation, including the dual-thread model, display coordination, and file structure.
 
 ## Overview
 
-The TUI mode provides a split-screen interface powered by [Terminal.Gui](https://github.com/gui-cs/Terminal.Gui) v2.34+. It runs on the main thread while the game loop executes on a background thread, coordinated through the **GameThreadBridge** pattern.
+The TUI mode provides a split-screen interface powered by [Terminal.Gui](https://github.com/gui-cs/Terminal.Gui) v1.19. It runs on the main thread while the game loop executes on a background thread, coordinated through the **GameThreadBridge**.
 
 ## Dual-Thread Model
 
 ```
-Main Thread:
+Main Thread (Terminal.Gui event loop):
   ┌─────────────────────────────────┐
-  │ Terminal.Gui Event Loop         │
-  │ (TerminalGuiDisplayService)     │
-  │ ├─ Map Panel                    │
-  │ ├─ Stats Panel                  │
-  │ ├─ Content Area                 │
-  │ └─ Message Log                  │
+  │ Application.Run(MainWindow)     │
+  │ ├─ Map Panel (BrightGreen/Black)│
+  │ ├─ Stats Panel (BrightCyan/Black│
+  │ ├─ Content Area (White/Blue)    │
+  │ ├─ Message Log (White/Black)    │
+  │ └─ Command Input (Yellow/Black) │
   └──────────┬──────────────────────┘
-             │
-             │ Queue<string> messages
-             │ Queue<GameState> state updates
-             │
-Background:  │
+             │ Application.MainLoop.Invoke()
+             │ (all UI updates marshalled here)
+Background Thread (game loop):
   ┌──────────▼──────────────────────┐
-  │ GameLoop (background task)      │
+  │ GameLoop / StartupOrchestrator  │
   │ ├─ Command processing           │
   │ ├─ Combat/logic execution       │
-  │ └─ Player state updates         │
+  │ └─ Display calls → bridge       │
   └─────────────────────────────────┘
 ```
 
 ### Communication
 
-- **Main → Background:** Commands queued via `GameThreadBridge.EnqueueCommand()`
-- **Background → Main:** Display updates queued and flushed on each refresh
-- **Thread-safe:** Queues protect shared state; no direct memory access between threads
+- **Background → Main:** `GameThreadBridge.InvokeOnUiThread(action)` — calls `Application.MainLoop.Invoke(action)`
+- **Background → Main (blocking):** `GameThreadBridge.InvokeOnUiThreadAndWait(action/func)` — uses `TaskCompletionSource` to wait for result
+- **Main → Background:** Commands posted via `bridge.PostCommand(string)`, consumed via `bridge.WaitForCommand()` (blocking `BlockingCollection<string>`)
+- **UI readiness sync:** `GameThreadBridge.SetUiReady()` is called from `MainWindow.Loaded`. Background thread early calls wait up to 5 s via `ManualResetEventSlim` before giving up.
 
-## GameThreadBridge Pattern
+## GameThreadBridge
 
-`Display/Tui/GameThreadBridge.cs` manages bidirectional communication:
+`Display/Tui/GameThreadBridge.cs`
 
 ```csharp
-public class GameThreadBridge
-{
-    // Game thread → Display thread
-    public void EnqueueCommand(string command);
-    public bool TryGetNextCommand(out string command);
-    
-    // Display thread → Game thread (state/messages)
-    public void QueueDisplayMessage(string message);
-    public void QueueStateUpdate(GameState state);
-    public List<string> FlushMessages();
-    public GameState? GetLatestState();
-}
+// Background → Main: fire-and-forget
+GameThreadBridge.InvokeOnUiThread(() => { /* UI work */ });
+
+// Background → Main: blocking with return value
+var result = GameThreadBridge.InvokeOnUiThreadAndWait(() => dialog.ShowAndGetResult());
+
+// Main → Background: post a command
+bridge.PostCommand("go north");
+
+// Background: block waiting for next command
+string? cmd = bridge.WaitForCommand();
+
+// Program.cs: signal UI is ready (called from MainWindow.Loaded)
+GameThreadBridge.SetUiReady();
 ```
 
-**Benefits:**
-- ✅ No locks required (queue-based coordination)
-- ✅ Non-blocking I/O on both sides
-- ✅ Safe for exceptions (game crash doesn't freeze display)
-- ✅ Easy to test (mock the bridge)
+**Key properties:**
+- Uses `BlockingCollection<string>` for command queue (thread-safe, no locks needed)
+- `InvokeOnUiThreadAndWait` uses `TaskCompletionSource` — no spinwait, no polling
+- `InvokeOnUiThread` waits up to 5 s for `_uiReady` before calling `MainLoop.Invoke`
 
 ## Panel Layout
 
-The TUI is divided into four regions:
+The TUI is divided into five regions (all with high-contrast ColorSchemes):
 
-### 1. Map Panel (Top-Left, 50% width)
-- **Content:** Live ASCII dungeon map with player position marked (`@`)
-- **Update Frequency:** On room change, after player movement
-- **Colors:** Room theme (dark, mossy, flooded, etc.) reflected in panel colors
+| Panel | Position | Color Scheme | Content |
+|-------|----------|--------------|---------|
+| Map | Top-left 60% | BrightGreen on Black | ASCII dungeon map with `[@]` player marker |
+| Stats | Top-right 40% | BrightCyan on Black | HP/MP bars, ATK/DEF/Gold, equipment |
+| Adventure | Middle 50% | White on Blue | Room description, combat text, inventory |
+| Message Log | Lower 15% | White on Black | Timestamped log with ⚔/💰/❌/ℹ prefixes |
+| Command | Bottom fill | BrightYellow on Black | Text input field |
 
-### 2. Stats Panel (Top-Right, 50% width)
-- **Content:** Player vitals and progression
-  - `HP: 75 / 100 [==========>......] 75%`
-  - `Mana: 40 / 50 [========>........] 80%`
-  - `Level: 5 | XP: 240 / 300`
-  - `ATK: 15 | DEF: 8 | Gold: 1250`
-  - Current floor and turn count
-- **Update Frequency:** Every game tick
+### Auto-population (#1038/#1039)
 
-### 3. Content Area (Bottom-Left to Center, 80% width)
-- **Content:** Room description, enemy info, loot, merchant stock, inventory
-- **Interaction:** Keyboard input for menus and selection
-- **Rendering:** Via `TerminalGuiDisplayService.ShowMessage()` and menu dialogs
+`TerminalGuiDisplayService.ShowRoom(room)` automatically refreshes both the Map and Stats panels on every room entry. No explicit `MAP` or `STATS` command needed.
 
-### 4. Message Log (Bottom, Full Width)
-- **Content:** Recent 5–10 game messages (combat log, loot notifications, skill unlocks)
-- **Update Frequency:** Appended on each message
-- **Scrolling:** Auto-scrolls to latest; user can scroll up for history
+- `ShowMap(room, floor)` and `ShowPlayerStats(player)` cache their parameters.
+- `ShowRoom` reads the cached floor and player to call both renderers.
 
 ## File Structure
 
 ```
 Display/Tui/
 ├── GameThreadBridge.cs
-│   └─ Thread-safe queue-based coordination between game and display threads
+│   └─ Thread sync: BlockingCollection commands, ManualResetEventSlim UI-ready,
+│      InvokeOnUiThread / InvokeOnUiThreadAndWait
 │
 ├── TerminalGuiDisplayService.cs
-│   └─ IDisplayService implementation using Terminal.Gui
-│      ├─ Main TUI initialization (window, panels, event handlers)
-│      ├─ Panel refresh logic
-│      ├─ ShowMessage(), RenderTable(), RenderProgress() implementations
-│      └─ Event routing (user input → bridge → game loop)
-│
-├── TerminalGuiInputReader.cs
-│   └─ IInputReader implementation using Terminal.Gui
-│      ├─ ReadLine() → returns user input from the TUI text field
-│      ├─ Input validation and queuing
-│      └─ Special key handling (Enter, Escape, arrow keys)
+│   └─ IDisplayService implementation — all display methods marshal via GameThreadBridge
+│      ├─ ShowRoom() — renders room + auto-refreshes map and stats
+│      ├─ ShowMap() / ShowPlayerStats() — update persistent TextViews
+│      ├─ ShowColoredMessage/CombatMessage() — routes to log with typed prefix
+│      └─ ShowSkillTreeMenu() — TuiMenuDialog<Skill?> selection
 │
 ├── TuiLayout.cs
-│   └─ Panel definitions and layout manager
-│      ├─ CreateMapPanel() → Map visualization
-│      ├─ CreateStatsPanel() → Player stats display
-│      ├─ CreateContentPanel() → Main content area
-│      ├─ CreateMessageLogPanel() → Message log
-│      └─ RefreshLayout() → Recalculate sizes on terminal resize
+│   └─ Panel definitions, ColorSchemes, persistent TextViews for map/stats
+│      ├─ SetMap(text) — updates _mapView.Text in place (no destroy/recreate)
+│      └─ SetStats(text) — updates _statsView.Text in place
 │
-└── TuiMenuDialog.cs
-    └─ Interactive menu dialogs (inventory, skills, shop)
-       ├─ ArrowKeyMenu() → Navigate list with ↑/↓, select with Enter
-       ├─ ConfirmDialog() → Yes/No confirmation
-       └─ ItemComparisonDialog() → Side-by-side gear comparison
+├── TuiColorMapper.cs
+│   └─ Maps ANSI color codes → Terminal.Gui Color values
+│      Used by ShowColoredMessage to pick log message type
+│
+├── TuiMenuDialog.cs
+│   └─ Generic interactive menu: TuiMenuDialog<T>(title, options, default)
+│      ShowAndGetResult() blocks on UI thread, returns selected value
+│
+└── TerminalGuiInputReader.cs
+    └─ IInputReader — ReadLine() blocks on bridge.WaitForCommand()
 ```
 
-## Initialization
-
-When `dotnet run -- --tui` is invoked:
-
-1. **Program.cs** detects `--tui` flag
-2. **TerminalGuiDisplayService** is instantiated (instead of `SpectreDisplayService`)
-3. **TuiLayout** creates and arranges panels
-4. **TerminalGuiInputReader** hooks into Terminal.Gui event system
-5. **GameThreadBridge** is initialized
-6. **GameLoop** starts on a background Task
-7. **Terminal.Gui event loop** starts on main thread, polling the bridge for commands
-
-## Key Design Patterns
-
-### 1. **Display Abstraction**
-Both `SpectreDisplayService` and `TerminalGuiDisplayService` implement `IDisplayService`, allowing the game engine to remain display-agnostic.
-
-```csharp
-public interface IDisplayService
-{
-    void ShowMessage(string message);
-    void RenderTable(/* ... */);
-    void RenderProgress(/* ... */);
-    void Clear();
-}
-```
-
-### 2. **Thread-Safe Queuing**
-`GameThreadBridge` uses `ConcurrentQueue<T>` (or synchronized collections) to avoid locks:
-
-```csharp
-private ConcurrentQueue<string> _incomingCommands = new();
-private ConcurrentQueue<string> _outgoingMessages = new();
-
-public void EnqueueCommand(string cmd) => _incomingCommands.Enqueue(cmd);
-public bool TryGetNextCommand(out string cmd) => _incomingCommands.TryDequeue(out cmd);
-```
-
-### 3. **Non-Blocking Event Loop**
-Terminal.Gui's event loop continuously:
-- Polls the bridge for new commands from the game thread
-- Renders panel updates
-- Listens for user input (keyboard, mouse)
-- Routes input back to the game via the bridge
-
-### 4. **Graceful Fallback**
-If TUI initialization fails or terminal support is insufficient:
-1. Catch exception in Program.cs
-2. Fall back to `SpectreDisplayService`
-3. Log warning to `Logs/dungnz-.log`
-4. Continue with default display
-
-## Performance Considerations
-
-- **Panel Refresh:** Only panels with changed content are re-rendered (dirty flag pattern)
-- **Map Rendering:** Dungeon map is cached and only regenerated on floor change
-- **Message Log:** Fixed-size buffer (e.g., 10 messages) prevents memory bloat
-- **Background Thread:** Game loop executes independently; TUI never blocks game logic
-
-## Debugging & Logging
-
-All TUI operations log to `%AppData%/Dungnz/Logs/dungnz-.log`:
+## Initialization Sequence
 
 ```
-[2024-01-15 14:23:45.123] [INF] [TerminalGuiDisplayService] TUI initialized
-[2024-01-15 14:23:45.456] [DBG] [TerminalGuiInputReader] User input: "go north"
-[2024-01-15 14:23:46.789] [DBG] [GameThreadBridge] Flushed 3 messages to display queue
+Program.cs (--tui flag):
+  1. Application.Init()
+  2. new TuiLayout()              — ColorSchemes applied, persistent TextViews created
+  3. new GameThreadBridge()
+  4. new TerminalGuiInputReader(bridge)
+  5. new TerminalGuiDisplayService(layout)
+  6. layout.MainWindow.Loaded += () => GameThreadBridge.SetUiReady()
+  7. Task.Run(() => game loop)    — background thread; waits for _uiReady before first Invoke
+  8. Application.Run(layout.MainWindow)   — blocks main thread; sets _uiReady via Loaded
+  9. Application.Shutdown()
 ```
-
-Enable debug-level logging to trace thread coordination and panel updates.
 
 ## Known Limitations
 
-1. **Terminal Size:** Minimum 100×30 recommended; smaller terminals may have rendering issues
-2. **Unicode Support:** Requires UTF-8 terminal (Linux/macOS default, Windows Terminal required on Windows)
-3. **Mouse Support:** Terminal.Gui v2 supports mouse; game commands are keyboard-only
-4. **Color Palette:** Limited to 256-color or true-color depending on terminal capabilities
-5. **Accessibility:** Screen readers may have limited support due to TUI nature
+- **No inline color in TextViews:** Terminal.Gui v1 TextViews don't support ANSI sequences. Color distinction is achieved through panel-level ColorSchemes and message log prefixes.
+- **Terminal Size:** Minimum 100×30 recommended.
+- **Unicode Support:** Requires UTF-8 terminal.
 
-## Future Enhancements
-
-- Mouse click support for menu selection
-- Expandable message log with scrollback
-- Configurable panel layouts
-- Performance optimizations for slow terminals
-- Color theme customization
