@@ -137,18 +137,27 @@ public static class SaveSystem
             if (saveData == null)
                 throw new InvalidDataException("Save file is corrupt or empty");
 
+            if (saveData.Player == null)
+                throw new InvalidDataException("Save file is missing player data");
+
+            if (saveData.Rooms == null || saveData.Rooms.Count == 0)
+                throw new InvalidDataException("Save file is missing room data");
+
             // Apply migrations to bring old saves up to current version
             saveData = MigrateToLatest(saveData);
 
             var roomDict = new Dictionary<Guid, Room>();
             foreach (var roomData in saveData.Rooms)
             {
+                if (roomData == null)
+                    throw new InvalidDataException("Save file contains a null room entry");
+
                 var room = new Room
                 {
                     Id = roomData.Id,
-                    Description = roomData.Description,
+                    Description = roomData.Description ?? string.Empty,
                     Enemy = roomData.Enemy,
-                    Items = roomData.Items.ToList(),
+                    Items = (roomData.Items ?? new List<Item>()).ToList(),
                     IsExit = roomData.IsExit,
                     Visited = roomData.Visited,
                     Looted = roomData.Looted,
@@ -175,6 +184,7 @@ public static class SaveSystem
 
             foreach (var roomData in saveData.Rooms)
             {
+                if (roomData.ExitIds == null) continue;
                 var room = roomDict[roomData.Id];
                 foreach (var exit in roomData.ExitIds)
                 {
@@ -185,18 +195,23 @@ public static class SaveSystem
                 }
             }
 
-            var currentRoom = roomDict[saveData.CurrentRoomId];
+            if (!roomDict.TryGetValue(saveData.CurrentRoomId, out var currentRoom))
+                throw new InvalidDataException($"Save file references unknown current room {saveData.CurrentRoomId}");
 
             // Restore unlocked skills (bonuses already baked into saved stats)
-            foreach (var skillName in saveData.UnlockedSkills)
+            if (saveData.UnlockedSkills != null)
             {
-                if (Enum.TryParse<Dungnz.Models.Skill>(skillName, out var skill))
-                    saveData.Player.Skills.Unlock(skill);
+                foreach (var skillName in saveData.UnlockedSkills)
+                {
+                    if (Enum.TryParse<Dungnz.Models.Skill>(skillName, out var skill))
+                        saveData.Player.Skills.Unlock(skill);
+                }
             }
 
             // Restore active status effects onto the player
             saveData.Player.ActiveEffects.Clear();
-            saveData.Player.ActiveEffects.AddRange(saveData.StatusEffects);
+            if (saveData.StatusEffects != null)
+                saveData.Player.ActiveEffects.AddRange(saveData.StatusEffects);
 
             return new GameState(saveData.Player, currentRoom, saveData.CurrentFloor, saveData.Seed, saveData.Difficulty);
         }
