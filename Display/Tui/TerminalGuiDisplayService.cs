@@ -120,6 +120,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
             if (room.Merchant != null)
                 sb.AppendLine("🛒 A merchant awaits. (SHOP)");
 
+            _layout.SetContentContext("room");
             _layout.SetContent(sb.ToString());
 
             // Auto-populate map and stats panels on room entry (#1038/#1039)
@@ -266,6 +267,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
                 if (delta > 0) sb.AppendLine($"(+{delta} vs equipped!)");
             }
 
+            _layout.SetContentContext("loot");
             _layout.AppendContent(sb.ToString() + "\n");
             _layout.AppendLog($"Loot: {item.Name}", "loot");
         });
@@ -277,6 +279,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             var message = $"💰 +{amount} gold  (Total: {newTotal}g)";
+            _layout.SetContentContext("loot");
             _layout.AppendContent($"  {message}\n");
             _layout.AppendLog(message, "loot");
         });
@@ -288,6 +291,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             var message = $"{GetItemIcon(item)} Picked up: {item.Name}  ({GetPrimaryStatLabel(item)})";
+            _layout.SetContentContext("loot");
             _layout.AppendContent($"  {message}\n");
             _layout.AppendContent($"  Slots: {slotsCurrent}/{slotsMax}  ·  Weight: {weightCurrent}/{weightMax}\n");
             _layout.AppendLog(message, "loot");
@@ -571,13 +575,18 @@ public sealed class TerminalGuiDisplayService : IDisplayService
             sb.AppendLine("            EQUIPMENT");
             sb.AppendLine("═══════════════════════════════════════");
 
-            sb.AppendLine($"Weapon:    {(player.EquippedWeapon != null ? $"{player.EquippedWeapon.Name,-20} ({GetPrimaryStatLabel(player.EquippedWeapon)})" : "(none)")}");
-            sb.AppendLine($"Chest:     {(player.EquippedChest != null ? $"{player.EquippedChest.Name,-20} ({GetPrimaryStatLabel(player.EquippedChest)})" : "(none)")}");
-            sb.AppendLine($"Head:      {(player.EquippedHead != null ? $"{player.EquippedHead.Name,-20} ({GetPrimaryStatLabel(player.EquippedHead)})" : "(none)")}");
-            sb.AppendLine($"Hands:     {(player.EquippedHands != null ? $"{player.EquippedHands.Name,-20} ({GetPrimaryStatLabel(player.EquippedHands)})" : "(none)")}");
-            sb.AppendLine($"Feet:      {(player.EquippedFeet != null ? $"{player.EquippedFeet.Name,-20} ({GetPrimaryStatLabel(player.EquippedFeet)})" : "(none)")}");
+            sb.AppendLine($"Weapon:    {(player.EquippedWeapon    != null ? $"{player.EquippedWeapon.Name,-20} ({GetPrimaryStatLabel(player.EquippedWeapon)})"    : "(none)")}");
+            sb.AppendLine($"Head:      {(player.EquippedHead      != null ? $"{player.EquippedHead.Name,-20} ({GetPrimaryStatLabel(player.EquippedHead)})"      : "(none)")}");
+            sb.AppendLine($"Shoulders: {(player.EquippedShoulders != null ? $"{player.EquippedShoulders.Name,-20} ({GetPrimaryStatLabel(player.EquippedShoulders)})" : "(none)")}");
+            sb.AppendLine($"Chest:     {(player.EquippedChest     != null ? $"{player.EquippedChest.Name,-20} ({GetPrimaryStatLabel(player.EquippedChest)})"     : "(none)")}");
+            sb.AppendLine($"Hands:     {(player.EquippedHands     != null ? $"{player.EquippedHands.Name,-20} ({GetPrimaryStatLabel(player.EquippedHands)})"     : "(none)")}");
+            sb.AppendLine($"Legs:      {(player.EquippedLegs      != null ? $"{player.EquippedLegs.Name,-20} ({GetPrimaryStatLabel(player.EquippedLegs)})"      : "(none)")}");
+            sb.AppendLine($"Feet:      {(player.EquippedFeet      != null ? $"{player.EquippedFeet.Name,-20} ({GetPrimaryStatLabel(player.EquippedFeet)})"      : "(none)")}");
+            sb.AppendLine($"Back:      {(player.EquippedBack      != null ? $"{player.EquippedBack.Name,-20} ({GetPrimaryStatLabel(player.EquippedBack)})"      : "(none)")}");
+            sb.AppendLine($"Off-Hand:  {(player.EquippedOffHand   != null ? $"{player.EquippedOffHand.Name,-20} ({GetPrimaryStatLabel(player.EquippedOffHand)})"   : "(none)")}");
             sb.AppendLine($"Accessory: {(player.EquippedAccessory != null ? $"{player.EquippedAccessory.Name,-20} ({GetPrimaryStatLabel(player.EquippedAccessory)})" : "(none)")}");
 
+            _layout.SetContentContext("gear");
             _layout.SetContent(sb.ToString());
         });
     }
@@ -706,6 +715,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
                 idx++;
             }
 
+            _layout.SetContentContext("shop");
             _layout.SetContent(sb.ToString());
         });
     }
@@ -793,6 +803,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             _layout.SetContent($"\n═══ COMBAT: {enemy.Name} ═══\n\n");
+            _layout.SetContentContext("combat");
             _layout.AppendLog($"Combat started: {enemy.Name}");
         });
     }
@@ -1308,13 +1319,17 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         sb.AppendLine();
 
         var hpBar = BuildColoredHpBar(player.HP, player.MaxHP);
-        sb.AppendLine($"HP: {hpBar}");
+        var hpPct = player.MaxHP > 0 ? (double)player.HP / player.MaxHP : 1.0;
+        var hpStatus = hpPct > 0.50 ? "OK" : hpPct >= 0.25 ? "LOW" : "CRIT";
+        sb.AppendLine($"HP: {hpBar} [{hpStatus}]");
         sb.AppendLine($"    {player.HP}/{player.MaxHP}");
 
         if (player.MaxMana > 0)
         {
             var mpBar = BuildColoredMpBar(player.Mana, player.MaxMana);
-            sb.AppendLine($"MP: {mpBar}");
+            var mpPct = player.MaxMana > 0 ? (double)player.Mana / player.MaxMana : 1.0;
+            var mpStatus = mpPct > 0.50 ? "OK" : mpPct >= 0.20 ? "LOW" : "EMPTY";
+            sb.AppendLine($"MP: {mpBar} [{mpStatus}]");
             sb.AppendLine($"    {player.Mana}/{player.MaxMana}");
         }
 
@@ -1327,14 +1342,22 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         sb.AppendLine("Equipment:");
         if (player.EquippedWeapon != null)
             sb.AppendLine($"  ⚔ {player.EquippedWeapon.Name}");
-        if (player.EquippedChest != null)
-            sb.AppendLine($"  🛡 {player.EquippedChest.Name}");
         if (player.EquippedHead != null)
             sb.AppendLine($"  🪖 {player.EquippedHead.Name}");
+        if (player.EquippedShoulders != null)
+            sb.AppendLine($"  🥋 {player.EquippedShoulders.Name}");
+        if (player.EquippedChest != null)
+            sb.AppendLine($"  🛡 {player.EquippedChest.Name}");
         if (player.EquippedHands != null)
             sb.AppendLine($"  🧤 {player.EquippedHands.Name}");
+        if (player.EquippedLegs != null)
+            sb.AppendLine($"  👖 {player.EquippedLegs.Name}");
         if (player.EquippedFeet != null)
             sb.AppendLine($"  👢 {player.EquippedFeet.Name}");
+        if (player.EquippedBack != null)
+            sb.AppendLine($"  🧥 {player.EquippedBack.Name}");
+        if (player.EquippedOffHand != null)
+            sb.AppendLine($"  🔰 {player.EquippedOffHand.Name}");
         if (player.EquippedAccessory != null)
             sb.AppendLine($"  💍 {player.EquippedAccessory.Name}");
 
