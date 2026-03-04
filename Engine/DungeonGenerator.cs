@@ -12,6 +12,12 @@ using Dungnz.Systems;
 /// </summary>
 public class DungeonGenerator
 {
+    /// <summary>Default number of rooms along the horizontal axis.</summary>
+    public const int DefaultWidth = 5;
+
+    /// <summary>Default number of rooms along the vertical axis.</summary>
+    public const int DefaultHeight = 4;
+
     private readonly Random _rng;
     private readonly IReadOnlyList<Item> _allItems = Array.Empty<Item>();
 
@@ -64,7 +70,7 @@ public class DungeonGenerator
     /// A tuple of (<c>startRoom</c>, <c>exitRoom</c>) where <c>startRoom</c> is the
     /// player's entry point and <c>exitRoom</c> is the boss-guarded exit.
     /// </returns>
-    public (Room startRoom, Room exitRoom) Generate(int width = 5, int height = 4, int playerLevel = 1, float floorMultiplier = 1.0f, DifficultySettings? difficulty = null, int floor = 1)
+    public (Room startRoom, Room exitRoom) Generate(int width = DefaultWidth, int height = DefaultHeight, int playerLevel = 1, float floorMultiplier = 1.0f, DifficultySettings? difficulty = null, int floor = 1)
     {
         float effectiveMult = floorMultiplier * (difficulty?.EnemyStatMultiplier ?? 1.0f);
         var roomPool = RoomDescriptions.ForFloor(floor);
