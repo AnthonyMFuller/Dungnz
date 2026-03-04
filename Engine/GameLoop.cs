@@ -163,6 +163,7 @@ public class GameLoop
                          : Difficulty.Normal;
         _display.ShowMessage($"Difficulty: {GetDifficultyName()}");
         _display.ShowMessage($"Floor {_currentFloor}");
+        _display.ShowPlayerStats(player);
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
 
@@ -190,6 +191,7 @@ public class GameLoop
         _rng = _seed.HasValue ? new Random(_seed.Value) : new Random();
 
         _display.ShowMessage($"Loaded save — Floor {_currentFloor}");
+        _display.ShowPlayerStats(_player);
         _display.ShowRoom(_currentRoom);
         _currentRoom.Visited = true;
 
