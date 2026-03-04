@@ -571,11 +571,15 @@ public sealed class TerminalGuiDisplayService : IDisplayService
             sb.AppendLine("            EQUIPMENT");
             sb.AppendLine("═══════════════════════════════════════");
 
-            sb.AppendLine($"Weapon:    {(player.EquippedWeapon != null ? $"{player.EquippedWeapon.Name,-20} ({GetPrimaryStatLabel(player.EquippedWeapon)})" : "(none)")}");
-            sb.AppendLine($"Chest:     {(player.EquippedChest != null ? $"{player.EquippedChest.Name,-20} ({GetPrimaryStatLabel(player.EquippedChest)})" : "(none)")}");
-            sb.AppendLine($"Head:      {(player.EquippedHead != null ? $"{player.EquippedHead.Name,-20} ({GetPrimaryStatLabel(player.EquippedHead)})" : "(none)")}");
-            sb.AppendLine($"Hands:     {(player.EquippedHands != null ? $"{player.EquippedHands.Name,-20} ({GetPrimaryStatLabel(player.EquippedHands)})" : "(none)")}");
-            sb.AppendLine($"Feet:      {(player.EquippedFeet != null ? $"{player.EquippedFeet.Name,-20} ({GetPrimaryStatLabel(player.EquippedFeet)})" : "(none)")}");
+            sb.AppendLine($"Weapon:    {(player.EquippedWeapon    != null ? $"{player.EquippedWeapon.Name,-20} ({GetPrimaryStatLabel(player.EquippedWeapon)})"    : "(none)")}");
+            sb.AppendLine($"Head:      {(player.EquippedHead      != null ? $"{player.EquippedHead.Name,-20} ({GetPrimaryStatLabel(player.EquippedHead)})"      : "(none)")}");
+            sb.AppendLine($"Shoulders: {(player.EquippedShoulders != null ? $"{player.EquippedShoulders.Name,-20} ({GetPrimaryStatLabel(player.EquippedShoulders)})" : "(none)")}");
+            sb.AppendLine($"Chest:     {(player.EquippedChest     != null ? $"{player.EquippedChest.Name,-20} ({GetPrimaryStatLabel(player.EquippedChest)})"     : "(none)")}");
+            sb.AppendLine($"Hands:     {(player.EquippedHands     != null ? $"{player.EquippedHands.Name,-20} ({GetPrimaryStatLabel(player.EquippedHands)})"     : "(none)")}");
+            sb.AppendLine($"Legs:      {(player.EquippedLegs      != null ? $"{player.EquippedLegs.Name,-20} ({GetPrimaryStatLabel(player.EquippedLegs)})"      : "(none)")}");
+            sb.AppendLine($"Feet:      {(player.EquippedFeet      != null ? $"{player.EquippedFeet.Name,-20} ({GetPrimaryStatLabel(player.EquippedFeet)})"      : "(none)")}");
+            sb.AppendLine($"Back:      {(player.EquippedBack      != null ? $"{player.EquippedBack.Name,-20} ({GetPrimaryStatLabel(player.EquippedBack)})"      : "(none)")}");
+            sb.AppendLine($"Off-Hand:  {(player.EquippedOffHand   != null ? $"{player.EquippedOffHand.Name,-20} ({GetPrimaryStatLabel(player.EquippedOffHand)})"   : "(none)")}");
             sb.AppendLine($"Accessory: {(player.EquippedAccessory != null ? $"{player.EquippedAccessory.Name,-20} ({GetPrimaryStatLabel(player.EquippedAccessory)})" : "(none)")}");
 
             _layout.SetContent(sb.ToString());
@@ -1327,14 +1331,22 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         sb.AppendLine("Equipment:");
         if (player.EquippedWeapon != null)
             sb.AppendLine($"  ⚔ {player.EquippedWeapon.Name}");
-        if (player.EquippedChest != null)
-            sb.AppendLine($"  🛡 {player.EquippedChest.Name}");
         if (player.EquippedHead != null)
             sb.AppendLine($"  🪖 {player.EquippedHead.Name}");
+        if (player.EquippedShoulders != null)
+            sb.AppendLine($"  🥋 {player.EquippedShoulders.Name}");
+        if (player.EquippedChest != null)
+            sb.AppendLine($"  🛡 {player.EquippedChest.Name}");
         if (player.EquippedHands != null)
             sb.AppendLine($"  🧤 {player.EquippedHands.Name}");
+        if (player.EquippedLegs != null)
+            sb.AppendLine($"  👖 {player.EquippedLegs.Name}");
         if (player.EquippedFeet != null)
             sb.AppendLine($"  👢 {player.EquippedFeet.Name}");
+        if (player.EquippedBack != null)
+            sb.AppendLine($"  🧥 {player.EquippedBack.Name}");
+        if (player.EquippedOffHand != null)
+            sb.AppendLine($"  🔰 {player.EquippedOffHand.Name}");
         if (player.EquippedAccessory != null)
             sb.AppendLine($"  💍 {player.EquippedAccessory.Name}");
 
