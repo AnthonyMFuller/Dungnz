@@ -14,6 +14,11 @@ public sealed class TerminalGuiDisplayService : IDisplayService
 {
     private readonly TuiLayout _layout;
 
+    // Cached references for auto-populating map and stats panels on room entry (#1038/#1039)
+    private Player? _player;
+    private Room? _currentRoom;
+    private int _currentFloor = 1;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="TerminalGuiDisplayService"/> class.
     /// </summary>
@@ -38,6 +43,9 @@ public sealed class TerminalGuiDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowRoom(Room room)
     {
+        // Cache room for auto-refreshing map panel (#1038)
+        _currentRoom = room;
+
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             var sb = new StringBuilder();
@@ -113,6 +121,16 @@ public sealed class TerminalGuiDisplayService : IDisplayService
                 sb.AppendLine("🛒 A merchant awaits. (SHOP)");
 
             _layout.SetContent(sb.ToString());
+
+            // Auto-populate map and stats panels on room entry (#1038/#1039)
+            var map = BuildAsciiMap(room);
+            _layout.SetMap($"Floor {_currentFloor}\n\n{map}");
+
+            if (_player != null)
+            {
+                var statsSb = BuildStatsText(_player);
+                _layout.SetStats(statsSb);
+            }
         });
     }
 
@@ -176,51 +194,12 @@ public sealed class TerminalGuiDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowPlayerStats(Player player)
     {
+        // Cache player for auto-refreshing stats panel on room entry (#1039)
+        _player = player;
+
         GameThreadBridge.InvokeOnUiThread(() =>
         {
-            var sb = new StringBuilder();
-            sb.AppendLine($"⚔ {player.Name}");
-            sb.AppendLine($"Class: {player.Class}");
-            var xpToNext = 100 * player.Level;
-            sb.AppendLine($"Level: {player.Level}");
-            sb.AppendLine($"XP: {player.XP}/{xpToNext}");
-            sb.AppendLine();
-            
-            // Colored HP bar
-            var hpBar = BuildColoredHpBar(player.HP, player.MaxHP);
-            sb.AppendLine($"HP: {hpBar}");
-            sb.AppendLine($"    {player.HP}/{player.MaxHP}");
-            
-            // Colored MP bar
-            if (player.MaxMana > 0)
-            {
-                var mpBar = BuildColoredMpBar(player.Mana, player.MaxMana);
-                sb.AppendLine($"MP: {mpBar}");
-                sb.AppendLine($"    {player.Mana}/{player.MaxMana}");
-            }
-            
-            sb.AppendLine();
-            sb.AppendLine($"ATK: {player.Attack}");
-            sb.AppendLine($"DEF: {player.Defense}");
-            sb.AppendLine($"Gold: {player.Gold}g");
-            sb.AppendLine();
-
-            // Equipment summary
-            sb.AppendLine("Equipment:");
-            if (player.EquippedWeapon != null)
-                sb.AppendLine($"  ⚔ {player.EquippedWeapon.Name}");
-            if (player.EquippedChest != null)
-                sb.AppendLine($"  🛡 {player.EquippedChest.Name}");
-            if (player.EquippedHead != null)
-                sb.AppendLine($"  🪖 {player.EquippedHead.Name}");
-            if (player.EquippedHands != null)
-                sb.AppendLine($"  🧤 {player.EquippedHands.Name}");
-            if (player.EquippedFeet != null)
-                sb.AppendLine($"  👢 {player.EquippedFeet.Name}");
-            if (player.EquippedAccessory != null)
-                sb.AppendLine($"  💍 {player.EquippedAccessory.Name}");
-
-            _layout.SetStats(sb.ToString());
+            _layout.SetStats(BuildStatsText(player));
         });
     }
 
@@ -425,6 +404,10 @@ public sealed class TerminalGuiDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowMap(Room currentRoom, int floor = 1)
     {
+        // Cache floor for auto-refreshing map panel on room entry (#1038)
+        _currentFloor = floor;
+        _currentRoom = currentRoom;
+
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             var map = BuildAsciiMap(currentRoom);
@@ -471,15 +454,33 @@ public sealed class TerminalGuiDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowColoredMessage(string message, string color)
     {
-        // Terminal.Gui doesn't support inline ANSI colors in TextView
-        // Just show the message without color
-        ShowMessage(message);
+        // Terminal.Gui TextViews don't support inline ANSI color; route through the log
+        // with a type derived from TuiColorMapper so messages are still visually distinct (#1037)
+        GameThreadBridge.InvokeOnUiThread(() =>
+        {
+            var cleaned = StripAnsiCodes(message);
+            var tuiColor = TuiColorMapper.MapAnsiToTuiColor(color);
+            var logType = tuiColor switch
+            {
+                Color.Red or Color.BrightRed => "error",
+                Color.Green or Color.BrightGreen => "loot",
+                _ => "info"
+            };
+            _layout.AppendContent(cleaned + "\n");
+            _layout.AppendLog(cleaned, logType);
+        });
     }
 
     /// <inheritdoc/>
     public void ShowColoredCombatMessage(string message, string color)
     {
-        ShowCombatMessage(message);
+        // Route combat messages with "combat" log type so they appear distinctively in the log (#1037)
+        GameThreadBridge.InvokeOnUiThread(() =>
+        {
+            var cleaned = StripAnsiCodes(message);
+            _layout.AppendContent($"  {cleaned}\n");
+            _layout.AppendLog(cleaned, "combat");
+        });
     }
 
     /// <inheritdoc/>
@@ -1244,15 +1245,72 @@ public sealed class TerminalGuiDisplayService : IDisplayService
     /// <inheritdoc/>
     public Skill? ShowSkillTreeMenu(Player player)
     {
-        // For the TUI implementation, we'll use a simplified skill selection
-        // The full skill tree would require more complex UI components
-        // For now, return null (no skill selected)
-        return null;
+        var availableSkills = Enum.GetValues<Skill>()
+            .Where(s => !player.HasSkill(s))
+            .ToList();
+
+        if (availableSkills.Count == 0)
+            return null;
+
+        return GameThreadBridge.InvokeOnUiThreadAndWait(() =>
+        {
+            var options = availableSkills
+                .Select(s => (s.ToString(), (Skill?)s))
+                .ToList();
+            options.Add(("← Cancel", null));
+
+            var dialog = new TuiMenuDialog<Skill?>("✨ Skill Tree", options, null);
+            return dialog.ShowAndGetResult();
+        });
     }
 
     // ═══════════════════════════════════════════════════════════════
     // Helper methods
     // ═══════════════════════════════════════════════════════════════
+
+    private static string BuildStatsText(Player player)
+    {
+        var sb = new StringBuilder();
+        sb.AppendLine($"⚔ {player.Name}");
+        sb.AppendLine($"Class: {player.Class}");
+        var xpToNext = 100 * player.Level;
+        sb.AppendLine($"Level: {player.Level}");
+        sb.AppendLine($"XP: {player.XP}/{xpToNext}");
+        sb.AppendLine();
+
+        var hpBar = BuildColoredHpBar(player.HP, player.MaxHP);
+        sb.AppendLine($"HP: {hpBar}");
+        sb.AppendLine($"    {player.HP}/{player.MaxHP}");
+
+        if (player.MaxMana > 0)
+        {
+            var mpBar = BuildColoredMpBar(player.Mana, player.MaxMana);
+            sb.AppendLine($"MP: {mpBar}");
+            sb.AppendLine($"    {player.Mana}/{player.MaxMana}");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine($"ATK: {player.Attack}");
+        sb.AppendLine($"DEF: {player.Defense}");
+        sb.AppendLine($"Gold: {player.Gold}g");
+        sb.AppendLine();
+
+        sb.AppendLine("Equipment:");
+        if (player.EquippedWeapon != null)
+            sb.AppendLine($"  ⚔ {player.EquippedWeapon.Name}");
+        if (player.EquippedChest != null)
+            sb.AppendLine($"  🛡 {player.EquippedChest.Name}");
+        if (player.EquippedHead != null)
+            sb.AppendLine($"  🪖 {player.EquippedHead.Name}");
+        if (player.EquippedHands != null)
+            sb.AppendLine($"  🧤 {player.EquippedHands.Name}");
+        if (player.EquippedFeet != null)
+            sb.AppendLine($"  👢 {player.EquippedFeet.Name}");
+        if (player.EquippedAccessory != null)
+            sb.AppendLine($"  💍 {player.EquippedAccessory.Name}");
+
+        return sb.ToString();
+    }
 
     private static string BuildHpBar(int current, int max)
     {
@@ -1267,17 +1325,17 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         if (max == 0) return "[░░░░░░░░]";
         int filled = (int)((double)current / max * 8);
         filled = Math.Max(0, Math.Min(8, filled));
-        
-        // Use visual indicators based on health percentage
+
+        // Use visual indicators based on health percentage (#1041)
         var percent = (double)current / max;
         var barChar = percent switch
         {
-            > 0.50 => "█", // Green zone
-            > 0.25 => "▓", // Yellow zone
-            _ => "▒"       // Red zone
+            > 0.50 => '█', // Green zone
+            > 0.25 => '▓', // Yellow zone
+            _ => '▒'       // Red zone
         };
-        
-        var bar = new string('█', filled).PadRight(8, '░');
+
+        var bar = new string(barChar, filled).PadRight(8, '░');
         return $"[{bar}]";
     }
 
@@ -1294,8 +1352,17 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         if (max == 0) return "[░░░░░░░░]";
         int filled = (int)((double)current / max * 8);
         filled = Math.Max(0, Math.Min(8, filled));
-        
-        var bar = new string('█', filled).PadRight(8, '░');
+
+        // Use mana-density character (#1041)
+        var percent = (double)current / max;
+        var barChar = percent switch
+        {
+            > 0.50 => '█',
+            > 0.20 => '▓',
+            _ => '▒'
+        };
+
+        var bar = new string(barChar, filled).PadRight(8, '░');
         return $"[{bar}]";
     }
 
