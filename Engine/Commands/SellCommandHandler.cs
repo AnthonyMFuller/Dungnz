@@ -40,6 +40,7 @@ internal sealed class SellCommandHandler : ICommandHandler
         context.Player.Inventory.Remove(item);
         context.Player.AddGold(price);
         context.Display.ShowMessage($"You sold {item.Name} for {price}g. Gold remaining: {context.Player.Gold}g");
+        context.Display.ShowPlayerStats(context.Player);
         if (item.Tier == ItemTier.Legendary)
             context.Display.ShowMessage(MerchantNarration.GetLegendarySold());
         else

@@ -56,6 +56,7 @@ internal sealed class ShopCommandHandler : ICommandHandler
                     {
                         merchant.Stock.RemoveAt(shopChoice - 1);
                         context.Display.ShowMessage($"You bought {selected.Item.Name} for {selected.Price}g. Gold remaining: {context.Player.Gold}g");
+                        context.Display.ShowPlayerStats(context.Player);
                         context.Display.ShowMessage(context.Narration.Pick(MerchantNarration.AfterPurchase));
                     }
                 }

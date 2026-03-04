@@ -305,11 +305,13 @@ public class GameLoop
                 player.TakeDamage(5);
                 _stats.DamageTaken += 5;
                 _display.ShowMessage("🔥 The lava seam sears you. (-5 HP)");
+                _display.ShowPlayerStats(_player);
                 break;
             case RoomHazard.CorruptedGround:
                 player.TakeDamage(3);
                 _stats.DamageTaken += 3;
                 _display.ShowMessage("💀 The corrupted ground drains you. (-3 HP)");
+                _display.ShowPlayerStats(_player);
                 break;
             case RoomHazard.BlessedClearing:
                 if (!room.BlessedHealApplied)
@@ -317,6 +319,7 @@ public class GameLoop
                     room.BlessedHealApplied = true;
                     player.Heal(3);
                     _display.ShowMessage("✨ A blessed warmth flows through you. (+3 HP)");
+                    _display.ShowPlayerStats(_player);
                 }
                 break;
         }
@@ -369,6 +372,7 @@ public class GameLoop
             {
                 _player.Heal(healed);
                 _display.ShowMessage($"Sacred Ground pulses beneath your feet, restoring you to full health! HP: {_player.HP}/{_player.MaxHP}");
+                _display.ShowPlayerStats(_player);
             }
             _player.SacredGroundActive = false;
         }
@@ -389,6 +393,7 @@ public class GameLoop
                 _display.ShowMessage($"The shrine heals you fully! HP: {_player.HP}/{_player.MaxHP}");
                 _currentRoom.ShrineUsed = true;
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantHeal));
+                _display.ShowPlayerStats(_player);
                 break;
             case 2: // Bless
                 if (_player.Gold < shrineBlessCost) { _display.ShowError($"Not enough gold (need {shrineBlessCost}g)."); return; }
@@ -398,6 +403,7 @@ public class GameLoop
                 _display.ShowMessage("The shrine blesses you! +2 ATK/DEF.");
                 _currentRoom.ShrineUsed = true;
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantPower));
+                _display.ShowPlayerStats(_player);
                 break;
             case 3: // Fortify
                 if (_player.Gold < shrineMaxHPCost) { _display.ShowError($"Not enough gold (need {shrineMaxHPCost}g)."); return; }
@@ -406,6 +412,7 @@ public class GameLoop
                 _display.ShowMessage($"The shrine fortifies you! MaxHP permanently +10. ({_player.MaxHP} MaxHP)");
                 _currentRoom.ShrineUsed = true;
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantProtection));
+                _display.ShowPlayerStats(_player);
                 break;
             case 4: // Meditate
                 if (_player.Gold < shrineMeditateCost) { _display.ShowError($"Not enough gold (need {shrineMeditateCost}g)."); return; }
@@ -414,6 +421,7 @@ public class GameLoop
                 _display.ShowMessage($"The shrine expands your mind! MaxMana permanently +10. ({_player.MaxMana} MaxMana)");
                 _currentRoom.ShrineUsed = true;
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantWisdom));
+                _display.ShowPlayerStats(_player);
                 break;
             case 0: // Leave
                 _display.ShowMessage("You leave the shrine.");
@@ -432,6 +440,7 @@ public class GameLoop
                 _player.ModifyAttack(5);
                 _display.ShowMessage("Holy light surges through your arms. Attack +5 until next floor!");
                 _currentRoom.SpecialRoomUsed = true;
+                _display.ShowPlayerStats(_player);
                 break;
             case 2:
                 _player.SacredGroundActive = true;
@@ -457,10 +466,12 @@ public class GameLoop
             case 0:
                 _player.FortifyMaxHP(10);
                 _display.ShowMessage("📜 Scroll of Fortitude: Ancient runes fortify your body. MaxHP +10!");
+                _display.ShowPlayerStats(_player);
                 break;
             case 1:
                 _player.AddXP(15);
                 _display.ShowMessage("📖 Tome of the Archivist: Forbidden knowledge floods your mind. +15 XP!");
+                _display.ShowPlayerStats(_player);
                 break;
             default:
                 var exitRoom = FindExitRoom();
