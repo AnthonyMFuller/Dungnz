@@ -1599,3 +1599,49 @@ Parameter was spelled `dungeoonFloor` (double 'o') in signature, XML doc, and me
 - DungeonGenerator.Generate() defaults playerLevel=1 and both callers omit it
 - CombatEngine has grown to 1709 lines with inline enemy AI that duplicates dedicated AI classes
 - EnemyFactory relies on static mutable state with no re-entrance or initialization guard
+
+### 2026-03-03 — Batch Bug Fixes (#940, #942, #938, #958, #959, #936)
+
+**PR:** #1008 — `fix: Batch Hill fixes (#940, #942, #938, #958, #959, #936)`
+**Branch:** `squad/batch-hill-fixes`
+
+**Issues addressed:**
+
+#### #940 — SaveGame null validation missing on restore
+- `SaveSystem.LoadGame()` lacked null guards for `Player`, `Rooms`, individual room entries, `ExitIds`, `UnlockedSkills`, `StatusEffects`
+- `CurrentRoomId` lookup used direct dictionary indexing (throws `KeyNotFoundException` on corrupt data)
+- **Fix:** Added null/empty checks for all critical fields; used `TryGetValue` for CurrentRoomId; null-coalesced `Items` and `Description` in room reconstruction
+
+#### #942 — Missing handler warning if CommandType has no handler
+- `GameLoop.RunLoop()` treated unregistered `CommandType` values the same as `CommandType.Unknown`
+- **Fix:** Split the `else` branch: `Unknown` shows user-facing error; registered enum values without a handler log a warning via `ILogger`
+
+#### #938 — Enemy.LootTable default not enforced
+- `Enemy.LootTable` was a simple auto-property with `= new LootTable()` default, but nothing prevented assigning null
+- **Fix:** Changed to backing-field property with null-coalescing setter (`value ?? new LootTable()`)
+
+#### #958 — Hardcoded dungeon grid dimensions
+- `DungeonGenerator.Generate()` had magic numbers `width=5, height=4` as parameter defaults
+- **Fix:** Extracted to `DungeonGenerator.DefaultWidth` and `DungeonGenerator.DefaultHeight` public constants
+
+#### #959 — Hardcoded FinalFloor=8 duplicated
+- `private const int FinalFloor = 8` was duplicated in GameLoop.cs, GoCommandHandler.cs, StatsCommandHandler.cs, DescendCommandHandler.cs
+- **Fix:** Defined `DungeonGenerator.FinalFloor` as canonical source; all consumers now reference it
+
+#### #936 — Event handler memory leak risk
+- `GameEventBus` had `Subscribe<T>()` and `Clear()` but no way to remove individual handlers
+- `GameEvents` (standard C# events) had no cleanup method
+- `SoulHarvestPassive` registered on `GameEventBus` with no way to unregister
+- **Fix:** Added `GameEventBus.Unsubscribe<T>()`, `SoulHarvestPassive.Unregister()`, and `GameEvents.ClearAll()`
+
+**Key file paths:**
+- `Systems/SaveSystem.cs` — save/load with migration pipeline
+- `Engine/GameLoop.cs` — command dispatch via `_handlers` dictionary, `FinalFloor` constant
+- `Engine/DungeonGenerator.cs` — grid generation constants (`DefaultWidth`, `DefaultHeight`, `FinalFloor`)
+- `Engine/Commands/GoCommandHandler.cs` — room navigation + win condition check
+- `Engine/Commands/DescendCommandHandler.cs` — floor descent + dungeon regeneration
+- `Engine/Commands/StatsCommandHandler.cs` — floor progress display
+- `Models/Enemy.cs` — abstract base with `LootTable` property
+- `Systems/GameEventBus.cs` — generic pub/sub with Subscribe/Unsubscribe/Clear
+- `Systems/GameEvents.cs` — standard C# event hub with ClearAll cleanup
+- `Systems/SoulHarvestPassive.cs` — event bus consumer with Register/Unregister pattern

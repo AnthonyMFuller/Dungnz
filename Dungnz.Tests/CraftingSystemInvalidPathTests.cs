@@ -105,6 +105,7 @@ public class CraftingSystemInvalidPathTests
     public void TryCraft_FullInventory_Fails()
     {
         var player = MakePlayer(gold: 0);
+        // Fill to max
         for (int i = 0; i < Player.MaxInventorySize; i++)
             player.Inventory.Add(new Item { Name = $"Junk{i}", Type = ItemType.Consumable });
 

@@ -14,6 +14,7 @@ namespace Dungnz.Tests;
 /// <summary>
 /// Smoke tests for the most important command handlers (#943):
 /// Look, Go, Use, Equip, Inventory, Stats, Help, Examine.
+/// These are unit tests against the handler directly, using a minimal CommandContext.
 /// </summary>
 public class CommandHandlerSmokeTests
 {
@@ -313,6 +314,7 @@ public class CommandHandlerSmokeTests
 
         handler.Handle("Magic Potion", ctx);
 
+        // ShowItemDetail is called (no error shown)
         display.Errors.Should().BeEmpty();
     }
 
@@ -329,6 +331,7 @@ public class CommandHandlerSmokeTests
 
         handler.Handle("Gold Ring", ctx);
 
+        // ShowItemDetail is called; ShowEquipmentComparison also called for equippable items
         display.Errors.Should().BeEmpty();
         display.AllOutput.Should().Contain(o => o.Contains("equipment_compare"));
     }
