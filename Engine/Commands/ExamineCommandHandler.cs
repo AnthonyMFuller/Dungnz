@@ -14,7 +14,7 @@ internal sealed class ExamineCommandHandler : ICommandHandler
         var targetLower = argument.ToLowerInvariant();
 
         // Check for enemy
-        if (context.CurrentRoom.Enemy != null && context.CurrentRoom.Enemy.HP > 0 &&
+        if (context.CurrentRoom.Enemy != null && !context.CurrentRoom.Enemy.IsDead &&
             context.CurrentRoom.Enemy.Name.ToLowerInvariant().Contains(targetLower))
         {
             context.Display.ShowMessage($"{context.CurrentRoom.Enemy.Name} - HP: {context.CurrentRoom.Enemy.HP}/{context.CurrentRoom.Enemy.MaxHP}, Attack: {context.CurrentRoom.Enemy.Attack}, Defense: {context.CurrentRoom.Enemy.Defense}");

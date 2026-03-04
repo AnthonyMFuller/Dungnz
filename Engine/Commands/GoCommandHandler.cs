@@ -128,7 +128,7 @@ internal sealed class GoCommandHandler : ICommandHandler
         }
 
         // Check for enemy encounter
-        if (context.CurrentRoom.Enemy != null && context.CurrentRoom.Enemy.HP > 0)
+        if (context.CurrentRoom.Enemy != null && !context.CurrentRoom.Enemy.IsDead)
         {
             var killerName = context.CurrentRoom.Enemy.Name;
             context.Logger.LogInformation("Combat started with {EnemyName}", context.CurrentRoom.Enemy.Name);

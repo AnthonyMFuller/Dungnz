@@ -163,7 +163,7 @@ public static class ItemConfig
     {
         return items
             .Where(s => s.Tier.Equals(tier.ToString(), StringComparison.OrdinalIgnoreCase)
-                        && s.Name != "Boss Key"
+                        && s.Name != ItemNames.BossKey
                         && !s.MerchantExclusive)
             .Select(CreateItem)
             .ToList();

@@ -54,6 +54,10 @@ public abstract class Enemy
     /// <summary>Gets or sets the enemy's display name used in combat and room descriptions.</summary>
     public string Name { get; set; } = string.Empty;
 
+    /// <summary>Gets whether this enemy has been defeated (HP has reached zero).</summary>
+    [System.Text.Json.Serialization.JsonIgnore]
+    public bool IsDead => HP <= 0;
+
     /// <summary>Gets or sets the enemy's current hit points. Reaches 0 when the enemy is defeated.</summary>
     public int HP { get; set; }
 

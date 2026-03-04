@@ -43,9 +43,9 @@ public class ChaosKnight : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var sword = itemConfig?.FirstOrDefault(i => i.Name == "Mythril Blade");
+        var sword = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.MythrilBlade);
         if (sword != null) LootTable.AddDrop(ItemConfig.CreateItem(sword), 0.20);
-        var potion = itemConfig?.FirstOrDefault(i => i.Name == "Large Health Potion");
+        var potion = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.LargeHealthPotion);
         if (potion != null) LootTable.AddDrop(ItemConfig.CreateItem(potion), 0.25);
     }
 }

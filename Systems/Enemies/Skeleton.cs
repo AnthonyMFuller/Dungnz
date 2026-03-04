@@ -46,13 +46,13 @@ public class Skeleton : Enemy
         // Add item drops (use config if available)
         if (itemConfig != null)
         {
-            var rustySword = itemConfig.FirstOrDefault(i => i.Name == "Rusty Sword");
+            var rustySword = itemConfig.FirstOrDefault(i => i.Name == ItemNames.RustySword);
             if (rustySword != null)
             {
                 LootTable.AddDrop(ItemConfig.CreateItem(rustySword), 0.3);
             }
             
-            var boneFragment = itemConfig.FirstOrDefault(i => i.Name == "Bone Fragment");
+            var boneFragment = itemConfig.FirstOrDefault(i => i.Name == ItemNames.BoneFragment);
             if (boneFragment != null)
             {
                 LootTable.AddDrop(ItemConfig.CreateItem(boneFragment), 0.5);
@@ -62,7 +62,7 @@ public class Skeleton : Enemy
         {
             LootTable.AddDrop(new Item 
             { 
-                Name = "Rusty Sword", 
+                Name = ItemNames.RustySword, 
                 Type = ItemType.Weapon, 
                 AttackBonus = 3, 
                 Description = "A corroded blade.",
@@ -70,7 +70,7 @@ public class Skeleton : Enemy
             }, 0.3);
             LootTable.AddDrop(new Item 
             { 
-                Name = "Bone Fragment", 
+                Name = ItemNames.BoneFragment, 
                 Type = ItemType.Consumable, 
                 HealAmount = 5, 
                 Description = "Shards from the dead.",

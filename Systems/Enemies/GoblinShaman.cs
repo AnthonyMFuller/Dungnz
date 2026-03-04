@@ -43,7 +43,7 @@ public class GoblinShaman : Enemy
         }
         if (itemConfig != null)
         {
-            var antidote = itemConfig.FirstOrDefault(i => i.Name == "Antidote");
+            var antidote = itemConfig.FirstOrDefault(i => i.Name == ItemNames.Antidote);
             if (antidote != null)
                 LootTable.AddDrop(ItemConfig.CreateItem(antidote), 0.4);
         }
@@ -51,7 +51,7 @@ public class GoblinShaman : Enemy
         {
             LootTable.AddDrop(new Item
             {
-                Name = "Antidote",
+                Name = ItemNames.Antidote,
                 Type = ItemType.Consumable,
                 HealAmount = 8,
                 Description = "A bitter green liquid that neutralises toxins.",

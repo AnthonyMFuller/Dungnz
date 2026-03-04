@@ -44,7 +44,7 @@ public class Troll : Enemy
         // Add item drops (use config if available)
         if (itemConfig != null)
         {
-            var trollHide = itemConfig.FirstOrDefault(i => i.Name == "Troll Hide");
+            var trollHide = itemConfig.FirstOrDefault(i => i.Name == ItemNames.TrollHide);
             if (trollHide != null)
             {
                 LootTable.AddDrop(ItemConfig.CreateItem(trollHide), 0.4);
@@ -54,7 +54,7 @@ public class Troll : Enemy
         {
             LootTable.AddDrop(new Item 
             { 
-                Name = "Troll Hide", 
+                Name = ItemNames.TrollHide, 
                 Type = ItemType.Armor, 
                 DefenseBonus = 4, 
                 Description = "Thick, resilient leather.",

@@ -43,9 +43,9 @@ public class NightStalker : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var cloak = itemConfig?.FirstOrDefault(i => i.Name == "Cloak of Shadows");
+        var cloak = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.CloakOfShadows);
         if (cloak != null) LootTable.AddDrop(ItemConfig.CreateItem(cloak), 0.20);
-        var potion = itemConfig?.FirstOrDefault(i => i.Name == "Health Potion");
+        var potion = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.HealthPotion);
         if (potion != null) LootTable.AddDrop(ItemConfig.CreateItem(potion), 0.30);
     }
 }

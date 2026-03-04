@@ -91,7 +91,7 @@ public class DungeonBoss : Enemy
 
         if (itemConfig != null)
         {
-            var bossKey = itemConfig.FirstOrDefault(i => i.Name == "Boss Key");
+            var bossKey = itemConfig.FirstOrDefault(i => i.Name == ItemNames.BossKey);
             if (bossKey != null)
                 LootTable.AddDrop(ItemConfig.CreateItem(bossKey), 1.0);
         }
@@ -99,7 +99,7 @@ public class DungeonBoss : Enemy
         {
             LootTable.AddDrop(new Item
             {
-                Name = "Boss Key",
+                Name = ItemNames.BossKey,
                 Type = ItemType.Consumable,
                 Description = "Proof of your victory.",
                 StatModifier = 0,

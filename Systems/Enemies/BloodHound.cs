@@ -41,9 +41,9 @@ public class BloodHound : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var vial = itemConfig?.FirstOrDefault(i => i.Name == "BloodVial");
+        var vial = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.BloodVial);
         if (vial != null) LootTable.AddDrop(ItemConfig.CreateItem(vial), 0.50);
-        var pelt = itemConfig?.FirstOrDefault(i => i.Name == "Troll Hide");
+        var pelt = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.TrollHide);
         if (pelt != null) LootTable.AddDrop(ItemConfig.CreateItem(pelt), 0.20);
     }
 }

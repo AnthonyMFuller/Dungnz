@@ -42,9 +42,9 @@ public class BladeDancer : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var sword = itemConfig?.FirstOrDefault(i => i.Name == "Mythril Blade");
+        var sword = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.MythrilBlade);
         if (sword != null) LootTable.AddDrop(ItemConfig.CreateItem(sword), 0.15);
-        var cloak = itemConfig?.FirstOrDefault(i => i.Name == "Cloak of Shadows");
+        var cloak = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.CloakOfShadows);
         if (cloak != null) LootTable.AddDrop(ItemConfig.CreateItem(cloak), 0.15);
     }
 }

@@ -42,9 +42,9 @@ public class ShieldBreaker : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var armor = itemConfig?.FirstOrDefault(i => i.Name == "Chain Mail");
+        var armor = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.ChainMail);
         if (armor != null) LootTable.AddDrop(ItemConfig.CreateItem(armor), 0.20);
-        var sword = itemConfig?.FirstOrDefault(i => i.Name == "Iron Sword");
+        var sword = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.IronSword);
         if (sword != null) LootTable.AddDrop(ItemConfig.CreateItem(sword), 0.20);
     }
 }

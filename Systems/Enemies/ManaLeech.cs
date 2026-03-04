@@ -43,9 +43,9 @@ public class ManaLeech : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var gem = itemConfig?.FirstOrDefault(i => i.Name == "Ring of Focus");
+        var gem = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.RingOfFocus);
         if (gem != null) LootTable.AddDrop(ItemConfig.CreateItem(gem), 0.10);
-        var potion = itemConfig?.FirstOrDefault(i => i.Name == "Health Potion");
+        var potion = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.HealthPotion);
         if (potion != null) LootTable.AddDrop(ItemConfig.CreateItem(potion), 0.20);
     }
 }

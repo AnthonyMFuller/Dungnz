@@ -44,9 +44,9 @@ public class CryptPriest : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var soul = itemConfig?.FirstOrDefault(i => i.Name == "SoulGem");
+        var soul = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.SoulGem);
         if (soul != null) LootTable.AddDrop(ItemConfig.CreateItem(soul), 0.15);
-        var potion = itemConfig?.FirstOrDefault(i => i.Name == "Large Health Potion");
+        var potion = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.LargeHealthPotion);
         if (potion != null) LootTable.AddDrop(ItemConfig.CreateItem(potion), 0.25);
     }
 }

@@ -42,9 +42,9 @@ public class FrostWyvern : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var fang = itemConfig?.FirstOrDefault(i => i.Name == "WyvernFang");
+        var fang = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.WyvernFang);
         if (fang != null) LootTable.AddDrop(ItemConfig.CreateItem(fang), 0.50);
-        var armor = itemConfig?.FirstOrDefault(i => i.Name == "FrostScaleArmor");
+        var armor = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.FrostScaleArmor);
         if (armor != null) LootTable.AddDrop(ItemConfig.CreateItem(armor), 0.15);
     }
 }

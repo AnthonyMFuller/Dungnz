@@ -345,7 +345,7 @@ public class CombatEngine : ICombatEngine
             player.OverchargeUsedThisTurn = false;
 
             // Periodic damage bonus from equipped affixes (e.g. "of Storms") — procs every 3 turns (#927)
-            if (player.PeriodicDmgBonus > 0 && enemy.HP > 0 && _combatTurn % 3 == 1)
+            if (player.PeriodicDmgBonus > 0 && !enemy.IsDead && _combatTurn % 3 == 1)
             {
                 enemy.HP = Math.Max(0, enemy.HP - player.PeriodicDmgBonus);
                 _display.ShowColoredCombatMessage($"⚡ Periodic damage — {player.PeriodicDmgBonus} arcane damage sears {enemy.Name}!", ColorCodes.BrightRed);
@@ -354,7 +354,7 @@ public class CombatEngine : ICombatEngine
             // Fix #210: player death has priority over enemy death in simultaneous-tick kills
             if (player.HP <= 0) return CombatResult.PlayerDied;
             // Fix #209: guard against enraging/acting on an enemy killed by a DoT tick
-            if (enemy.HP <= 0)
+            if (enemy.IsDead)
             {
                 if (CheckOnDeathEffects(player, enemy, _rng)) continue; // enemy revived
                 break;
@@ -407,7 +407,7 @@ public class CombatEngine : ICombatEngine
                 }
             }
 
-            if (enemy.HP <= 0)
+            if (enemy.IsDead)
             {
                 if (CheckOnDeathEffects(player, enemy, _rng)) continue; // enemy revived
                 ShowDeathNarration(enemy);
@@ -475,7 +475,7 @@ public class CombatEngine : ICombatEngine
                 }
                 if (abilityResult == AbilityMenuResult.Used)
                 {
-                    if (enemy.HP <= 0)
+                    if (enemy.IsDead)
                     {
                         if (CheckOnDeathEffects(player, enemy, _rng)) continue; // enemy revived
                         ShowDeathNarration(enemy);
@@ -508,7 +508,7 @@ public class CombatEngine : ICombatEngine
             {
                 PerformPlayerAttack(player, enemy);
                 
-                if (enemy.HP <= 0)
+                if (enemy.IsDead)
                 {
                     if (CheckOnDeathEffects(player, enemy, _rng)) continue; // enemy revived
                     ShowDeathNarration(enemy);
@@ -518,9 +518,9 @@ public class CombatEngine : ICombatEngine
                 }
 
                 // Fix #538: wire minion attack phase between player and enemy turns
-                if (enemy.HP > 0)
+                if (!enemy.IsDead)
                     PerformMinionAttackPhase(player, enemy);
-                if (enemy.HP <= 0)
+                if (enemy.IsDead)
                 {
                     if (CheckOnDeathEffects(player, enemy, _rng)) continue;
                     ShowDeathNarration(enemy);
@@ -822,7 +822,7 @@ public class CombatEngine : ICombatEngine
             _statusEffects.NotifyPhysicalDamage(enemy);
 
             // ── Passive effects: on player hit ──────────────────────────────
-            if (enemy.HP > 0)
+            if (!enemy.IsDead)
                 _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerHit, enemy, playerDmg);
             else
             {
@@ -861,7 +861,7 @@ public class CombatEngine : ICombatEngine
                 _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(hitPool, enemy.Name, playerDmg), playerDmg));
 
             // Killing-blow atmospheric flavor
-            if (enemy.HP <= 0)
+            if (enemy.IsDead)
             {
                 var killPool = player.Class switch
                 {
@@ -882,7 +882,7 @@ public class CombatEngine : ICombatEngine
                 _display.ShowColoredCombatMessage($"{enemy.Name} is bleeding!", ColorCodes.Red);
             }
             // Shadowstep 4-pc set bonus: guaranteed bleed on every hit
-            if (player.SetBonusAppliesBleed && enemy.HP > 0)
+            if (player.SetBonusAppliesBleed && !enemy.IsDead)
             {
                 _statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
                 statusApplied ??= "Bleed";
@@ -891,7 +891,7 @@ public class CombatEngine : ICombatEngine
             _turnLog.Add(new CombatTurn("You", "Attack", playerDmg, isCrit, false, statusApplied));
 
             // IronGuard counter-strike: fires AFTER player hits, BEFORE status ticks
-            if (enemy.HP > 0 && enemy.CounterStrikeChance > 0 && _rng.NextDouble() < enemy.CounterStrikeChance)
+            if (!enemy.IsDead && enemy.CounterStrikeChance > 0 && _rng.NextDouble() < enemy.CounterStrikeChance)
             {
                 var counterDmg = Math.Max(1, playerDmg / 2);
                 player.TakeDamage(counterDmg);
@@ -1047,7 +1047,7 @@ public class CombatEngine : ICombatEngine
 
         // Bug #85: include equipment and class dodge bonuses for the player
         PerformTrapTriggerPhase(player, enemy);
-        if (enemy.HP <= 0) return;
+        if (enemy.IsDead) return;
 
         if (player.EvadeNextAttack)
         {
@@ -1286,7 +1286,7 @@ public class CombatEngine : ICombatEngine
             if (player.DamageReflectPercent > 0 && enemyDmgFinal > 0)
             {
                 int reflected = (int)Math.Round(enemyDmgFinal * player.DamageReflectPercent);
-                if (reflected > 0 && enemy.HP > 0)
+                if (reflected > 0 && !enemy.IsDead)
                 {
                     enemy.HP = Math.Max(0, enemy.HP - reflected);
                     _display.ShowColoredCombatMessage($"[Ironclad] Reflected {reflected} damage!", ColorCodes.BrightCyan);
@@ -1295,7 +1295,7 @@ public class CombatEngine : ICombatEngine
 
             // ── Passive effects: on player take damage ──────────────────────
             int reflectDamage = _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerTakeDamage, enemy, enemyDmgFinal);
-            if (reflectDamage > 0 && enemy.HP > 0)
+            if (reflectDamage > 0 && !enemy.IsDead)
                 enemy.HP = Math.Max(0, enemy.HP - reflectDamage);
 
 
@@ -1444,7 +1444,7 @@ public class CombatEngine : ICombatEngine
             _stats.DamageDealt += dmg;
             var minionMsg = minion.AttackFlavorText.Replace("{dmg}", dmg.ToString());
             _display.ShowCombatMessage(ColorizeDamage($"{minionMsg}", dmg));
-            if (enemy.HP <= 0) break;
+            if (enemy.IsDead) break;
         }
         player.ActiveMinions.RemoveAll(m => m.HP <= 0);
     }
@@ -1462,14 +1462,14 @@ public class CombatEngine : ICombatEngine
         var flavorMsg = trap.FlavorText.Replace("{dmg}", dmg.ToString());
         _display.ShowCombatMessage(ColorizeDamage(flavorMsg, dmg));
 
-        if (trap.AppliedStatus.HasValue && enemy.HP > 0)
+        if (trap.AppliedStatus.HasValue && !enemy.IsDead)
         {
             _statusEffects.Apply(enemy, trap.AppliedStatus.Value, trap.StatusDuration);
             _display.ShowColoredCombatMessage($"{enemy.Name} is affected by {trap.AppliedStatus.Value}!", ColorCodes.Green);
         }
         
         // Snare trap: extra stun on trigger
-        if (trap.Name == "Snare Trap" && enemy.HP > 0)
+        if (trap.Name == "Snare Trap" && !enemy.IsDead)
         {
             _statusEffects.Apply(enemy, StatusEffect.Stun, 1);
             _display.ShowColoredCombatMessage($"{enemy.Name} is caught by the snare!", ColorCodes.Green);

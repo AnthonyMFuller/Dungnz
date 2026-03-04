@@ -257,7 +257,7 @@ public partial class Player
     /// Adds combo points to the player, capping at a maximum of 5.
     /// </summary>
     /// <param name="amount">The number of combo points to add.</param>
-    public void AddComboPoints(int amount) => ComboPoints = Math.Min(5, ComboPoints + amount);
+    public void AddComboPoints(int amount) => ComboPoints = Math.Clamp(ComboPoints + amount, 0, 5);
 
     /// <summary>
     /// Spends all accumulated combo points and returns the count.

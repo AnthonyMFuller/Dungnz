@@ -226,9 +226,9 @@ public class ArchlichSovereign : DungeonBoss
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var crown = itemConfig?.FirstOrDefault(i => i.Name == "LichsCrown");
+        var crown = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.LichsCrown);
         if (crown != null) LootTable.AddDrop(ItemConfig.CreateItem(crown), 0.50);
-        var soul = itemConfig?.FirstOrDefault(i => i.Name == "SoulGem") ?? itemConfig?.FirstOrDefault(i => i.Name == "Soul Gem");
+        var soul = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.SoulGem) ?? itemConfig?.FirstOrDefault(i => i.Name == ItemNames.SoulGemSpaced);
         if (soul != null) LootTable.AddDrop(ItemConfig.CreateItem(soul), 0.30);
     }
 }
@@ -252,9 +252,9 @@ public class AbyssalLeviathan : DungeonBoss
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var scale = itemConfig?.FirstOrDefault(i => i.Name == "DragonScale") ?? itemConfig?.FirstOrDefault(i => i.Name == "Dragon Scale");
+        var scale = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.DragonScale) ?? itemConfig?.FirstOrDefault(i => i.Name == ItemNames.DragonScaleSpaced);
         if (scale != null) LootTable.AddDrop(ItemConfig.CreateItem(scale), 0.60);
-        var soul = itemConfig?.FirstOrDefault(i => i.Name == "SoulGem") ?? itemConfig?.FirstOrDefault(i => i.Name == "Soul Gem");
+        var soul = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.SoulGem) ?? itemConfig?.FirstOrDefault(i => i.Name == ItemNames.SoulGemSpaced);
         if (soul != null) LootTable.AddDrop(ItemConfig.CreateItem(soul), 0.25);
     }
 }
@@ -278,9 +278,9 @@ public class InfernalDragon : DungeonBoss
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var sword = itemConfig?.FirstOrDefault(i => i.Name == "InfernalGreatsword");
+        var sword = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.InfernalGreatsword);
         if (sword != null) LootTable.AddDrop(ItemConfig.CreateItem(sword), 0.40);
-        var scale = itemConfig?.FirstOrDefault(i => i.Name == "DragonScale") ?? itemConfig?.FirstOrDefault(i => i.Name == "Dragon Scale");
+        var scale = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.DragonScale) ?? itemConfig?.FirstOrDefault(i => i.Name == ItemNames.DragonScaleSpaced);
         if (scale != null) LootTable.AddDrop(ItemConfig.CreateItem(scale), 0.60);
     }
 }

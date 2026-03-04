@@ -49,7 +49,7 @@ public class Mimic : Enemy
         if (itemConfig != null)
         {
             var rareItems = itemConfig.Where(i => i.Tier.Equals("Rare", StringComparison.OrdinalIgnoreCase)
-                                                  && i.Name != "Boss Key").ToList();
+                                                  && i.Name != ItemNames.BossKey).ToList();
             if (rareItems.Count > 0)
             {
                 var pick = rareItems[_rng.Next(rareItems.Count)];
@@ -60,7 +60,7 @@ public class Mimic : Enemy
         {
             LootTable.AddDrop(new Item
             {
-                Name = "Phoenix Feather",
+                Name = ItemNames.PhoenixFeather,
                 Type = ItemType.Consumable,
                 HealAmount = 60,
                 Description = "Channels the fire of rebirth into your wounds.",
