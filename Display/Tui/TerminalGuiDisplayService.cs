@@ -460,13 +460,26 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         {
             var cleaned = StripAnsiCodes(message);
             var tuiColor = TuiColorMapper.MapAnsiToTuiColor(color);
+            
+            // Add visual prefix based on color for distinction in monochrome content panel (#1050)
+            var prefix = tuiColor switch
+            {
+                Color.Red or Color.BrightRed => "✖ ",
+                Color.Green or Color.BrightGreen => "✦ ",
+                Color.Brown => "⚠ ",   // Yellow
+                Color.Cyan or Color.BrightCyan => "◈ ",
+                Color.Magenta => "✦ ",
+                _ => "  "
+            };
+            
             var logType = tuiColor switch
             {
                 Color.Red or Color.BrightRed => "error",
                 Color.Green or Color.BrightGreen => "loot",
                 _ => "info"
             };
-            _layout.AppendContent(cleaned + "\n");
+            
+            _layout.AppendContent(prefix + cleaned + "\n");
             _layout.AppendLog(cleaned, logType);
         });
     }
@@ -478,7 +491,16 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             var cleaned = StripAnsiCodes(message);
-            _layout.AppendContent($"  {cleaned}\n");
+            var tuiColor = TuiColorMapper.MapAnsiToTuiColor(color);
+            
+            // Add visual prefix based on color for combat messages (#1050)
+            var prefix = tuiColor switch
+            {
+                Color.Red or Color.BrightRed => "✖ ",
+                _ => "⚔ "
+            };
+            
+            _layout.AppendContent($"  {prefix}{cleaned}\n");
             _layout.AppendLog(cleaned, "combat");
         });
     }
