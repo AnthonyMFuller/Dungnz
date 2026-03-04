@@ -43,7 +43,7 @@ public class StoneGolem : Enemy
         }
         if (itemConfig != null)
         {
-            var ironOre = itemConfig.FirstOrDefault(i => i.Name == "Iron Ore");
+            var ironOre = itemConfig.FirstOrDefault(i => i.Name == ItemNames.IronOre);
             if (ironOre != null)
                 LootTable.AddDrop(ItemConfig.CreateItem(ironOre), 0.25);
         }
@@ -51,7 +51,7 @@ public class StoneGolem : Enemy
         {
             LootTable.AddDrop(new Item
             {
-                Name = "Iron Ore",
+                Name = ItemNames.IronOre,
                 Type = ItemType.Consumable,
                 Description = "Raw iron. Could be useful for a blacksmith.",
                 Tier = ItemTier.Common

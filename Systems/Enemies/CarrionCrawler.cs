@@ -41,7 +41,7 @@ public class CarrionCrawler : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var potion = itemConfig?.FirstOrDefault(i => i.Name == "Health Potion");
+        var potion = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.HealthPotion);
         if (potion != null) LootTable.AddDrop(ItemConfig.CreateItem(potion), 0.20);
     }
 }

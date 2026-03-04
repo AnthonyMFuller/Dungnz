@@ -44,19 +44,19 @@ public class DarkKnight : Enemy
         // Add item drops (use config if available)
         if (itemConfig != null)
         {
-            var darkBlade = itemConfig.FirstOrDefault(i => i.Name == "Dark Blade");
+            var darkBlade = itemConfig.FirstOrDefault(i => i.Name == ItemNames.DarkBlade);
             if (darkBlade != null)
             {
                 LootTable.AddDrop(ItemConfig.CreateItem(darkBlade), 0.5);
             }
             
-            var knightArmor = itemConfig.FirstOrDefault(i => i.Name == "Knight's Armor");
+            var knightArmor = itemConfig.FirstOrDefault(i => i.Name == ItemNames.KnightsArmor);
             if (knightArmor != null)
             {
                 LootTable.AddDrop(ItemConfig.CreateItem(knightArmor), 0.4);
             }
 
-            var studdedArmor = itemConfig.FirstOrDefault(i => i.Name == "Studded Armor");
+            var studdedArmor = itemConfig.FirstOrDefault(i => i.Name == ItemNames.StuddedArmor);
             if (studdedArmor != null)
             {
                 LootTable.AddDrop(ItemConfig.CreateItem(studdedArmor), 0.25);
@@ -66,7 +66,7 @@ public class DarkKnight : Enemy
         {
             LootTable.AddDrop(new Item 
             { 
-                Name = "Dark Blade", 
+                Name = ItemNames.DarkBlade, 
                 Type = ItemType.Weapon, 
                 AttackBonus = 5, 
                 Description = "A blade forged in shadow.",
@@ -74,7 +74,7 @@ public class DarkKnight : Enemy
             }, 0.5);
             LootTable.AddDrop(new Item 
             { 
-                Name = "Knight's Armor", 
+                Name = ItemNames.KnightsArmor, 
                 Type = ItemType.Armor, 
                 DefenseBonus = 6, 
                 Description = "Heavy plated armor.",
@@ -82,7 +82,7 @@ public class DarkKnight : Enemy
             }, 0.4);
             LootTable.AddDrop(new Item
             {
-                Name = "Studded Armor",
+                Name = ItemNames.StuddedArmor,
                 Type = ItemType.Armor,
                 DefenseBonus = 8,
                 IsEquippable = true,

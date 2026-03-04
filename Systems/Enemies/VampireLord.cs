@@ -43,7 +43,7 @@ public class VampireLord : Enemy
         }
         if (itemConfig != null)
         {
-            var bloodVial = itemConfig.FirstOrDefault(i => i.Name == "Blood Vial");
+            var bloodVial = itemConfig.FirstOrDefault(i => i.Name == ItemNames.BloodVialSpaced);
             if (bloodVial != null)
                 LootTable.AddDrop(ItemConfig.CreateItem(bloodVial), 0.45);
         }
@@ -51,7 +51,7 @@ public class VampireLord : Enemy
         {
             LootTable.AddDrop(new Item
             {
-                Name = "Blood Vial",
+                Name = ItemNames.BloodVialSpaced,
                 Type = ItemType.Consumable,
                 HealAmount = 30,
                 Description = "Vampire's blood. Bitter, warm. Works.",

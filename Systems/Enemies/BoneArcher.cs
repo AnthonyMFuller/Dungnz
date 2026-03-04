@@ -47,9 +47,9 @@ public class BoneArcher : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var fragment = itemConfig?.FirstOrDefault(i => i.Name == "Bone Fragment");
+        var fragment = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.BoneFragment);
         if (fragment != null) LootTable.AddDrop(ItemConfig.CreateItem(fragment), 0.40);
-        var potion = itemConfig?.FirstOrDefault(i => i.Name == "Health Potion");
+        var potion = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.HealthPotion);
         if (potion != null) LootTable.AddDrop(ItemConfig.CreateItem(potion), 0.20);
     }
 }

@@ -45,7 +45,7 @@ public class Wraith : Enemy
         }
         if (itemConfig != null)
         {
-            var shadowEssence = itemConfig.FirstOrDefault(i => i.Name == "Shadow Essence");
+            var shadowEssence = itemConfig.FirstOrDefault(i => i.Name == ItemNames.ShadowEssence);
             if (shadowEssence != null)
                 LootTable.AddDrop(ItemConfig.CreateItem(shadowEssence), 0.20);
         }
@@ -53,7 +53,7 @@ public class Wraith : Enemy
         {
             LootTable.AddDrop(new Item
             {
-                Name = "Shadow Essence",
+                Name = ItemNames.ShadowEssence,
                 Type = ItemType.Consumable,
                 HealAmount = 20,
                 Description = "Distilled wraith energy. Cold to the touch but restorative.",

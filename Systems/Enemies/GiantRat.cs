@@ -48,9 +48,9 @@ public class GiantRat : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var rodent = itemConfig?.FirstOrDefault(i => i.Name == "Rodent Pelt");
+        var rodent = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.RodentPelt);
         if (rodent != null) LootTable.AddDrop(ItemConfig.CreateItem(rodent), 0.40);
-        var potion = itemConfig?.FirstOrDefault(i => i.Name == "Health Potion");
+        var potion = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.HealthPotion);
         if (potion != null) LootTable.AddDrop(ItemConfig.CreateItem(potion), 0.20);
     }
 }

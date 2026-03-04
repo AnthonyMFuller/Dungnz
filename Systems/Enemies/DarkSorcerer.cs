@@ -42,9 +42,9 @@ public class DarkSorcerer : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var staff = itemConfig?.FirstOrDefault(i => i.Name == "Staff of Domination") ?? itemConfig?.FirstOrDefault(i => i.Name == "StaffOfDomination");
+        var staff = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.StaffOfDomination) ?? itemConfig?.FirstOrDefault(i => i.Name == ItemNames.StaffOfDominationCompact);
         if (staff != null) LootTable.AddDrop(ItemConfig.CreateItem(staff), 0.10);
-        var potion = itemConfig?.FirstOrDefault(i => i.Name == "Large Health Potion");
+        var potion = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.LargeHealthPotion);
         if (potion != null) LootTable.AddDrop(ItemConfig.CreateItem(potion), 0.20);
     }
 }

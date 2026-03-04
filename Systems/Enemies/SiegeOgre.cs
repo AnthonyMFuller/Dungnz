@@ -42,9 +42,9 @@ public class SiegeOgre : Enemy
 
     private void AddLoot(List<ItemStats>? itemConfig)
     {
-        var armor = itemConfig?.FirstOrDefault(i => i.Name == "Plate Armor");
+        var armor = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.PlateArmor);
         if (armor != null) LootTable.AddDrop(ItemConfig.CreateItem(armor), 0.20);
-        var pelt = itemConfig?.FirstOrDefault(i => i.Name == "Troll Hide");
+        var pelt = itemConfig?.FirstOrDefault(i => i.Name == ItemNames.TrollHide);
         if (pelt != null) LootTable.AddDrop(ItemConfig.CreateItem(pelt), 0.25);
     }
 }
