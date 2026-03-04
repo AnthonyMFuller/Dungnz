@@ -50,6 +50,22 @@ public class GameEventBus
     }
 
     /// <summary>
+    /// Unsubscribes a previously registered handler for event type <typeparamref name="T"/>.
+    /// If the handler was not registered, this is a no-op.
+    /// </summary>
+    /// <typeparam name="T">The event type to stop listening for.</typeparam>
+    /// <param name="handler">The handler to remove.</param>
+    public void Unsubscribe<T>(Action<T> handler) where T : IGameEvent
+    {
+        lock (_lock)
+        {
+            var type = typeof(T);
+            if (_handlers.TryGetValue(type, out var list))
+                list.Remove(handler);
+        }
+    }
+
+    /// <summary>
     /// Removes all subscriptions. Used for testing or between game sessions.
     /// </summary>
     public void Clear()

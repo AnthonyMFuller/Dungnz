@@ -30,6 +30,12 @@ public class SoulHarvestPassive
         bus.Subscribe<OnEnemyKilled>(HandleEnemyKilled);
     }
 
+    /// <summary>Unregisters this passive from the given event bus to prevent memory leaks.</summary>
+    public void Unregister(GameEventBus bus)
+    {
+        bus.Unsubscribe<OnEnemyKilled>(HandleEnemyKilled);
+    }
+
     private void HandleEnemyKilled(OnEnemyKilled evt)
     {
         if (evt.Player.Class != PlayerClass.Necromancer) return;

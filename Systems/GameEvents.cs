@@ -77,4 +77,17 @@ public class GameEvents
     {
         OnAchievementUnlocked?.Invoke(this, new AchievementUnlockedEventArgs(name, description));
     }
+
+    /// <summary>
+    /// Removes all event handler subscriptions. Call between game sessions or during
+    /// cleanup to prevent memory leaks from lingering handler references.
+    /// </summary>
+    public void ClearAll()
+    {
+        OnCombatEnded = null;
+        OnItemPicked = null;
+        OnLevelUp = null;
+        OnRoomEntered = null;
+        OnAchievementUnlocked = null;
+    }
 }
