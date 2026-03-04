@@ -122,7 +122,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             _layout.AppendContent($"\n═══ {message} ═══\n");
-            _layout.AppendLog($"⚔ {message}");
+            _layout.AppendLog(message, "combat");
         });
     }
 
@@ -169,7 +169,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         {
             var cleaned = StripAnsiCodes(message);
             _layout.AppendContent($"  {cleaned}\n");
-            _layout.AppendLog(cleaned);
+            _layout.AppendLog(cleaned, "combat");
         });
     }
 
@@ -182,13 +182,26 @@ public sealed class TerminalGuiDisplayService : IDisplayService
             sb.AppendLine($"⚔ {player.Name}");
             sb.AppendLine($"Class: {player.Class}");
             var xpToNext = 100 * player.Level;
-            sb.AppendLine($"Level: {player.Level}  XP: {player.XP}/{xpToNext}");
+            sb.AppendLine($"Level: {player.Level}");
+            sb.AppendLine($"XP: {player.XP}/{xpToNext}");
             sb.AppendLine();
-            sb.AppendLine($"HP: {BuildHpBar(player.HP, player.MaxHP)} {player.HP}/{player.MaxHP}");
+            
+            // Colored HP bar
+            var hpBar = BuildColoredHpBar(player.HP, player.MaxHP);
+            sb.AppendLine($"HP: {hpBar}");
+            sb.AppendLine($"    {player.HP}/{player.MaxHP}");
+            
+            // Colored MP bar
             if (player.MaxMana > 0)
-                sb.AppendLine($"MP: {BuildMpBar(player.Mana, player.MaxMana)} {player.Mana}/{player.MaxMana}");
+            {
+                var mpBar = BuildColoredMpBar(player.Mana, player.MaxMana);
+                sb.AppendLine($"MP: {mpBar}");
+                sb.AppendLine($"    {player.Mana}/{player.MaxMana}");
+            }
+            
             sb.AppendLine();
-            sb.AppendLine($"ATK: {player.Attack}  DEF: {player.Defense}");
+            sb.AppendLine($"ATK: {player.Attack}");
+            sb.AppendLine($"DEF: {player.Defense}");
             sb.AppendLine($"Gold: {player.Gold}g");
             sb.AppendLine();
 
@@ -275,7 +288,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
             }
 
             _layout.AppendContent(sb.ToString() + "\n");
-            _layout.AppendLog($"Loot: {item.Name}");
+            _layout.AppendLog($"Loot: {item.Name}", "loot");
         });
     }
 
@@ -286,7 +299,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         {
             var message = $"💰 +{amount} gold  (Total: {newTotal}g)";
             _layout.AppendContent($"  {message}\n");
-            _layout.AppendLog(message);
+            _layout.AppendLog(message, "loot");
         });
     }
 
@@ -298,7 +311,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
             var message = $"{GetItemIcon(item)} Picked up: {item.Name}  ({GetPrimaryStatLabel(item)})";
             _layout.AppendContent($"  {message}\n");
             _layout.AppendContent($"  Slots: {slotsCurrent}/{slotsMax}  ·  Weight: {weightCurrent}/{weightMax}\n");
-            _layout.AppendLog(message);
+            _layout.AppendLog(message, "loot");
 
             if (weightCurrent > weightMax * 0.8)
                 _layout.AppendContent("  ⚠ Inventory nearly full!\n");
@@ -343,7 +356,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         {
             var cleaned = StripAnsiCodes(message);
             _layout.AppendContent(cleaned + "\n");
-            _layout.AppendLog(cleaned);
+            _layout.AppendLog(cleaned, "info");
         });
     }
 
@@ -354,7 +367,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         {
             var cleaned = StripAnsiCodes(message);
             _layout.AppendContent($"❌ {cleaned}\n");
-            _layout.AppendLog($"ERROR: {cleaned}");
+            _layout.AppendLog(cleaned, "error");
         });
     }
 
@@ -1249,12 +1262,41 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         return $"[{"█".PadRight(filled, '█').PadRight(8, '░')}]";
     }
 
+    private static string BuildColoredHpBar(int current, int max)
+    {
+        if (max == 0) return "[░░░░░░░░]";
+        int filled = (int)((double)current / max * 8);
+        filled = Math.Max(0, Math.Min(8, filled));
+        
+        // Use visual indicators based on health percentage
+        var percent = (double)current / max;
+        var barChar = percent switch
+        {
+            > 0.50 => "█", // Green zone
+            > 0.25 => "▓", // Yellow zone
+            _ => "▒"       // Red zone
+        };
+        
+        var bar = new string('█', filled).PadRight(8, '░');
+        return $"[{bar}]";
+    }
+
     private static string BuildMpBar(int current, int max)
     {
         if (max == 0) return "[        ]";
         int filled = (int)((double)current / max * 8);
         filled = Math.Max(0, Math.Min(8, filled));
         return $"[{"█".PadRight(filled, '█').PadRight(8, '░')}]";
+    }
+
+    private static string BuildColoredMpBar(int current, int max)
+    {
+        if (max == 0) return "[░░░░░░░░]";
+        int filled = (int)((double)current / max * 8);
+        filled = Math.Max(0, Math.Min(8, filled));
+        
+        var bar = new string('█', filled).PadRight(8, '░');
+        return $"[{bar}]";
     }
 
     private static string StripAnsiCodes(string text)
@@ -1293,30 +1335,128 @@ public sealed class TerminalGuiDisplayService : IDisplayService
 
     private static string BuildAsciiMap(Room currentRoom)
     {
-        // Simplified map for TUI - just show current room position
-        // Full BFS-based map would require access to the dungeon's room registry
-        var sb = new StringBuilder();
-        sb.AppendLine("Current Room:");
-        sb.AppendLine("    [@]");
-        
-        // Show exits
-        if (currentRoom.Exits.Count > 0)
+        // BFS to assign (x, y) coordinates to every reachable room
+        var positions = new Dictionary<Room, (int x, int y)>();
+        var queue = new Queue<Room>();
+        positions[currentRoom] = (0, 0);
+        queue.Enqueue(currentRoom);
+
+        while (queue.Count > 0)
         {
-            sb.AppendLine();
-            sb.AppendLine("Exits:");
-            foreach (var direction in currentRoom.Exits.Keys)
+            var room = queue.Dequeue();
+            var (rx, ry) = positions[room];
+            foreach (var (dir, neighbour) in room.Exits)
             {
-                sb.AppendLine($"  {direction}");
+                if (positions.ContainsKey(neighbour)) continue;
+                var (nx, ny) = dir switch
+                {
+                    Direction.North => (rx, ry - 1),
+                    Direction.South => (rx, ry + 1),
+                    Direction.East => (rx + 1, ry),
+                    Direction.West => (rx - 1, ry),
+                    _ => (rx, ry)
+                };
+                positions[neighbour] = (nx, ny);
+                queue.Enqueue(neighbour);
             }
         }
+
+        // Rooms the player has seen: visited, current, or adjacent to a visited/current room
+        var knownSet = new HashSet<Room>(positions.Keys.Where(r => r.Visited || r == currentRoom));
+        foreach (var known in knownSet.ToList())
+        {
+            foreach (var (_, neighbour) in known.Exits)
+            {
+                if (positions.ContainsKey(neighbour))
+                    knownSet.Add(neighbour);
+            }
+        }
+
+        var visiblePositions = positions.Where(kv => knownSet.Contains(kv.Key)).ToList();
+
+        if (visiblePositions.Count == 0)
+        {
+            return "No map data available.";
+        }
+
+        int minX = visiblePositions.Min(kv => kv.Value.x);
+        int maxX = visiblePositions.Max(kv => kv.Value.x);
+        int minY = visiblePositions.Min(kv => kv.Value.y);
+        int maxY = visiblePositions.Max(kv => kv.Value.y);
+
+        var grid = new Dictionary<(int x, int y), Room>();
+        foreach (var (room, pos) in visiblePositions)
+            grid[pos] = room;
+
+        var sb = new StringBuilder();
+        sb.AppendLine("    N");
+        sb.AppendLine("  W ✦ E");
+        sb.AppendLine("    S");
+        sb.AppendLine();
+
+        for (int y = minY; y <= maxY; y++)
+        {
+            sb.Append(" ");
+            for (int x = minX; x <= maxX; x++)
+            {
+                if (!grid.TryGetValue((x, y), out var r))
+                {
+                    sb.Append(x < maxX ? "    " : "   ");
+                    continue;
+                }
+
+                string symbol = GetMapRoomSymbol(r, currentRoom);
+                sb.Append(symbol);
+
+                if (x < maxX)
+                {
+                    bool hasConnector = r.Exits.ContainsKey(Direction.East) && grid.ContainsKey((x + 1, y));
+                    sb.Append(hasConnector ? "─" : " ");
+                }
+            }
+            sb.AppendLine();
+
+            if (y < maxY)
+            {
+                sb.Append(" ");
+                for (int x = minX; x <= maxX; x++)
+                {
+                    bool hasSouth = grid.TryGetValue((x, y), out var rS)
+                        && rS.Exits.ContainsKey(Direction.South)
+                        && grid.ContainsKey((x, y + 1));
+                    sb.Append(hasSouth ? " │ " : "   ");
+                    if (x < maxX) sb.Append(" ");
+                }
+                sb.AppendLine();
+            }
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("Legend:");
+        sb.AppendLine("[@] You    [?] Unknown");
+        sb.AppendLine("[E] Exit   [!] Enemy");
+        sb.AppendLine("[S] Shrine [M] Merchant");
+        sb.AppendLine("[+] Cleared");
 
         return sb.ToString();
     }
 
-    private static Room? FindConnectedRoom(Room room, Direction direction)
+    private static string GetMapRoomSymbol(Room r, Room currentRoom)
     {
-        // This would need access to the dungeon's room registry
-        // Placeholder for future implementation
-        return null;
+        if (r == currentRoom) return "[@]";
+        if (!r.Visited) return "[?]";
+        if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0) return "[B]";
+        if (r.IsExit) return "[E]";
+        if (r.Enemy != null && r.Enemy.HP > 0) return "[!]";
+        if (r.HasShrine && !r.ShrineUsed) return "[S]";
+        if (r.Merchant != null) return "[M]";
+        if (r.Type == RoomType.TrapRoom && !r.SpecialRoomUsed) return "[T]";
+        if (r.Type == RoomType.ContestedArmory) return "[A]";
+        if (r.Type == RoomType.PetrifiedLibrary) return "[L]";
+        if (r.Type == RoomType.ForgottenShrine) return "[F]";
+        if (r.EnvironmentalHazard == RoomHazard.BlessedClearing) return "[*]";
+        if (r.EnvironmentalHazard != RoomHazard.None) return "[~]";
+        if (r.Type == RoomType.Dark) return "[D]";
+        return "[+]";
     }
 }
