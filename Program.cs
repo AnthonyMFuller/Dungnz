@@ -5,6 +5,8 @@ using Dungnz.Systems;
 using Microsoft.Extensions.Logging;
 using Serilog;
 
+bool useTui = args.Contains("--tui");
+
 Console.OutputEncoding = System.Text.Encoding.UTF8;
 Console.InputEncoding  = System.Text.Encoding.UTF8;
 

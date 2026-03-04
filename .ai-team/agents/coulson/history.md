@@ -2417,3 +2417,62 @@ Both PRs reviewed and merged in Round 3 (see below).
 
 **Artifacts:**
 - `.ai-team/decisions/inbox/coulson-deep-dive-audit.md` — Full 19-finding audit report with file/line references
+
+---
+
+### 2025-07-21: Terminal.Gui Migration Architecture Design
+
+**Scope:** Complete architectural design and issue decomposition for migrating Dungnz display layer from Spectre.Console to Terminal.Gui v2.
+
+**Key Architectural Decisions:**
+
+1. **Dual-Thread Model (AD-1):** Terminal.Gui event loop on main thread, game logic (GameLoop, CombatEngine, all command handlers) on background thread. Display methods marshal to UI thread via `Application.Invoke()`. Input-coupled methods block game thread via `TaskCompletionSource<T>` until TUI dialog returns. This approach requires ZERO changes to existing game logic — GameLoop.RunLoop(), CombatEngine.RunCombat(), and all 20+ command handlers remain unchanged.
+
+2. **Feature Flag (AD-2):** `--tui` CLI argument selects Terminal.Gui; default remains Spectre.Console. Rollback = delete `Display/Tui/` + revert 2 files.
+
+3. **Additive Only (AD-3):** All Terminal.Gui code lives in `Display/Tui/` as new files. IDisplayService, SpectreDisplayService, IInputReader, GameLoop, CombatEngine are NOT modified.
+
+4. **Split-Screen Layout (AD-5):** Five panels — Map (top-left), Stats+Equipment (top-right), Content (middle), Message Log (lower), Command Input (bottom). Percentage-based positioning for terminal resize support.
+
+5. **Input-Coupled Method Strategy (AD-6):** All 19+ input-coupled methods use `TuiMenuDialog<T>` modal dialogs. Game thread creates `TaskCompletionSource<T>`, posts dialog to UI thread, blocks until user selects. Consistent pattern across all selection methods.
+
+**Key File Paths (new):**
+- `Display/Tui/TuiLayout.cs` — Main split-screen window with 5 panels
+- `Display/Tui/TerminalGuiDisplayService.cs` — IDisplayService implementation for Terminal.Gui
+- `Display/Tui/TerminalGuiInputReader.cs` — IInputReader using BlockingCollection for thread bridging
+- `Display/Tui/TuiMenuDialog.cs` — Reusable modal dialog for all input-coupled methods
+- `Display/Tui/Panels/MapPanel.cs` — ASCII dungeon map rendering
+- `Display/Tui/Panels/StatsPanel.cs` — Live player stats + equipment
+- `Display/Tui/Panels/ContentPanel.cs` — Main narrative/display area
+- `Display/Tui/Panels/MessageLogPanel.cs` — Scrollable message history
+
+**Key File Paths (existing, analyzed):**
+- `Display/IDisplayService.cs` — 413 lines, 85+ methods, 19+ input-coupled (marked with remarks)
+- `Display/SpectreDisplayService.cs` — 69KB, ~1500 lines, full Spectre.Console implementation
+- `Engine/GameLoop.cs` — Sync `while(true)` loop, reads command via `_input.ReadLine()`, dispatches to command handlers
+- `Engine/CombatEngine.cs` — 1709-line blocking combat engine, uses IDisplayService + IInputReader
+- `Engine/StartupOrchestrator.cs` — Pre-game menu flow, uses input-coupled IDisplayService methods
+- `Engine/IntroSequence.cs` — Gathers name/class/difficulty via input-coupled methods
+- `Engine/IInputReader.cs` — `ReadLine()`, `ReadKey()`, `IsInteractive` — ConsoleInputReader wraps Console
+
+**Patterns Established:**
+- Thread bridging pattern: `BlockingCollection<T>` for game-thread ↔ UI-thread communication
+- Input-coupled method pattern: `TaskCompletionSource<T>` + `Application.Invoke()` + modal dialog
+- UI marshaling pattern: all Terminal.Gui writes via `Application.Invoke()` from game thread
+- Rollback pattern: feature flag + additive-only code in isolated directory
+
+**Issue Decomposition (13 issues):**
+- Epic: #1015
+- Phase 1 Foundation: #1016 (Fitz), #1017 (Hill), #1018 (Hill), #1019 (Hill), #1020 (Hill), #1021 (Hill)
+- Phase 2 Panels: #1022 (Barton), #1023 (Barton), #1024 (Hill), #1025 (Barton)
+- Phase 3 Integration: #1026 (Hill), #1027 (Romanoff), #1028 (Fitz)
+
+**Work Distribution:**
+- Hill: 7 issues (layout, thread bridge, display service, content panel, integration)
+- Barton: 3 issues (map panel, stats panel, message log panel)
+- Romanoff: 1 issue (integration testing)
+- Fitz: 2 issues (project setup, documentation)
+
+**Artifacts:**
+- `.ai-team/decisions/inbox/coulson-terminal-gui-architecture.md` — Full architecture document with 6 architectural decisions, threading model, layout diagrams, rollback strategy
+- GitHub issues #1015–#1028 — Complete issue set with descriptions, acceptance criteria, dependencies, and assignees
