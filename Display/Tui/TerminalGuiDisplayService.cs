@@ -120,6 +120,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
             if (room.Merchant != null)
                 sb.AppendLine("🛒 A merchant awaits. (SHOP)");
 
+            _layout.SetContentContext("room");
             _layout.SetContent(sb.ToString());
 
             // Auto-populate map and stats panels on room entry (#1038/#1039)
@@ -266,6 +267,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
                 if (delta > 0) sb.AppendLine($"(+{delta} vs equipped!)");
             }
 
+            _layout.SetContentContext("loot");
             _layout.AppendContent(sb.ToString() + "\n");
             _layout.AppendLog($"Loot: {item.Name}", "loot");
         });
@@ -277,6 +279,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             var message = $"💰 +{amount} gold  (Total: {newTotal}g)";
+            _layout.SetContentContext("loot");
             _layout.AppendContent($"  {message}\n");
             _layout.AppendLog(message, "loot");
         });
@@ -288,6 +291,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             var message = $"{GetItemIcon(item)} Picked up: {item.Name}  ({GetPrimaryStatLabel(item)})";
+            _layout.SetContentContext("loot");
             _layout.AppendContent($"  {message}\n");
             _layout.AppendContent($"  Slots: {slotsCurrent}/{slotsMax}  ·  Weight: {weightCurrent}/{weightMax}\n");
             _layout.AppendLog(message, "loot");
@@ -582,6 +586,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
             sb.AppendLine($"Off-Hand:  {(player.EquippedOffHand   != null ? $"{player.EquippedOffHand.Name,-20} ({GetPrimaryStatLabel(player.EquippedOffHand)})"   : "(none)")}");
             sb.AppendLine($"Accessory: {(player.EquippedAccessory != null ? $"{player.EquippedAccessory.Name,-20} ({GetPrimaryStatLabel(player.EquippedAccessory)})" : "(none)")}");
 
+            _layout.SetContentContext("gear");
             _layout.SetContent(sb.ToString());
         });
     }
@@ -710,6 +715,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
                 idx++;
             }
 
+            _layout.SetContentContext("shop");
             _layout.SetContent(sb.ToString());
         });
     }
@@ -797,6 +803,7 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         GameThreadBridge.InvokeOnUiThread(() =>
         {
             _layout.SetContent($"\n═══ COMBAT: {enemy.Name} ═══\n\n");
+            _layout.SetContentContext("combat");
             _layout.AppendLog($"Combat started: {enemy.Name}");
         });
     }
@@ -1312,13 +1319,17 @@ public sealed class TerminalGuiDisplayService : IDisplayService
         sb.AppendLine();
 
         var hpBar = BuildColoredHpBar(player.HP, player.MaxHP);
-        sb.AppendLine($"HP: {hpBar}");
+        var hpPct = player.MaxHP > 0 ? (double)player.HP / player.MaxHP : 1.0;
+        var hpStatus = hpPct > 0.50 ? "OK" : hpPct >= 0.25 ? "LOW" : "CRIT";
+        sb.AppendLine($"HP: {hpBar} [{hpStatus}]");
         sb.AppendLine($"    {player.HP}/{player.MaxHP}");
 
         if (player.MaxMana > 0)
         {
             var mpBar = BuildColoredMpBar(player.Mana, player.MaxMana);
-            sb.AppendLine($"MP: {mpBar}");
+            var mpPct = player.MaxMana > 0 ? (double)player.Mana / player.MaxMana : 1.0;
+            var mpStatus = mpPct > 0.50 ? "OK" : mpPct >= 0.20 ? "LOW" : "EMPTY";
+            sb.AppendLine($"MP: {mpBar} [{mpStatus}]");
             sb.AppendLine($"    {player.Mana}/{player.MaxMana}");
         }
 

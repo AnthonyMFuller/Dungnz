@@ -17,6 +17,14 @@ public sealed class TuiLayout
     private readonly TextView _mapView;
     private readonly TextView _statsView;
 
+    // Content panel frame and context color schemes (#1059)
+    private readonly FrameView _contentFrame;
+    private readonly ColorScheme _normalScheme;
+    private readonly ColorScheme _combatScheme;
+    private readonly ColorScheme _shopScheme;
+    private readonly ColorScheme _lootScheme;
+    private readonly ColorScheme _gearScheme;
+
     /// <summary>Gets the main application window that hosts all panels.</summary>
     public Toplevel MainWindow { get; }
 
@@ -43,7 +51,7 @@ public sealed class TuiLayout
     public TuiLayout()
     {
         // High-contrast color schemes (#1036) — null-safe for test environments
-        var normalScheme = new ColorScheme
+        _normalScheme = new ColorScheme
         {
             Normal   = MakeAttr(Color.White, Color.Blue),
             Focus    = MakeAttr(Color.White, Color.Blue),
@@ -51,6 +59,45 @@ public sealed class TuiLayout
             HotFocus  = MakeAttr(Color.BrightYellow, Color.Blue),
             Disabled  = MakeAttr(Color.Gray, Color.Blue)
         };
+
+        // Context-sensitive content panel schemes (#1059)
+        _combatScheme = new ColorScheme
+        {
+            Normal    = MakeAttr(Color.BrightRed,    Color.Black),
+            Focus     = MakeAttr(Color.BrightRed,    Color.Black),
+            HotNormal = MakeAttr(Color.BrightYellow, Color.Black),
+            HotFocus  = MakeAttr(Color.BrightYellow, Color.Black),
+            Disabled  = MakeAttr(Color.Gray,         Color.Black)
+        };
+
+        _shopScheme = new ColorScheme
+        {
+            Normal    = MakeAttr(Color.BrightYellow, Color.Black),
+            Focus     = MakeAttr(Color.BrightYellow, Color.Black),
+            HotNormal = MakeAttr(Color.White,        Color.Black),
+            HotFocus  = MakeAttr(Color.White,        Color.Black),
+            Disabled  = MakeAttr(Color.Gray,         Color.Black)
+        };
+
+        _lootScheme = new ColorScheme
+        {
+            Normal    = MakeAttr(Color.BrightGreen,  Color.Black),
+            Focus     = MakeAttr(Color.BrightGreen,  Color.Black),
+            HotNormal = MakeAttr(Color.BrightYellow, Color.Black),
+            HotFocus  = MakeAttr(Color.BrightYellow, Color.Black),
+            Disabled  = MakeAttr(Color.Gray,         Color.Black)
+        };
+
+        _gearScheme = new ColorScheme
+        {
+            Normal    = MakeAttr(Color.BrightCyan,   Color.Black),
+            Focus     = MakeAttr(Color.BrightCyan,   Color.Black),
+            HotNormal = MakeAttr(Color.BrightYellow, Color.Black),
+            HotFocus  = MakeAttr(Color.BrightYellow, Color.Black),
+            Disabled  = MakeAttr(Color.Gray,         Color.Black)
+        };
+
+        var normalScheme = _normalScheme;
 
         var mapScheme = new ColorScheme
         {
@@ -134,7 +181,7 @@ public sealed class TuiLayout
         StatsPanel.Add(_statsView);
 
         // Middle: Content area (50% height)
-        var contentFrame = new FrameView("📜 Adventure")
+        _contentFrame = new FrameView("📜 Adventure")
         {
             X = 0,
             Y = Pos.Bottom(MapPanel),
@@ -153,13 +200,13 @@ public sealed class TuiLayout
             WordWrap = true,
             ColorScheme = normalScheme
         };
-        contentFrame.Add(ContentPanel);
+        _contentFrame.Add(ContentPanel);
 
         // Message log (15% height)
         var logFrame = new FrameView("📋 Message Log")
         {
             X = 0,
-            Y = Pos.Bottom(contentFrame),
+            Y = Pos.Bottom(_contentFrame),
             Width = Dim.Fill(),
             Height = Dim.Percent(15),
             ColorScheme = logScheme
@@ -198,7 +245,7 @@ public sealed class TuiLayout
         inputFrame.Add(CommandInput);
 
         // Add all panels to main window
-        MainWindow.Add(MapPanel, StatsPanel, contentFrame, logFrame, inputFrame);
+        MainWindow.Add(MapPanel, StatsPanel, _contentFrame, logFrame, inputFrame);
     }
 
     /// <summary>
@@ -283,6 +330,26 @@ public sealed class TuiLayout
     public void SetStats(string statsText)
     {
         _statsView.Text = statsText;
+        if (Application.Driver is not null)
+            Application.Refresh();
+    }
+
+    /// <summary>
+    /// Switches the content panel color scheme based on the current game context (#1059).
+    /// </summary>
+    /// <param name="context">One of: "combat", "shop", "loot", "gear", or any other value for normal.</param>
+    public void SetContentContext(string context)
+    {
+        var scheme = context switch
+        {
+            "combat" => _combatScheme,
+            "shop"   => _shopScheme,
+            "loot"   => _lootScheme,
+            "gear"   => _gearScheme,
+            _        => _normalScheme
+        };
+        _contentFrame.ColorScheme = scheme;
+        ContentPanel.ColorScheme  = scheme;
         if (Application.Driver is not null)
             Application.Refresh();
     }
