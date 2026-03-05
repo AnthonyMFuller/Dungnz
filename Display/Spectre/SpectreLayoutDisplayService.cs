@@ -588,8 +588,11 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowCombat(string message)
     {
-        // TODO: Hill — Show combat headline in content panel
-        throw new NotImplementedException();
+        _contentHeader = "⚔  Combat";
+        _contentBorderColor = Color.Red;
+        _contentLines.Clear();
+        AppendContent($"[bold red]═══ {Markup.Escape(message)} ═══[/]");
+        AppendLog(message, "combat");
     }
 
     /// <inheritdoc/>
@@ -597,223 +600,568 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         IReadOnlyList<ActiveEffect> playerEffects,
         IReadOnlyList<ActiveEffect> enemyEffects)
     {
-        // TODO: Hill — Render HP/MP bars with urgency coloring in content panel
-        throw new NotImplementedException();
+        var sb = new StringBuilder();
+
+        // Player status
+        sb.AppendLine($"⚔  [bold]{Markup.Escape(player.Name)}[/]");
+        sb.Append($"HP {BuildHpBar(player.HP, player.MaxHP)} {player.HP}/{player.MaxHP}");
+        if (player.MaxMana > 0)
+            sb.Append($"  MP {BuildMpBar(player.Mana, player.MaxMana)} {player.Mana}/{player.MaxMana}");
+        sb.AppendLine();
+        if (playerEffects.Count > 0)
+        {
+            foreach (var e in playerEffects)
+            {
+                var col = e.IsBuff ? "purple" : "red";
+                sb.Append($"[{col}][[{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t]][/] ");
+            }
+            sb.AppendLine();
+        }
+
+        sb.AppendLine();
+
+        // Enemy status
+        sb.AppendLine($"🐉 [bold]{Markup.Escape(enemy.Name)}[/]");
+        sb.Append($"HP {BuildHpBar(enemy.HP, enemy.MaxHP)} {enemy.HP}/{enemy.MaxHP}");
+        sb.AppendLine();
+        if (enemyEffects.Count > 0)
+        {
+            foreach (var e in enemyEffects)
+            {
+                var col = e.IsBuff ? "purple" : "red";
+                sb.Append($"[{col}][[{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t]][/] ");
+            }
+            sb.AppendLine();
+        }
+
+        SetContent(sb.ToString().TrimEnd(), "⚔  Combat", Color.Red);
     }
 
     /// <inheritdoc/>
     public void ShowCombatMessage(string message)
     {
-        // TODO: Hill — Append combat message to content and log panels
-        throw new NotImplementedException();
+        var clean = StripAnsiCodes(message);
+        AppendContent($"  [white]{Markup.Escape(clean)}[/]");
+        AppendLog(clean, "combat");
     }
 
     /// <inheritdoc/>
     public void ShowPlayerStats(Player player)
     {
-        // TODO: Hill — Render full stats to stats panel with HP/MP urgency bars
         _cachedPlayer = player;
-        throw new NotImplementedException();
+        RenderStatsPanel(player);
     }
 
     /// <inheritdoc/>
     public void ShowInventory(Player player)
     {
-        // TODO: Hill — Render inventory list to content panel
-        throw new NotImplementedException();
+        var sb = new StringBuilder();
+        int currentWeight = player.Inventory.Sum(i => i.Weight);
+        int maxWeight     = InventoryManager.MaxWeight;
+        var wtColor   = currentWeight > maxWeight * 0.95 ? "red" : currentWeight > maxWeight * 0.8 ? "yellow" : "green";
+        var slotColor = player.Inventory.Count >= Player.MaxInventorySize ? "red" : "green";
+
+        sb.AppendLine($"[grey]Slots:[/] [{slotColor}]{player.Inventory.Count}/{Player.MaxInventorySize}[/]  [grey]│  Weight:[/] [{wtColor}]{currentWeight}/{maxWeight}[/]");
+        sb.AppendLine();
+
+        if (player.Inventory.Count == 0)
+        {
+            sb.AppendLine("[grey]  (inventory empty)[/]");
+        }
+        else
+        {
+            int idx = 1;
+            foreach (var group in player.Inventory.GroupBy(i => i.Name))
+            {
+                var item     = group.First();
+                var count    = group.Count();
+                var tc       = TierColor(item.Tier);
+                var countStr = count > 1 ? $" [grey]×{count}[/]" : "";
+                sb.AppendLine($"  {idx,2}. {ItemIcon(item)} [{tc}]{Markup.Escape(item.Name)}[/]{countStr}  [grey]{Markup.Escape(PrimaryStatLabel(item))}[/]");
+                idx++;
+            }
+        }
+
+        sb.AppendLine();
+        sb.Append($"[yellow]💰 {player.Gold}g[/]");
+        SetContent(sb.ToString().TrimEnd(), "🎒 Inventory", Color.Yellow);
     }
 
     /// <inheritdoc/>
     public void ShowLootDrop(Item item, Player player, bool isElite = false)
     {
-        // TODO: Hill — Render loot card with tier coloring to content panel
-        throw new NotImplementedException();
+        var tc     = TierColor(item.Tier);
+        var header = isElite ? "[bold yellow]✦ ELITE LOOT DROP[/]" : "[bold yellow]✦ LOOT DROP[/]";
+        var stat   = PrimaryStatLabel(item);
+
+        var sb = new StringBuilder();
+        sb.AppendLine(header);
+        sb.AppendLine($"[{tc}]{item.Tier}[/]");
+        sb.AppendLine($"{ItemIcon(item)} [{tc}]{Markup.Escape(item.Name)}[/]");
+        sb.Append($"[cyan]{Markup.Escape(stat)}[/]  [grey]{item.Weight} wt[/]");
+
+        if (item.AttackBonus > 0 && player.EquippedWeapon != null)
+        {
+            int delta = item.AttackBonus - player.EquippedWeapon.AttackBonus;
+            if (delta > 0) sb.Append($"  [green](+{delta} vs equipped!)[/]");
+        }
+        else if (item.DefenseBonus > 0 && player.EquippedChest != null)
+        {
+            int delta = item.DefenseBonus - player.EquippedChest.DefenseBonus;
+            if (delta > 0) sb.Append($"  [green](+{delta} vs equipped!)[/]");
+        }
+
+        SetContent(sb.ToString().TrimEnd(), "💰 Loot", Color.Gold1);
+        AppendLog($"Loot: {item.Name}", "loot");
     }
 
     /// <inheritdoc/>
     public void ShowGoldPickup(int amount, int newTotal)
     {
-        // TODO: Hill — Show gold pickup in content and log panels
-        throw new NotImplementedException();
+        SetContent($"[yellow]💰 +{amount} gold[/]  [grey](Total: {newTotal}g)[/]", "💰 Gold", Color.Gold1);
+        AppendLog($"+{amount} gold (total: {newTotal}g)", "loot");
     }
 
     /// <inheritdoc/>
     public void ShowItemPickup(Item item, int slotsCurrent, int slotsMax, int weightCurrent, int weightMax)
     {
-        // TODO: Hill — Show item pickup with slot/weight status
-        throw new NotImplementedException();
+        var tc        = TierColor(item.Tier);
+        var slotColor = slotsCurrent >= slotsMax         ? "red" : slotsCurrent >= slotsMax * 0.95  ? "yellow" : "green";
+        var wtColor   = weightCurrent > weightMax * 0.95 ? "red" : weightCurrent > weightMax * 0.8  ? "yellow" : "green";
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"{ItemIcon(item)} Picked up: [{tc}]{Markup.Escape(item.Name)}[/]");
+        sb.AppendLine($"[grey]{Markup.Escape(PrimaryStatLabel(item))}[/]");
+        sb.AppendLine($"[grey]Slots:[/] [{slotColor}]{slotsCurrent}/{slotsMax}[/]  [grey]·  Weight:[/] [{wtColor}]{weightCurrent}/{weightMax}[/]");
+        if (weightCurrent > weightMax * 0.8)
+            sb.Append("[yellow]⚠ Inventory nearly full![/]");
+
+        SetContent(sb.ToString().TrimEnd(), "📦 Pickup", Color.Green);
+        AppendLog($"Picked up: {item.Name}", "loot");
     }
 
     /// <inheritdoc/>
     public void ShowItemDetail(Item item)
     {
-        // TODO: Hill — Render full item stat card to content panel
-        throw new NotImplementedException();
+        var tc = TierColor(item.Tier);
+        var sb = new StringBuilder();
+        sb.AppendLine($"[grey]Type:[/]    {Markup.Escape(item.Type.ToString())}");
+        sb.AppendLine($"[grey]Tier:[/]    [{tc}]{item.Tier}[/]");
+        sb.AppendLine($"[grey]Weight:[/]  {item.Weight}");
+        if (item.AttackBonus  != 0) sb.AppendLine($"[grey]Attack:[/]  [red]+{item.AttackBonus}[/]");
+        if (item.DefenseBonus != 0) sb.AppendLine($"[grey]Defense:[/] [cyan]+{item.DefenseBonus}[/]");
+        if (item.HealAmount   != 0) sb.AppendLine($"[grey]Heal:[/]    [green]+{item.HealAmount} HP[/]");
+        if (item.ManaRestore  != 0) sb.AppendLine($"[grey]Mana:[/]    [blue]+{item.ManaRestore}[/]");
+        if (item.MaxManaBonus != 0) sb.AppendLine($"[grey]Max Mana:[/][blue]+{item.MaxManaBonus}[/]");
+        if (item.DodgeBonus   >  0) sb.AppendLine($"[grey]Dodge:[/]   +{item.DodgeBonus:P0}");
+        if (item.CritChance   >  0) sb.AppendLine($"[grey]Crit:[/]    +{item.CritChance:P0}");
+        if (item.HPOnHit      != 0) sb.AppendLine($"[grey]HP on Hit:[/][green]+{item.HPOnHit}[/]");
+        if (item.AppliesBleedOnHit) sb.AppendLine("[grey]Special:[/] [red]Bleed on hit[/]");
+        if (item.PoisonImmunity)    sb.AppendLine("[grey]Special:[/] [green]Poison immune[/]");
+        if (!string.IsNullOrEmpty(item.Description))
+        {
+            sb.AppendLine();
+            sb.Append($"[grey]{Markup.Escape(item.Description)}[/]");
+        }
+
+        SetContent(sb.ToString().TrimEnd(), $"{ItemIcon(item)} {Markup.Escape(item.Name)}", Style.Parse(tc).Foreground);
     }
 
     /// <inheritdoc/>
     public void ShowMessage(string message)
     {
-        // TODO: Hill — Show message in content panel and append to log
-        throw new NotImplementedException();
+        var clean = StripAnsiCodes(message);
+        AppendContent(Markup.Escape(clean));
+        AppendLog(clean, "info");
     }
 
     /// <inheritdoc/>
     public void ShowError(string message)
     {
-        // TODO: Hill — Show error in red to content panel and log
-        throw new NotImplementedException();
+        var clean = StripAnsiCodes(message);
+        AppendContent($"[red]✗ {Markup.Escape(clean)}[/]");
+        AppendLog(clean, "error");
     }
 
     /// <inheritdoc/>
     public void ShowHelp()
     {
-        // TODO: Hill — Render help text to content panel
-        throw new NotImplementedException();
+        var sb = new StringBuilder();
+        sb.AppendLine("[grey]── Navigation ──[/]");
+        sb.AppendLine("[yellow]go [[n|s|e|w]][/]  Move   [grey]│[/]  [yellow]look[/]  Redescribe   [grey]│[/]  [yellow]map[/]  Mini-map");
+        sb.AppendLine("[yellow]descend[/]  Descend to the next floor");
+        sb.AppendLine();
+        sb.AppendLine("[grey]── Items ──[/]");
+        sb.AppendLine("[yellow]take [[item]][/]   [yellow]use [[item]][/]   [yellow]equip [[item]][/]   [yellow]examine [[target]][/]");
+        sb.AppendLine("[yellow]inventory[/]   [yellow]equipment[/]   [yellow]craft [[recipe]][/]   [yellow]shop[/]   [yellow]sell[/]");
+        sb.AppendLine();
+        sb.AppendLine("[grey]── Character ──[/]");
+        sb.AppendLine("[yellow]stats[/]   [yellow]skills[/]   [yellow]learn [[skill]][/]");
+        sb.AppendLine();
+        sb.AppendLine("[grey]── Systems ──[/]");
+        sb.AppendLine("[yellow]save [[name]][/]   [yellow]load [[name]][/]   [yellow]listsaves[/]");
+        sb.AppendLine("[yellow]prestige[/]   [yellow]leaderboard[/]   [yellow]help[/]   [yellow]quit[/]");
+        SetContent(sb.ToString().TrimEnd(), "❓ Help", Color.Yellow);
     }
 
     /// <inheritdoc/>
     public void ShowCommandPrompt(Player? player = null)
     {
-        // TODO: Hill — Update input panel with prompt (no-op in Live mode, prompt handled elsewhere)
-        throw new NotImplementedException();
+        string promptContent;
+        if (player == null)
+        {
+            promptContent = "[grey]> Type a command...[/]";
+        }
+        else
+        {
+            var hpBar = BuildHpBar(player.HP, player.MaxHP, 6);
+            promptContent = $"{hpBar} {player.HP}hp";
+            if (player.MaxMana > 0)
+                promptContent += $"  {BuildMpBar(player.Mana, player.MaxMana, 4)} {player.Mana}mp";
+            promptContent += "\n[grey]> Command:[/]";
+        }
+
+        var panel = new Panel(new Markup(promptContent))
+            .Header("[bold yellow]⌨  Command[/]")
+            .Border(BoxBorder.Rounded)
+            .BorderColor(Color.Yellow);
+        _ctx.UpdatePanel(SpectreLayout.Panels.Input, panel);
     }
 
     /// <inheritdoc/>
     public void ShowMap(Room currentRoom, int floor = 1)
     {
-        // TODO: Hill — Build ASCII map and render to map panel
         _currentFloor = floor;
         _cachedRoom = currentRoom;
-        throw new NotImplementedException();
+        RenderMapPanel(currentRoom);
     }
 
     /// <inheritdoc/>
     public void ShowColoredMessage(string message, string color)
     {
-        // TODO: Hill — Convert ANSI color code to Spectre markup and show message
-        throw new NotImplementedException();
+        var spectreColor = MapAnsiToSpectre(color);
+        var clean = StripAnsiCodes(message);
+        AppendContent($"[{spectreColor}]{Markup.Escape(clean)}[/]");
+        AppendLog(clean, "info");
     }
 
     /// <inheritdoc/>
     public void ShowColoredCombatMessage(string message, string color)
     {
-        // TODO: Hill — Convert ANSI color code to Spectre markup and show combat message
-        throw new NotImplementedException();
+        var spectreColor = MapAnsiToSpectre(color);
+        var clean = StripAnsiCodes(message);
+        AppendContent($"  [{spectreColor}]{Markup.Escape(clean)}[/]");
+        AppendLog(clean, "combat");
     }
 
     /// <inheritdoc/>
     public void ShowColoredStat(string label, string value, string valueColor)
     {
-        // TODO: Hill — Render stat with colored value
-        throw new NotImplementedException();
+        var spectreColor = MapAnsiToSpectre(valueColor);
+        AppendContent($"{Markup.Escape(label),-8} [{spectreColor}]{Markup.Escape(value)}[/]");
     }
 
     /// <inheritdoc/>
     public void ShowEquipment(Player player)
     {
-        // TODO: Hill — Render equipment slots to content panel
-        throw new NotImplementedException();
+        var sb = new StringBuilder();
+
+        void AddSlot(string slotLabel, Item? item, bool isWeapon = false, bool isAccessory = false)
+        {
+            if (item == null)
+            {
+                sb.AppendLine($"[grey]{slotLabel}:[/]  [dim](empty)[/]");
+                return;
+            }
+            var tc = TierColor(item.Tier);
+            var statParts = new List<string>();
+            if (isWeapon)
+            {
+                if (item.AttackBonus  != 0) statParts.Add($"[red]+{item.AttackBonus} ATK[/]");
+                if (item.DodgeBonus   >  0) statParts.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
+                if (item.MaxManaBonus >  0) statParts.Add($"[blue]+{item.MaxManaBonus} mana[/]");
+            }
+            else if (isAccessory)
+            {
+                if (item.AttackBonus  != 0) statParts.Add($"[red]+{item.AttackBonus} ATK[/]");
+                if (item.DefenseBonus != 0) statParts.Add($"[cyan]+{item.DefenseBonus} DEF[/]");
+                if (item.StatModifier != 0) statParts.Add($"[green]+{item.StatModifier} HP[/]");
+                if (item.DodgeBonus   >  0) statParts.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
+            }
+            else
+            {
+                if (item.DefenseBonus != 0) statParts.Add($"[cyan]+{item.DefenseBonus} DEF[/]");
+                if (item.DodgeBonus   >  0) statParts.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
+                if (item.MaxManaBonus >  0) statParts.Add($"[blue]+{item.MaxManaBonus} mana[/]");
+            }
+            var statsStr = statParts.Count > 0 ? "  " + string.Join(", ", statParts) : "";
+            sb.AppendLine($"[grey]{slotLabel}:[/]  [{tc}]{Markup.Escape(item.Name)}[/]{statsStr}");
+        }
+
+        AddSlot("⚔  Weapon",    player.EquippedWeapon,    isWeapon: true);
+        AddSlot("💍 Accessory", player.EquippedAccessory, isAccessory: true);
+        AddSlot("🪖 Head",      player.EquippedHead);
+        AddSlot("🥋 Shoulders", player.EquippedShoulders);
+        AddSlot("🦺 Chest",     player.EquippedChest);
+        AddSlot("🧤 Hands",     player.EquippedHands);
+        AddSlot("👖 Legs",      player.EquippedLegs);
+        AddSlot("👟 Feet",      player.EquippedFeet);
+        AddSlot("🧥 Back",      player.EquippedBack);
+        AddSlot("🔰 Off-Hand",  player.EquippedOffHand);
+
+        var setDesc = SetBonusManager.GetActiveBonusDescription(player);
+        if (!string.IsNullOrEmpty(setDesc))
+        {
+            sb.AppendLine();
+            sb.Append($"[yellow]Set Bonus: {Markup.Escape(setDesc)}[/]");
+        }
+
+        SetContent(sb.ToString().TrimEnd(), "⚔  Equipment", Color.Gold1);
     }
 
     /// <inheritdoc/>
-    public void ShowEnhancedTitle()
-    {
-        // TODO: Hill — Render enhanced ASCII title with Spectre FigletText
-        throw new NotImplementedException();
-    }
+    public void ShowEnhancedTitle() => ShowTitle();
 
     /// <inheritdoc/>
     public bool ShowIntroNarrative()
     {
-        // TODO: Hill — Show intro lore text to content panel
-        throw new NotImplementedException();
+        var lore = "The ancient fortress of [bold]Dungnz[/] has stood for a thousand years — a labyrinthine\n"
+                 + "tomb carved into the mountain's heart by hands long since turned to dust. Adventurers\n"
+                 + "who descend its spiral corridors speak of riches beyond imagination and horrors beyond\n"
+                 + "comprehension. The air below reeks of sulfur and old blood. Torches flicker without wind.\n"
+                 + "Something vast and patient watches from the deep.\n\n"
+                 + "[yellow][[ Press Enter to begin your descent... ]][/]";
+        SetContent(lore, "📜 Lore", Color.Grey);
+        return false;
     }
 
     /// <inheritdoc/>
     public void ShowPrestigeInfo(PrestigeData prestige)
     {
-        // TODO: Hill — Show prestige card to content panel
-        throw new NotImplementedException();
+        var sb = new StringBuilder();
+        sb.AppendLine($"[yellow]⭐ Prestige Level:[/] [bold]{prestige.PrestigeLevel}[/]");
+        sb.AppendLine($"[grey]Wins:[/]  {prestige.TotalWins}");
+        sb.AppendLine($"[grey]Runs:[/]  {prestige.TotalRuns}");
+        if (prestige.BonusStartAttack  > 0) sb.AppendLine($"[green]Bonus Attack:[/]   +{prestige.BonusStartAttack}");
+        if (prestige.BonusStartDefense > 0) sb.AppendLine($"[green]Bonus Defense:[/]  +{prestige.BonusStartDefense}");
+        if (prestige.BonusStartHP      > 0) sb.AppendLine($"[green]Bonus HP:[/]       +{prestige.BonusStartHP}");
+        SetContent(sb.ToString().TrimEnd(), "⭐ Prestige", Color.Yellow);
     }
 
     /// <inheritdoc/>
     public void ShowShop(IEnumerable<(Item item, int price)> stock, int playerGold)
     {
-        // TODO: Hill — Render shop items to content panel
-        throw new NotImplementedException();
+        var sb = new StringBuilder();
+        sb.AppendLine($"[bold yellow]🏪 Merchant[/]  [grey]Your gold:[/] [yellow]{playerGold}g[/]");
+        sb.AppendLine();
+        int idx = 1;
+        foreach (var (item, price) in stock)
+        {
+            var tc        = TierColor(item.Tier);
+            var canAfford = playerGold >= price;
+            var priceStr  = canAfford ? $"[green]{price}g[/]" : $"[grey]{price}g[/]";
+            var nameMk    = canAfford ? $"[{tc}]{Markup.Escape(item.Name)}[/]" : $"[grey]{Markup.Escape(item.Name)}[/]";
+            sb.AppendLine($"  {idx,2}. {ItemIcon(item)} {nameMk}  [grey]{Markup.Escape(PrimaryStatLabel(item))}[/]  {priceStr}");
+            idx++;
+        }
+        SetContent(sb.ToString().TrimEnd(), "🏪 Shop", Color.Yellow);
     }
 
     /// <inheritdoc/>
     public void ShowSellMenu(IEnumerable<(Item item, int sellPrice)> items, int playerGold)
     {
-        // TODO: Hill — Render sell menu to content panel
-        throw new NotImplementedException();
+        var sb = new StringBuilder();
+        sb.AppendLine($"[bold yellow]💰 Sell Items[/]  [grey]Your gold:[/] [yellow]{playerGold}g[/]");
+        sb.AppendLine();
+        int idx = 1;
+        foreach (var (item, sellPrice) in items)
+        {
+            var tc = TierColor(item.Tier);
+            sb.AppendLine($"  {idx,2}. {ItemIcon(item)} [{tc}]{Markup.Escape(item.Name)}[/]  [green]+{sellPrice}g[/]");
+            idx++;
+        }
+        SetContent(sb.ToString().TrimEnd(), "💰 Sell", Color.Green);
     }
 
     /// <inheritdoc/>
     public void ShowCraftRecipe(string recipeName, Item result, List<(string ingredient, bool playerHasIt)> ingredients)
     {
-        // TODO: Hill — Render craft recipe card to content panel
-        throw new NotImplementedException();
+        var tc = TierColor(result.Tier);
+        var sb = new StringBuilder();
+        sb.AppendLine($"[grey]Result:[/]  {ItemIcon(result)} [{tc}]{Markup.Escape(result.Name)}[/]");
+        sb.AppendLine($"[grey]Stats:[/]   [cyan]{Markup.Escape(PrimaryStatLabel(result))}[/]");
+        sb.AppendLine();
+        sb.AppendLine("[grey]Ingredients:[/]");
+        foreach (var (ingredient, hasIt) in ingredients)
+        {
+            var check    = hasIt ? "[green]✅[/]" : "[red]❌[/]";
+            var ingColor = hasIt ? "white" : "grey";
+            sb.AppendLine($"  {check} [{ingColor}]{Markup.Escape(ingredient)}[/]");
+        }
+        SetContent(sb.ToString().TrimEnd(), $"🔨 {Markup.Escape(recipeName)}", Color.Yellow);
     }
 
     /// <inheritdoc/>
     public void ShowCombatStart(Enemy enemy)
     {
-        // TODO: Hill — Render combat start banner with enemy name
-        throw new NotImplementedException();
+        _contentHeader = "⚔  Combat";
+        _contentBorderColor = Color.Red;
+        _contentLines.Clear();
+        AppendContent("[bold red]⚔  COMBAT BEGINS  ⚔[/]");
+        AppendContent($"[bold red]{Markup.Escape(enemy.Name)}[/]");
+        AppendLog($"Combat started: {enemy.Name}", "combat");
     }
 
     /// <inheritdoc/>
     public void ShowCombatEntryFlags(Enemy enemy)
     {
-        // TODO: Hill — Show elite/special flags in content panel
-        throw new NotImplementedException();
+        if (enemy.IsElite)
+            AppendContent("[yellow]⭐ ELITE — enhanced stats and loot[/]");
+        if (enemy is Dungnz.Systems.Enemies.DungeonBoss boss && boss.IsEnraged)
+            AppendContent("[bold red]⚡ ENRAGED[/]");
     }
 
     /// <inheritdoc/>
     public void ShowLevelUpChoice(Player player)
     {
-        // TODO: Hill — Render level-up options to content panel (display-only)
-        throw new NotImplementedException();
+        var sb = new StringBuilder();
+        sb.AppendLine($"[bold yellow]🎉 LEVEL UP! You are now level {player.Level}[/]");
+        sb.AppendLine();
+        sb.AppendLine("[grey]Choose a stat to increase:[/]");
+        sb.AppendLine($"  [yellow]1.[/] +5 Max HP    [grey]({player.MaxHP} → {player.MaxHP + 5})[/]");
+        sb.AppendLine($"  [yellow]2.[/] +2 Attack    [grey]({player.Attack} → {player.Attack + 2})[/]");
+        sb.Append($"  [yellow]3.[/] +2 Defense   [grey]({player.Defense} → {player.Defense + 2})[/]");
+        SetContent(sb.ToString().TrimEnd(), "🎉 Level Up!", Color.Yellow);
     }
 
     /// <inheritdoc/>
     public void ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant)
     {
-        // TODO: Hill — Render floor banner to content panel
         _currentFloor = floor;
-        throw new NotImplementedException();
+        var threatColor = floor <= 2 ? "green" : floor <= 4 ? "yellow" : "red";
+        var threat      = floor <= 2 ? "Low"   : floor <= 4 ? "Moderate" : "High";
+        var sb = new StringBuilder();
+        sb.AppendLine($"[{threatColor} bold]FLOOR {floor} OF {maxFloor}[/]");
+        sb.AppendLine($"[white]{Markup.Escape(variant.Name)}[/]");
+        sb.Append($"[{threatColor}]⚠ Danger: {threat}[/]");
+        SetContent(sb.ToString().TrimEnd(), $"⬇  Floor {floor}", Color.Cyan1);
+        AppendLog($"Entered Floor {floor} — {variant.Name}");
     }
 
     /// <inheritdoc/>
     public void ShowEnemyDetail(Enemy enemy)
     {
-        // TODO: Hill — Render enemy stat card to content panel
-        throw new NotImplementedException();
+        var nameColor = enemy.IsElite ? "yellow" : "red";
+        var sb = new StringBuilder();
+        sb.AppendLine($"HP  {BuildHpBar(enemy.HP, enemy.MaxHP)} {enemy.HP}/{enemy.MaxHP}");
+        sb.AppendLine($"[red]ATK: {enemy.Attack}[/]   [cyan]DEF: {enemy.Defense}[/]");
+        sb.Append($"[green]XP: {enemy.XPValue}[/]");
+        if (enemy.IsElite) sb.Append("  [yellow]⭐ ELITE[/]");
+        SetContent(sb.ToString().TrimEnd(), $"[{nameColor}]{Markup.Escape(enemy.Name.ToUpperInvariant())}[/]", Color.Red);
     }
 
     /// <inheritdoc/>
     public void ShowVictory(Player player, int floorsCleared, RunStats stats)
     {
-        // TODO: Hill — Render victory screen to content panel
-        throw new NotImplementedException();
+        var floorWord = floorsCleared == 1 ? "floor" : "floors";
+        var sb = new StringBuilder();
+        sb.AppendLine("[bold gold1]✦  V I C T O R Y  ✦[/]");
+        sb.AppendLine();
+        sb.AppendLine($"[bold]{Markup.Escape(player.Name)}[/]  •  Level {player.Level}  •  {Markup.Escape(player.Class.ToString())}");
+        sb.AppendLine($"[yellow]{floorsCleared} {floorWord} conquered[/]");
+        sb.AppendLine();
+        sb.AppendLine($"[grey]Enemies slain:[/]  {stats.EnemiesDefeated}");
+        sb.AppendLine($"[grey]Gold earned:[/]    {stats.GoldCollected}");
+        sb.AppendLine($"[grey]Items found:[/]    {stats.ItemsFound}");
+        sb.Append($"[grey]Turns taken:[/]    {stats.TurnsTaken}");
+        SetContent(sb.ToString().TrimEnd(), "🏆 Victory!", Color.Gold1);
     }
 
     /// <inheritdoc/>
     public void ShowGameOver(Player player, string? killedBy, RunStats stats)
     {
-        // TODO: Hill — Render game over screen to content panel
-        throw new NotImplementedException();
+        var sb = new StringBuilder();
+        sb.AppendLine("[bold red]☠  RUN ENDED  ☠[/]");
+        sb.AppendLine();
+        sb.AppendLine($"[bold]{Markup.Escape(player.Name)}[/]  •  Level {player.Level}  •  {Markup.Escape(player.Class.ToString())}");
+        if (!string.IsNullOrEmpty(killedBy))
+            sb.AppendLine($"[red]Killed by: {Markup.Escape(killedBy)}[/]");
+        sb.AppendLine();
+        sb.AppendLine($"[grey]Enemies slain:[/]  {stats.EnemiesDefeated}");
+        sb.AppendLine($"[grey]Floors reached:[/] {stats.FloorsVisited}");
+        sb.Append($"[grey]Turns survived:[/] {stats.TurnsTaken}");
+        SetContent(sb.ToString().TrimEnd(), "☠  Game Over", Color.DarkRed);
     }
 
     /// <inheritdoc/>
     public void ShowEnemyArt(Enemy enemy)
     {
-        // TODO: Hill — Render enemy ASCII art to content panel if present
-        throw new NotImplementedException();
+        if (enemy.AsciiArt == null || enemy.AsciiArt.Length == 0)
+            return;
+        var artColor = enemy.IsElite ? "yellow" : "red";
+        var art = string.Join("\n", enemy.AsciiArt.Select(l => Markup.Escape(l)));
+        AppendContent($"[{artColor}]{art}[/]");
     }
 
+    // ── Private static helpers ────────────────────────────────────────────────
+
+    private static string ItemTypeIcon(ItemType type) => type switch
+    {
+        ItemType.Weapon           => "⚔",
+        ItemType.Armor            => "🦺",
+        ItemType.Consumable       => "🧪",
+        ItemType.Accessory        => "💍",
+        ItemType.CraftingMaterial => "⚗",
+        _                         => "•"
+    };
+
+    private static string SlotIcon(ArmorSlot slot) => slot switch
+    {
+        ArmorSlot.Head      => "🪖",
+        ArmorSlot.Shoulders => "🥋",
+        ArmorSlot.Chest     => "🦺",
+        ArmorSlot.Hands     => "🧤",
+        ArmorSlot.Legs      => "👖",
+        ArmorSlot.Feet      => "👟",
+        ArmorSlot.Back      => "🧥",
+        ArmorSlot.OffHand   => "🔰",
+        _                   => "🦺",
+    };
+
+    private static string ItemIcon(Item item) =>
+        item.Type == ItemType.Armor ? SlotIcon(item.Slot) : ItemTypeIcon(item.Type);
+
+    private static string EffectIcon(StatusEffect effect) => effect switch
+    {
+        StatusEffect.Poison    => "☠",
+        StatusEffect.Bleed     => "🩸",
+        StatusEffect.Stun      => "⚡",
+        StatusEffect.Regen     => "✨",
+        StatusEffect.Fortified => "🛡",
+        StatusEffect.Weakened  => "💀",
+        StatusEffect.Slow      => ">",
+        StatusEffect.BattleCry => "!",
+        StatusEffect.Burn      => "*",
+        StatusEffect.Freeze    => "~",
+        StatusEffect.Silence   => "X",
+        StatusEffect.Curse     => "@",
+        _                      => "●"
+    };
+
+    private static string MapAnsiToSpectre(string ansiCode) => ansiCode switch
+    {
+        var c when c == ColorCodes.Red       || c == ColorCodes.BrightRed   => "red",
+        var c when c == ColorCodes.Green                                    => "green",
+        var c when c == ColorCodes.Yellow                                   => "yellow",
+        var c when c == ColorCodes.Cyan                                     => "cyan",
+        var c when c == ColorCodes.Gray                                     => "grey",
+        var c when c == ColorCodes.Blue                                     => "blue",
+        var c when c == ColorCodes.BrightWhite                              => "white",
+        _                                                                   => "white"
+    };
+
+    private static string StripAnsiCodes(string input) =>
+        AnsiEscapePattern.Replace(input, string.Empty);
 }
+
 
