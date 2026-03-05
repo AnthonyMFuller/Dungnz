@@ -2564,3 +2564,579 @@ The question is: **Does this game need persistent panels, or is scrolling termin
 - Terminal.Gui v2 migration would be a full rewrite of TuiLayout + all color handling
 - Custom ANSI renderer is high-effort, high-control option
 - Web UI solves rendering but adds complexity (SignalR, browser launch)
+
+### 2026-03-05: Option E Deep Dive — Spectre.Console Live+Layout Feasibility Analysis
+
+**Requested by:** Anthony (Boss)  
+**Lead:** Coulson (Technical Architect)  
+**Context:** Team identified 6 options for TUI improvement/replacement. Anthony requested deep architectural analysis of Option E specifically.
+
+**Option E Definition:** Use Spectre.Console's `Live` component + `Layout` to create persistent on-screen regions (like TUI) but with full Spectre.Console rendering inside them. Replaces Terminal.Gui entirely.
+
+---
+
+## 1. Architecture Fit — Panel Mapping Analysis
+
+**Current TUI Layout (TuiLayout.cs):**
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│ ┌─────────────────────────────┬─────────────────────────────┐       │
+│ │ 🗺  Dungeon Map (60%)      │ ⚔  Player Stats (40%)       │ 30%   │
+│ └─────────────────────────────┴─────────────────────────────┘       │
+│ ┌─────────────────────────────────────────────────────────────┐     │
+│ │ 📜 Adventure (Content Panel)                                │ 50% │
+│ └─────────────────────────────────────────────────────────────┘     │
+│ ┌─────────────────────────────────────────────────────────────┐     │
+│ │ 📋 Message Log                                              │ 15% │
+│ └─────────────────────────────────────────────────────────────┘     │
+│ ┌─────────────────────────────────────────────────────────────┐     │
+│ │ ⌨  Command Input                                            │ 5%  │
+│ └─────────────────────────────────────────────────────────────┘     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+**Spectre.Console Layout Equivalent:**
+```csharp
+var layout = new Layout("Root")
+    .SplitRows(
+        new Layout("Top").SplitColumns(
+            new Layout("Map").Ratio(3),
+            new Layout("Stats").Ratio(2)
+        ).Size(10), // ~30% for 30-row terminal
+        new Layout("Content").Ratio(3),  // ~50%
+        new Layout("Log").Ratio(1),      // ~15%
+        new Layout("Input").Size(2)      // ~5%
+    );
+```
+
+**Mapping Quality: ✅ CLEAN**
+
+Spectre.Console's Layout API directly supports:
+- Nested row/column splits
+- Ratio-based and fixed-size regions
+- Panel rendering with borders and headers inside each region
+
+The 5-panel structure maps 1:1. Each `Layout` region can contain any Spectre.Console renderable (Table, Panel, Markup, BarChart, etc.). This is where Spectre wins over Terminal.Gui — full rich markup *inside* each panel.
+
+**Gotcha:** Layout percentages in Spectre use `Ratio()` or `Size()`, not `Dim.Percent()`. Needs careful tuning for different terminal heights.
+
+---
+
+## 2. The Input Problem — Core Conflict Analysis
+
+**The Fundamental Issue:**
+
+```csharp
+// Terminal.Gui model (current):
+Application.Run(mainWindow);  // Blocks main thread, handles all input internally
+
+// Spectre.Console Live model:
+await AnsiConsole.Live(layout)
+    .StartAsync(async ctx => {
+        while (running) {
+            ctx.Refresh();
+            await Task.Delay(100);
+        }
+    });  // Blocks until callback exits
+```
+
+Both models require a blocking call that owns the terminal. The difference:
+- **Terminal.Gui:** Has built-in TextField widget that captures input *inside* the run loop
+- **Spectre.Console Live:** No built-in input component; expects you to handle input *outside* the Live context
+
+### 2a. AnsiConsole.Prompt Inside Live Context
+
+**Testing the hypothesis:** Can we call `AnsiConsole.Prompt<TextPrompt>()` from within a Live callback?
+
+**Answer: NO.** Spectre.Console's documentation explicitly warns:
+> "Do not call interactive prompts or other console reading operations while inside a Live context."
+
+The Live component hijacks `Console.CursorTop`/`Console.CursorLeft` and ANSI cursor positioning. Calling `Console.ReadLine()` or `AnsiConsole.Prompt()` would:
+1. Corrupt the cursor position
+2. Overwrite Live's output buffer
+3. Cause visual artifacts
+
+### 2b. Two-Thread Model Analysis
+
+**Proposed Architecture:**
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                         MAIN THREAD                               │
+│  ┌──────────────────────────────────────────────────────────┐     │
+│  │ AnsiConsole.Live(layout).StartAsync(ctx => {            │     │
+│  │     while (!cancellation.IsCancellationRequested) {     │     │
+│  │         layout["Map"].Update(BuildMapPanel());          │     │
+│  │         layout["Stats"].Update(BuildStatsPanel());      │     │
+│  │         layout["Content"].Update(BuildContentPanel());  │     │
+│  │         layout["Log"].Update(BuildLogPanel());          │     │
+│  │         layout["Input"].Update(BuildInputPanel());      │     │
+│  │         ctx.Refresh();                                  │     │
+│  │         await Task.Delay(33); // ~30fps                 │     │
+│  │     }                                                   │     │
+│  │ });                                                     │     │
+│  └──────────────────────────────────────────────────────────┘     │
+└──────────────────────────────────────────────────────────────────┘
+          │                              ▲
+          │ Channel<DisplayUpdate>       │ Channel<string>
+          ▼                              │
+┌──────────────────────────────────────────────────────────────────┐
+│                       INPUT THREAD                                │
+│  while (true) {                                                  │
+│      var key = Console.ReadKey(intercept: true);                 │
+│      inputBuffer.Append(key.KeyChar);                            │
+│      if (key.Key == ConsoleKey.Enter) {                          │
+│          commandChannel.Post(inputBuffer.ToString());            │
+│          inputBuffer.Clear();                                    │
+│      }                                                           │
+│      inputChannel.Post(inputBuffer.ToString()); // for display   │
+│  }                                                               │
+└──────────────────────────────────────────────────────────────────┘
+          │
+          │ Channel<string> (commands)
+          ▼
+┌──────────────────────────────────────────────────────────────────┐
+│                       GAME THREAD                                 │
+│  // Existing GameLoop, CombatEngine, etc.                        │
+│  var command = await commandChannel.ReadAsync();                 │
+│  // Process command, update game state                           │
+│  displayChannel.Post(new DisplayUpdate { ... });                 │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+**Complexity: HIGH**
+
+This requires:
+1. **3 threads** (up from current 2): Live render, input capture, game logic
+2. **Custom input handling**: No Console.ReadLine(), must build our own line editor (backspace, cursor, history)
+3. **Input panel sync**: The "Input" region must display current `inputBuffer` state, updated on every keystroke
+4. **Thread-safe state**: All display data must be readable by Live thread without races
+
+**Viability:** ✅ FEASIBLE but significant work. We'd essentially be building a mini-readline in C#.
+
+### 2c. Polling Model Analysis
+
+**Alternative approach:** Instead of blocking on `Console.ReadLine()`, poll `Console.KeyAvailable`:
+
+```csharp
+await AnsiConsole.Live(layout).StartAsync(async ctx => {
+    while (running) {
+        // Update display
+        RefreshAllPanels(layout);
+        ctx.Refresh();
+        
+        // Check for input (non-blocking)
+        while (Console.KeyAvailable) {
+            var key = Console.ReadKey(intercept: true);
+            ProcessKey(key);
+        }
+        
+        await Task.Delay(16); // ~60fps
+    }
+});
+```
+
+**Problems:**
+1. **Still need custom line editing**: Same readline reimplementation as 2b
+2. **Single-threaded game logic**: Game loop would need to be async/event-driven, not blocking
+3. **Combat input blocking**: Current `ShowCombatMenuAndSelect()` is synchronous — we'd need to refactor 19 input-coupled methods to async callbacks
+
+**Viability:** ⚠️ MARGINALLY SIMPLER than 2b (one less thread) but requires game loop refactor
+
+### 2d. Alternative: Live-Between-Inputs Pattern
+
+**Most compatible approach:** Don't run Live continuously. Instead:
+
+```csharp
+void RefreshDisplay() {
+    AnsiConsole.Clear();
+    var layout = BuildLayout();
+    AnsiConsole.Write(layout);
+}
+
+// In game loop:
+RefreshDisplay();
+var command = Console.ReadLine(); // Normal blocking input
+// Process command...
+RefreshDisplay();
+```
+
+**This is NOT Live rendering** — it's just Layout + Clear + Redraw per turn. Flickers on every input cycle.
+
+**Problems:**
+1. Full screen flicker on every turn (bad UX)
+2. No continuous updates (can't animate HP bars, etc.)
+3. Loses the "persistent panel" feel we want
+
+**Viability:** ❌ NOT ACCEPTABLE — defeats the purpose of Option E
+
+### Input Problem Verdict
+
+**The only viable approach is 2b (Three-Thread Model)** or 2c (Polling with async game loop refactor).
+
+Both require:
+- Custom line editor (backspace, delete, cursor movement, command history)
+- Significant refactoring of input-coupled IDisplayService methods
+- Channel-based or async state management
+
+**LOC estimate for input layer alone: ~400 lines**
+
+---
+
+## 3. Threading Model Compatibility — GameThreadBridge Analysis
+
+**Current Terminal.Gui Threading:**
+```
+Main Thread:        Application.Run() → processes UI events
+Game Thread:        GameLoop.Run() → calls IDisplayService
+Communication:      BlockingCollection<string> for commands
+                    Application.MainLoop.Invoke() for UI updates
+```
+
+**Proposed Spectre.Console Live Threading:**
+```
+Main Thread:        AnsiConsole.Live().StartAsync() → render loop
+Input Thread:       Console.ReadKey() → input capture
+Game Thread:        GameLoop.Run() → calls IDisplayService
+Communication:      Channel<string> for commands (input → game)
+                    Channel<DisplayUpdate> for display (game → main)
+                    ConcurrentDictionary for shared display state
+```
+
+**GameThreadBridge Compatibility:**
+
+The current `GameThreadBridge` has these methods:
+- `PostCommand(string)` → ✅ Maps directly to Channel.Writer.WriteAsync()
+- `WaitForCommand()` → ✅ Maps directly to Channel.Reader.ReadAsync()
+- `InvokeOnUiThread(Action)` → ❌ MUST BE REDESIGNED
+
+`InvokeOnUiThread()` currently uses `Application.MainLoop.Invoke()` which is Terminal.Gui specific. For Spectre Live, we'd need:
+- Thread-safe state object (ConcurrentDictionary or immutable records)
+- No callback invocation — Live render loop reads state directly
+- Possibly an event or signal for "please refresh now"
+
+**Redesign Required:**
+```csharp
+// New pattern:
+public class SpectreDisplayState {
+    private readonly object _lock = new();
+    public string MapContent { get; private set; }
+    public string StatsContent { get; private set; }
+    public List<string> ContentLines { get; } = new();
+    public List<string> LogLines { get; } = new();
+    public string InputBuffer { get; set; }
+    
+    public void UpdateMap(string map) {
+        lock (_lock) { MapContent = map; }
+    }
+    // ... similar for other panels
+}
+```
+
+**Compatibility Verdict:** GameThreadBridge REQUIRES REDESIGN. Existing pattern not reusable.
+
+---
+
+## 4. IDisplayService Compatibility — Method-by-Method Analysis
+
+**IDisplayService has 35 methods.** Categorized by implementation difficulty:
+
+### Straightforward (17 methods) — ✅ EASY
+
+These methods just update display state. No input, no modals:
+- `ShowTitle()`, `ShowRoom()`, `ShowCombat()`, `ShowCombatStatus()`, `ShowCombatMessage()`
+- `ShowPlayerStats()`, `ShowInventory()`, `ShowLootDrop()`, `ShowGoldPickup()`, `ShowItemPickup()`
+- `ShowItemDetail()`, `ShowMessage()`, `ShowError()`, `ShowHelp()`, `ShowCommandPrompt()`
+- `ShowMap()`, `ShowEquipment()`, etc.
+
+These write to the shared state object; Live render loop picks them up.
+
+### Problematic — Input-Coupled (18 methods) — ⚠️ REQUIRES REFACTORING
+
+These methods both display AND wait for user input:
+- `ReadPlayerName()` — needs custom text input
+- `ReadSeed()` — needs custom numeric input
+- `ShowInventoryAndSelect()` — needs custom list selection
+- `ShowShopAndSelect()`, `ShowSellMenuAndSelect()`, `ShowShopWithSellAndSelect()`
+- `ShowCraftMenuAndSelect()`, `ShowShrineMenuAndSelect()`, `ShowTrapChoiceAndSelect()`
+- `ShowForgottenShrineMenuAndSelect()`, `ShowContestedArmoryMenuAndSelect()`
+- `ShowAbilityMenuAndSelect()`, `ShowCombatItemMenuAndSelect()`, `ShowEquipMenuAndSelect()`
+- `ShowUseMenuAndSelect()`, `ShowTakeMenuAndSelect()`, `ShowLevelUpChoiceAndSelect()`
+- `ShowCombatMenuAndSelect()`, `SelectDifficulty()`, `SelectClass()`, `SelectSaveToLoad()`
+- `ShowConfirmMenu()`, `ShowSkillTreeMenu()`, `ShowStartupMenu()`
+
+**Current SpectreDisplayService Implementation:**
+These use `AnsiConsole.Prompt(new SelectionPrompt<T>())` which is incompatible with Live.
+
+**Options for Input-Coupled Methods:**
+
+1. **Exit Live for prompts:** Call `ctx.Stop()`, run prompt, restart Live
+   - Pro: Uses existing Spectre prompt widgets
+   - Con: Screen flicker, loses persistent panel appearance
+   
+2. **Custom selection rendering:** Build our own arrow-key menu inside the Content panel
+   - Pro: True persistent layout
+   - Con: ~150 lines per menu type, must handle arrow keys ourselves
+
+3. **Hybrid:** Map panel + Stats panel persist, Content panel becomes prompt area
+   - Pro: Partial persistence
+   - Con: Still requires custom input handling
+
+**My Recommendation:** Option 2 (custom selection) is necessary for the "best of both worlds" promise. But it's HIGH EFFORT.
+
+---
+
+## 5. Spectre.Console Live Limitations
+
+**What Live CAN'T Do:**
+
+1. **Partial updates:** Live redraws the entire layout on every `ctx.Refresh()`. No dirty-region optimization. For a 5-panel layout, every refresh redraws all 5 panels even if only one changed.
+
+2. **Cursor positioning for input:** Live owns cursor position. You cannot position a cursor inside the "Input" panel for text editing. The blinking cursor would appear at the bottom of the terminal, not inside the panel.
+
+3. **Built-in input widgets:** No TextBox, TextField, ListView equivalents. All must be custom.
+
+4. **Console.ReadLine() compatibility:** Completely incompatible during Live rendering.
+
+5. **Scrolling within regions:** Layout regions don't scroll. If Content panel has 50 lines but region fits 10, you must implement your own pagination.
+
+**Performance Implications:**
+
+- Full redraw at 30-60fps = ~30-60 full screen renders per second
+- Each render involves building all 5 panels from scratch
+- Spectre.Console is optimized but not designed for this use case
+- Terminal latency (SSH, slow terminals) will cause visible lag
+
+**What We'd Lose vs Terminal.Gui:**
+
+| Feature | Terminal.Gui | Spectre Live |
+|---------|-------------|--------------|
+| Built-in text input | ✅ TextField | ❌ Custom build |
+| Built-in list selection | ✅ ListView | ❌ Custom build |
+| Scrollable regions | ✅ ScrollView | ❌ Manual pagination |
+| Cursor in panels | ✅ Native | ❌ Not possible |
+| Partial redraws | ✅ Dirty-flag | ❌ Full redraw |
+| Modal dialogs | ✅ Dialog widget | ❌ Must pause Live |
+
+---
+
+## 6. Reversibility Assessment
+
+**If we migrate to Option E and it fails:**
+
+**Good News:**
+- `IDisplayService` abstraction means SpectreDisplayService still exists and works
+- `--tui` flag pattern allows both to coexist during migration
+- No changes to GameLoop, CombatEngine, or game logic — only Display layer
+
+**Bad News:**
+- `GameThreadBridge` would be redesigned → need to maintain both versions during transition
+- Input-coupled methods would have different implementations → potential behavior drift
+- Custom line editor code would be wasted if we roll back
+- Testing 18 input-coupled methods across 2 implementations = 2x test surface
+
+**Rollback Effort:** MODERATE
+- Delete new `Display/SpectreLive/` directory
+- Revert `Program.cs` flag handling
+- Restore original `GameThreadBridge` (if changed)
+- Restore `SpectreDisplayService` input methods (if changed)
+
+**Estimated rollback time:** 2-4 hours if clean separation maintained.
+
+---
+
+## 7. My Verdict
+
+**Confidence Level: 4/10 — YELLOW FLAG**
+
+**Can we do it?** Yes, it's technically feasible.
+
+**Should we do it?** I have serious reservations.
+
+**Why I'm hesitant:**
+
+1. **We'd be fighting the library.** Spectre.Console Live is designed for progress bars, spinners, and status displays — not full TUI applications. We'd be bending it past its design intent.
+
+2. **Input handling is 50% of the work.** Building a custom readline, custom list selector, custom text input — these are solved problems in Terminal.Gui. We'd be reinventing wheels.
+
+3. **The gain is cosmetic.** The true benefit of Option E is "Spectre's rich markup inside persistent panels." But Terminal.Gui CAN do colors — TuiColorMapper exists, it's just not wired. We could wire it for 1/10th the effort.
+
+4. **Testing burden doubles.** 18 input-coupled methods need thorough testing. Custom input handling is bug-prone.
+
+5. **No cursor in input panel.** Users expect a blinking cursor where they type. Spectre Live can't provide this inside a layout region.
+
+**What conditions would give me a GREEN LIGHT:**
+
+1. **Terminal.Gui v2 is deprecated or abandoned** — forcing our hand
+2. **A Spectre.Console contributor confirms Live+Layout+Input is supported** — changing the technical picture
+3. **We're willing to drop persistent panels** — accepting the Exit-Live-for-input approach
+4. **We hire a developer who's built this pattern before** — reducing risk
+5. **Anthony explicitly prioritizes "Spectre rendering quality" over "development velocity"** — accepting the cost
+
+**My Recommendation:**
+
+**Option D is safer:** Make Spectre.Console (non-Live) the default, demote TUI to experimental. Accept scrolling output. Map and Stats visible via commands, not persistent panels.
+
+**If persistent panels are REQUIRED:** Fix Terminal.Gui color wiring (1-2 days) rather than build a custom TUI on top of Spectre Live (~8-10 days).
+
+**If we MUST do Option E:** Budget 2 weeks, not 3-4 days. The LOC estimate of ~950 is optimistic. Real estimate: ~1,400 lines + testing.
+
+---
+
+## Learnings
+
+- Spectre.Console `Live` + `Layout` technically supports our 5-panel structure but has fundamental input incompatibility
+- Input-coupled IDisplayService methods (18 of 35) require custom reimplementation for Live context
+- GameThreadBridge requires full redesign; Application.MainLoop.Invoke() has no Spectre equivalent
+- Custom readline/list selector implementation needed (~400+ lines)
+- No cursor positioning inside Layout regions — breaks input UX expectations
+- Full screen redraws at 30-60fps have performance implications
+- Rollback is MODERATE effort due to IDisplayService abstraction
+- Confidence: 4/10 — technically feasible but fighting the library design
+
+
+### 2026-03-05: Option E Feasibility Analysis — Spectre.Console Live+Layout
+
+**Trigger:** Anthony requested deep architectural feasibility assessment of using Spectre.Console's `Live` component + `Layout` system as TUI replacement.
+
+**Research Conducted:**
+- Reviewed Spectre.Console v0.54.0 documentation for Live, Layout, and SelectionPrompt
+- Analyzed current Terminal.Gui architecture: TuiLayout.cs, TerminalGuiDisplayService.cs, GameThreadBridge.cs
+- Examined IDisplayService interface: 85+ methods, 19+ input-coupled
+- Studied Program.cs dual-path startup pattern
+
+**Key Architectural Findings:**
+
+**1. THE THREADING PROBLEM — CRITICAL BLOCKER**
+
+Spectre.Console's `Live` component explicitly states in documentation:
+> "Live display is not thread safe. Using it together with other interactive components such as prompts, progress displays, or status displays is not supported."
+
+This is a fundamental conflict:
+- `AnsiConsole.Live(layout).Start(ctx => { ... })` — blocks the calling thread and expects exclusive console control
+- `SelectionPrompt`, `TextPrompt`, `ReadKey` — all require separate console access, incompatible with Live context
+- The game's 19+ input-coupled methods (ShowCombatMenuAndSelect, ShowShopAndSelect, etc.) ALL need arrow-key menu navigation
+
+**Possible Workaround Patterns (all have issues):**
+- **Pattern A: Stop/Restart Live** — Stop Live, run SelectionPrompt, restart Live. Causes screen flicker, loses visual continuity, defeats the "persistent panel" purpose.
+- **Pattern B: Wrap Prompts in Live** — Not supported by Spectre.Console. Prompts expect to own the console.
+- **Pattern C: Custom key handling in Live callback** — Roll our own menu navigation inside `ctx => { }`. Requires reimplementing SelectionPrompt from scratch (~500+ LOC). Spectre provides no key-reading API inside Live.
+- **Pattern D: Background thread with shared state** — Game thread writes to state, Live renders state. But menus still need key input, and Console.ReadKey() blocks the Live context OR requires separate thread coordination identical to Terminal.Gui's complexity.
+
+**Verdict on Threading:** There is no clean solution. Spectre.Console was designed for either (a) static rendering OR (b) live rendering without input, OR (c) prompts without live rendering. It was NOT designed for persistent-panel + interactive-menu games.
+
+**2. LAYOUT CAPABILITIES — ADEQUATE**
+
+`Layout` can replicate the 5-panel design:
+```csharp
+var layout = new Layout("Root")
+    .SplitRows(
+        new Layout("Header").SplitColumns(new Layout("Map").Ratio(6), new Layout("Stats").Ratio(4)),
+        new Layout("Content").Ratio(5),
+        new Layout("Log").Ratio(2),
+        new Layout("Input").Size(3)
+    );
+```
+
+Layout supports:
+- Fixed sizes (`.Size(n)`) for headers/footers
+- Proportional sizing (`.Ratio(n)`) for flexible regions
+- Nested splits (columns inside rows)
+- Full Spectre markup rendering inside each panel
+
+**Verdict on Layout:** The panel layout is achievable. This is not a blocker.
+
+**3. INPUT HANDLING — MAJOR GAP**
+
+19 input-coupled IDisplayService methods need arrow-key menus:
+- ShowCombatMenuAndSelect, ShowShopAndSelect, ShowSellMenuAndSelect, ShowShrineMenuAndSelect
+- ShowInventoryAndSelect, ShowEquipMenuAndSelect, ShowUseMenuAndSelect, ShowTakeMenuAndSelect
+- ShowAbilityMenuAndSelect, ShowCombatItemMenuAndSelect, ShowLevelUpChoiceAndSelect
+- ShowCraftMenuAndSelect, ShowConfirmMenu, ShowTrapChoiceAndSelect, ShowForgottenShrineMenuAndSelect
+- ShowContestedArmoryMenuAndSelect, ShowSkillTreeMenu, SelectDifficulty, SelectClass
+
+Spectre's SelectionPrompt works perfectly in the current SpectreDisplayService. But SelectionPrompt cannot run while Live is active.
+
+**Options:**
+- **Build custom menu renderer inside Live:** ~500-800 LOC per menu type. High effort, high risk.
+- **Use stop/start pattern:** Flicker, breaks immersion, defeats purpose.
+- **Keep SpectreDisplayService prompts, no persistent panels:** This is what we already have.
+
+**Verdict on Input:** The input model is incompatible with Live. This is a blocker.
+
+**4. REFRESH MODEL — ADEQUATE WITH CAVEATS**
+
+`ctx.Refresh()` can be called from any thread if state is synchronized. For rapid combat updates:
+```csharp
+// Pseudocode
+statusTable.Rows.Clear();
+statusTable.AddRow("HP", player.HP.ToString());
+ctx.Refresh();
+```
+
+Spectre handles partial redraws efficiently. During combat:
+- Enemy HP changes: update row, refresh
+- Status effects: update row, refresh
+- Log messages: append to panel, refresh
+
+**However:** This only works if we're NOT waiting for input. The moment we need ShowCombatMenuAndSelect, we either (a) exit Live context or (b) implement custom key handling.
+
+**Verdict on Refresh:** Adequate for display-only scenarios. Blocked by input problem.
+
+**5. MIGRATION PATH — CLEAN IF WE GO FORWARD**
+
+If threading/input problems were solved:
+- SpectreDisplayService already implements full IDisplayService
+- Replace TuiLayout.cs with SpectreLayout class (~250 LOC)
+- Replace TerminalGuiDisplayService with SpectreLayoutDisplayService (~600 LOC)
+- Reuse existing SpectreDisplayService helper methods (TierColor, ItemIcon, BuildHpBar, etc.)
+- GameThreadBridge pattern would be simplified (no Application.Invoke needed)
+- Program.cs changes: ~30 lines to add new flag
+
+**What gets deleted:** Display/Tui/ directory (6 files, ~2,370 LOC)
+**What gets added:** Display/SpectreLive/ directory (3-4 files, ~900 LOC) plus custom menu system (~800 LOC)
+
+**Verdict on Migration:** Path is clear but custom menu work is substantial.
+
+**6. ROLLBACK RISK — VERY LOW**
+
+- `--tui` flag already exists for Terminal.Gui
+- Add `--spectre-live` flag for new implementation
+- Keep Terminal.Gui code intact during development
+- Rollback = delete new directory, revert Program.cs
+
+**Verdict on Rollback:** No concern. Additive-only pattern already established.
+
+**7. HONEST VERDICT — DO NOT PROCEED**
+
+**The top 2 risks that would cause failure:**
+
+1. **Input/Live incompatibility is fundamental to Spectre.Console's design.** This is not a bug to be fixed — it's an architectural constraint. The library authors explicitly document that Live and prompts are incompatible. We would be fighting the framework.
+
+2. **Custom menu system effort is underestimated.** Hill's 950 LOC / 3-4 day estimate assumes Spectre's prompts work. With custom menus, add 800+ LOC and 2-3 additional days. Total: ~1,750 LOC, 5-7 days, with higher regression risk.
+
+**Alternative Recommendation:**
+
+Rather than Option E, consider:
+
+**Option F: Enhanced SpectreDisplayService with Mini-HUD** (LOWER RISK)
+- Keep current scrolling terminal model
+- Add persistent status bar at top: `HP: 45/50 | MP: 10/20 | Gold: 250 | Floor 3`
+- Use Spectre's `Write(new Rule())` as visual separator
+- Status bar rerenders before each command prompt
+- All prompts continue to work natively
+- Estimated: ~150 LOC changes, 4-8 hours
+
+This achieves 70% of the UX goal (always-visible HP/status) with 10% of the risk.
+
+**OR Option G: Accept Terminal.Gui limitations + polish**
+- Wire TuiColorMapper properly (existing code, never connected)
+- Implement dirty-flag rendering
+- Fix ShowSkillTreeMenu stub
+- Accept that inline rich text isn't possible in Terminal.Gui TextViews
+- Estimated: ~200 LOC changes, 8-12 hours
+
+This keeps the persistent split-screen layout we already built.
+
+**Sign-off:** I do NOT recommend the team spending 3-4 days on Option E. The input/Live conflict is a fundamental architectural mismatch, not a solvable engineering problem.
+
+

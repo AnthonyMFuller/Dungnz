@@ -2240,3 +2240,58 @@ No blocking issues for .NET 10 (current target in Dungnz.csproj).
 ---
 
 **Research complete.** All findings based on public NuGet metadata, GitHub activity, and .NET ecosystem knowledge as of March 2026. No packages installed, no code changes made.
+
+
+### 2026-03-05 — Option E Technical Assessment (Spectre.Console Live+Layout)
+
+**Context:** Deep-dive on Option E for UI — replacing Terminal.Gui with Spectre.Console Live + Layout hybrid implementation.
+
+**Deliverable:** Technical feasibility assessment, implementation estimates, gut check for squad greenlight decision.
+
+---
+
+## Session: 2026-03-05 — Spectre.Console Live+Layout Technical Research
+
+**Task:** Deep technical analysis of Spectre.Console Live+Layout API as Terminal.Gui replacement.
+
+### Learnings
+
+**Spectre.Console Live API Findings:**
+
+1. **Live+Layout Works:** `AnsiConsole.Live(layout).Start(ctx => {...})` successfully creates persistent multi-panel layouts. Can replicate TuiLayout's 5-panel structure (map, stats, content, log, input) using nested Layout.SplitRows/SplitColumns.
+
+2. **Thread Safety — Major Win:** `ctx.Refresh()` is thread-safe. Can call from background threads without marshalling. This eliminates the need for GameThreadBridge entirely — much simpler than Terminal.Gui's MainLoop.Invoke() requirement.
+
+3. **Input Conflict — Critical Problem:** Console.ReadLine() technically works inside Live.Start(), but input appears *below* the rendered layout, not *inside* the input panel. This breaks the persistent 5-panel TUI design.
+
+4. **Modal Dialog Challenge:** SelectionPrompt cannot be used inside Live.Start() (rendering conflict). Options:
+   - Exit Live, show SelectionPrompt, re-enter Live (loses persistent panels during menu)
+   - Custom Console.ReadKey loop inside Live (50-100 LOC per menu type, reinventing arrow-key navigation)
+   - Hybrid: simple menus in Live, complex menus exit to SelectionPrompt
+
+5. **LOC Estimate:** 1,200-1,500 LOC for full IDisplayService implementation (vs 2,095 LOC current TUI). Smaller codebase, but input handling adds complexity.
+
+6. **Input-Coupled Methods:** 24 of 54 methods (44%) require user input. Spectre.Console Live was designed for live dashboards (display updates), not interactive TUI (modal dialogs). Input is the weak point.
+
+**Architectural Trade-offs:**
+
+**Gain:**
+- Thread-safe rendering (no GameThreadBridge)
+- Persistent panels during narration/combat
+- One less dependency
+- ~40% less code
+
+**Lose:**
+- Input panel not truly part of layout (appears below, not inside)
+- Menus break out of layout (or require custom input loops)
+- No built-in arrow-key widgets
+
+**Recommendation:** Build 1-day proof-of-concept to show Anthony the visual experience. If acceptable, full implementation is 3-4 days. If not acceptable, wait for Terminal.Gui v2 stable.
+
+**Research artifacts:**
+- Test project: scripts/spectre_test.csproj
+- Full analysis: scripts/spectre_api_research.md
+- 5 API tests executed, results documented
+
+**No code changes made to Dungnz codebase.** Research only.
+
