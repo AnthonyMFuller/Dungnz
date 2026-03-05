@@ -3140,3 +3140,40 @@ This keeps the persistent split-screen layout we already built.
 **Sign-off:** I do NOT recommend the team spending 3-4 days on Option E. The input/Live conflict is a fundamental architectural mismatch, not a solvable engineering problem.
 
 
+
+---
+
+### 2026-03-05: Option E Architecture Approved — Spectre.Console Live+Layout Migration
+
+**Decision:** Anthony approved Option E after team feasibility review. ctx.Refresh() confirmed thread-safe. Menus pausing Live is acceptable for turn-based game.
+
+**Architecture Decisions:**
+1. **Threading model:** Game thread calls methods → ctx.Refresh() (thread-safe). No GameThreadBridge needed.
+2. **Input pattern:** Pause Live → SelectionPrompt → Resume Live (brief flash acceptable)
+3. **5-panel layout:** Top 30% (Map 60% | Stats 40%), Content 50%, Bottom 20% (Log 70% | Input 30%)
+4. **HP/MP urgency bars:** Green >50%, Yellow 25-50%, Red <25%
+
+**File Structure:**
+- `Display/Spectre/SpectreLayout.cs` — 5-panel Layout definition
+- `Display/Spectre/SpectreLayoutContext.cs` — Thread-safe ctx.Refresh() wrapper
+- `Display/Spectre/SpectreLayoutDisplayService.cs` — IDisplayService implementation (54 methods)
+- Delete: `Display/Tui/` entire folder after migration
+
+**GitHub Issues Created:**
+- #1063: [Architecture] Create SpectreLayout.cs — 5-panel Layout definition (Hill)
+- #1064: [Core] Create SpectreLayoutDisplayService skeleton (Hill)
+- #1065: [Display] Implement display-only methods (~30 methods) (Hill)
+- #1066: [Display] Implement HP/MP urgency bars (Hill)
+- #1067: [Input] Implement input-coupled methods (~24 methods) (Barton)
+- #1068: [Input] Implement loot comparison display (Barton)
+- #1069: [Migration] Remove Terminal.Gui dependency (Hill)
+- #1070: [Migration] Update Program.cs startup for Spectre Live (Hill)
+
+**Scaffold Files Created:**
+- `Display/Spectre/SpectreLayout.cs` — Layout tree with panel constants
+- `Display/Spectre/SpectreLayoutContext.cs` — Thread-safe context wrapper
+- `Display/Spectre/SpectreLayoutDisplayService.cs` — All 54 interface stubs
+
+**csproj Fix:** Added `<Compile Remove="scripts/**" />` to exclude test scripts from build.
+
+**Architecture Document:** `.ai-team/decisions/inbox/coulson-option-e-architecture.md`
