@@ -2295,3 +2295,43 @@ No blocking issues for .NET 10 (current target in Dungnz.csproj).
 
 **No code changes made to Dungnz codebase.** Research only.
 
+
+---
+
+## Session: 2026-03-06 — Implement SpectreLayout + Display Methods (#1063, #1065, #1066)
+
+**Task:** Implement the 5-panel SpectreLayout, thread-safe context, all display-only methods, and HP/MP urgency bars.
+
+### Learnings
+
+**Files Created/Modified:**
+
+- `Display/Spectre/SpectreLayout.cs` — Created by Coulson (scaffold, complete). 5-panel Layout: TopRow→Map/Stats (30% height, 3:2 ratio), Content (50%), BottomRow→Log/Input (20%, 7:3 ratio). Panel name constants in `SpectreLayout.Panels`.
+- `Display/Spectre/SpectreLayoutContext.cs` — Created by Coulson (scaffold, complete). Thread-safe wrapper with `UpdatePanel(string, IRenderable)` + `Refresh()`, `IsLiveActive`, lock-based thread safety.
+- `Display/Spectre/SpectreLayoutDisplayService.cs` — Modified (Hill). Changed `sealed` → `partial`, added `StartAsync()`, implemented all ~30 display-only methods.
+- `Display/Spectre/SpectreLayoutDisplayService.Input.cs` — Already created by Barton (not modified by Hill). Contains all input-coupled methods + `TierColor`, `PrimaryStatLabel`, `GetRoomDisplayName` helpers.
+
+**Key Implementation Patterns:**
+
+1. **Content buffer pattern:** `_contentLines: List<string>` stores markup strings. `SetContent()` replaces, `AppendContent()` appends. `RefreshContentPanel()` joins and pushes to panel.
+
+2. **Log panel pattern:** `_logHistory: List<string>` stores markup-formatted entries (`[grey]HH:mm[/] icon [color]message[/]`). `AppendLog(plain, type)` adds with timestamp and type-based coloring.
+
+3. **Auto-refresh on room entry:** `ShowRoom()` caches `_cachedRoom`, then calls `RenderMapPanel()` and `RenderStatsPanel(_cachedPlayer)`.
+
+4. **HP/MP urgency bars (issue #1066):**
+   - HP: green >50%, yellow 25–50%, red <25% — `BuildHpBar(current, max, width=10)`
+   - MP: blue >50%, mediumpurple1 25–50%, darkviolet <25% — `BuildMpBar(current, max, width=10)`
+   - Format: `[color]████████░░[/]`
+
+5. **Barton/Hill partial class split:** Hill owns all display-only methods + `ItemTypeIcon`, `SlotIcon`, `ItemIcon`, `EffectIcon`, `MapAnsiToSpectre`, `StripAnsiCodes`. Barton owns input methods + `TierColor`, `PrimaryStatLabel`, `GetRoomDisplayName`, `InputTierColor`, etc. Important: don't duplicate helpers across partial files.
+
+6. **BFS map:** Same algorithm as SpectreDisplayService. Legend is dynamically built from rooms actually visible in the grid.
+
+7. **StartAsync() pattern:** `public Task StartAsync() => Task.Run(StartLive);` — starts Live loop on background Task, game loop runs on main thread.
+
+8. **Panel `Text` vs `Markup`:** Use `new Panel(new Markup(content))` with `Markup.Escape(userText)` for safe rendering of user-provided content.
+
+**PR:** #1071 (co-committed with Barton's input methods on `squad/1067-input-methods`)
+**Issues closed:** #1063, #1065, #1066
+
