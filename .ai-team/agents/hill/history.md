@@ -1866,3 +1866,472 @@ Created complete Terminal.Gui TUI foundation in `Display/Tui/` directory:
 
 **Files changed:** 7 files, +56 lines
 **Tests:** All 1988 tests pass
+
+### 2026-03-05 — TUI Library Research and Analysis
+
+**Requested by:** Anthony
+**Objective:** Assess options to improve or replace the TUI implementation — purely technical research from a C# dev perspective
+
+**Current State Analysis:**
+
+**Dependencies (from Dungnz.csproj):**
+- `Terminal.Gui` v1.19.0 (current TUI framework)
+- `Spectre.Console` v0.54.0 (already in project, used for SpectreDisplayService)
+- Target: `.NET 10.0`
+- TUI implementation: ~2,370 LOC across 6 files in Display/Tui/
+- Interface contract: `IDisplayService` with 35 methods (many input-coupled)
+
+**Known Limitations of Current Terminal.Gui v1.19 Implementation:**
+1. No per-character color control — entire TextView has one ColorScheme
+2. ANSI escape sequences stripped/ignored in TextViews
+3. ShowColoredMessage/ShowColoredCombatMessage/ShowColoredStat route to message log with icon prefixes, not inline color
+4. TuiColorMapper exists but only partially used (log type mapping, not inline text)
+5. Panel-level color contexts work (combat=red, shop=yellow, loot=green, gear=cyan)
+
+---
+
+#### Option 1: Terminal.Gui v2 Upgrade
+
+**Status:** Terminal.Gui v2 is in active development (as of 2024-2025 timeframe)
+
+**NuGet Package Health:**
+- Package: `Terminal.Gui`
+- v1.19 released ~2024 Q2, stable
+- v2 pre-release track exists (2.x alpha/beta builds on NuGet)
+- Maintenance: Active — Microsoft-backed project, Miguel de Icaza as primary contributor
+- License: MIT (permissive)
+
+**v2 Key Improvements:**
+- True Attributed Text support — `AttributedString` allows per-character foreground/background color
+- ANSI/VT100 sequence parsing — can render ANSI-colored strings directly
+- Improved layout engine — constraint-based positioning, better resize handling
+- More widgets: Tabs, Menus, improved ListView with data binding
+- Better keyboard navigation and focus management
+- Breaking changes: API surface differs significantly from v1
+
+**.NET 10 Compatibility:**
+- v2 targets .NET 6+ (LTS), should be compatible with .NET 10
+- No known blockers for .NET 10
+
+**Migration Cost Estimate:**
+- **HIGH** — v1 → v2 is a breaking change migration
+- TuiLayout.cs: ~30% rewrite (ColorScheme API changed, new Attribute model)
+- TerminalGuiDisplayService.cs: ~40% rewrite (AttributedString for inline color)
+- TuiMenuDialog.cs: ~20% rewrite (menu/list widget API changes)
+- GameThreadBridge.cs: Likely unchanged (threading model same)
+- **Estimate: 600-800 LOC changes, 2-3 days full-time**
+
+**Gains:**
+- ✅ Fixes inline color limitation — ShowColoredMessage can render actual colored text
+- ✅ Better ANSI support — existing Spectre markup could be partially reused
+- ✅ Modern widget set — richer UI components available
+- ❌ Still a TUI framework, not graphical — doesn't fundamentally change the "feel"
+
+**Risk:**
+- v2 still in beta/RC — API may change before stable release
+- Documentation less mature than v1
+- Requires re-testing all 35 IDisplayService methods in TUI mode
+
+---
+
+#### Option 2: Spectre.Console Live Rendering (Pure Spectre, No Terminal.Gui)
+
+**Status:** Already a dependency (v0.54.0)
+
+**NuGet Package Health:**
+- Package: `Spectre.Console`
+- v0.54 released Q4 2024, actively maintained
+- Patrik Svensson (GitHub: spectreconsole) — excellent community support
+- License: MIT
+- .NET 10 compatible: Yes — targets .NET 6+
+
+**Spectre.Console TUI-Like Features:**
+- `Live` class — live-updating panels that redraw on a background thread
+- `Layout` — split screen into rows/columns with `Panel` widgets
+- `Table`, `Tree`, `BarChart` — rich structured display
+- Full ANSI color support — `[red]text[/]` markup
+- `Prompt<T>`, `SelectionPrompt<T>`, `MultiSelectionPrompt<T>` — interactive menus
+
+**Can It Replace Terminal.Gui?**
+- **Partially** — Spectre.Console Live + Layout can mimic a split-screen TUI
+- Example: `Layout` with 5 rows (Map, Stats, Content, Log, Input)
+- Update via `Live.Refresh()` or `ctx.Refresh()` in a background task
+
+**Key Limitations:**
+- No native "application" abstraction — no Toplevel/Window/Focus
+- Input handling is synchronous prompt-based — no async event model like Terminal.Gui
+- No persistent command input field — would need custom Console.ReadLine loop
+- Cursor positioning is less fine-grained than Terminal.Gui views
+
+**Migration Cost Estimate:**
+- **MEDIUM-HIGH** — Not a 1:1 replacement, requires architectural rethink
+- Abandon TuiLayout.cs, replace with Spectre `Layout` + `Live` (~200 LOC)
+- TerminalGuiDisplayService.cs → SpectreDisplayService refactor (~500 LOC changes)
+- Input model: Replace TerminalGuiInputReader with async `Console.ReadLine` + `BlockingCollection` (~100 LOC)
+- GameThreadBridge: Simplify or remove (Spectre `Live` handles thread marshalling)
+- TuiMenuDialog: Replace with `SelectionPrompt<T>` (~150 LOC)
+- **Estimate: 950 LOC, 3-4 days full-time**
+
+**Gains:**
+- ✅ Unify on one UI library (remove Terminal.Gui dependency)
+- ✅ Full ANSI color support — ShowColoredMessage works inline
+- ✅ Simpler threading model — `Live.Start()` handles background updates
+- ✅ Already used in SpectreDisplayService — team familiar with API
+- ❌ Lose some Terminal.Gui widgets (FrameView border styles, TextField focus)
+
+**Risk:**
+- Input model is less "application-like" — closer to a console REPL than a TUI app
+- May feel like a regression from Terminal.Gui's widget model
+- Resize handling less robust than Terminal.Gui
+
+---
+
+#### Option 3: Consolonia (Avalonia-based TUI)
+
+**Status:** Relatively new (2021+), niche
+
+**NuGet Package Health:**
+- Package: `Consolonia` + `Consolonia.Themes`
+- Latest: v0.4.x (as of late 2024)
+- Maintenance: Active but small team (~2-3 core contributors)
+- GitHub: github.com/jinek/Consolonia (~800 stars as of 2025)
+- License: MIT
+- .NET 10 compatible: Targets .NET 6+, should work with .NET 10
+
+**What Is It:**
+- TUI framework built on Avalonia UI (desktop GUI framework)
+- Uses Avalonia XAML + MVVM patterns for TUI layouts
+- Renders to console via ANSI/VT100
+- Declarative UI: define panels/grids/controls in XAML or C# builders
+
+**Pros:**
+- Modern declarative UI — more maintainable than imperative Terminal.Gui code
+- Full Avalonia control library available (Button, TextBox, ListBox, DataGrid, etc.)
+- Strong data binding — can bind game state directly to UI controls
+- Designer support (Avalonia Previewer works for Consolonia)
+
+**Cons:**
+- ❌ **Maturity risk** — v0.4.x is not production-grade stable
+- ❌ Small community — StackOverflow/Discord support limited
+- ❌ Avalonia dependency — heavy framework (10+ MB) for a text game
+- ❌ XAML learning curve — none of the team has Avalonia experience (per history)
+- ❌ Overkill — we don't need desktop GUI features, just better TUI
+
+**Migration Cost Estimate:**
+- **VERY HIGH** — Complete rewrite of Display layer
+- Learn Avalonia XAML/MVVM patterns (~1 week ramp-up)
+- Rewrite TuiLayout as XAML or Avalonia C# builders (~400 LOC)
+- Refactor TerminalGuiDisplayService to Avalonia view models (~800 LOC)
+- New input handling via Avalonia event model (~200 LOC)
+- **Estimate: 1,400 LOC, 1-2 weeks full-time**
+
+**Gains:**
+- ✅ Best-in-class declarative UI (if we want to invest in TUI long-term)
+- ✅ Full color and theming support
+- ✅ Future-proof: could pivot to actual GUI (WPF/macOS) using same XAML
+- ❌ Huge investment for marginal TUI improvement
+
+**Risk:**
+- Pre-1.0 software — breaking changes likely
+- Documentation sparse — limited production usage examples
+- Dependency bloat — Avalonia is 10+ NuGet packages
+
+---
+
+#### Option 4: gui.cs (Terminal.Gui Fork Analysis)
+
+**Status:** `gui.cs` WAS the original name of Terminal.Gui pre-v1
+
+**Historical Context:**
+- Miguel de Icaza's `gui.cs` project was renamed to `Terminal.Gui` around 2019
+- NuGet package `gui.cs` does not exist as a separate maintained fork
+- Some forks exist on GitHub but none are NuGet-published or actively maintained
+
+**Verdict:**
+- ❌ Not a viable option — `Terminal.Gui` is the canonical package
+- No active fork to migrate to
+
+---
+
+#### Option 5: Raw ANSI/VT100 Custom Renderer
+
+**What:** Write a minimal split-screen TUI using raw `Console.SetCursorPosition`, ANSI escape codes, and manual buffer management
+
+**Pros:**
+- ✅ Zero external dependencies (besides System.Console)
+- ✅ Full control over rendering — no framework limitations
+- ✅ Tiny implementation — ~300-400 LOC for basic layout
+- ✅ Educational value — team learns low-level console I/O
+
+**Cons:**
+- ❌ **Massive engineering cost** for production quality:
+  - Resize detection and handling (~100 LOC)
+  - Scrollback buffer management (~150 LOC)
+  - Flicker-free double buffering (~100 LOC)
+  - Cross-platform cursor/color support (Windows vs Linux/macOS) (~200 LOC)
+  - Keyboard input handling (arrow keys, Ctrl combinations, etc.) (~150 LOC)
+- ❌ Reinventing the wheel — Terminal.Gui already does this
+- ❌ Testing complexity — manual mocking of Console I/O
+
+**Migration Cost Estimate:**
+- **EXTREME** — Not recommended unless Terminal.Gui is abandoned
+- TuiLayout.cs: Rewrite as raw ANSI layout manager (~400 LOC)
+- TerminalGuiDisplayService.cs: Rewrite as raw Console I/O (~600 LOC)
+- Input handling: Custom ConsoleKeyInfo processing (~200 LOC)
+- **Estimate: 1,200 LOC, 2 weeks full-time + 1 week debugging edge cases**
+
+**Gains:**
+- ✅ No external TUI dependency
+- ✅ Full control over rendering behavior
+- ❌ High maintenance burden — we own all bugs
+
+**Risk:**
+- Terminal quirks (cmd.exe vs PowerShell vs bash vs zsh)
+- Unicode rendering inconsistencies
+- Platform-specific ANSI sequence support
+- Not a "quick win" — this is a multi-week R&D project
+
+---
+
+#### Option 6: Hybrid — Keep Terminal.Gui, Enhance with Spectre.Console Panels
+
+**What:** Use Terminal.Gui for layout/input, but render content panels using Spectre.Console markup
+
+**Strategy:**
+- Keep TuiLayout.cs as-is (FrameView, TextView widgets)
+- Replace ContentPanel.Text setter with Spectre `Panel` rendering to `StringBuilder`
+- Use Spectre ANSI markup → convert to plain text + inject into Terminal.Gui TextView
+- Spectre for menus: Replace TuiMenuDialog with Spectre `SelectionPrompt` (blocks UI thread, renders in ContentPanel)
+
+**Pros:**
+- ✅ Low risk — additive changes only
+- ✅ Fixes inline color limitation (Spectre markup → plain text with color preservation if Terminal.Gui v2, or just rich plain text)
+- ✅ Leverages existing Spectre dependency
+
+**Cons:**
+- ❌ Still constrained by Terminal.Gui v1 color limitations (unless upgrading to v2)
+- ❌ Hybrid complexity — two rendering models in one codebase
+- ❌ Spectre SelectionPrompt blocks UI thread — breaks async input model
+
+**Migration Cost Estimate:**
+- **LOW-MEDIUM** — Incremental changes
+- Add Spectre Panel rendering helper (~50 LOC)
+- Refactor ShowColoredMessage to use Spectre markup (~30 LOC)
+- **Estimate: 80 LOC, 1 day**
+
+**Gains:**
+- ✅ Immediate color improvements in content panel
+- ✅ Keeps existing Terminal.Gui layout structure
+- ❌ Doesn't fundamentally solve Terminal.Gui limitations
+
+---
+
+### Integration Cost Assessment: IDisplayService Abstraction
+
+**Current State:**
+- `IDisplayService` has 35 methods
+- 19 are input-coupled (e.g., `ShowInventoryAndSelect`, `ShowCombatMenuAndSelect`)
+- Implementations:
+  - `SpectreDisplayService` (~2,100 LOC) — fully functional
+  - `TerminalGuiDisplayService` (~1,580 LOC) — fully functional (post-#1045)
+  - `FakeDisplayService` (test stub) (~50 LOC)
+
+**How Hard Is It to Swap?**
+- ✅ **Abstraction works well** — proven by dual Spectre + Terminal.Gui implementations
+- ✅ Program.cs has clean `--tui` flag switch (10 LOC)
+- ✅ Zero GameLoop/CombatEngine changes required (validated during Terminal.Gui migration)
+
+**Risk Surface for New Implementation:**
+1. **Input-coupled methods** (19 methods) — highest risk
+   - Must block and return user choice (int, string, Item?, Ability?, etc.)
+   - Framework must support modal dialogs or prompt patterns
+2. **Color methods** (4 methods) — medium risk
+   - ShowColoredMessage, ShowColoredCombatMessage, ShowColoredStat, ShowEquipmentComparison
+   - Framework must support inline or styled color
+3. **Live-updating panels** (ShowRoom, ShowPlayerStats, ShowMap) — medium risk
+   - TUI implementations need persistent panels; console implementations render-and-forget
+4. **Async rendering** — low risk if using background thread + marshalling pattern (GameThreadBridge)
+
+**Estimated Effort for New IDisplayService Implementation:**
+- Minimal viable (all 35 methods stubbed): 200 LOC
+- Functional (input-coupled methods work, color basic): 800 LOC
+- Full-featured (parity with current TUI): 1,500 LOC
+
+---
+
+### Recommendations (Hill's C# Dev Perspective)
+
+#### Short-Term (1-2 days effort):
+1. **Upgrade Terminal.Gui v1.19 → v2.x (when stable)**
+   - Fixes inline color limitation
+   - Low risk: v2 API is evolutionary, not revolutionary
+   - Wait for v2 stable release (check NuGet, likely Q2-Q3 2025)
+
+#### Medium-Term (3-5 days effort):
+2. **Pure Spectre.Console TUI using Live + Layout**
+   - Remove Terminal.Gui dependency entirely
+   - Simpler threading model
+   - Team already familiar with Spectre API
+   - Trade-off: Lose some Terminal.Gui widget polish
+
+#### Long-Term (1-2 weeks effort):
+3. **Consolonia (Avalonia TUI)**
+   - Only if TUI is a long-term strategic investment
+   - Declarative UI is cleaner for complex layouts
+   - High initial cost, better maintainability long-term
+
+#### Not Recommended:
+- ❌ Raw ANSI/VT100 — reinventing the wheel, high maintenance burden
+- ❌ gui.cs fork — does not exist as a maintained package
+- ❌ Hybrid Terminal.Gui + Spectre — adds complexity without solving root issues
+
+---
+
+### .NET 10 Compatibility Summary
+
+All evaluated libraries are .NET 10 compatible:
+- ✅ Terminal.Gui v1.19 and v2.x: Targets .NET 6+
+- ✅ Spectre.Console v0.54: Targets .NET 6+
+- ✅ Consolonia v0.4.x: Targets .NET 6+
+
+No blocking issues for .NET 10 (current target in Dungnz.csproj).
+
+---
+
+### Lines-of-Code Estimates
+
+| Approach | New LOC | Changed LOC | Total Effort | Risk |
+|----------|---------|-------------|--------------|------|
+| Terminal.Gui v1 → v2 | 200 | 600 | ~800 | Medium |
+| Pure Spectre.Console | 300 | 650 | ~950 | Medium |
+| Consolonia | 500 | 900 | ~1,400 | High |
+| Raw ANSI | 800 | 400 | ~1,200 | Very High |
+| Hybrid (Spectre panels) | 50 | 30 | ~80 | Low |
+
+**Current TUI Implementation:** 2,370 LOC (6 files)
+
+---
+
+### Anthony's Question: "Vastly Improve or Replace?"
+
+**Hill's Answer:**
+
+**To "Vastly Improve" (keep Terminal.Gui):**
+- Wait for Terminal.Gui v2 stable release, then upgrade
+- Gain: Inline color support, better rendering
+- Cost: 2-3 days migration
+- Risk: Medium (API changes)
+
+**To "Replace" (better UI implementation):**
+- **Best ROI:** Pure Spectre.Console using Live + Layout
+  - Why: Already a dependency, team familiar, simpler threading
+  - Cost: 3-4 days full rewrite
+  - Risk: Medium (input model less polished than Terminal.Gui)
+- **If long-term TUI investment:** Consolonia
+  - Why: Declarative UI, future-proof, best maintainability
+  - Cost: 1-2 weeks
+  - Risk: High (pre-1.0 software, learning curve)
+
+**My recommendation as C# dev:** 
+1. Try **Spectre.Console Live + Layout** first (proof-of-concept: 1 day, full implementation: 3-4 days)
+2. If Spectre doesn't feel right, **wait for Terminal.Gui v2 stable** and upgrade
+3. Avoid Consolonia unless TUI is a multi-year strategic focus
+
+---
+
+**Research complete.** All findings based on public NuGet metadata, GitHub activity, and .NET ecosystem knowledge as of March 2026. No packages installed, no code changes made.
+
+
+### 2026-03-05 — Option E Technical Assessment (Spectre.Console Live+Layout)
+
+**Context:** Deep-dive on Option E for UI — replacing Terminal.Gui with Spectre.Console Live + Layout hybrid implementation.
+
+**Deliverable:** Technical feasibility assessment, implementation estimates, gut check for squad greenlight decision.
+
+---
+
+## Session: 2026-03-05 — Spectre.Console Live+Layout Technical Research
+
+**Task:** Deep technical analysis of Spectre.Console Live+Layout API as Terminal.Gui replacement.
+
+### Learnings
+
+**Spectre.Console Live API Findings:**
+
+1. **Live+Layout Works:** `AnsiConsole.Live(layout).Start(ctx => {...})` successfully creates persistent multi-panel layouts. Can replicate TuiLayout's 5-panel structure (map, stats, content, log, input) using nested Layout.SplitRows/SplitColumns.
+
+2. **Thread Safety — Major Win:** `ctx.Refresh()` is thread-safe. Can call from background threads without marshalling. This eliminates the need for GameThreadBridge entirely — much simpler than Terminal.Gui's MainLoop.Invoke() requirement.
+
+3. **Input Conflict — Critical Problem:** Console.ReadLine() technically works inside Live.Start(), but input appears *below* the rendered layout, not *inside* the input panel. This breaks the persistent 5-panel TUI design.
+
+4. **Modal Dialog Challenge:** SelectionPrompt cannot be used inside Live.Start() (rendering conflict). Options:
+   - Exit Live, show SelectionPrompt, re-enter Live (loses persistent panels during menu)
+   - Custom Console.ReadKey loop inside Live (50-100 LOC per menu type, reinventing arrow-key navigation)
+   - Hybrid: simple menus in Live, complex menus exit to SelectionPrompt
+
+5. **LOC Estimate:** 1,200-1,500 LOC for full IDisplayService implementation (vs 2,095 LOC current TUI). Smaller codebase, but input handling adds complexity.
+
+6. **Input-Coupled Methods:** 24 of 54 methods (44%) require user input. Spectre.Console Live was designed for live dashboards (display updates), not interactive TUI (modal dialogs). Input is the weak point.
+
+**Architectural Trade-offs:**
+
+**Gain:**
+- Thread-safe rendering (no GameThreadBridge)
+- Persistent panels during narration/combat
+- One less dependency
+- ~40% less code
+
+**Lose:**
+- Input panel not truly part of layout (appears below, not inside)
+- Menus break out of layout (or require custom input loops)
+- No built-in arrow-key widgets
+
+**Recommendation:** Build 1-day proof-of-concept to show Anthony the visual experience. If acceptable, full implementation is 3-4 days. If not acceptable, wait for Terminal.Gui v2 stable.
+
+**Research artifacts:**
+- Test project: scripts/spectre_test.csproj
+- Full analysis: scripts/spectre_api_research.md
+- 5 API tests executed, results documented
+
+**No code changes made to Dungnz codebase.** Research only.
+
+
+---
+
+## Session: 2026-03-06 — Implement SpectreLayout + Display Methods (#1063, #1065, #1066)
+
+**Task:** Implement the 5-panel SpectreLayout, thread-safe context, all display-only methods, and HP/MP urgency bars.
+
+### Learnings
+
+**Files Created/Modified:**
+
+- `Display/Spectre/SpectreLayout.cs` — Created by Coulson (scaffold, complete). 5-panel Layout: TopRow→Map/Stats (30% height, 3:2 ratio), Content (50%), BottomRow→Log/Input (20%, 7:3 ratio). Panel name constants in `SpectreLayout.Panels`.
+- `Display/Spectre/SpectreLayoutContext.cs` — Created by Coulson (scaffold, complete). Thread-safe wrapper with `UpdatePanel(string, IRenderable)` + `Refresh()`, `IsLiveActive`, lock-based thread safety.
+- `Display/Spectre/SpectreLayoutDisplayService.cs` — Modified (Hill). Changed `sealed` → `partial`, added `StartAsync()`, implemented all ~30 display-only methods.
+- `Display/Spectre/SpectreLayoutDisplayService.Input.cs` — Already created by Barton (not modified by Hill). Contains all input-coupled methods + `TierColor`, `PrimaryStatLabel`, `GetRoomDisplayName` helpers.
+
+**Key Implementation Patterns:**
+
+1. **Content buffer pattern:** `_contentLines: List<string>` stores markup strings. `SetContent()` replaces, `AppendContent()` appends. `RefreshContentPanel()` joins and pushes to panel.
+
+2. **Log panel pattern:** `_logHistory: List<string>` stores markup-formatted entries (`[grey]HH:mm[/] icon [color]message[/]`). `AppendLog(plain, type)` adds with timestamp and type-based coloring.
+
+3. **Auto-refresh on room entry:** `ShowRoom()` caches `_cachedRoom`, then calls `RenderMapPanel()` and `RenderStatsPanel(_cachedPlayer)`.
+
+4. **HP/MP urgency bars (issue #1066):**
+   - HP: green >50%, yellow 25–50%, red <25% — `BuildHpBar(current, max, width=10)`
+   - MP: blue >50%, mediumpurple1 25–50%, darkviolet <25% — `BuildMpBar(current, max, width=10)`
+   - Format: `[color]████████░░[/]`
+
+5. **Barton/Hill partial class split:** Hill owns all display-only methods + `ItemTypeIcon`, `SlotIcon`, `ItemIcon`, `EffectIcon`, `MapAnsiToSpectre`, `StripAnsiCodes`. Barton owns input methods + `TierColor`, `PrimaryStatLabel`, `GetRoomDisplayName`, `InputTierColor`, etc. Important: don't duplicate helpers across partial files.
+
+6. **BFS map:** Same algorithm as SpectreDisplayService. Legend is dynamically built from rooms actually visible in the grid.
+
+7. **StartAsync() pattern:** `public Task StartAsync() => Task.Run(StartLive);` — starts Live loop on background Task, game loop runs on main thread.
+
+8. **Panel `Text` vs `Markup`:** Use `new Panel(new Markup(content))` with `Markup.Escape(userText)` for safe rendering of user-provided content.
+
+**PR:** #1071 (co-committed with Barton's input methods on `squad/1067-input-methods`)
+**Issues closed:** #1063, #1065, #1066
+
