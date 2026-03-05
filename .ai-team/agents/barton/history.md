@@ -1358,3 +1358,70 @@ All 5 were implemented (none removed) — the combat system already had the nece
 - The message log panel already has emoji-based type prefixes (❌ error, ⚔ combat, 💰 loot, ℹ info)
 - Future color-coding improvements should maintain backward compatibility or coordinate with Romanoff (test owner)
 
+
+---
+
+### 2026-03-05 — UI/UX Requirements Analysis from Systems Perspective
+
+**Context:** Anthony asked: "I am still not really happy with how the TUI implementation looks and feels. What are some options to either vastly improve it, or replace it with a better UI implementation?"
+
+**Deliverable:** Comprehensive requirements document analyzing current TUI and Spectre implementations from game-feel perspective.
+
+**Document Created:** `.ai-team/agents/barton/ui-requirements-analysis.md`
+
+**Key Findings:**
+
+1. **TUI Architecture is Sound** — The Terminal.Gui dual-thread model + persistent split-screen layout is a massive UX win. The problem is not the framework, it's **polish gaps**.
+
+2. **4 Critical Pain Points Identified:**
+   - **No color urgency** — HP/MP bars are plain ASCII, no RED/YELLOW/GREEN zones for danger signaling
+   - **Loot comparison requires manual math** — ShowLootDrop doesn't show delta vs equipped item
+   - **Combat log drowns damage numbers** — Can't scroll back to review crits/damage variance
+   - **Status effects lack visual weight** — `[Regen 3t]` is text-only, no emoji/color differentiation
+
+3. **Technical Gaps:**
+   - `TuiColorMapper.cs` exists with full ANSI → Terminal.Gui Attribute mappings, but is never called
+   - `BuildColoredHpBar()` computes variable bar characters (█/▓/▒) but hardcodes `'█'` instead (dead code)
+   - `ShowSkillTreeMenu()` is a stub (returns null) — skill tree not accessible in TUI mode
+   - Message log not scrollable mid-combat (no PgUp/PgDn bindings)
+
+4. **Recommendation: Incremental Improvements (Option A)**
+   - Wire TuiColorMapper into ShowColoredMessage/ShowColoredCombatMessage
+   - Add emoji prefixes to damage/status messages (🔥 fire, ⚔ physical, 💀 poison)
+   - Implement ShowSkillTreeMenu (same TuiMenuDialog pattern as other menus)
+   - Add loot comparison deltas to ShowLootDrop
+   - **Effort:** 1-2 days
+   - **Impact:** Addresses 90% of game-feel issues
+   - **Risk:** VERY LOW (additive changes only)
+
+5. **Framework Replacement Verdict: NOT RECOMMENDED**
+   - Spectre.Console has no persistent layout (scroll-based)
+   - Textual/Blessed require Python/JS rewrites (not feasible)
+   - Terminal.Gui v2 is already implemented and works well
+   - **The bones are good, it just needs skin**
+
+**Requirements Document Sections:**
+1. **Combat Display** — HP urgency, damage type icons, status effect prominence, turn indicators
+2. **Exploration/Room Display** — Environmental storytelling, danger signaling, mini-map improvements
+3. **Inventory/Equipment** — Instant loot comparison, empty slot indicators, weight urgency
+4. **Stats Panel** — Color-coded HP/MP bars, class passive indicators (Battle Hardened stacks, Combo Points)
+5. **Message Log** — Scrollability, emoji prefixes, message type color-coding
+6. **Wishlist Top 3:**
+   - Color-coded damage numbers by type (🔥 ORANGE, ⚔ WHITE, ☠ GREEN, ✨ GOLD)
+   - HP/MP bar color urgency zones (GREEN > 50%, YELLOW 25-50%, RED < 25%)
+   - Instant loot comparison at drop ("+3 ATK vs equipped" in ShowLootDrop)
+
+**Key Learnings:**
+- **TUI layout model is superior to Spectre's scroll-based model** — persistent map/stats panels eliminate "type MAP to see where you are" friction
+- **Damage numbers need visual differentiation** — Fire/Poison/Holy all look identical, no feedback on enemy resistances
+- **Loot decisions require fast comparison** — Players shouldn't do mental math to decide if item is upgrade
+- **HP urgency must be visceral** — RED bar triggers panic response, plain text doesn't
+- **Status effects need prominence** — Debuffs are easy to miss in text-only format
+- **Color is not just aesthetic, it's functional** — Color zones communicate game state faster than text labels
+
+**Impact on Future Work:**
+- Any UI polish should prioritize **color urgency** (HP/MP bars) and **damage type icons** first
+- ShowLootDrop should call ShowEquipmentComparison logic inline (reuse existing code)
+- TuiColorMapper wiring is low-effort, high-impact (already architected, just not called)
+- Message log scrollability requires key event handling in TuiMenuDialog (moderate complexity)
+

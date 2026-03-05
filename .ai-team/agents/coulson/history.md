@@ -2516,3 +2516,51 @@ Both PRs reviewed and merged in Round 3 (see below).
 - The TUI layout was built with dedicated panels (map, stats) but the display service never updates them proactively
 - The architecture doc was written during design and never updated after implementation diverged
 - The dual-thread model works (BlockingCollection + Application.Invoke) but has a startup race condition
+
+### 2026-03-05: TUI Options Analysis — Architecture Assessment
+
+**Trigger:** Anthony reports TUI still doesn't look/feel right despite bug fixes. Requested options analysis for improvement or replacement.
+
+**Current State Diagnosis:**
+
+The TUI implementation (Terminal.Gui v1.19.0) has these fundamental issues:
+
+1. **Library Generation Gap:** Terminal.Gui v1.x is legacy. v2.x has been in development for 2+ years with breaking changes but better rendering. We're on a dead branch.
+
+2. **Color Implementation Half-Wired:** TuiColorMapper exists with proper ANSI-to-Color mappings, but TerminalGuiDisplayService adds icon prefixes instead of applying actual Terminal.Gui colors. The TextView widget doesn't support inline rich text (unlike Spectre.Console Markup).
+
+3. **No Rich Text in TextViews:** Terminal.Gui TextView is plain text only. All our "colored" content becomes emoji prefixes. This is why the TUI looks crude compared to Spectre.Console.
+
+4. **Persistent Split-Screen Wins, Rendering Loses:** The split-screen layout with persistent map/stats/content/log panels is genuinely valuable UX. But the visual quality inside those panels is poor.
+
+5. **Input Handling Works:** TuiMenuDialog and GameThreadBridge patterns are solid. Modal dialogs, command input, and game loop threading work correctly.
+
+6. **2,370 Lines of TUI Code:** Not trivial investment. Migration cost is real.
+
+**Library Landscape Survey (.NET TUI/Console):**
+
+| Library | Status | Rich Text | Split Layout | Arrow Menus | Notes |
+|---------|--------|-----------|--------------|-------------|-------|
+| Terminal.Gui v1.19 | Stable, legacy | Limited | Yes | Yes | Current. No inline markup. |
+| Terminal.Gui v2.x | Beta, unstable | Better | Yes | Yes | Breaking changes, API churn. |
+| Spectre.Console | Stable, active | Excellent | Layout only | Prompts | Our Spectre mode already uses this. |
+| Spectre.Console.Widgets | Experimental | Excellent | Limited | No | Canvas, Bar, Calendar — not TUI framework. |
+| Consolonia | Pre-release | Avalonia-based | Yes | Yes | Overkill for text game. |
+| gui.cs (original) | Abandoned | Minimal | Yes | Yes | Terminal.Gui is the fork. |
+| Raw ANSI/VT100 | N/A | Full | Manual | Manual | Maximum control, maximum effort. |
+
+**Key Architectural Insight:**
+
+Spectre.Console's `Layout` class can create split panels, but it's designed for one-shot rendering, not persistent TUI. Each time you render a Layout, it clears and redraws. The `Live` component enables updates but fights with Console.ReadLine().
+
+Terminal.Gui's model is truly persistent — widgets stay on screen and you mutate their state. This is fundamentally different.
+
+The question is: **Does this game need persistent panels, or is scrolling terminal output + status bars acceptable?**
+
+**Observations for Options Analysis:**
+- IDisplayService abstraction is solid — any replacement only needs to implement 50+ interface methods
+- SpectreDisplayService already implements the full interface with high visual quality
+- The TUI's value proposition is "always-visible map and stats" — can we achieve this differently?
+- Terminal.Gui v2 migration would be a full rewrite of TuiLayout + all color handling
+- Custom ANSI renderer is high-effort, high-control option
+- Web UI solves rendering but adds complexity (SignalR, browser launch)
