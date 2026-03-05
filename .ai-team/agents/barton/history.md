@@ -1771,3 +1771,51 @@ All 5 were implemented (none removed) — the combat system already had the nece
 
 **Recommendation:** If Coulson/Hill confirm the architecture is sound, **DO IT**. This is the UI the game deserves.
 
+
+
+### 2026-03-05 — Input Methods + Loot Comparison (#1067, #1068)
+
+**PR:** #1071  
+**Branch:** `squad/1067-input-methods`
+
+**Files created:**
+- `Display/Spectre/SpectreLayoutDisplayService.Input.cs` — partial class with all 25 input-coupled methods
+
+**Files modified (minimal):**
+- `Display/Spectre/SpectreLayoutDisplayService.cs` — removed 25 Barton-TODO method stubs (moved to Input.cs to eliminate duplicate-member compile error); kept all Hill-TODO display-only stubs intact
+
+**SelectionPrompt pause/resume pattern:**
+
+```csharp
+private T PauseAndRun<T>(Func<T> action)
+{
+    if (!_ctx.IsLiveActive) return action();
+    _pauseLiveEvent.Set();
+    Thread.Sleep(100);
+    try { return action(); }
+    finally { _resumeLiveEvent.Set(); }
+}
+```
+
+Key decision: used unconstrained `PauseAndRun<T>` (no `notnull` constraint) instead of the scaffold's `RunPrompt<T>` — needed for nullable value types like `Skill?` and `int?`.
+
+Wrapper helpers in partial class:
+- `SelectionPromptValue<T>` — for non-nullable returns (Difficulty, int, string, bool, etc.)
+- `NullableSelectionPrompt<T>` — for nullable class returns (Item?, TakeSelection?, string?)
+- `PauseAndRun<T>` directly — for `Skill?` (enum), `int?` (ReadSeed)
+
+**Loot comparison implementation (#1068) — `ShowEquipmentComparison`:**
+- Spectre `Table` with two columns: new item (tier-colored) vs equipped item (or "nothing equipped")
+- `AddIntCompareRow` / `AddPctCompareRow` helpers — skip rows where both values are 0
+- Delta markup: `[green]+N` / `[red]-N` / `[dim]±0`
+- Stats covered: ATK, DEF, Max MP, HP/hit, Dodge%, Crit%, Block%
+- Renders to Content panel via `_ctx.UpdatePanel()` when Live is active; falls back to `AnsiConsole.Write` otherwise
+
+**Build-unblock stubs added to Input.cs:**
+- `TierColor(ItemTier)`, `PrimaryStatLabel(Item)`, `GetRoomDisplayName(Room)` — pre-existing errors from Hill's scaffold; these are stubs Hill will replace with full implementations
+
+**Lessons:**
+- Partial class pattern requires zero duplicate method signatures — must remove stubs from one file
+- `where T : notnull` prevents using `RunPrompt<Skill?>` or `RunPrompt<int?>` — define an unconstrained helper
+- `SelectionPrompt<(string Label, T Value)>` requires named tuple fields for `.Label`/`.Value` access; positional tuples fail
+- `SkillTree.GetSkillRequirements(Skill)` is static — available without instance; filters class restrictions cleanly
