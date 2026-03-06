@@ -3038,3 +3038,71 @@ The systemic failure is that command handlers treat `ShowRoom` as optional. Ther
 
 **Process:**
 - Issue → Branch → PR → Romanoff review → merge (no direct to master)
+# Decisions Inbox — Forward Planning Session 2026-03-06
+
+**By:** Coulson
+**Date:** 2026-03-06
+**Status:** Pending Anthony review
+
+---
+
+## Summary
+
+Full-team forward planning session. Game is stable (0 issues, 1,734 tests passing). All five team members consulted. Sprint priorities established.
+
+---
+
+## Decisions Made
+
+### 1. P0: Fix ShowSkillTreeMenu (Barton)
+- `ShowSkillTreeMenu` in `Display/Spectre/SpectreLayoutDisplayService.Input.cs` returns `null` unconditionally
+- Players cannot access skill progression — this is the highest-impact unblocked bug
+- **Decision: Barton implements ReadKey-based skill tree menu as first P0 item this sprint**
+
+### 2. P0: Wire TuiColorMapper.cs (Barton)
+- `ShowColoredMessage`, `ShowColoredCombatMessage`, `ShowColoredStat` delegate to plain-text fallbacks
+- `TuiColorMapper.cs` has full mappings but is never called
+- **Decision: Barton wires color mapper after skill tree fix**
+- Implementation note: sequence after ShowSkillTreeMenu to avoid conflicts in same file
+
+### 3. P0: SoulHarvest regression tests (Romanoff)
+- Dual SoulHarvest implementation in `CombatEngine.cs` (lines 699–704, 1360–1365) risks double-heal when EventBus is wired
+- No tests currently assert the effect fires exactly once per kill
+- **Decision: Romanoff writes `CombatEngine.SoulHarvestIntegration.Tests.cs` this sprint, BEFORE any EventBus work begins**
+- This is a hard gate: EventBus wiring is blocked until these tests pass
+
+### 4. P0: Room description pool expansion (Fury)
+- Floors 6–8 have only 4 room descriptions each — thin enough to feel repetitive
+- **Decision: Fury expands all late-floor pools to 16+ entries, adds context-aware cleared/shrine/merchant variants**
+- No engineering dependency — content-only change
+
+### 5. P1: squad-release.yml smoke test (Fitz)
+- CI never validates that the published binary boots
+- **Decision: Fitz adds smoke test step to `.github/workflows/squad-release.yml` in next sprint**
+- Gate: runs after `Publish linux-x64`, pipes `printf 'q\n'` to binary, asserts clean exit before `gh release create`
+
+### 6. P1: FinalFloor shared constant (Hill)
+- Magic number duplicated in 4+ command handlers
+- **Decision: Hill extracts to a named constant in a shared location this sprint (trivial, absorbs into existing work)**
+
+### 7. P2 (Design): CombatEngine decomposition proposal
+- `CombatEngine.cs` is 1,709 LOC; PerformEnemyTurn is ~460 lines
+- **Decision: Coulson writes architecture proposal for decomposition into AttackResolver, AbilityProcessor, StatusEffectApplicator, CombatLogger this sprint**
+- Execution deferred to P2 — stable now, must not rush
+
+### 8. P2 (Blocked): GameEventBus wiring
+- **Blocked on:** SoulHarvest tests (decision #3) AND CombatEngine decomposition (decision #7)
+- Do not wire GameEventBus until both prerequisites are complete
+
+---
+
+## Open Questions / For Anthony
+
+1. **Barton's display trial**: Is Barton confirmed as permanent Display Specialist, or still 2-week trial? This sprint's P0 assignments assume Barton owns Display/.
+2. **Skill tree content**: When ShowSkillTreeMenu is unblocked, does the skill tree have sufficient content, or should Fury/Barton expand the skill tree node data?
+3. **CombatEngine decomposition**: Is P2 the right horizon, or should this be pulled into P1 given ongoing boss ability work?
+
+---
+
+## Full Session Log
+See `.ai-team/log/2026-03-06-forward-planning-session.md`
