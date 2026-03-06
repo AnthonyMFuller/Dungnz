@@ -479,7 +479,9 @@ public sealed class SpectreDisplayService : IDisplayService
     /// <inheritdoc/>
     public string? ReadCommandInput()
     {
-        return Console.ReadLine();
+        return AnsiConsole.Prompt(
+            new TextPrompt<string>("[grey]>[/]")
+                .AllowEmpty());
     }
 
     /// <inheritdoc/>

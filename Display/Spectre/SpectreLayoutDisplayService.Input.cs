@@ -430,10 +430,9 @@ public partial class SpectreLayoutDisplayService
     public string? ReadCommandInput()
     {
         return PauseAndRun<string?>(() =>
-        {
-            AnsiConsole.Markup("[grey]> [/]");
-            return Console.ReadLine();
-        });
+            AnsiConsole.Prompt(
+                new TextPrompt<string>("[grey]>[/]")
+                    .AllowEmpty()));
     }
 
     // ──────────────────────────────────────────────────────────────────────────
