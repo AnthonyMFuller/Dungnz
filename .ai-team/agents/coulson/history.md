@@ -3311,3 +3311,116 @@ Replace `SelectionPrompt` with a custom ReadKey-based menu rendered in the conte
 - **SellCommandHandler and ShopCommandHandler exit pattern:** Both handlers lack `ShowRoom()` calls on their exit paths. After a successful sale or menu interaction, the content panel is not refreshed and shows stale menu markup. This is a systematic pattern failure.
 - **Command handler convention:** Always call `context.Display.ShowRoom(context.CurrentRoom)` at the end of a command handler to restore the content panel to the normal room view. This ensures clean UI state regardless of which path (success/cancel/error) the handler took.
 - **Interactive transaction loops:** Merchant sell and shop flows should wrap their transaction logic in `while(true)` loops to allow players to perform multiple transactions in one command session. This pattern is already established in `ShopCommandHandler` and should be mirrored in `SellCommandHandler`.
+
+---
+
+### 2026-03-06: Team Composition Review — Strategic Assessment
+
+**Task:** Comprehensive team structure review requested by Anthony after extended menu bug hunt period.
+
+**Methodology:**
+- Analyzed 30 recent closed issues (bugs, features, patterns)
+- Reviewed all 6 agent history files for workload patterns
+- Examined 20+ recent session logs
+- Audited codebase structure (109 source files, 105 test files, 11,479 total LOC)
+- Cross-referenced 3/06 retrospective findings with historical data
+
+**Key Findings:**
+
+1. **Systemic Bug Pattern: Missing ShowRoom() Calls**
+   - 15+ command handlers and special room handlers shipped with same bug
+   - Found through manual audit, not automated testing
+   - Root cause: No architectural enforcement, FakeDisplayService too permissive
+   - Pattern: Developer adds handler → forgets ShowRoom() on exit → bug ships → manual audit finds it weeks later
+
+2. **Display Layer Fire Drill (Every Sprint Since 3/04)**
+   - SpectreLayoutDisplayService: 2,163 LOC (was Terminal.Gui, pivoted to Spectre Live+Layout)
+   - 60+ bugs in 3 weeks (18-bug audit on 3/04, 15+ ShowRoom bugs on 3/06, menu input bugs)
+   - Hill spending 70% bandwidth on display, 30% on gameplay/commands
+   - P1 gameplay bugs (SetBonusManager dead code, boss loot scaling, HP clamping) remain open
+
+3. **Workload Distribution Analysis**
+   - **Hill:** Overloaded (18 issues / 1,800 LOC in 3 weeks) — 70% display layer, bottleneck
+   - **Romanoff:** High-value but reactive (0 issues assigned) — finds bugs *after* ship, not *before*
+   - **Fury:** Underutilized (1 issue in 3 weeks) — content pipeline dry
+   - **Fitz:** Stable, narrow scope (4 optimization issues) — CI mature, role correctly sized
+   - **Barton:** Correctly scoped (8 issues, balanced) — baseline for healthy cadence
+
+4. **Quality Process Gap**
+   - 1,710 tests exist, but don't catch recurring patterns
+   - Romanoff writes regression tests *after* bugs ship
+   - No PR review checklist for test coverage
+   - SpectreLayoutDisplayService marked `[ExcludeFromCodeCoverage]` (2,163 LOC untested)
+   - FakeDisplayService doesn't enforce contracts (didn't track ShowRoomCalled until post-bug)
+
+5. **Codebase Ownership**
+   - Engine/Commands (24 handlers): Hill ✅
+   - CombatEngine (1,709 LOC god-class): Hill, known debt ⚠️
+   - Display/Spectre (2,163 LOC): Hill, overloaded ⚠️
+   - Systems/ (47 files): Barton ✅
+   - Data/ configs: Fury, underutilized ⚠️
+   - Tests (105 files): Romanoff ✅
+
+**Three Critical Gaps Identified:**
+
+1. **No Quality Gate Owner (P0)** — Testing is reactive (find bugs after ship), not proactive (prevent bugs before merge)
+2. **Display Layer Exceeds Single-Agent Capacity (P1)** — 60+ bugs in 3 weeks, Hill at 70% display workload
+3. **No Gameplay Design Owner (P2)** — Balance, feel, pacing decided ad-hoc during implementation
+
+**Recommendations Filed:**
+
+1. **P0 (Immediate):** Promote Romanoff from Tester to **QA Engineer**
+   - Add PR review mandate (review for test coverage before merge)
+   - Add boundary: CAN block PRs if test coverage insufficient
+   - Maintain FakeDisplayService contract enforcement
+   - Expected impact: 30–50% reduction in post-merge bugs
+
+2. **P1 (Within 2 Weeks):** Pivot Barton to **Display Specialist** (trial)
+   - Barton owns SpectreLayoutDisplayService, Hill focuses on gameplay bugs
+   - Trial for 2 weeks, measure display bug rate
+   - If trial fails, hire new Display Specialist (7th team member)
+   - Expected impact: Display bugs drop from 5–10 per sprint to 2–3
+
+3. **P1 (Immediate):** Activate Fury (Content Pipeline)
+   - File 10–15 content issues (recipes, items, enemies, narration)
+   - Content expansion plan exists but not active
+   - Expected impact: Fury utilization 10% → 70%
+
+4. **P2 (Defer 4–6 Weeks):** Add **Game Designer** role
+   - Owns balance, progression, combat feel, feature design
+   - Defer until P0/P1 gameplay bugs closed
+   - Game is playable; bugs are blocker, not missing features
+
+5. **P2 (Not Blocking):** Decompose CombatEngine (1,709 LOC → 5 components)
+   - Extract AttackResolver, AbilityProcessor, StatusEffectApplicator, CombatLogger
+   - Coulson writes proposal, Hill implements, Barton reviews
+   - Same pattern as GameLoop decomposition (1,635 LOC → 24 command handlers)
+
+**Architectural Insights:**
+
+- **ShowRoom() bug is a contract enforcement failure, not skill failure** — IDisplayService has no mechanism to require state restoration. Social convention failed 15+ times.
+- **Display layer heading toward same god-class problem GameLoop had** — SpectreLayoutDisplayService (2,163 LOC) needs decomposition like GameLoop did (command handler extraction).
+- **Test coverage doesn't match where bugs are** — Deep coverage on CombatEngine (stable), near-zero on command handler cancel paths (actively broken).
+- **Team has testing discipline; lacks architectural guardrails** — Romanoff has skills to prevent bugs; doesn't have mandate to gate merges.
+
+**Process Change Recommended:**
+
+From 3/06 retrospective action items:
+- "Enforce ShowRoom() restoration at architectural level" (Hill owns design)
+- "Add cancel-path tests to every command handler" (Romanoff adds template)
+- "Refactor budget for SpectreLayoutDisplayService" (Coulson drafts proposal)
+- "Stop marking display layer as entirely untestable" (Romanoff + Hill pair on integration tests)
+
+**Meta-Observation:**
+
+Team structure is 80% correct. The 6-agent model works. Problem is **workload distribution** (Hill overloaded, Fury underutilized) and **missing preventative quality gates** (testing is reactive). Solution is role refinement, not restructuring.
+
+**Next Steps:**
+
+1. Update Romanoff's charter to QA Engineer (immediate)
+2. File content expansion issues for Fury (immediate)
+3. Barton display specialist trial (2 weeks)
+4. Measure outcomes, decide on permanent Display Specialist hire
+
+**Decision Document:** `.ai-team/decisions/inbox/coulson-team-composition-review.md`
+
