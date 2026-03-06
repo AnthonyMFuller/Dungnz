@@ -542,8 +542,7 @@ public partial class SpectreLayoutDisplayService
 
     /// <summary>
     /// Renders a navigable menu to the content panel and reads keys directly,
-    /// avoiding the <see cref="Spectre.Console.DefaultExclusivityMode"/> lock
-    /// held by the Live display loop.
+    /// avoiding the DefaultExclusivityMode lock held by the Live display loop.
     /// </summary>
     private T ContentPanelMenu<T>(string title, IReadOnlyList<(string Label, T Value)> items)
     {
