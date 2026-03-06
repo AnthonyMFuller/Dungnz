@@ -42,11 +42,11 @@ public static class SpectreLayout
                         new Layout(Panels.Map).Ratio(6),   // 60% width
                         new Layout(Panels.Stats).Ratio(4)  // 40% width
                     ),
-                // Middle row: 50% height — Content panel
-                new Layout(Panels.Content).Ratio(5),  // 50% of 10 units
-                // Bottom row: 20% height — Log (70%) | Input (30%)
+                // Middle row: 40% height — Content panel
+                new Layout(Panels.Content).Ratio(4),  // 40% of 10 units
+                // Bottom row: 30% height — Log (70%) | Input (30%)
                 new Layout("BottomRow")
-                    .Ratio(2)  // 20% of 10 units
+                    .Ratio(3)  // 30% of 10 units
                     .SplitColumns(
                         new Layout(Panels.Log).Ratio(7),   // 70% width
                         new Layout(Panels.Input).Ratio(3)  // 30% width
@@ -56,35 +56,35 @@ public static class SpectreLayout
         // Initialize each panel with placeholder content
         root[Panels.Map].Update(
             new Panel(new Text(""))
-                .Header("[bold green]🗺  Dungeon Map[/]")
+                .Header("[bold green]Dungeon Map[/]")
                 .Border(BoxBorder.Rounded)
                 .BorderColor(Color.Green)
         );
 
         root[Panels.Stats].Update(
             new Panel(new Text(""))
-                .Header("[bold cyan]⚔  Player Stats[/]")
+                .Header("[bold cyan]Player Stats[/]")
                 .Border(BoxBorder.Rounded)
                 .BorderColor(Color.Cyan1)
         );
 
         root[Panels.Content].Update(
             new Panel(new Text(""))
-                .Header("[bold white]📜 Adventure[/]")
+                .Header("[bold white]Adventure[/]")
                 .Border(BoxBorder.Rounded)
                 .BorderColor(Color.Blue)
         );
 
         root[Panels.Log].Update(
             new Panel(new Text(""))
-                .Header("[bold grey]📋 Message Log[/]")
+                .Header("[bold grey]Message Log[/]")
                 .Border(BoxBorder.Rounded)
                 .BorderColor(Color.Grey)
         );
 
         root[Panels.Input].Update(
             new Panel(new Text("[grey]Type commands here...[/]"))
-                .Header("[bold yellow]⌨  Command[/]")
+                .Header("[bold yellow]Command[/]")
                 .Border(BoxBorder.Rounded)
                 .BorderColor(Color.Yellow)
         );
