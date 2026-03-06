@@ -2196,3 +2196,41 @@ Application.Shutdown()
 - **Hill:** #1036, #1037, #1038, #1040, #1041, #1042, #1043, #1044 (8 issues — all display/layout/initialization)
 - **Barton:** #1039 (co-own with Hill — review game-loop integration for stats refresh points)
 The CombatEngine decomposition (Option 2) is important but can wait — it's tech debt, not a player-facing bug. Don't let architecture perfectionism delay gameplay fixes.
+
+---
+
+## Decision: 6-Panel Layout — Gear Panel Alongside Content
+
+**Date:** 2026-03-06  
+**Author:** Hill  
+**Issues:** #1103, #1104  
+**PR:** #1105
+
+### Decision
+
+The Spectre.Console TUI layout is restructured from 5 panels to 6 panels:
+
+| Row | Height | Panels |
+|-----|--------|--------|
+| Top | 20% | Map (60%) \| Stats (40%) |
+| Middle | 50% | Content (70%) \| Gear (30%) |
+| Bottom | 30% | Log (70%) / Command (30%) — stacked vertically |
+
+### Rationale
+
+- **Gear panel**: Players need to see all 10 equipment slots at a glance without typing `GEAR`. The middle row has enough vertical space (50% height) to show all slots. Content panel width reduced from 100% to 70% to accommodate.
+- **Vertical log/command stack**: Command input was only 21% of total terminal width (30% of 70% bottom row). Stacking gives both panels full width — log is more readable and command is easier to type in.
+- **Stats panel simplified**: Removing the 2-slot weapon/chest summary from Stats keeps Stats focused on numeric data (HP/MP/ATK/DEF/Gold/XP). Full gear view belongs in Gear panel.
+
+### Implementation
+
+- `Display/Spectre/SpectreLayout.cs`: New 6-panel layout tree with `Panels.Gear` constant
+- `Display/Spectre/SpectreLayoutDisplayService.cs`: New `RenderGearPanel(Player)` private method called from `ShowPlayerStats`
+- `TierColor()` and `PrimaryStatLabel()` helpers reused from `SpectreLayoutDisplayService.Input.cs`
+- Log and Command panels stack vertically instead of horizontally
+
+### Impact
+
+- No interface changes (`IDisplayService` untouched)
+- No new tests needed (`[ExcludeFromCodeCoverage]` on display class)
+- All 1674 existing tests pass
