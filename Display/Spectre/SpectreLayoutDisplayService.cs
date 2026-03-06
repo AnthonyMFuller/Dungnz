@@ -429,20 +429,41 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             sb.AppendLine($"[yellow]✦ Combo[/] {dots}");
         }
 
-        // Quick equipped gear summary
-        sb.AppendLine();
-        if (player.EquippedWeapon != null)
+        UpdateStatsPanel(sb.ToString().TrimEnd());
+    }
+
+    private void RenderGearPanel(Player player)
+    {
+        var sb = new StringBuilder();
+
+        void AddSlot(string icon, string slotName, Item? item)
         {
-            var tc = TierColor(player.EquippedWeapon.Tier);
-            sb.AppendLine($"[grey]⚔[/]  [{tc}]{Markup.Escape(player.EquippedWeapon.Name)}[/]");
-        }
-        if (player.EquippedChest != null)
-        {
-            var tc = TierColor(player.EquippedChest.Tier);
-            sb.AppendLine($"[grey]🦺[/] [{tc}]{Markup.Escape(player.EquippedChest.Name)}[/]");
+            if (item == null)
+            {
+                sb.AppendLine($"[grey]{icon} {slotName}:[/] [dim](empty)[/]");
+                return;
+            }
+            var tc = TierColor(item.Tier);
+            var stat = PrimaryStatLabel(item);
+            sb.AppendLine($"[grey]{icon} {slotName}:[/] [{tc}]{Markup.Escape(item.Name)}[/] [grey]{Markup.Escape(stat)}[/]");
         }
 
-        UpdateStatsPanel(sb.ToString().TrimEnd());
+        AddSlot("⚔",  "Weapon",    player.EquippedWeapon);
+        AddSlot("💍", "Accessory", player.EquippedAccessory);
+        AddSlot("🪖", "Head",      player.EquippedHead);
+        AddSlot("🥋", "Shoulders", player.EquippedShoulders);
+        AddSlot("🦺", "Chest",     player.EquippedChest);
+        AddSlot("🧤", "Hands",     player.EquippedHands);
+        AddSlot("👖", "Legs",      player.EquippedLegs);
+        AddSlot("👟", "Feet",      player.EquippedFeet);
+        AddSlot("🧥", "Back",      player.EquippedBack);
+        AddSlot("🔰", "Off-Hand",  player.EquippedOffHand);
+
+        var panel = new Panel(new Markup(sb.ToString().TrimEnd()))
+            .Header("[bold yellow]⚔  Gear[/]")
+            .Border(BoxBorder.Rounded)
+            .BorderColor(Color.Gold1);
+        _ctx.UpdatePanel(SpectreLayout.Panels.Gear, panel);
     }
 
     // ══════════════════════════════════════════════════════════════════════════
@@ -628,6 +649,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     {
         _cachedPlayer = player;
         RenderStatsPanel(player);
+        RenderGearPanel(player);
     }
 
     /// <inheritdoc/>
