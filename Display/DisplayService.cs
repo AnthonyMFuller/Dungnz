@@ -1770,4 +1770,12 @@ public class ConsoleDisplayService : IDisplayService
         ShowMessage("Type LEARN <skill> to unlock a skill.");
         return null;
     }
+
+    /// <inheritdoc />
+    public void RefreshDisplay(Models.Player player, Models.Room room, int floor)
+    {
+        ShowPlayerStats(player);
+        ShowRoom(room);
+        ShowMap(room, floor);
+    }
 }

@@ -1080,6 +1080,14 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         AppendContent($"[{artColor}]{art}[/]");
     }
 
+    /// <inheritdoc/>
+    public void RefreshDisplay(Player player, Room room, int floor)
+    {
+        ShowPlayerStats(player);
+        ShowRoom(room);
+        ShowMap(room, floor);
+    }
+
     // ── Private static helpers ────────────────────────────────────────────────
 
     private static string ItemTypeIcon(ItemType type) => type switch

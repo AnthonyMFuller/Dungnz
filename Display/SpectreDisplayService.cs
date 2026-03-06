@@ -1581,4 +1581,12 @@ public sealed class SpectreDisplayService : IDisplayService
             new Markup(Markup.Escape(SkillTree.GetDescription(skill))),
             new Markup($"[grey]{minLevel}[/]"));
     }
+
+    /// <inheritdoc />
+    public void RefreshDisplay(Player player, Room room, int floor)
+    {
+        ShowPlayerStats(player);
+        ShowRoom(room);
+        ShowMap(room, floor);
+    }
 }

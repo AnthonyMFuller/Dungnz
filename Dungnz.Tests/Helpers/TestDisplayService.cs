@@ -172,4 +172,6 @@ public class TestDisplayService : IDisplayService
     public virtual string? SelectSaveToLoad(string[] saveNames) => saveNames.FirstOrDefault();
     public virtual int? ReadSeed() => null;
     public virtual Skill? ShowSkillTreeMenu(Player player) => null;
+
+    public void RefreshDisplay(Player player, Room room, int floor) { }
 }

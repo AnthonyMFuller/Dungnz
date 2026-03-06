@@ -419,4 +419,13 @@ public interface IDisplayService
     /// <remarks>Input-coupled: combines display with user selection. Targeted for separation in the HUD/Dashboard refactor.</remarks>
     /// <param name="player">The player viewing the skill tree.</param>
     Skill? ShowSkillTreeMenu(Player player);
+
+    /// <summary>
+    /// Atomically updates all display panels (player stats, room description, and map) to
+    /// eliminate panel staleness. Call this at turn boundaries to ensure a consistent display state.
+    /// </summary>
+    /// <param name="player">The player whose stats should be displayed.</param>
+    /// <param name="room">The current room to display.</param>
+    /// <param name="floor">The current dungeon floor number shown in the map panel header.</param>
+    void RefreshDisplay(Player player, Room room, int floor);
 }
