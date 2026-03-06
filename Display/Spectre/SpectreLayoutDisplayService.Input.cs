@@ -582,7 +582,7 @@ public partial class SpectreLayoutDisplayService
                     return items[selected].Value;
                 case System.ConsoleKey.Escape:
                 case System.ConsoleKey.Q:
-                    return items[selected].Value;
+                    return items[items.Count - 1].Value;
             }
         }
     }
