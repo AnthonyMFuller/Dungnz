@@ -19,7 +19,11 @@ internal sealed class CraftCommandHandler : ICommandHandler
             }).ToList();
 
             int selectedIndex = context.Display.ShowCraftMenuAndSelect(menuEntries);
-            if (selectedIndex == 0) return; // cancelled
+            if (selectedIndex == 0)
+            {
+                context.Display.ShowRoom(context.CurrentRoom);
+                return; // cancelled
+            }
 
             // Show the full recipe card for the selected recipe before crafting
             var chosen = CraftingSystem.Recipes[selectedIndex - 1];
@@ -38,6 +42,7 @@ internal sealed class CraftCommandHandler : ICommandHandler
                 context.Display.ShowPlayerStats(context.Player);
             }
             else context.Display.ShowError(msg);
+            context.Display.ShowRoom(context.CurrentRoom);
             return;
         }
 
