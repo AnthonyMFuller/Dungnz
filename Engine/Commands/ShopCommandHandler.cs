@@ -37,8 +37,13 @@ internal sealed class ShopCommandHandler : ICommandHandler
             }
 
             // shopChoice is 1-based item index
-            if (shopChoice >= 1 && shopChoice <= merchant.Stock.Count)
+            if (shopChoice >= 1)
             {
+                if (shopChoice > merchant.Stock.Count)
+                {
+                    context.Display.ShowMessage("That item is no longer available.");
+                    continue;
+                }
                 var selected = merchant.Stock[shopChoice - 1];
                 if (context.Player.Gold < selected.Price)
                 {

@@ -218,10 +218,22 @@ public class GameLoopTests
     public void InventoryCommand_DisplaysInventory()
     {
         var (player, room, display, combat) = MakeSetup();
+        player.Inventory.Add(new Item { Name = "Health Potion", Type = ItemType.Consumable });
         var loop = MakeLoop(display, combat.Object, "inventory", "quit");
         loop.Run(player, room);
 
         display.AllOutput.Should().Contain(o => o.StartsWith("inventory:"));
+    }
+
+    [Fact]
+    public void InventoryCommand_EmptyInventory_ShowsMessage()
+    {
+        var (player, room, display, combat) = MakeSetup();
+        var loop = MakeLoop(display, combat.Object, "inventory", "quit");
+        loop.Run(player, room);
+
+        display.Messages.Should().Contain("Your inventory is empty.");
+        display.AllOutput.Should().NotContain(o => o.StartsWith("inventory:"), "menu must not appear for empty inventory");
     }
 
     [Fact]

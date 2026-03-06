@@ -17,7 +17,7 @@ internal sealed class UseCommandHandler : ICommandHandler
                 return;
             }
             var selected = context.Display.ShowUseMenuAndSelect(usable.AsReadOnly());
-            if (selected == null) return;
+            if (selected == null) { context.Display.ShowRoom(context.CurrentRoom); return; }
             argument = selected.Name;
         }
 

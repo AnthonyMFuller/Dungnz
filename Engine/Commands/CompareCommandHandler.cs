@@ -19,6 +19,7 @@ internal sealed class CompareCommandHandler : ICommandHandler
             if (selected == null)
             {
                 context.TurnConsumed = false;
+                context.Display.ShowRoom(context.CurrentRoom);
                 return; // User cancelled
             }
 
