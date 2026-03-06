@@ -3269,3 +3269,21 @@ Replace `SelectionPrompt` with a custom ReadKey-based menu rendered in the conte
 - `Engine/GameLoop.cs`
 
 **Summary Document:** `.ai-team/decisions/inbox/coulson-display-issues-filed.md`
+
+---
+
+### 2026-03-05: Deep UI Bug Hunt #2 — Menu Cancel & Input State
+
+**Trigger:** Boss reported player unable to cancel inventory menu; command input frozen afterward.
+**Scope:** Full line-by-line audit of SpectreLayoutDisplayService.Input.cs, SpectreLayoutDisplayService.cs, SpectreLayout.cs, GameLoop.cs, and all 12 menu-related command handlers.
+
+**Findings:** 12 bugs filed (#1129–#1140)
+
+**Critical discovery:** The reported "can't type" bug is a compound failure of three interacting bugs:
+1. **#1129 [P0]:** `GameLoop.RunLoop` line 251 — `ReadCommandInput() ?? _input.ReadLine()` falls through to `Console.ReadLine()` when user presses Enter with empty input. `Console.ReadLine()` echoes characters outside the Live layout, corrupting terminal state permanently.
+2. **#1130 [P1]:** `ContentPanelMenu`/`ContentPanelMenuNullable` don't handle Escape key — user perceives menu as "stuck".
+3. **#1131 [P1]:** 6 command handlers don't restore Content panel after menu cancel, creating visual confusion that leads users into the #1129 trap.
+
+**Also found:** PauseAndRun race condition (#1133), PauseAndRun deadlock with Live exclusivity (#1134), null ReadKey wrong default (#1135), equip cancel TurnConsumed (#1136), empty shop loop (#1137), ForgottenShrine/ContestedArmory label-handler mismatches (#1138, #1139), duplicate helper methods (#1140), empty inventory silent no-op (#1132).
+
+**Summary Document:** `.ai-team/decisions/inbox/coulson-ui-bug-hunt-2.md`

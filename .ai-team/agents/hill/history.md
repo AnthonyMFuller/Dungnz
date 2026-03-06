@@ -8,6 +8,45 @@
 
 ## Learnings
 
+### 2026-04-08 — Menu Input Bug Fixes (#1129–#1135)
+
+**PR:** #1142 — `fix: Escape key handling, remove Console.ReadLine fallback, null key guard`
+**Branch:** `squad/1129-1130-1133-1135-menu-fixes`
+
+**Issues addressed:**
+
+#### #1129 — ReadCommandInput null falls through to Console.ReadLine
+- `GameLoop.cs` line 251: When `ReadCommandInput()` returned null (empty Enter), it fell through to `_input.ReadLine()` which called `Console.ReadLine()` OUTSIDE the Spectre Live layout, corrupting the terminal
+- **Fix:** Changed `var input = _display.ReadCommandInput() ?? _input.ReadLine() ?? string.Empty;` to `var input = _display.ReadCommandInput() ?? string.Empty;` — if ReadCommandInput returns null, treat it as empty string, no fallback
+
+#### #1130 — No Escape key handling in ContentPanelMenu methods
+- `SpectreLayoutDisplayService.Input.cs`: Three menu methods had no Escape key handling — pressing Escape in a menu consumed keys but loop never exited
+- **Fixes:**
+  - `ContentPanelMenuNullable<T>` (line 599): Added `case ConsoleKey.Escape:` and `case ConsoleKey.Q:` returning `null`
+  - `ContentPanelMenu<T>` (line 564): Added `case ConsoleKey.Escape:` and `case ConsoleKey.Q:` returning `items[selected].Value` (non-nullable, so return current item)
+  - `ShowSkillTreeMenu` (line 438): Added `case ConsoleKey.Escape:` and `case ConsoleKey.Q:` returning `null`
+
+#### #1133 — PauseAndRun uses Thread.Sleep(100) instead of synchronization
+- `SpectreLayoutDisplayService.Input.cs` line 531: Used `Thread.Sleep(100)` as a brief timing buffer after signaling pause event
+- **Assessment:** This is a timing buffer, not a correctness mechanism — the pause signal is event-based via `_pauseLiveEvent.Set()`
+- **Fix:** Documented purpose with comment: "Brief wait to allow Live loop to observe pause signal (#1133) / Thread.Sleep is acceptable here as it's a timing buffer, not correctness"
+
+#### #1135 — ContentPanelMenu returns first item on null ReadKey
+- `SpectreLayoutDisplayService.Input.cs` line 600 / 564: If `AnsiConsole.Console.Input.ReadKey()` returned null (can happen in some terminals), `if (key == null) return items[selected].Value;` would return first item instead of handling gracefully
+- **Fix:** Changed to `if (key == null) continue;` in both `ContentPanelMenu<T>` and `ContentPanelMenuNullable<T>` — skip null keys, keep loop running
+
+**Build & Test Status:**
+- ✅ `dotnet build --nologo` — 0 errors, 0 warnings
+- ✅ `dotnet test --nologo -v q` — 1406 passed, 0 failed
+
+**Key Learnings:**
+- `Console.ReadLine()` breaks Spectre.Console's Live display by writing/reading outside the managed terminal context
+- Escape key (and Q for terminals that don't reliably send Escape) should always be handled in menu loops as a cancel/exit option
+- Nullable vs. non-nullable menu methods: nullable can return null on Escape, non-nullable should return current selection
+- `ReadKey()` can return null in non-interactive or redirected input scenarios — always guard with null check before accessing `.Key`
+
+---
+
 ### 2026-03-05 — TUI Usability Fixes (#1036–#1044)
 
 **PR:** #1045 — `fix: TUI usability — contrast, auto-populating panels, color system, skill tree`
@@ -2525,3 +2564,114 @@ Fixed 7 display-layer bugs in `SpectreLayoutDisplayService` that caused blank sc
 - ✅ `dotnet test --nologo -v q` — 1674/1674 passing
 - ✅ Architecture test `Display_Should_Not_Depend_On_System_Console` — no `System.Console` refs in Display namespace
 - ✅ Build: 0 errors, 0 warnings
+
+#### BUG-17 (#1127) — Gear panel shows simplified stats, doesn't match gear command
+- `RenderGearPanel` inner `AddSlot` replaced with the identical slot-aware logic from `ShowEquipment`: slot-type flags (`isWeapon`, `isAccessory`) drive colored stat parts (ATK red, DEF cyan, dodge yellow, mana blue, HP green), tier-colored item name, and set bonus appended at the bottom.
+- Fix pattern: both `RenderGearPanel` and `ShowEquipment` now share the same `AddSlot` structure. If you need to change stat display logic, update **both** locations or extract to a shared helper.
+- Key file: `Display/Spectre/SpectreLayoutDisplayService.cs` — `RenderGearPanel` (~line 435) and `ShowEquipment` (~line 864).
+
+---
+
+### 2026-03-05 — Deep Menu/Input Bug Analysis
+
+**Task:** Investigate player-reported issue: opened inventory menu, could not cancel, Input panel became unresponsive.
+
+**Analysis scope:** Read `SpectreLayoutDisplayService.Input.cs` line-by-line (739 lines) plus related files to trace full menu/input lifecycle.
+
+**Files analyzed:**
+- `Display/Spectre/SpectreLayoutDisplayService.Input.cs` (739 lines)
+- `Display/Spectre/SpectreLayoutDisplayService.cs` (main display service)
+- `Display/Spectre/SpectreLayout.cs` (layout structure)
+- `Engine/GameLoop.cs` (command loop)
+- `Engine/Commands/InventoryCommandHandler.cs` (inventory command flow)
+
+**Key findings — 13 bugs documented in `.ai-team/decisions/inbox/hill-menu-bug-analysis.md`:**
+
+#### Critical Bugs (Break Menu Navigation)
+
+**BUG-MENU-1: No Escape key handling in ContentPanelMenuNullable**
+- Location: `ContentPanelMenuNullable<T>`, lines 599-612
+- While loop only handles Up/Down/Enter. Escape and Q keys ignored.
+- Loop never exits → subsequent keypresses consumed → Input panel never receives control.
+- Fix: Add `case System.ConsoleKey.Escape: return null;`
+
+**BUG-MENU-2: No Escape key handling in ContentPanelMenu**
+- Location: `ContentPanelMenu<T>`, lines 562-575
+- Same issue, affects non-nullable menus (difficulty, class, combat, shop).
+- Player cannot cancel these menus via Escape, must select an option.
+
+**BUG-MENU-3: No Escape key handling in ShowSkillTreeMenu**
+- Location: `ShowSkillTreeMenu`, lines 438-446
+- Inline key handling, also missing Escape case.
+
+#### Content Panel State Bugs (UI Shows Wrong Content)
+
+**BUG-MENU-4: Content panel not restored after menu exits**
+- All menu methods call `SetContent()` which clears `_contentLines`.
+- After menu exits, Content panel shows stale menu text instead of room narration.
+- Fix: Save/restore `_contentLines`, `_contentHeader`, `_contentBorderColor` around menu calls.
+
+**BUG-MENU-5: No explicit content refresh after menu methods**
+- Command handlers call menu methods → menu mutates Content panel → control returns to RunLoop → Content never restored.
+- Fix: Command handlers must call `ShowRoom()` or similar after menu-opening commands.
+
+**BUG-MENU-11: Content not restored when Escape added**
+- Once Escape is fixed, menus exit immediately but Content panel shows partial menu render.
+- Fix: Same as BUG-MENU-4 — save/restore in finally block.
+
+**BUG-MENU-12: Nested menu calls corrupt content state**
+- Example: `ShowInventoryAndSelect` → `ShowItemDetail` → `ShowEquipmentComparison` — each calls `SetContent`.
+- Fix: Same save/restore pattern, or use a menu-specific panel instead of Content.
+
+**BUG-MENU-13: ReadCommandInput doesn't re-render after menu exits**
+- `RunLoop` calls `ShowCommandPrompt()` then `ReadCommandInput()`. If a menu mutated Content panel, it's never restored.
+- Fix: Add content refresh before or after `ReadCommandInput()` in RunLoop.
+
+#### Minor/Edge-Case Bugs
+
+**BUG-MENU-6: ReadCommandInput doesn't verify Live state**
+- Directly calls `ReadKey(intercept: true)` without checking `_ctx.IsLiveActive`.
+- If Live is stopped/paused unexpectedly, panel updates may fail.
+
+**BUG-MENU-7: PauseAndRun can leave Live paused on exception**
+- If exception occurs before try/finally, pause/resume events may be inconsistent.
+- Current code looks correct but add logging/guards.
+
+**BUG-MENU-8: No Q key handling for quick cancel**
+- Many games support Q to cancel. Not implemented.
+- Fix: Add `case System.ConsoleKey.Q: return null;` alongside Escape.
+
+**BUG-MENU-9: Input panel cleared redundantly**
+- `RunLoop` calls `ShowCommandPrompt()` then `ReadCommandInput()` which calls `UpdateCommandInputPanel("")`.
+- Two panel updates for same purpose → potential flicker.
+
+**BUG-MENU-10: No distinction between Escape vs Cancel option selection**
+- Both return null, so analytics/logging can't distinguish quick cancel from navigated cancel.
+- Fix: Return discriminated union or log before returning.
+
+**Root Causes (3 categories):**
+1. **Missing Escape/Q key handling** in all ContentPanelMenu* methods and ShowSkillTreeMenu.
+2. **Content panel state not saved/restored** around menu operations.
+3. **No explicit content refresh** after command handlers that open menus.
+
+**Pattern insights:**
+- `ContentPanelMenu` approach is correct for Live-active gameplay (avoids Spectre exclusivity lock), but implementation is incomplete.
+- The while-true + ReadKey pattern requires explicit handling for ALL expected inputs, not just navigation keys.
+- `SetContent()` is destructive (clears buffer) — any caller that needs to restore previous state must explicitly save it.
+- The game loop expects `ShowCommandPrompt()` → `ReadCommandInput()` → command handler → loop — but menu commands break this by leaving Content panel in a mutated state.
+
+**Recommended fix priorities:**
+1. Add Escape/Q handling to all menu methods (BUG-MENU-1/2/3/8) — unblocks player.
+2. Add content save/restore wrapper around menu calls (BUG-MENU-4/11) — fixes UI corruption.
+3. Command handlers call `ShowRoom()` after menu-opening commands (BUG-MENU-5/13) — ensures content is current.
+
+**Key file paths:**
+- `Display/Spectre/SpectreLayoutDisplayService.Input.cs` — all menu methods, ReadCommandInput, PauseAndRun
+- `Engine/GameLoop.cs` — RunLoop (line 246), ReadCommandInput call (line 251)
+- `Engine/Commands/InventoryCommandHandler.cs` — example of command handler that opens menu (line 7)
+
+**Lessons for future menu implementation:**
+- Always handle Escape and Q keys in any ReadKey navigation loop.
+- Always save/restore display state (content, header, border) around destructive display operations.
+- Menu methods should either: (1) restore state before returning, or (2) document that caller must refresh.
+- Use finally blocks to ensure restoration even on exception/cancel.

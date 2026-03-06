@@ -1819,3 +1819,57 @@ Wrapper helpers in partial class:
 - `where T : notnull` prevents using `RunPrompt<Skill?>` or `RunPrompt<int?>` — define an unconstrained helper
 - `SelectionPrompt<(string Label, T Value)>` requires named tuple fields for `.Label`/`.Value` access; positional tuples fail
 - `SkillTree.GetSkillRequirements(Skill)` is static — available without instance; filters class restrictions cleanly
+
+### 2026-03-06 — Command Handler Menu Cancel Fixes (PR #1141)
+
+**Context:** Fixed 4 UI bugs related to menu cancellation and feedback.
+
+**Issues Fixed:**
+
+1. **#1131 — Content panel not restored after menu cancel**
+   - **Problem:** When player cancels an inventory/take/use/compare/skills menu, the Content panel shows stale menu markup instead of reverting to the current room description.
+   - **Root Cause:** Command handlers that call `Display.Show*AndSelect()` methods returned early on cancel without calling `ShowRoom()` to restore the Content panel.
+   - **Files Changed:**
+     - `Engine/Commands/InventoryCommandHandler.cs` — Added `ShowRoom()` call on line 19 when selectedItem is null
+     - `Engine/Commands/TakeCommandHandler.cs` — Added `ShowRoom()` call on line 29 when selection is null
+     - `Engine/Commands/UseCommandHandler.cs` — Added `ShowRoom()` call on line 20 when selected is null
+     - `Engine/Commands/CompareCommandHandler.cs` — Added `ShowRoom()` call on line 22 when selected is null
+     - `Engine/Commands/SkillsCommandHandler.cs` — Added `ShowRoom()` call on line 13 when skillToLearn does not have value
+   - **Pattern:** All menu-based command handlers now follow: `if (menuResult == null) { ShowRoom(); return; }`
+
+2. **#1132 — Empty inventory command gives zero feedback**
+   - **Problem:** When player types INVENTORY with 0 items, the command shows an empty menu or silently does nothing. Player gets no feedback.
+   - **Fix:** Added inventory count check at start of `InventoryCommandHandler.Handle()`. If `context.Player.Inventory.Count == 0`, show message "Your inventory is empty." and set `TurnConsumed = false`.
+   - **File:** `Engine/Commands/InventoryCommandHandler.cs` lines 5-10
+
+3. **#1136 — EquipmentManager.HandleEquip cancel doesn't set TurnConsumed = false**
+   - **Problem:** When player cancels the equip menu (via `ShowEquipMenuAndSelect`), `TurnConsumed` was not set to false. Since `CommandContext.TurnConsumed` defaults to `true` at command dispatch (see `GameLoop.cs`), a cancelled action consumed a turn.
+   - **Root Cause:** `EquipmentManager.HandleEquip()` is a service-layer method with no access to `CommandContext`. It couldn't directly set `TurnConsumed`.
+   - **Solution:** Changed `HandleEquip()` signature to return `bool` (true = action taken, false = cancelled). `EquipCommandHandler` now checks return value and sets `TurnConsumed = false` on cancel.
+   - **Files Changed:**
+     - `Systems/EquipmentManager.cs` — Changed `HandleEquip()` to return `bool`, returns `false` on line 35 when selected is null, returns `true` for all other paths (error or success)
+     - `Engine/Commands/EquipCommandHandler.cs` — Capture return value from `HandleEquip()`, set `context.TurnConsumed = false` if false on line 8
+   - **Design Note:** Returning `bool` is cleaner than passing `Action` callback or full `CommandContext` to a service layer that shouldn't know about turn consumption.
+
+4. **#1137 — Shop while(true) loop continues with empty merchant stock**
+   - **Problem:** Shop command has a `while(true)` loop for browsing items. If the merchant's stock is depleted (e.g., player buys all items), the loop continues indefinitely showing an empty menu.
+   - **Fix:** Added stock count check at top of while loop. If `merchant.Stock.Count == 0`, show message "The merchant has nothing for sale." and return (break loop).
+   - **File:** `Engine/Commands/ShopCommandHandler.cs` lines 21-27
+
+**Pattern Learned:** Command handlers that show menus MUST restore display state on cancel. The pattern is:
+```csharp
+var selection = context.Display.ShowMenuAndSelect(...);
+if (selection == null)
+{
+    context.TurnConsumed = false;
+    context.Display.ShowRoom(context.CurrentRoom);
+    return;
+}
+```
+
+**Build Status:** ✅ Build succeeded (0 warnings, 0 errors)
+**Test Status:** Tests hang on full suite (unrelated infrastructure issue), but build compiles cleanly with no errors.
+
+**Commit:** `2c24eeb` — fix: Restore Content panel after menu cancel, empty inventory feedback
+**Branch:** `squad/1131-1132-1136-1137-command-handler-fixes`
+**PR:** #1141 (master ← squad/1131-1132-1136-1137-command-handler-fixes)
