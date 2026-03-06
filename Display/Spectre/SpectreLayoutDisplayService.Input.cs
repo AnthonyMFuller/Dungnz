@@ -429,10 +429,54 @@ public partial class SpectreLayoutDisplayService
     /// <inheritdoc/>
     public string? ReadCommandInput()
     {
-        return PauseAndRun<string?>(() =>
-            AnsiConsole.Prompt(
-                new TextPrompt<string>("[grey]>[/]")
-                    .AllowEmpty()));
+        // AnsiConsole.Prompt(TextPrompt) cannot be used here — it requires Spectre's
+        // DefaultExclusivityMode lock which is already held by the running Live display.
+        // Use AnsiConsole.Console.Input.ReadKey() instead — no exclusivity required.
+        var chars = new System.Collections.Generic.List<char>();
+        UpdateCommandInputPanel(string.Empty);
+
+        while (true)
+        {
+            var key = AnsiConsole.Console.Input.ReadKey(intercept: true);
+            if (key == null) break; // input redirected (non-interactive)
+
+            if (key.Value.Key == System.ConsoleKey.Enter)
+                break;
+
+            if (key.Value.Key == System.ConsoleKey.Backspace)
+            {
+                if (chars.Count > 0)
+                {
+                    chars.RemoveAt(chars.Count - 1);
+                    UpdateCommandInputPanel(new string(chars.ToArray()));
+                }
+                continue;
+            }
+
+            if (key.Value.KeyChar != '\0' && !char.IsControl(key.Value.KeyChar))
+            {
+                chars.Add(key.Value.KeyChar);
+                UpdateCommandInputPanel(new string(chars.ToArray()));
+            }
+        }
+
+        ShowCommandPrompt(); // Reset panel to default state
+        var result = new string(chars.ToArray()).Trim();
+        return string.IsNullOrEmpty(result) ? null : result;
+    }
+
+    private void UpdateCommandInputPanel(string currentInput)
+    {
+        var content = string.IsNullOrEmpty(currentInput)
+            ? "[grey]> Command:[/]"
+            : $"[grey]>[/] [white]{Markup.Escape(currentInput)}[/]";
+
+        var panel = new Panel(new Markup(content))
+            .Header("[bold yellow]Command[/]")
+            .Border(BoxBorder.Rounded)
+            .BorderColor(Color.Yellow);
+
+        _ctx.UpdatePanel(SpectreLayout.Panels.Input, panel);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
