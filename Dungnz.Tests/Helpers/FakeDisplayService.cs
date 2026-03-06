@@ -72,6 +72,12 @@ public class FakeDisplayService : IDisplayService
         AllOutput.Add($"stats:{player.Name}");
     }
 
+    public void RefreshDisplay(Player player, Room room, int floor)
+    {
+        ShowPlayerStats(player);
+        ShowRoom(room);
+    }
+
     public void ShowInventory(Player player)
     {
         AllOutput.Add($"inventory:{player.Inventory.Count}");
