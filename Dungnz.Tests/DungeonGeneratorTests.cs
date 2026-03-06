@@ -160,4 +160,21 @@ public class DungeonGeneratorTests
 
         foundItems.Should().BeTrue();
     }
+
+    // ── #1153: Room.IsEntrance tests ─────────────────────────────────────────
+
+    [Fact]
+    public void Room_IsEntrance_DefaultsFalse()
+    {
+        var room = new Room { Description = "A plain room." };
+        room.IsEntrance.Should().BeFalse("IsEntrance should default to false on a new Room");
+    }
+
+    [Fact]
+    public void DungeonGenerator_SetsIsEntrance_OnStartRoom()
+    {
+        var gen = new DungeonGenerator(1, Array.Empty<Item>());
+        var (start, _) = gen.Generate();
+        start.IsEntrance.Should().BeTrue("DungeonGenerator must mark the start room as IsEntrance");
+    }
 }

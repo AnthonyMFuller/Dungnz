@@ -167,4 +167,15 @@ public class CommandParserAdditionalTests
         var cmd = CommandParser.Parse("Descend");
         cmd.Type.Should().Be(CommandType.Descend);
     }
+
+    // ── #1153: Ascend command parsing ─────────────────────────────────────────
+
+    [Theory]
+    [InlineData("ascend")]
+    [InlineData("up")]
+    public void Parse_AscendAliases_ReturnsAscendCommand(string input)
+    {
+        var cmd = CommandParser.Parse(input);
+        cmd.Type.Should().Be(CommandType.Ascend, $"'{input}' should parse to CommandType.Ascend");
+    }
 }

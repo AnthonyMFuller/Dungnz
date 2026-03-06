@@ -187,4 +187,33 @@ public class SaveSystemComplexRoundTripTests : IDisposable
         loadedB.Exits.Should().ContainKey(Direction.East);
         loadedB.Exits[Direction.East].Description.Should().Be("Room C");
     }
+
+    // ── #1153: FloorHistory round-trip (#1151) ────────────────────────────────
+
+    [Fact]
+    public void RoundTrip_FloorHistory_Preserved()
+    {
+        var floor1Entrance = new Room { Description = "Floor 1 entrance.", IsEntrance = true };
+        var currentRoom = new Room { Description = "Floor 2 room." };
+        var player = new Player { Name = "Climber" };
+        var floorHistory = new Dictionary<int, Room> { [1] = floor1Entrance };
+
+        var state = new GameState(
+            player,
+            currentRoom,
+            currentFloor: 2,
+            floorHistory: floorHistory,
+            floorEntranceRoom: currentRoom);
+
+        SaveSystem.SaveGame(state, "floor-history");
+        var loaded = SaveSystem.LoadGame("floor-history");
+
+        loaded.CurrentFloor.Should().Be(2, "current floor must survive the round-trip");
+        loaded.FloorHistory.Should().ContainKey(1,
+            "floor 1 entry must be present in FloorHistory after load");
+        loaded.FloorHistory[1].Description.Should().Be("Floor 1 entrance.",
+            "the saved entrance room description must survive the round-trip");
+        loaded.FloorHistory[1].IsEntrance.Should().BeTrue(
+            "IsEntrance flag must survive the round-trip inside FloorHistory");
+    }
 }
