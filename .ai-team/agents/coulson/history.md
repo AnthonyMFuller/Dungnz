@@ -3177,3 +3177,31 @@ This keeps the persistent split-screen layout we already built.
 **csproj Fix:** Added `<Compile Remove="scripts/**" />` to exclude test scripts from build.
 
 **Architecture Document:** `.ai-team/decisions/inbox/coulson-option-e-architecture.md`
+
+
+### TUI Architecture Integration Patterns (2026-03-06)
+
+**Live+Layout requires explicit refresh:** The Spectre.Console Live display doesn't auto-refresh when model state changes. Every game state mutation must explicitly call the corresponding display method to update panels. "Update model, call display method" must be a rigid pattern.
+
+**Cache-based auto-refresh is fragile:** `ShowRoom()` auto-refreshes stats/map panels using `_cachedPlayer`/`_cachedRoom`, but this only works if those caches were populated by prior `ShowPlayerStats()`/`ShowRoom()` calls. Combat and stat changes bypass the cache setters, causing stale displays.
+
+**Missing centralized refresh method:** No single "update all panels" method exists. Every game event must manually call ShowPlayerStats(), RenderMapPanel(), and update _currentFloor. This leads to forgotten updates (post-combat stats, floor transitions).
+
+**Content panel state management unclear:** Content panel alternates between "replace" mode (room/combat) and "append" mode (messages). After combat, room description is never restored. Need explicit policy: always show room (Option A), show log (Option B), or show current context (Option C).
+
+**Key integration gaps found:**
+- Post-combat: stats/map panels never refresh (cached player has stale HP/XP)
+- Floor transitions: map header shows "Floor 1" forever (_currentFloor never updated)
+- Hazard damage: stats panel doesn't update when player takes trap damage
+- ShowFloorBanner: defined but never called (orphaned method)
+- ShowCommandPrompt: never receives player argument, so mini HP/MP bar never displays
+
+**File relationships:**
+- GameLoop.Run() → calls ShowPlayerStats/ShowRoom at startup (lines 166-167)
+- GoCommandHandler → calls Combat.RunCombat but doesn't refresh display after (line 135)
+- DescendCommandHandler → calls ShowRoom for new floor but never updates floor number (line 51)
+- CombatEngine → never calls ShowPlayerStats after XP/level-up changes
+- SpectreLayoutDisplayService.ShowRoom() → auto-refreshes map/stats via cached state (lines 587-589)
+
+**Recommendation:** Add RefreshDisplay(Player, Room, int floor) method that unconditionally updates all three panels. Call at turn boundaries and after combat/level-up/stat changes.
+
