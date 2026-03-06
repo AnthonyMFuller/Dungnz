@@ -2786,3 +2786,24 @@ Fixed 7 display-layer bugs in `SpectreLayoutDisplayService` that caused blank sc
 - `Display/Spectre/SpectreLayoutDisplayService.Input.cs` — ContentPanelMenu (Escape/Q handling)
 - `Dungnz.Tests/SellSystemTests.cs` — sell/shop command tests
 - `Dungnz.Tests/Helpers/FakeDisplayService.cs` — test double for IDisplayService
+
+## 2026-03-06: Fixed missing ShowRoom() calls in command handlers
+
+**Issue:** Deep menu audit found that many command handlers display content in the panel but never call `ShowRoom()` afterward, leaving stale content visible until the player types `LOOK`.
+
+**Fixed handlers:**
+- `InventoryCommandHandler` — add `ShowRoom()` after item selection (item detail + comparison path)
+- `UseCommandHandler` — add `ShowRoom()` at end when turn consumed (after using item from menu)
+- `CompareCommandHandler` — add `ShowRoom()` after showing comparison
+- `ExamineCommandHandler` — add `ShowRoom()` after item detail/comparison (both room item and inventory item paths)
+- `StatsCommandHandler` — add `ShowRoom()` after stats display
+- `MapCommandHandler` — add `ShowRoom()` after map update
+- `HelpCommandHandler` — add `ShowRoom()` after help display
+- `EquipmentCommandHandler` — add `ShowRoom()` after equipment display
+
+**Pattern established:**
+Every handler that sets content panel content MUST call `ShowRoom()` before returning (unless already called on cancel path). This is now the established convention — future handlers must follow this pattern.
+
+**Testing:** All 1695 tests pass.
+**Commit:** c72dbe8 on branch `scribe/log-merchant-menu-2026-03-06`
+**Issues closed:** #1168, #1169, #1170, #1171, #1172, #1175
