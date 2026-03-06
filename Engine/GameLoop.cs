@@ -440,21 +440,21 @@ public class GameLoop
         var choice = _display.ShowForgottenShrineMenuAndSelect();
         switch (choice)
         {
-            case 1:
-                _player.TempAttackBonus += 5;
-                _player.ModifyAttack(5);
-                _display.ShowMessage("Holy light surges through your arms. Attack +5 until next floor!");
+            case 1: // Prayer of Restoration — full heal + cure all ailments
+                _player.Heal(_player.MaxHP);
+                _player.ActiveEffects.RemoveAll(e => e.IsDebuff);
+                _display.ShowMessage($"Divine light washes over you. Fully restored! HP: {_player.HP}/{_player.MaxHP}. All ailments cured.");
                 _currentRoom.SpecialRoomUsed = true;
                 _display.RefreshDisplay(_player, _currentRoom, _currentFloor);
                 break;
-            case 2:
-                _player.SacredGroundActive = true;
-                _display.ShowMessage("The shrine's blessing lingers — shrines will restore you fully.");
+            case 2: // Prayer of Might — permanent +3 ATK
+                _player.ModifyAttack(3);
+                _display.ShowMessage("The shrine imbues your strikes with holy fury. Attack +3 (permanent).");
                 _currentRoom.SpecialRoomUsed = true;
                 break;
-            case 3:
-                _player.WardingVeilActive = true;
-                _display.ShowMessage("A shimmering veil of protection wraps around you. Enemy attacks have a 20% chance to miss this floor.");
+            case 3: // Prayer of Resilience — permanent +3 DEF
+                _player.ModifyDefense(3);
+                _display.ShowMessage("Sacred stone hardens your body. Defense +3 (permanent).");
                 _currentRoom.SpecialRoomUsed = true;
                 break;
             case 0:

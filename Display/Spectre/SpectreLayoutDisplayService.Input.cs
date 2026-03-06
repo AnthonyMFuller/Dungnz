@@ -22,7 +22,7 @@ public partial class SpectreLayoutDisplayService
     /// <inheritdoc/>
     public void ShowEquipmentComparison(Player player, Item? oldItem, Item newItem)
     {
-        var tc = InputTierColor(newItem.Tier);
+        var tc = TierColor(newItem.Tier);
 
         var newHeader = $"[{tc} bold]{Markup.Escape(newItem.Name)}[/] [dim](new)[/]";
         var oldHeader = oldItem != null
@@ -100,7 +100,7 @@ public partial class SpectreLayoutDisplayService
         if (player.Inventory.Count == 0) return null;
 
         var opts = player.Inventory
-            .Select(i => ($"{InputItemIcon(i)} {Markup.Escape(i.Name)} [grey]({Markup.Escape(InputPrimaryStatLabel(i))})[/]", (Item?)i))
+            .Select(i => ($"{InputItemIcon(i)} {Markup.Escape(i.Name)} [grey]({Markup.Escape(PrimaryStatLabel(i))})[/]", (Item?)i))
             .Append(("← Cancel", (Item?)null));
 
         return NullableSelectionPrompt(
@@ -140,9 +140,9 @@ public partial class SpectreLayoutDisplayService
         var list = stock.ToList();
         var opts = list.Select((s, i) =>
         {
-            var tc = InputTierColor(s.item.Tier);
+            var tc = TierColor(s.item.Tier);
             var afford = s.price <= playerGold ? "[green]✓[/]" : "[red]✗[/]";
-            return ($"{afford} [{tc}]{Markup.Escape(s.item.Name)}[/] — {s.item.Tier} — {Markup.Escape(InputPrimaryStatLabel(s.item))} — {s.price}g", i + 1);
+            return ($"{afford} [{tc}]{Markup.Escape(s.item.Name)}[/] — {s.item.Tier} — {Markup.Escape(PrimaryStatLabel(s.item))} — {s.price}g", i + 1);
         }).Append(("← Leave", 0));
         return SelectionPromptValue($"[bold]🏪 Merchant  (Gold: {playerGold}g)[/]", opts);
     }
@@ -153,7 +153,7 @@ public partial class SpectreLayoutDisplayService
         var list = items.ToList();
         var opts = list.Select((s, i) =>
         {
-            var tc = InputTierColor(s.item.Tier);
+            var tc = TierColor(s.item.Tier);
             return ($"[{tc}]{Markup.Escape(s.item.Name)}[/] — [yellow]{s.sellPrice}g[/]", i + 1);
         }).Append(("← Cancel", 0));
         return SelectionPromptValue($"[bold]💰 Sell Items  (Gold: {playerGold}g)[/]", opts);
@@ -227,7 +227,7 @@ public partial class SpectreLayoutDisplayService
         for (int i = 0; i < list.Count; i++)
         {
             var (item, price) = list[i];
-            var tc = InputTierColor(item.Tier);
+            var tc = TierColor(item.Tier);
             var afford = price <= playerGold ? "[green]✓[/]" : "[red]✗[/]";
             opts.Add(($"{afford} [{tc}]{Markup.Escape(item.Name)}[/] — {price}g", i + 1));
         }
@@ -275,12 +275,11 @@ public partial class SpectreLayoutDisplayService
     /// <inheritdoc/>
     public int ShowContestedArmoryMenuAndSelect(int playerDefense)
     {
-        int dmg = Math.Max(10 - playerDefense, 1);
         var opts = new[]
         {
-            ($"[red]⚡ Rush in[/]           — Take {dmg} damage, get rare weapon",   1),
-            ("[cyan]🛡 Careful approach[/]  — Take 3 damage, get common weapon",     2),
-            ("← Leave",                                                                0),
+            ($"[cyan]🛡 Careful approach[/]  — DEF > 12 required, no damage, Rare weapon{(playerDefense > 12 ? "" : " [grey](need more DEF)[/]")}", 1),
+            ("[red]⚡ Rush in[/]           — Take 15-30 damage, guaranteed Uncommon weapon", 2),
+            ("← Leave",                                                                       0),
         };
         return SelectionPromptValue("[bold yellow]⚔  Contested Armory[/]", opts);
     }
@@ -310,7 +309,7 @@ public partial class SpectreLayoutDisplayService
     {
         if (consumables.Count == 0) return null;
         var opts = consumables
-            .Select(i => ($"🧪 {Markup.Escape(i.Name)}  [grey]({Markup.Escape(InputPrimaryStatLabel(i))})[/]", (Item?)i))
+            .Select(i => ($"🧪 {Markup.Escape(i.Name)}  [grey]({Markup.Escape(PrimaryStatLabel(i))})[/]", (Item?)i))
             .Append(("← Cancel", (Item?)null));
         return NullableSelectionPrompt("[bold]🎒 Use Item[/]", opts);
     }
@@ -321,8 +320,8 @@ public partial class SpectreLayoutDisplayService
         if (equippable.Count == 0) return null;
         var opts = equippable.Select(i =>
         {
-            var tc = InputTierColor(i.Tier);
-            return ($"{InputItemIcon(i)} [{tc}]{Markup.Escape(i.Name)}[/]  [grey]({Markup.Escape(InputPrimaryStatLabel(i))})[/]", (Item?)i);
+            var tc = TierColor(i.Tier);
+            return ($"{InputItemIcon(i)} [{tc}]{Markup.Escape(i.Name)}[/]  [grey]({Markup.Escape(PrimaryStatLabel(i))})[/]", (Item?)i);
         }).Append(("← Cancel", (Item?)null));
         return NullableSelectionPrompt("[bold]⚔  Equip Item[/]", opts);
     }
@@ -332,7 +331,7 @@ public partial class SpectreLayoutDisplayService
     {
         if (usable.Count == 0) return null;
         var opts = usable
-            .Select(i => ($"🧪 {Markup.Escape(i.Name)}  [grey]({Markup.Escape(InputPrimaryStatLabel(i))})[/]", (Item?)i))
+            .Select(i => ($"🧪 {Markup.Escape(i.Name)}  [grey]({Markup.Escape(PrimaryStatLabel(i))})[/]", (Item?)i))
             .Append(("← Cancel", (Item?)null));
         return NullableSelectionPrompt("[bold]🎒 Use Item[/]", opts);
     }
@@ -346,7 +345,7 @@ public partial class SpectreLayoutDisplayService
             ("[bold]Take All[/]", new TakeSelection.All()),
         };
         foreach (var item in roomItems)
-            opts.Add(($"{InputItemIcon(item)} {Markup.Escape(item.Name)}  [grey]({Markup.Escape(InputPrimaryStatLabel(item))})[/]", new TakeSelection.Single(item)));
+            opts.Add(($"{InputItemIcon(item)} {Markup.Escape(item.Name)}  [grey]({Markup.Escape(PrimaryStatLabel(item))})[/]", new TakeSelection.Single(item)));
         opts.Add(("← Cancel", null));
         return NullableSelectionPrompt("[bold]📦 Take Items[/]", opts);
     }
@@ -663,16 +662,6 @@ public partial class SpectreLayoutDisplayService
     // Display helpers (private, used only in this partial class)
     // ──────────────────────────────────────────────────────────────────────────
 
-    private static string InputTierColor(ItemTier tier) => tier switch
-    {
-        ItemTier.Common    => "white",
-        ItemTier.Uncommon  => "green",
-        ItemTier.Rare      => "blue",
-        ItemTier.Epic      => "purple",
-        ItemTier.Legendary => "gold1",
-        _                  => "grey",
-    };
-
     private static string InputItemIcon(Item item) => item.Type switch
     {
         ItemType.Weapon           => "⚔",
@@ -682,16 +671,6 @@ public partial class SpectreLayoutDisplayService
         ItemType.CraftingMaterial => "⚗",
         _                         => "◆",
     };
-
-    private static string InputPrimaryStatLabel(Item item)
-    {
-        if (item.AttackBonus  != 0) return $"+{item.AttackBonus} ATK";
-        if (item.DefenseBonus != 0) return $"+{item.DefenseBonus} DEF";
-        if (item.HealAmount   != 0) return $"+{item.HealAmount} HP";
-        if (item.ManaRestore  != 0) return $"+{item.ManaRestore} MP";
-        if (item.MaxManaBonus != 0) return $"+{item.MaxManaBonus} Max MP";
-        return item.Type.ToString();
-    }
 
     private static string InputClassIcon(PlayerClassDefinition def) => def.Name switch
     {
@@ -705,8 +684,7 @@ public partial class SpectreLayoutDisplayService
     };
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Stubs for helpers referenced in Hill's display-only methods (main file).
-    // Hill will replace these with full implementations; these unblock the build.
+    // Shared display helpers (used by both Input.cs and SpectreLayoutDisplayService.cs)
     // ──────────────────────────────────────────────────────────────────────────
 
     /// <summary>Returns the Spectre markup color name for an item tier.</summary>
