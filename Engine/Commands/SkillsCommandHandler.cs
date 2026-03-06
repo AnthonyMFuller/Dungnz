@@ -38,6 +38,7 @@ internal sealed class LearnCommandHandler : ICommandHandler
         {
             context.TurnConsumed = false;
             context.Display.ShowError($"Unknown skill: {argument}");
+            context.Display.ShowRoom(context.CurrentRoom);
             return;
         }
         new SkillsCommandHandler().HandleLearnSpecificSkill(skill, context);

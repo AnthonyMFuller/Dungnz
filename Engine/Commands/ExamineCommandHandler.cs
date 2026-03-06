@@ -8,6 +8,7 @@ internal sealed class ExamineCommandHandler : ICommandHandler
         {
             context.TurnConsumed = false;
             context.Display.ShowError("Examine what?");
+            context.Display.ShowRoom(context.CurrentRoom);
             return;
         }
 
@@ -18,6 +19,7 @@ internal sealed class ExamineCommandHandler : ICommandHandler
             context.CurrentRoom.Enemy.Name.ToLowerInvariant().Contains(targetLower))
         {
             context.Display.ShowMessage($"{context.CurrentRoom.Enemy.Name} - HP: {context.CurrentRoom.Enemy.HP}/{context.CurrentRoom.Enemy.MaxHP}, Attack: {context.CurrentRoom.Enemy.Attack}, Defense: {context.CurrentRoom.Enemy.Defense}");
+            context.Display.ShowRoom(context.CurrentRoom);
             return;
         }
 
@@ -49,5 +51,6 @@ internal sealed class ExamineCommandHandler : ICommandHandler
 
         context.TurnConsumed = false;
         context.Display.ShowError($"You don't see any '{argument}' here.");
+        context.Display.ShowRoom(context.CurrentRoom);
     }
 }

@@ -127,7 +127,7 @@ public class MenuRestorationTests
     }
 
     [Fact]
-    public void UseCommandHandler_NoUsableItems_DoesNotCallShowRoom()
+    public void UseCommandHandler_NoUsableItems_CallsShowRoom()
     {
         var display = new FakeDisplayService();
         var player = new Player { Name = "Tester", HP = 100, MaxHP = 100 };
@@ -140,8 +140,8 @@ public class MenuRestorationTests
 
         handler.Handle(string.Empty, ctx);
 
-        display.ShowRoomCallCount.Should().Be(initialShowRoomCount, 
-            "ShowRoom should not be called when there are no usable items (early return)");
+        display.ShowRoomCallCount.Should().BeGreaterThan(initialShowRoomCount, 
+            "ShowRoom should be called even when there are no usable items, to prevent stale display");
     }
 
     // ────────────────────────────────────────────────────────────────────────
@@ -207,7 +207,7 @@ public class MenuRestorationTests
     }
 
     [Fact]
-    public void ExamineCommandHandler_ItemNotFound_DoesNotCallShowRoom()
+    public void ExamineCommandHandler_ItemNotFound_CallsShowRoom()
     {
         var display = new FakeDisplayService();
         var player = new Player { Name = "Tester", HP = 100, MaxHP = 100 };
@@ -218,8 +218,8 @@ public class MenuRestorationTests
 
         handler.Handle("nonexistent", ctx);
 
-        display.ShowRoomCallCount.Should().Be(initialShowRoomCount, 
-            "ShowRoom should not be called when item is not found (error path)");
+        display.ShowRoomCallCount.Should().BeGreaterThan(initialShowRoomCount, 
+            "ShowRoom should be called when item is not found, to prevent stale display");
     }
 
     // ────────────────────────────────────────────────────────────────────────
