@@ -17,6 +17,11 @@ public class FakeDisplayService : IDisplayService
     public List<string> CombatMessages { get; } = new();
     public List<string> RawCombatMessages { get; } = new();
     public List<string> AllOutput { get; } = new();
+    
+    public int ShowRoomCallCount { get; private set; }
+    public Queue<int>? SellMenuSelectResponses { get; set; }
+    public Queue<bool>? ConfirmMenuResponses { get; set; }
+    public Queue<int>? ShopMenuSelectResponses { get; set; }
 
     /// <summary>
     /// Strips ANSI color codes from text to ensure tests check plain text content.
@@ -26,7 +31,11 @@ public class FakeDisplayService : IDisplayService
     public void ShowTitle() { }
     public void ShowCommandPrompt(Player? player = null) { }
     public void ShowHelp() { AllOutput.Add("help"); }
-    public void ShowRoom(Room room) { AllOutput.Add($"room:{room.Description}"); }
+    public void ShowRoom(Room room) 
+    { 
+        ShowRoomCallCount++;
+        AllOutput.Add($"room:{room.Description}"); 
+    }
     public void ShowMap(Room room, int floor = 1) { AllOutput.Add($"map:{room.Description}"); }
     public string ReadPlayerName() => "TestPlayer";
     public string? ReadCommandInput() => _input?.ReadLine()?.Trim();
@@ -162,6 +171,13 @@ public class FakeDisplayService : IDisplayService
     public int ShowSellMenuAndSelect(IEnumerable<(Item item, int sellPrice)> items, int playerGold)
     {
         AllOutput.Add($"sell_select:{playerGold}g");
+        
+        // Check if queue-based responses are configured
+        if (SellMenuSelectResponses != null && SellMenuSelectResponses.Count > 0)
+        {
+            return SellMenuSelectResponses.Dequeue();
+        }
+        
         if (_input is not null)
         {
             var line = _input.ReadLine()?.Trim() ?? "";
@@ -198,6 +214,13 @@ public class FakeDisplayService : IDisplayService
     public int ShowShopWithSellAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold)
     {
         AllOutput.Add($"shop_with_sell:{playerGold}g");
+        
+        // Check if queue-based responses are configured
+        if (ShopMenuSelectResponses != null && ShopMenuSelectResponses.Count > 0)
+        {
+            return ShopMenuSelectResponses.Dequeue();
+        }
+        
         if (_input is not null)
         {
             var line = _input.ReadLine()?.Trim() ?? "";
@@ -208,6 +231,13 @@ public class FakeDisplayService : IDisplayService
     public bool ShowConfirmMenu(string prompt)
     {
         AllOutput.Add($"confirm:{prompt}");
+        
+        // Check if queue-based responses are configured
+        if (ConfirmMenuResponses != null && ConfirmMenuResponses.Count > 0)
+        {
+            return ConfirmMenuResponses.Dequeue();
+        }
+        
         if (_input is not null)
         {
             var line = _input.ReadLine()?.Trim().ToUpperInvariant() ?? "";

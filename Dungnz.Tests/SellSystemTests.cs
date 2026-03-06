@@ -259,4 +259,145 @@ public class SellSystemTests
         player.Gold.Should().Be(0, "no gold should be awarded on cancel");
         display.Messages.Should().Contain("Changed your mind.");
     }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Test Group 1 — ShowRoom restoration (#1157)
+    // ────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Sell_Success_CallsShowRoom()
+    {
+        var (player, room, display, loop) = MakeSellSetup("sell", "1", "Y", "quit");
+        var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, Tier = ItemTier.Common };
+        player.Inventory.Add(potion);
+
+        loop.Run(player, room);
+
+        display.ShowRoomCallCount.Should().BeGreaterThan(0, "ShowRoom should be called after successful sale");
+    }
+
+    [Fact]
+    public void Sell_Cancel_CallsShowRoom()
+    {
+        var (player, room, display, loop) = MakeSellSetup("sell", "quit");
+        var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, Tier = ItemTier.Common };
+        player.Inventory.Add(potion);
+
+        int initialShowRoomCount = display.ShowRoomCallCount;
+        loop.Run(player, room);
+
+        display.ShowRoomCallCount.Should().BeGreaterThan(initialShowRoomCount, "ShowRoom should be called when player cancels at sell menu");
+    }
+
+    [Fact]
+    public void Sell_NoItems_CallsShowRoom()
+    {
+        var (player, room, display, loop) = MakeSellSetup("sell", "quit");
+
+        int initialShowRoomCount = display.ShowRoomCallCount;
+        loop.Run(player, room);
+
+        display.ShowRoomCallCount.Should().BeGreaterThan(initialShowRoomCount, "ShowRoom should be called when inventory has no sellable items");
+    }
+
+    [Fact]
+    public void Sell_NoMerchant_DoesNotCallShowRoom()
+    {
+        var display = new FakeDisplayService();
+        var combat = new Mock<ICombatEngine>();
+        var reader = new FakeInputReader("sell", "quit");
+        var loop = new GameLoop(display, combat.Object, reader);
+
+        var player = new Player { Name = "Tester", HP = 100, MaxHP = 100, Attack = 10, Defense = 5 };
+        var room = new Room { Description = "Empty room" };
+        var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable };
+        player.Inventory.Add(potion);
+
+        int initialShowRoomCount = display.ShowRoomCallCount;
+        loop.Run(player, room);
+
+        display.ShowRoomCallCount.Should().Be(initialShowRoomCount + 1, "ShowRoom should only be called once by RefreshDisplay, not by SellCommandHandler on error path (no merchant)");
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Test Group 2 — Multi-sell loop (#1158)
+    // ────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Sell_CanSellMultipleItems_InOneSession()
+    {
+        var (player, room, display, loop) = MakeSellSetup("sell", "quit");
+        
+        var potion1 = new Item { Name = "Health Potion", Type = ItemType.Consumable, Tier = ItemTier.Common };
+        var potion2 = new Item { Name = "Mana Potion", Type = ItemType.Consumable, Tier = ItemTier.Common };
+        player.Inventory.Add(potion1);
+        player.Inventory.Add(potion2);
+
+        int expectedPrice1 = MerchantInventoryConfig.ComputeSellPrice(potion1);
+        int expectedPrice2 = MerchantInventoryConfig.ComputeSellPrice(potion2);
+
+        display.SellMenuSelectResponses = new Queue<int>(new[] { 1, 1, 0 });
+        display.ConfirmMenuResponses = new Queue<bool>(new[] { true, true });
+
+        loop.Run(player, room);
+
+        player.Inventory.Should().NotContain(potion1, "first item should be sold");
+        player.Inventory.Should().NotContain(potion2, "second item should be sold");
+        player.Gold.Should().Be(expectedPrice1 + expectedPrice2, "both items should award gold");
+    }
+
+    [Fact]
+    public void Sell_AfterCancelConfirm_ContinuesLoop()
+    {
+        var (player, room, display, loop) = MakeSellSetup("sell", "quit");
+        
+        var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, Tier = ItemTier.Common };
+        player.Inventory.Add(potion);
+
+        int expectedPrice = MerchantInventoryConfig.ComputeSellPrice(potion);
+
+        display.SellMenuSelectResponses = new Queue<int>(new[] { 1, 1, 0 });
+        display.ConfirmMenuResponses = new Queue<bool>(new[] { false, true });
+
+        loop.Run(player, room);
+
+        player.Inventory.Should().NotContain(potion, "item should be sold after second attempt");
+        player.Gold.Should().Be(expectedPrice, "gold should be awarded after confirming");
+        display.Messages.Should().Contain("Changed your mind.", "cancel message should appear after first NO");
+    }
+
+    // ────────────────────────────────────────────────────────────────────────
+    // Test Group 3 — Shop ShowRoom restoration (#1156)
+    // ────────────────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void Shop_Leave_CallsShowRoom()
+    {
+        var (player, room, display, loop) = MakeSellSetup("shop", "quit");
+
+        display.ShopMenuSelectResponses = new Queue<int>(new[] { 0 });
+
+        int initialShowRoomCount = display.ShowRoomCallCount;
+        loop.Run(player, room);
+
+        display.ShowRoomCallCount.Should().BeGreaterThan(initialShowRoomCount, "ShowRoom should be called when player selects Leave (0)");
+    }
+
+    [Fact]
+    public void Shop_NoMerchant_Error_NoShowRoom()
+    {
+        var display = new FakeDisplayService();
+        var combat = new Mock<ICombatEngine>();
+        var reader = new FakeInputReader("shop", "quit");
+        var loop = new GameLoop(display, combat.Object, reader);
+
+        var player = new Player { Name = "Tester", HP = 100, MaxHP = 100, Attack = 10, Defense = 5 };
+        var room = new Room { Description = "Empty room" };
+
+        int initialShowRoomCount = display.ShowRoomCallCount;
+        loop.Run(player, room);
+
+        display.Errors.Should().Contain(e => e.Contains("no merchant"), "error should be shown when no merchant");
+        display.ShowRoomCallCount.Should().Be(initialShowRoomCount + 1, "ShowRoom should only be called once by RefreshDisplay, not by ShopCommandHandler on error path (no merchant)");
+    }
 }

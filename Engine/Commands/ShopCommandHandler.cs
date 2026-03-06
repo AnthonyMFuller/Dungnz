@@ -27,6 +27,7 @@ internal sealed class ShopCommandHandler : ICommandHandler
             {
                 context.Display.ShowMessage("You leave the shop.");
                 context.Display.ShowMessage(context.Narration.Pick(MerchantNarration.NoBuy));
+                context.Display.ShowRoom(context.CurrentRoom);
                 return;
             }
 
