@@ -660,6 +660,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         // Enemy status
         sb.AppendLine($"🐉 [bold]{Markup.Escape(enemy.Name)}[/]");
         sb.Append($"HP {BuildHpBar(enemy.HP, enemy.MaxHP)} {enemy.HP}/{enemy.MaxHP}");
+        sb.Append($"  [red]ATK {enemy.Attack}[/]  [cyan]DEF {enemy.Defense}[/]");
         sb.AppendLine();
         if (enemyEffects.Count > 0)
         {
@@ -687,9 +688,9 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowCombatMessage(string message)
     {
-        var clean = StripAnsiCodes(message);
-        AppendContent($"  [white]{Markup.Escape(clean)}[/]");
-        AppendLog(clean, "combat");
+        var converted = ConvertAnsiInlineToSpectre(message);
+        AppendContent($"  {converted}");
+        AppendLog(StripAnsiCodes(message), "combat");
     }
 
     /// <inheritdoc/>
@@ -1218,6 +1219,98 @@ public partial class SpectreLayoutDisplayService : IDisplayService
 
     private static string StripAnsiCodes(string input) =>
         AnsiEscapePattern.Replace(input, string.Empty);
+
+    private static string ConvertAnsiInlineToSpectre(string input)
+    {
+        var matches = AnsiEscapePattern.Matches(input);
+        if (matches.Count == 0)
+            return Markup.Escape(input);
+
+        var result = new StringBuilder();
+        var lastIndex = 0;
+        var isBold = false;
+        var currentColor = "";
+        var isTagOpen = false;
+
+        foreach (Match match in matches)
+        {
+            // Append text before this match (escaped)
+            if (match.Index > lastIndex)
+            {
+                var plainText = input.Substring(lastIndex, match.Index - lastIndex);
+                
+                // If we have bold or color accumulated, open tag before text
+                if ((isBold || !string.IsNullOrEmpty(currentColor)) && !string.IsNullOrEmpty(plainText))
+                {
+                    result.Append('[');
+                    if (isBold)
+                        result.Append("bold ");
+                    if (!string.IsNullOrEmpty(currentColor))
+                        result.Append(currentColor);
+                    result.Append(']');
+                    isTagOpen = true;
+                }
+                
+                result.Append(Markup.Escape(plainText));
+            }
+
+            // Process ANSI code
+            var code = match.Value;
+            if (code == "\u001b[0m") // Reset
+            {
+                if (isTagOpen)
+                {
+                    result.Append("[/]");
+                    isTagOpen = false;
+                }
+                isBold = false;
+                currentColor = "";
+            }
+            else if (code == "\u001b[1m") // Bold
+            {
+                isBold = true;
+            }
+            else // Color code
+            {
+                currentColor = code switch
+                {
+                    "\u001b[91m" => "red",
+                    "\u001b[32m" => "green",
+                    "\u001b[33m" => "yellow",
+                    "\u001b[36m" => "cyan",
+                    "\u001b[37m" => "grey",
+                    "\u001b[34m" => "blue",
+                    "\u001b[97m" => "white",
+                    _ => ""
+                };
+            }
+
+            lastIndex = match.Index + match.Length;
+        }
+
+        // Append remaining text
+        if (lastIndex < input.Length)
+        {
+            var plainText = input.Substring(lastIndex);
+            if ((isBold || !string.IsNullOrEmpty(currentColor)) && !string.IsNullOrEmpty(plainText))
+            {
+                result.Append('[');
+                if (isBold)
+                    result.Append("bold ");
+                if (!string.IsNullOrEmpty(currentColor))
+                    result.Append(currentColor);
+                result.Append(']');
+                isTagOpen = true;
+            }
+            result.Append(Markup.Escape(plainText));
+        }
+
+        // Close tag if still open
+        if (isTagOpen)
+            result.Append("[/]");
+
+        return result.ToString();
+    }
 }
 
 
