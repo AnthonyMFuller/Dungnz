@@ -310,13 +310,13 @@ public class GameLoop
                 player.TakeDamage(5);
                 _stats.DamageTaken += 5;
                 _display.ShowMessage("🔥 The lava seam sears you. (-5 HP)");
-                _display.RefreshDisplay(_player, _currentRoom, _currentFloor);
+                _display.ShowPlayerStats(_player);
                 break;
             case RoomHazard.CorruptedGround:
                 player.TakeDamage(3);
                 _stats.DamageTaken += 3;
                 _display.ShowMessage("💀 The corrupted ground drains you. (-3 HP)");
-                _display.RefreshDisplay(_player, _currentRoom, _currentFloor);
+                _display.ShowPlayerStats(_player);
                 break;
             case RoomHazard.BlessedClearing:
                 if (!room.BlessedHealApplied)
@@ -324,7 +324,7 @@ public class GameLoop
                     room.BlessedHealApplied = true;
                     player.Heal(3);
                     _display.ShowMessage("✨ A blessed warmth flows through you. (+3 HP)");
-                    _display.RefreshDisplay(_player, _currentRoom, _currentFloor);
+                    _display.ShowPlayerStats(_player);
                 }
                 break;
         }

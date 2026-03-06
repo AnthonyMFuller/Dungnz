@@ -3236,3 +3236,36 @@ Both issues tagged with `bug` label only (no `tui` label exists in repository).
 - Issue #1092: Rebalance ratios to Content=40%, BottomRow=30% to give more log history visibility
 
 **Decision Document:** `.ai-team/decisions/inbox/coulson-tui-layout-compact-borders.md`
+
+### 2026-03-07: Display Layer Deep Architecture Review — Critical Menu Bug Found
+
+**Context:** Anthony reported menus break the UI, specifically "take" command and any menu causes element duplication.
+
+**Root Cause Analysis:**
+The `PauseAndRun<T>` mechanism is fundamentally incompatible with Spectre.Console's Live display:
+
+1. `AnsiConsole.Live(_layout).Start(ctx => { ... })` acquires `DefaultExclusivityMode._running = 1` for the **entire callback duration**
+2. `PauseAndRun` pauses the Live loop (blocks on `_resumeLiveEvent.Wait()`) but the `Start()` callback is still active
+3. `SelectionPrompt` calls `DefaultExclusivityMode.RunAsync()` which checks `_running` and throws `InvalidOperationException`
+
+This affects ALL ~20 menu methods that use `SelectionPromptValue` or `NullableSelectionPrompt`.
+
+**GitHub Issues Filed:**
+| Issue # | Priority | Title |
+|---------|----------|-------|
+| #1107 | **P0** | All menus crash with InvalidOperationException — PauseAndRun + SelectionPrompt conflict with Live exclusivity mode |
+| #1108 | P1 | Content panel not refreshed after menu returns |
+| #1109 | P2 | Race condition between pause/resume events in Live loop |
+| #1110 | P2 | _pauseDepth nesting logic doesn't fully solve nested menu deadlock |
+
+**Recommended Fix:**
+Replace `SelectionPrompt` with a custom ReadKey-based menu rendered in the content panel. `AnsiConsole.Console.Input.ReadKey(intercept: true)` does NOT go through `DefaultExclusivityMode` — this pattern already works in `ReadCommandInput()`.
+
+**Files Reviewed:**
+- `Display/Spectre/SpectreLayoutDisplayService.cs`
+- `Display/Spectre/SpectreLayoutDisplayService.Input.cs`
+- `Display/Spectre/SpectreLayoutContext.cs`
+- `Display/Spectre/SpectreLayout.cs`
+- `Engine/GameLoop.cs`
+
+**Summary Document:** `.ai-team/decisions/inbox/coulson-display-issues-filed.md`

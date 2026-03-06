@@ -381,20 +381,20 @@ public partial class SpectreLayoutDisplayService : IDisplayService
 
     private static string GetMapRoomSymbol(Room r, Room currentRoom)
     {
-        if (r == currentRoom)                                        return "[bold yellow][[@]][/]";
-        if (!r.Visited)                                              return "[grey][[?]][/]";
-        if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0)          return "[bold red][[B]][/]";
-        if (r.IsExit)                                                return "[white][[E]][/]";
-        if (r.Enemy != null && r.Enemy.HP > 0)                      return "[red][[!]][/]";
-        if (r.HasShrine && !r.ShrineUsed)                           return "[cyan][[S]][/]";
-        if (r.Merchant != null)                                      return "[bold green][[M]][/]";
-        if (r.Type == RoomType.TrapRoom && !r.SpecialRoomUsed)      return "[bold red][[T]][/]";
-        if (r.Type == RoomType.ContestedArmory)                     return "[yellow][[A]][/]";
-        if (r.Type == RoomType.PetrifiedLibrary)                    return "[blue][[L]][/]";
-        if (r.Type == RoomType.ForgottenShrine)                     return "[cyan][[F]][/]";
-        if (r.EnvironmentalHazard == RoomHazard.BlessedClearing)    return "[green][[*]][/]";
-        if (r.EnvironmentalHazard != RoomHazard.None)               return "[red][[~]][/]";
-        if (r.Type == RoomType.Dark)                                return "[grey][[D]][/]";
+        if (r == currentRoom)                                                    return "[bold yellow][[@]][/]";
+        if (!r.Visited)                                                          return "[grey][[?]][/]";
+        if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0)                      return "[bold red][[B]][/]";
+        if (r.IsExit)                                                            return "[white][[E]][/]";
+        if (r.Enemy != null && r.Enemy.HP > 0)                                  return "[red][[!]][/]";
+        if (r.HasShrine && !r.ShrineUsed)                                       return "[cyan][[S]][/]";
+        if (r.Merchant != null)                                                  return "[bold green][[M]][/]";
+        if (r.Type == RoomType.TrapRoom         && !r.SpecialRoomUsed)          return "[bold red][[T]][/]";
+        if (r.Type == RoomType.ContestedArmory  && !r.SpecialRoomUsed)          return "[yellow][[A]][/]";
+        if (r.Type == RoomType.PetrifiedLibrary && !r.SpecialRoomUsed)          return "[blue][[L]][/]";
+        if (r.Type == RoomType.ForgottenShrine  && !r.SpecialRoomUsed)          return "[cyan][[F]][/]";
+        if (r.EnvironmentalHazard == RoomHazard.BlessedClearing)                return "[green][[*]][/]";
+        if (r.EnvironmentalHazard != RoomHazard.None)                           return "[red][[~]][/]";
+        if (r.Type == RoomType.Dark)                                            return "[grey][[D]][/]";
         return "[white][[+]][/]";
     }
 
@@ -492,6 +492,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowRoom(Room room)
     {
+        bool isNewRoom = _cachedRoom?.Id != room.Id;
         _cachedRoom = room;
 
         var sb = new StringBuilder();
@@ -576,7 +577,8 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             sb.AppendLine("[yellow]🛒 A merchant awaits. (SHOP)[/]");
 
         SetContent(sb.ToString().TrimEnd(), GetRoomDisplayName(room), Color.Blue);
-        AppendLog($"Entered {GetRoomDisplayName(room)}");
+        if (isNewRoom)
+            AppendLog($"Entered {GetRoomDisplayName(room)}");
 
         // Auto-populate map and stats panels on room entry
         RenderMapPanel(room);
@@ -633,7 +635,17 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             sb.AppendLine();
         }
 
-        SetContent(sb.ToString().TrimEnd(), "⚔  Combat", Color.Red);
+        if (_contentHeader == "⚔  Combat")
+        {
+            // Append HP status to existing combat history (don't wipe messages)
+            AppendContent("[grey]──────────────────[/]");
+            foreach (var line in sb.ToString().TrimEnd().Split('\n'))
+                AppendContent(line);
+        }
+        else
+        {
+            SetContent(sb.ToString().TrimEnd(), "⚔  Combat", Color.Red);
+        }
     }
 
     /// <inheritdoc/>
@@ -1001,9 +1013,9 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowCombatStart(Enemy enemy)
     {
-        _contentHeader = "Combat";
+        _contentLines.Clear();
+        _contentHeader = "⚔  Combat";
         _contentBorderColor = Color.Red;
-        AppendContent("");
         AppendContent("[bold red]⚔ ─── COMBAT ─── ⚔[/]");
         AppendContent($"[red]Enemy: {Markup.Escape(enemy.Name)}[/]");
         AppendLog($"Combat started: {enemy.Name}", "combat");
@@ -1043,6 +1055,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         sb.Append($"[{threatColor}]⚠ Danger: {threat}[/]");
         SetContent(sb.ToString().TrimEnd(), $"⬇  Floor {floor}", Color.Cyan1);
         AppendLog($"Entered Floor {floor} — {variant.Name}");
+        if (_cachedRoom != null) RenderMapPanel(_cachedRoom);
     }
 
     /// <inheritdoc/>
@@ -1105,9 +1118,9 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     /// <inheritdoc/>
     public void RefreshDisplay(Player player, Room room, int floor)
     {
+        _currentFloor = floor;  // set before ShowRoom so map header uses correct floor
         ShowPlayerStats(player);
-        ShowRoom(room);
-        ShowMap(room, floor);
+        ShowRoom(room);         // ShowRoom already calls RenderMapPanel
     }
 
     // ── Private static helpers ────────────────────────────────────────────────

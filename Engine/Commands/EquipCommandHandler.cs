@@ -5,6 +5,7 @@ internal sealed class EquipCommandHandler : ICommandHandler
     public void Handle(string argument, CommandContext context)
     {
         context.Equipment.HandleEquip(context.Player, argument);
+        context.Display.ShowRoom(context.CurrentRoom);
     }
 }
 
@@ -13,6 +14,7 @@ internal sealed class UnequipCommandHandler : ICommandHandler
     public void Handle(string argument, CommandContext context)
     {
         context.Equipment.HandleUnequip(context.Player, argument);
+        context.Display.ShowRoom(context.CurrentRoom);
     }
 }
 
