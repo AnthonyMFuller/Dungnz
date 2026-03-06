@@ -34,7 +34,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
 
     // Content panel buffer (markup strings)
     private readonly List<string> _contentLines = new();
-    private string _contentHeader = "📜 Adventure";
+    private string _contentHeader = "Adventure";
     private Color _contentBorderColor = Color.Blue;
     private const int MaxContentLines = 50;
     
@@ -118,7 +118,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         _contentLines.Clear();
         _logHistory.Clear();
         _currentFloor = 1;
-        _contentHeader = "📜 Adventure";
+        _contentHeader = "Adventure";
         _contentBorderColor = Color.Blue;
     }
 
@@ -127,7 +127,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     private void UpdateMapPanel(string markupContent)
     {
         var panel = new Panel(new Markup(markupContent))
-            .Header($"[bold green]🗺  Floor {_currentFloor}[/]")
+            .Header($"[bold green]Floor {_currentFloor}[/]")
             .Border(BoxBorder.Rounded)
             .BorderColor(Color.Green);
         _ctx.UpdatePanel(SpectreLayout.Panels.Map, panel);
@@ -136,7 +136,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     private void UpdateStatsPanel(string markupContent)
     {
         var panel = new Panel(new Markup(markupContent))
-            .Header("[bold cyan]⚔  Player Stats[/]")
+            .Header("[bold cyan]Player Stats[/]")
             .Border(BoxBorder.Rounded)
             .BorderColor(Color.Cyan1);
         _ctx.UpdatePanel(SpectreLayout.Panels.Stats, panel);
@@ -179,7 +179,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     {
         var content = string.Join("\n", _logHistory.TakeLast(MaxLogHistory));
         var panel = new Panel(new Markup(content))
-            .Header("[bold grey]📋 Message Log[/]")
+            .Header("[bold grey]Message Log[/]")
             .Border(BoxBorder.Rounded)
             .BorderColor(Color.Grey);
         _ctx.UpdatePanel(SpectreLayout.Panels.Log, panel);
@@ -566,7 +566,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowCombat(string message)
     {
-        _contentHeader = "⚔  Combat";
+        _contentHeader = "Combat";
         _contentBorderColor = Color.Red;
         _contentLines.Clear();
         AppendContent($"[bold red]═══ {Markup.Escape(message)} ═══[/]");
@@ -800,7 +800,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         }
 
         var panel = new Panel(new Markup(promptContent))
-            .Header("[bold yellow]⌨  Command[/]")
+            .Header("[bold yellow]Command[/]")
             .Border(BoxBorder.Rounded)
             .BorderColor(Color.Yellow);
         _ctx.UpdatePanel(SpectreLayout.Panels.Input, panel);
@@ -992,7 +992,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowCombatStart(Enemy enemy)
     {
-        _contentHeader = "⚔  Combat";
+        _contentHeader = "Combat";
         _contentBorderColor = Color.Red;
         AppendContent("");
         AppendContent("[bold red]⚔ ─── COMBAT ─── ⚔[/]");

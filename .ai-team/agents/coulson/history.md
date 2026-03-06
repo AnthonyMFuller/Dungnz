@@ -3205,3 +3205,34 @@ This keeps the persistent split-screen layout we already built.
 
 **Recommendation:** Add RefreshDisplay(Player, Room, int floor) method that unconditionally updates all three panels. Call at turn boundaries and after combat/level-up/stat changes.
 
+
+
+### 2026-03-06: TUI Border Alignment and Layout Compactness Analysis
+
+**Context:** Anthony reported two visual quality issues with the Spectre.Console TUI: border misalignment on Floor/Stats panels, and excessive vertical space usage.
+
+**Border Alignment Root Cause:**
+- Emojis (🗺, ⚔) in panel headers are 1 character in Spectre markup but render as 2-cell width in terminals
+- Spectre.Console's `Panel.Header()` centers text by string length calculation, not display width
+- This causes 1-2 character misalignment between header text and border frame
+- Affects 4 locations: `SpectreLayoutDisplayService.cs` lines 130, 139 and `SpectreLayout.cs` lines 59, 66
+- **Fix:** Remove emojis from headers (e.g., `Floor N`, `Player Stats`) or add compensating spaces
+
+**Vertical Space Root Cause:**
+- Layout ratios: TopRow=30% (ratio 3), Content=50% (ratio 5), BottomRow=20% (ratio 2)
+- At 50 rows: Top=15, Content=25, Bottom=10
+- Content panel gets half the screen for scrolling narrative text — excessive for typical content density
+- Map/Stats cramped at 15 rows, Log history limited to 10 rows
+- **Fix:** Reduce Content ratio from 5 to 4 (50%→40%), increase BottomRow from 2 to 3 (20%→30%)
+
+**GitHub Issues Created:**
+- #1091: TUI border alignment issues with emoji headers
+- #1092: TUI layout ratios cause excessive vertical space usage
+
+Both issues tagged with `bug` label only (no `tui` label exists in repository).
+
+**Recommended Fixes:**
+- Issue #1091: Remove emojis from panel headers for cross-terminal compatibility
+- Issue #1092: Rebalance ratios to Content=40%, BottomRow=30% to give more log history visibility
+
+**Decision Document:** `.ai-team/decisions/inbox/coulson-tui-layout-compact-borders.md`
