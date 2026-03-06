@@ -4,7 +4,11 @@ internal sealed class EquipCommandHandler : ICommandHandler
 {
     public void Handle(string argument, CommandContext context)
     {
-        context.Equipment.HandleEquip(context.Player, argument);
+        var equipped = context.Equipment.HandleEquip(context.Player, argument);
+        if (!equipped)
+        {
+            context.TurnConsumed = false;
+        }
         context.Display.ShowRoom(context.CurrentRoom);
     }
 }

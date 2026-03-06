@@ -11,6 +11,10 @@ internal sealed class SkillsCommandHandler : ICommandHandler
         {
             HandleLearnSpecificSkill(skillToLearn.Value, context);
         }
+        else
+        {
+            context.Display.ShowRoom(context.CurrentRoom);
+        }
         context.TurnConsumed = false;
     }
 

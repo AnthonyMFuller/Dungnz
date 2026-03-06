@@ -21,7 +21,8 @@ public class EquipmentManager
     }
 
     /// <summary>Finds an item in the player's inventory by name (case-insensitive contains), validates it, and equips it.</summary>
-    public void HandleEquip(Player player, string itemName)
+    /// <returns>True if an item was equipped or an error occurred that still consumed the turn; false if the player cancelled the menu.</returns>
+    public bool HandleEquip(Player player, string itemName)
     {
         if (string.IsNullOrWhiteSpace(itemName))
         {
@@ -29,12 +30,12 @@ public class EquipmentManager
             if (equippable.Count == 0)
             {
                 _display.ShowError("You have no equippable items in your inventory.");
-                return;
+                return true;
             }
             var selected = _display.ShowEquipMenuAndSelect(equippable.AsReadOnly());
-            if (selected == null) return;
+            if (selected == null) { return false; }
             DoEquip(player, selected);
-            return;
+            return true;
         }
 
         var itemNameLower = itemName.ToLowerInvariant();
@@ -52,7 +53,7 @@ public class EquipmentManager
             if (candidates.Count == 0)
             {
                 _display.ShowError($"You don't have '{itemName}' in your inventory.");
-                return;
+                return true;
             }
 
             int bestDistance = candidates.Min(x => x.Distance);
@@ -62,7 +63,7 @@ public class EquipmentManager
             {
                 var names = string.Join(", ", bestCandidates.Select(x => x.Item.Name));
                 _display.ShowError($"Did you mean one of: {names}? Please be more specific.");
-                return;
+                return true;
             }
 
             item = bestCandidates[0].Item;
@@ -72,10 +73,11 @@ public class EquipmentManager
         if (!item.IsEquippable)
         {
             _display.ShowError($"{item.Name} cannot be equipped.");
-            return;
+            return true;
         }
 
         DoEquip(player, item);
+        return true;
     }
 
     private void DoEquip(Player player, Item item)

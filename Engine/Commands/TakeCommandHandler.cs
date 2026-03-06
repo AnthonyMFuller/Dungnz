@@ -26,7 +26,7 @@ internal sealed class TakeCommandHandler : ICommandHandler
                 return;
             }
             var selection = context.Display.ShowTakeMenuAndSelect(roomItems);
-            if (selection == null) { context.TurnConsumed = false; return; }
+            if (selection == null) { context.TurnConsumed = false; context.Display.ShowRoom(context.CurrentRoom); return; }
             switch (selection)
             {
                 case Models.TakeSelection.All:
