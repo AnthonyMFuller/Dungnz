@@ -2234,3 +2234,183 @@ The Spectre.Console TUI layout is restructured from 5 panels to 6 panels:
 - No interface changes (`IDisplayService` untouched)
 - No new tests needed (`[ExcludeFromCodeCoverage]` on display class)
 - All 1674 existing tests pass
+
+---
+
+## 2026-03-04: Display Layer Architecture Review — Issues Filed
+
+**By:** Coulson (Lead)  
+**Requested by:** Anthony (Boss)
+
+Performed deep architecture review of the Spectre display layer. Identified critical bugs in the `PauseAndRun` mechanism that breaks ALL menu interactions when Live display is active.
+
+### Issues Summary
+
+| Issue # | Priority | Title |
+|---------|----------|-------|
+| #1107 | **P0** | All menus crash with InvalidOperationException — PauseAndRun + SelectionPrompt conflict |
+| #1108 | P1 | Content panel not refreshed after menu returns |
+| #1109 | P2 | Race condition between pause/resume events in Live loop |
+| #1110 | P2 | _pauseDepth nesting logic doesn't fully solve nested menu deadlock |
+
+**Root Cause:** Spectre.Console's `AnsiConsole.Live().Start()` acquires `DefaultExclusivityMode._running = 1` for the **entire duration** of the callback. This means:
+
+1. Live display runs in a callback that holds exclusivity lock indefinitely
+2. `PauseAndRun` pauses the Live loop but exclusivity lock is still held
+3. `SelectionPrompt` tries to acquire exclusivity → throws `InvalidOperationException`
+4. Approximately 20 menu methods are affected
+
+**Recommended Fix:** Replace `SelectionPrompt` with custom ReadKey-based menu using `AnsiConsole.Console.Input.ReadKey(intercept: true)` pattern proven in `ReadCommandInput()` (lines 430-466 of SpectreLayoutDisplayService.Input.cs).
+
+**Work Assignment:** Hill (C# Dev), 4-6 hours for P0 + 1 hour for P1.
+
+---
+
+## 2026-03-05: Deep UI Bug Hunt — Menu/Input State Issues
+
+**By:** Coulson  
+**Trigger:** Boss reported player unable to cancel inventory menu and command input frozen afterward  
+**Scope:** Full audit of display service, layout, game loop, and all menu command handlers
+
+### Issues Created
+
+| # | Priority | Title | Assignee |
+|---|----------|-------|----------|
+| #1129 | **P0** | ReadCommandInput null return falls through to Console.ReadLine, corrupting Live display | Hill |
+| #1130 | **P1** | No Escape key handling in ContentPanelMenu — menus cannot be cancelled | Hill |
+| #1131 | **P1** | Content panel not restored after menu cancel (6 handlers affected) | Barton |
+| #1132 | **P1** | Empty inventory command gives zero feedback — silent no-op | Barton |
+| #1133 | **P2** | PauseAndRun uses fragile Thread.Sleep(100) instead of sync handshake | Hill |
+| #1134 | **P2** | PauseAndRun + AnsiConsole.Prompt can deadlock when Live holds exclusivity | Hill |
+| #1135 | **P2** | ContentPanelMenu returns first item when ReadKey returns null | Hill |
+| #1136 | **P2** | EquipmentManager.HandleEquip cancel path doesn't set TurnConsumed = false | Barton |
+| #1137 | **P2** | Shop while(true) loop traps player if merchant stock is empty | Barton |
+| #1138 | **P2** | ForgottenShrine menu labels don't match handler logic | Hill |
+| #1139 | **P2** | ContestedArmory menu labels don't match handler logic | Hill |
+| #1140 | **P3** | Duplicate TierColor/InputTierColor helpers | Hill |
+
+**Root Cause of Reported Bug:** Compound failure of three interacting bugs:
+1. #1130 (Escape key): User presses Escape expecting to cancel — nothing happens. Menu appears stuck.
+2. #1131 (Content panel): Menu closes but Content panel still shows stale menu. Looks broken.
+3. #1129 (Console.ReadLine fallback): If user presses Enter with empty input, ReadCommandInput returns null and falls through to `Console.ReadLine()`, corrupting the Live terminal display.
+
+**Fix Order:** #1129 first (one-line fix), then #1130/#1131/#1132 in same sprint, remaining P2/P3 next sprint.
+
+---
+
+## 2026-03-05: Hill's Menu Bug Analysis
+
+**Analyst:** Hill (C# Dev)  
+**Scope:** Detailed defect analysis of ContentPanelMenu, ContentPanelMenuNullable, ShowSkillTreeMenu, and command handlers
+
+### 13 Bugs Identified
+
+1. **No Escape Key Handling in ContentPanelMenuNullable** — Menu loop only handles Up/Down/Enter, not Escape. Loop continues infinitely consuming keypresses.
+2. **No Escape Key Handling in ContentPanelMenu** — Same issue in non-nullable variant.
+3. **No Escape Key Handling in ShowSkillTreeMenu** — Inline key handling also lacks Escape support.
+4. **Content Panel Not Restored After Menu Exit** — SetContent() was called but no restoration logic. Previous narration is lost.
+5. **No Explicit Content Refresh After Menu Methods** — After SetContent() replaces panel, no refresh to restore current room/narration.
+6. **ReadCommandInput Does Not Verify Live State** — No check if Live display is active before starting ReadKey loop.
+7. **PauseAndRun Can Leave Live Paused on Exception** — Exception handling may leave pause/resume events inconsistent.
+8. **No Q Key Handling for Quick Cancel** — Q key is ignored, not supported as alternative cancel.
+9. **Input Panel Not Cleared Before ReadCommandInput** — Stale text may briefly appear.
+10. **No Detection of Escape vs Cancel Option Selection** — Cannot distinguish player pressing Escape vs navigating to Cancel option.
+11. **No Content Restoration When Escape Is Eventually Added** — Menu exits cleanly but leaves UI garbage.
+12. **Nested Menu Calls May Corrupt Content State** — Multiple SetContent() calls without restoration.
+13. **ReadCommandInput Does Not Re-render After Menu Exits** — Content panel left showing stale menu text.
+
+**Root Causes:**
+- Missing Escape key handling in all in-game menus
+- Content panel state not saved/restored around SetContent() operations
+- No explicit content refresh after menu methods return
+
+**Romanoff's Recommendation:** Add ShowRoom() to each handler's cancel path with explanatory comment for future devs.
+
+---
+
+## 2026-03-04: Romanoff's Display Layer Bug Audit
+
+**Auditor:** Romanoff (Tester)  
+**Scope:** Full display layer audit — all panels, display service, layout, game loop, command handlers, combat display
+
+### 18 Bugs Found
+
+**P0 (Game-Breaking):**
+- **BUG-1:** All in-game menus throw `InvalidOperationException` — exclusive lock held by Live loop prevents SelectionPrompt acquisition
+
+**P1 (Major UX Breaks — 8 bugs):**
+- **BUG-2:** PauseAndRun race condition under load — no acknowledgement signal
+- **BUG-3:** `_resumeLiveEvent` race between sequential PauseAndRun calls
+- **BUG-4:** After `take`, content panel stuck on "📦 Pickup"; room view not restored
+- **BUG-5:** After combat, map still shows enemy `[!]`; content panel stale
+- **BUG-6:** `ShowRoom` spams log "Entered [room]" every hazard tick
+- **BUG-7:** Hazard damage message instantly erased by RefreshDisplay
+- **BUG-8:** `ShowCombatStart` appends to old content — room text bleeds
+- **BUG-9:** After equip/unequip, content panel not restored
+
+**P2 (Notable Defects — 6 bugs):**
+- **BUG-10:** `ShowEquipmentComparison` bypasses `_contentLines` buffer
+- **BUG-11:** `RefreshDisplay` double-renders stats and map panels
+- **BUG-12:** Map ignores `SpecialRoomUsed` for Armory/Library/Shrine
+- **BUG-13:** `ShowCombatStatus` wipes accumulated combat messages
+- **BUG-14:** `ShowFloorBanner` doesn't update map panel header
+- **BUG-15:** `TakeAllItems` flickers through multiple content views
+
+**P3 (Minor/Cosmetic — 3 bugs):**
+- **BUG-16:** `GetRoomDisplayName` returns "Room" for most types
+- **BUG-17:** `ShowIntroNarrative` always returns false
+- **BUG-18:** `ShowRoom` called with stale `_currentFloor` — map shows wrong floor briefly
+
+**Key Impact:** P0 makes every in-game menu crash. Multiple P1s cause content panel to become permanently stale after normal gameplay. Log panel spammed with "Entered room" on every hazard tick.
+
+---
+
+## 2026-03-04: Romanoff's Menu QA Analysis — State Restoration Issues
+
+**Analyst:** Romanoff (Tester)  
+**Finding:** Menu cancellation leaves Content Panel in menu state without restoring room display or calling ShowCommandPrompt(). Command Input panel becomes unusable after cancel.
+
+### Command Handler Analysis
+
+**CRITICAL State Restoration Issues (8 handlers):**
+1. **inventory** — No ShowRoom() on cancel; content stuck
+2. **take** — No ShowRoom() on cancel; content stuck
+3. **use** — No ShowRoom() on cancel; zero ShowRoom() calls in entire handler
+4. **compare** — No ShowRoom() on cancel; zero ShowRoom() calls
+5. **skills** — No ShowRoom() on cancel; zero ShowRoom() calls
+6. **shop** — No ShowRoom() on leave; zero ShowRoom() calls
+7. **sell** — No ShowRoom() on cancel; zero ShowRoom() calls
+8. **craft** — No ShowRoom() on cancel; zero ShowRoom() calls
+
+**MEDIUM Issue:**
+9. **equip/unequip** — EquipCommandHandler DOES call ShowRoom() after return, which masks issue but brief flicker possible
+10. **examine** — Shows item detail/comparison but no ShowRoom() at end
+
+**Commands Doing It Correctly (pattern to follow):**
+- equip, unequip, take, go, descend, load — All call ShowRoom() after operation
+
+### Root Cause of Reported Bug
+
+**Compound failure:**
+1. **#1130 (Escape):** User presses Escape expecting cancel — ignored. Menu appears stuck.
+2. **#1131 (Content):** Menu closes but Content panel shows stale menu. Looks broken.
+3. **#1129 (ReadLine):** If user presses Enter after, ReadCommandInput returns null and falls through to Console.ReadLine(), corrupting Live display.
+
+### Test Coverage Gaps
+
+- CommandHandlerSmokeTests.cs doesn't test menu cancel paths
+- FakeDisplayService stubs menu methods unrealistically
+- ZERO tests for "menu cancel → verify Content Panel restored"
+- ZERO tests for "menu cancel → verify next command works"
+
+### Recommended Fixes
+
+**Option A (Recommended):** Add ShowRoom() to each handler's cancel path. Localized, testable, makes intent explicit.
+
+**Missing Test Scenarios (priority order):**
+1. Inventory command → cancel → verify ShowRoom() called
+2. Use command → cancel → verify state restored
+3. Take command → cancel → verify state restored
+4. Rapid consecutive menu cancel (inventory, cancel, use, cancel, look)
+5. Menu cancel then immediate combat
+
