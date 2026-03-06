@@ -426,6 +426,16 @@ public partial class SpectreLayoutDisplayService
             .Value);
     }
 
+    /// <inheritdoc/>
+    public string? ReadCommandInput()
+    {
+        return PauseAndRun<string?>(() =>
+        {
+            AnsiConsole.Markup("[grey]> [/]");
+            return Console.ReadLine();
+        });
+    }
+
     // ──────────────────────────────────────────────────────────────────────────
     // Pause/resume helpers
     // ──────────────────────────────────────────────────────────────────────────

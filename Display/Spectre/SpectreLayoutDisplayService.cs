@@ -785,20 +785,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowCommandPrompt(Player? player = null)
     {
-        string promptContent;
-        if (player == null)
-        {
-            promptContent = "[grey]> Type a command...[/]";
-        }
-        else
-        {
-            var hpBar = BuildHpBar(player.HP, player.MaxHP, 6);
-            promptContent = $"{hpBar} {player.HP}hp";
-            if (player.MaxMana > 0)
-                promptContent += $"  {BuildMpBar(player.Mana, player.MaxMana, 4)} {player.Mana}mp";
-            promptContent += "\n[grey]> Command:[/]";
-        }
-
+        var promptContent = "[grey]> Command:[/]";
         var panel = new Panel(new Markup(promptContent))
             .Header("[bold yellow]Command[/]")
             .Border(BoxBorder.Rounded)
