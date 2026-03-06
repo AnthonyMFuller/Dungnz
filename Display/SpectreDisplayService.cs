@@ -477,6 +477,14 @@ public sealed class SpectreDisplayService : IDisplayService
     }
 
     /// <inheritdoc/>
+    public string? ReadCommandInput()
+    {
+        return AnsiConsole.Prompt(
+            new TextPrompt<string>("[grey]>[/]")
+                .AllowEmpty());
+    }
+
+    /// <inheritdoc/>
     public void ShowMap(Room currentRoom, int floor = 1)
     {
         // BFS to assign (x, y) coordinates to every reachable room

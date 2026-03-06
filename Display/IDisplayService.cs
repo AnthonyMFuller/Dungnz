@@ -141,6 +141,15 @@ public interface IDisplayService
     void ShowCommandPrompt(Player? player = null);
 
     /// <summary>
+    /// Reads a command line input from the player during normal exploration.
+    /// In implementations with a live rendering loop (e.g., Spectre.Console Live),
+    /// this method pauses the render thread, yields the terminal to the user,
+    /// reads the input, then resumes the render loop to prevent race conditions.
+    /// </summary>
+    /// <returns>The command string entered by the player, or null if input is unavailable.</returns>
+    string? ReadCommandInput();
+
+    /// <summary>
     /// Renders an ASCII mini-map of the dungeon centred on <paramref name="currentRoom"/>,
     /// using BFS to discover all reachable rooms and infer their grid positions from
     /// exit directions. The map shows fog-of-war for unvisited rooms and distinct

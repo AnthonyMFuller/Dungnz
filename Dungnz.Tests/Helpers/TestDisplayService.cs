@@ -82,6 +82,8 @@ public class TestDisplayService : IDisplayService
         return "TestPlayer";
     }
 
+    public string? ReadCommandInput() => null;
+
     public void ShowColoredMessage(string message, string color)
     {
         var plain = StripAnsi(message);

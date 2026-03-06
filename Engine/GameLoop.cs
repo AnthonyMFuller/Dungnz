@@ -250,7 +250,7 @@ public class GameLoop
         while (true)
         {
             _display.ShowCommandPrompt(_player);
-            var input = _input.ReadLine() ?? string.Empty;
+            var input = _display.ReadCommandInput() ?? _input.ReadLine() ?? string.Empty;
             var cmd = CommandParser.Parse(input);
             _context.TurnConsumed = true;
 

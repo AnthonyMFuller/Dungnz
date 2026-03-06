@@ -828,6 +828,12 @@ public class ConsoleDisplayService : IDisplayService
         Console.Write($"] {Systems.ColorCodes.Gray}>{Systems.ColorCodes.Reset} ");
     }
 
+    /// <inheritdoc/>
+    public string? ReadCommandInput()
+    {
+        return _input.ReadLine();
+    }
+
     /// <summary>
     /// Renders an ASCII mini-map by performing a BFS from <paramref name="currentRoom"/>
     /// to infer every reachable room's grid coordinates (current room = 0,0;
