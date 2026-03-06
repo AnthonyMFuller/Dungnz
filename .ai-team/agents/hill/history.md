@@ -2457,3 +2457,71 @@ Fixed 7 display-layer bugs in `SpectreLayoutDisplayService` that caused blank sc
 
 **Build & Test Status:**
 - ✅ `dotnet test --nologo -v q` — 1674/1674 passing
+
+---
+
+### 2026-03-06 — All 18 Display Bugs Fixed (#1107–#1124)
+
+**PR:** #1125 — `fix: resolve all 18 display bugs from deep UI audit`
+**Branch:** `squad/1107-fix-all-display-bugs`
+
+**Issues addressed (all 18 — triaged by Coulson/Romanoff audit):**
+
+#### BUG-1 (#1107) — All in-game menus crash (InvalidOperationException)
+- Root cause: `AnsiConsole.Live().Start()` holds `DefaultExclusivityMode` lock for its entire callback. `PauseAndRun` + `AnsiConsole.Prompt(SelectionPrompt)` throws because the lock is still held while Live loop is blocked.
+- Fix: Added `ContentPanelMenu<T>` and `ContentPanelMenuNullable<T>` private methods in `SpectreLayoutDisplayService.Input.cs`
+- These render menu items to the content panel via `SetContent` (▶ for selected) and use `AnsiConsole.Console.Input.ReadKey(intercept: true)` for navigation — same pattern as `ReadCommandInput`, no exclusivity needed
+- `SelectionPromptValue` and `NullableSelectionPrompt` now dispatch to content-panel menu when `_ctx.IsLiveActive`, fall back to `AnsiConsole.Prompt` for startup (pre-Live) menus
+- `ShowSkillTreeMenu`: `Skill?` is a nullable value type (not `class`), so `ContentPanelMenuNullable<T> where T : class` can't be used. Inlined the navigation loop directly in `ShowSkillTreeMenu` for the Live-active path.
+
+#### BUG-4 (#1111) — After take, content panel stuck on Pickup view
+- `TakeSingleItem` calls `context.Display.ShowRoom(context.CurrentRoom)` after pickup.
+
+#### BUG-5 (#1112) — After combat, map still shows enemy [!]; content stale
+- `GoCommandHandler` calls `context.Display.ShowRoom(context.CurrentRoom)` after `CombatResult.Won` block.
+
+#### BUG-6 (#1113) — ShowRoom spams log "Entered room" every hazard tick
+- `ShowRoom` now checks `isNewRoom = _cachedRoom?.Id != room.Id` before setting `_cachedRoom`. Only logs "Entered <room>" on new-room transitions.
+
+#### BUG-7 (#1114) — Hazard damage message instantly erased by RefreshDisplay
+- `GameLoop.ApplyRoomHazard`: replaced `_display.RefreshDisplay(...)` with `_display.ShowPlayerStats(_player)` in each hazard case. Hazard messages now stay visible.
+
+#### BUG-8 (#1115) — ShowCombatStart doesn't clear content
+- `ShowCombatStart` now calls `_contentLines.Clear()` and sets `_contentHeader = "⚔  Combat"` before appending. Consistent with `ShowCombatStatus`'s check of `_contentHeader == "⚔  Combat"`.
+
+#### BUG-9 (#1116) — After equip/unequip, content panel not restored to room view
+- `EquipCommandHandler.Handle` calls `context.Display.ShowRoom(context.CurrentRoom)` after `HandleEquip`.
+- `UnequipCommandHandler.Handle` calls `context.Display.ShowRoom(context.CurrentRoom)` after `HandleUnequip`.
+
+#### BUG-10 (#1117) — ShowEquipmentComparison bypasses _contentLines
+- When `_ctx.IsLiveActive`, `ShowEquipmentComparison` now clears `_contentLines`, sets `_contentHeader = "⚔  ITEM DROP"` and `_contentBorderColor = Color.Yellow` before calling `_ctx.UpdatePanel`. Keeps internal buffer in sync with what's displayed.
+
+#### BUG-11 (#1118) + BUG-18 (#1124) — RefreshDisplay double-renders; stale floor number
+- `RefreshDisplay` now sets `_currentFloor = floor` FIRST, then calls `ShowPlayerStats(player)`, then `ShowRoom(room)`. Removed redundant `ShowMap(room, floor)` call since `ShowRoom` already calls `RenderMapPanel`.
+
+#### BUG-12 (#1119) — Map ignores SpecialRoomUsed for special rooms
+- `GetMapRoomSymbol` now checks `!r.SpecialRoomUsed` for ContestedArmory, PetrifiedLibrary, and ForgottenShrine. Used rooms fall through to `[+]` Cleared symbol.
+
+#### BUG-13 (#1120) — ShowCombatStatus wipes accumulated combat messages
+- `ShowCombatStatus`: if `_contentHeader == "⚔  Combat"` (combat view already established), appends a `[grey]──[/]` separator then the HP bars line-by-line via `AppendContent`. Only calls `SetContent` on first call to establish the view.
+
+#### BUG-14 (#1121) — ShowFloorBanner doesn't update map panel header
+- `ShowFloorBanner` calls `if (_cachedRoom != null) RenderMapPanel(_cachedRoom)` after setting `_currentFloor`. Map header immediately shows the new floor number.
+
+#### BUG-15 (#1122) — TakeAllItems flickers through N content views
+- `TakeAllItems` no longer calls `ShowItemPickup` per item (which triggers N `SetContent` flashes). Instead appends `ShowMessage("📦 Picked up: {item.Name}")` per item, then calls `ShowRoom` once after the loop.
+
+#### BUG-16 (#1123) — GetRoomDisplayName returns "Room" for most types
+- `GetRoomDisplayName` now has explicit cases for all `RoomType` values: Standard → "Dungeon Room", TrapRoom → "Trap Room", default → "Dungeon Room".
+
+**Key Learnings:**
+- `AnsiConsole.Live().Start()` holds `DefaultExclusivityMode` for the entire callback duration — ANY `AnsiConsole.Prompt()` call while Live is running will throw, even when the loop is blocked/sleeping. `ReadKey(intercept: true)` is the ONLY safe input method while Live is active.
+- `ContentPanelMenu<T>` approach (render to content panel + ReadKey navigation) is the correct pattern for all in-game menus in the Spectre Live display. The `PauseAndRun` mechanism works for non-`SelectionPrompt` usage (e.g., `TextPrompt` via `ReadPlayerName`) only because `ReadPlayerName` is called pre-Live.
+- Nullable value types (e.g., `Skill?` = `Nullable<Skill>`) don't satisfy `where T : class`. When a method needs to return a nullable value type, inline the navigation loop rather than using a generic helper with `where T : class`.
+- `ShowCombatStart` must set `_contentHeader = "⚔  Combat"` (not `"Combat"`) to be consistent with the `ShowCombatStatus` check. String matching between methods is a fragile pattern — worth noting for future refactoring.
+- The `RefreshDisplay` → `ShowRoom` → `RenderMapPanel` chain means `_currentFloor` MUST be set before `ShowRoom` is called, otherwise the map header shows the old floor.
+
+**Build & Test Status:**
+- ✅ `dotnet test --nologo -v q` — 1674/1674 passing
+- ✅ Architecture test `Display_Should_Not_Depend_On_System_Console` — no `System.Console` refs in Display namespace
+- ✅ Build: 0 errors, 0 warnings
