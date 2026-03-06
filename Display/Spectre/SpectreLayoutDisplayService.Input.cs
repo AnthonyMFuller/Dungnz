@@ -85,13 +85,18 @@ public partial class SpectreLayoutDisplayService
     /// <inheritdoc/>
     public string ReadPlayerName()
     {
-        return PauseAndRun(() =>
-            AnsiConsole.Prompt(
+        // Guard: AnsiConsole.Prompt holds the DefaultExclusivityMode lock, which is
+        // already held by Live.Start() when Live is active → deadlock. ReadPlayerName
+        // must be called before StartAsync(). (#1134)
+        if (_ctx.IsLiveActive)
+            throw new InvalidOperationException(
+                "ReadPlayerName() cannot be called while the Live display is active. Call before StartAsync().");
+        return AnsiConsole.Prompt(
                 new TextPrompt<string>("[bold yellow]Enter your character's name:[/]")
                     .DefaultValue("Hero")
                     .Validate(n => !string.IsNullOrWhiteSpace(n)
                         ? ValidationResult.Success()
-                        : ValidationResult.Error("[red]Name cannot be empty.[/]"))));
+                        : ValidationResult.Error("[red]Name cannot be empty.[/]")));
     }
 
     /// <inheritdoc/>
@@ -377,25 +382,27 @@ public partial class SpectreLayoutDisplayService
     /// <inheritdoc/>
     public int? ReadSeed()
     {
-        return PauseAndRun<int?>(() =>
-        {
-            var raw = AnsiConsole.Prompt(
-                new TextPrompt<string>("[bold yellow]Enter a 6-digit seed (100000–999999), or 'cancel':[/]")
-                    .AllowEmpty()
-                    .Validate(s =>
-                    {
-                        if (string.IsNullOrWhiteSpace(s) ||
-                            s.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                            return ValidationResult.Success();
-                        return int.TryParse(s, out int v) && v is >= 100000 and <= 999999
-                            ? ValidationResult.Success()
-                            : ValidationResult.Error("[red]Enter a number between 100000–999999, or 'cancel'.[/]");
-                    }));
+        // Guard: same deadlock risk as ReadPlayerName — must call before StartAsync(). (#1134)
+        if (_ctx.IsLiveActive)
+            throw new InvalidOperationException(
+                "ReadSeed() cannot be called while the Live display is active. Call before StartAsync().");
 
-            if (string.IsNullOrWhiteSpace(raw) || raw.Equals("cancel", StringComparison.OrdinalIgnoreCase))
-                return null;
-            return int.Parse(raw);
-        });
+        var raw = AnsiConsole.Prompt(
+            new TextPrompt<string>("[bold yellow]Enter a 6-digit seed (100000–999999), or 'cancel':[/]")
+                .AllowEmpty()
+                .Validate(s =>
+                {
+                    if (string.IsNullOrWhiteSpace(s) ||
+                        s.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                        return ValidationResult.Success();
+                    return int.TryParse(s, out int v) && v is >= 100000 and <= 999999
+                        ? ValidationResult.Success()
+                        : ValidationResult.Error("[red]Enter a number between 100000–999999, or 'cancel'.[/]");
+                }));
+
+        if (string.IsNullOrWhiteSpace(raw) || raw.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+            return null;
+        return int.Parse(raw);
     }
 
     /// <inheritdoc/>
@@ -527,9 +534,8 @@ public partial class SpectreLayoutDisplayService
         if (isTopLevel)
         {
             _pauseLiveEvent.Set();
-            // Brief wait to allow Live loop to observe pause signal (#1133)
-            // Thread.Sleep is acceptable here as it's a timing buffer, not correctness
-            Thread.Sleep(100);
+            _liveIsPausedEvent.Wait();   // Block until Live confirms it has paused (#1133)
+            _liveIsPausedEvent.Reset();
         }
         try { return action(); }
         finally 

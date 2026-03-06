@@ -31,6 +31,8 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     private readonly ManualResetEventSlim _pauseLiveEvent = new(false);
     private readonly ManualResetEventSlim _resumeLiveEvent = new(false);
     private readonly ManualResetEventSlim _liveExitEvent = new(false);
+    // Signaled by the Live loop when it has actually entered the paused state (#1133)
+    private readonly ManualResetEventSlim _liveIsPausedEvent = new(false);
 
     // Content panel buffer (markup strings)
     private readonly List<string> _contentLines = new();
@@ -85,7 +87,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
                 if (_pauseLiveEvent.IsSet)
                 {
                     _pauseLiveEvent.Reset();
-                    // Signal that Live is paused and prompt can run
+                    _liveIsPausedEvent.Set(); // Confirm to PauseAndRun that we've paused (#1133)
                     _resumeLiveEvent.Wait();
                     _resumeLiveEvent.Reset();
                     ctx.Refresh();
@@ -120,6 +122,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         _currentFloor = 1;
         _contentHeader = "Adventure";
         _contentBorderColor = Color.Blue;
+        _liveIsPausedEvent.Reset();
     }
 
     // ── Panel update helpers ──────────────────────────────────────────────────
