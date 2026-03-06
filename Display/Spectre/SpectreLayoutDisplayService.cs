@@ -341,11 +341,13 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             // Skip cleared rooms from legend (they render as [+], not their type symbol)
             bool isCleared = rL.Visited && rL.Enemy?.HP <= 0;
             
+            // Check merchant independently so it always appears in legend even when the room also has an alive enemy (#1146)
+            if (rL.Merchant != null)                                                           hasMerchant = true;
             if (rL.IsExit && rL.Enemy?.HP > 0)                         { hasBoss     = true; continue; }
             if (rL.IsExit)                                              { hasExit     = true; continue; }
             if (rL.Enemy?.HP > 0)                                       { hasEnemy    = true; continue; }
             if (rL.HasShrine && !rL.ShrineUsed)                        { hasShrine   = true; continue; }
-            if (rL.Merchant != null)                                    { hasMerchant = true; continue; }
+            if (rL.Merchant != null)                                    {                      continue; }
             if (rL.Type == RoomType.TrapRoom && !rL.SpecialRoomUsed)   { hasTrap     = true; continue; }
             if (rL.Type == RoomType.ContestedArmory && !isCleared)     { hasArmory   = true; continue; }
             if (rL.Type == RoomType.PetrifiedLibrary && !isCleared)    { hasLibrary  = true; continue; }
