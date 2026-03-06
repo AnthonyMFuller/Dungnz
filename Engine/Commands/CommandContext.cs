@@ -52,6 +52,12 @@ public class CommandContext
     /// <summary>The floor the player is currently on.</summary>
     public int CurrentFloor { get; set; }
 
+    /// <summary>Maps floor number → entrance room of that floor, enabling ascension back to previous floors.</summary>
+    public Dictionary<int, Room> FloorHistory { get; set; } = new();
+
+    /// <summary>The entrance room of the current floor (grid[0,0] equivalent). Set whenever a new floor is entered.</summary>
+    public Room? FloorEntranceRoom { get; set; }
+
     /// <summary>Set to <see langword="false"/> by a handler when its action should not count as a turn.</summary>
     public bool TurnConsumed { get; set; }
     /// <summary>Set to <see langword="true"/> by a handler when the run has ended.</summary>

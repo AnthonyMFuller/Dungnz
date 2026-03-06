@@ -88,4 +88,17 @@ public static class FloorTransitionNarration
         8 => ToFloor8,
         _ => Array.Empty<string>()
     };
+
+    /// <summary>Returns brief atmospheric lines shown when the player ascends back to a previous floor.</summary>
+    public static string[] GetAscendSequence(int targetFloor) => targetFloor switch
+    {
+        1 => ["The suffocating dark lifts. The familiar smell of surface stone reaches you.", "Your footsteps echo lighter here. You remember this place."],
+        2 => ["The air grows cooler and less oppressive as you climb.", "The torch smoke is thinner. The sounds from below fade behind you."],
+        3 => ["The iron smell recedes. A colder silence wraps around you.", "You leave the warmth of the forge levels behind."],
+        4 => ["The dead air of the sealed crypts eases. Something feels less wrong.", "Reality snaps back into place, just slightly."],
+        5 => ["The necromantic hum fades as you ascend. The bones no longer arranged.", "The scorched air gives way to something colder, older."],
+        6 => ["The unnatural cold retreats. You are leaving the Lich domain.", "A fragment of warmth returns, though the dark remains."],
+        7 => ["The lava glow fades to darkness behind you. The ground cools beneath your feet.", "The sulfur smell dissipates. The architecture grows less deliberate."],
+        _ => Array.Empty<string>()
+    };
 }

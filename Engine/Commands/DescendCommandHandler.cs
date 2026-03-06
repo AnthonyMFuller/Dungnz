@@ -29,6 +29,10 @@ internal sealed class DescendCommandHandler : ICommandHandler
             return;
         }
 
+        // Store current floor's entrance so we can ascend back to it
+        if (context.FloorEntranceRoom != null)
+            context.FloorHistory[context.CurrentFloor] = context.FloorEntranceRoom;
+
         context.CurrentFloor++;
         context.Stats.FloorsVisited = context.CurrentFloor;
         if (context.Player.TempAttackBonus > 0) { context.Player.ModifyAttack(-context.Player.TempAttackBonus); context.Player.TempAttackBonus = 0; }
@@ -43,6 +47,7 @@ internal sealed class DescendCommandHandler : ICommandHandler
         var gen = new DungeonGenerator(floorSeed, context.AllItems);
         var (newStart, _) = gen.Generate(playerLevel: context.Player.Level, floorMultiplier: floorMult, difficulty: context.Difficulty, floor: context.CurrentFloor);
         context.CurrentRoom = newStart;
+        context.FloorEntranceRoom = newStart;
         context.CurrentRoom.Visited = true;
         var descendVariant = DungeonVariant.ForFloor(context.CurrentFloor);
         context.Display.ShowFloorBanner(context.CurrentFloor, FinalFloor, descendVariant);
