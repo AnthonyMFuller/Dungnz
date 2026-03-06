@@ -127,6 +127,7 @@ public class GameLoop
             [CommandType.Load]        = new LoadCommandHandler(),
             [CommandType.ListSaves]   = new ListSavesCommandHandler(),
             [CommandType.Descend]     = new DescendCommandHandler(),
+            [CommandType.Ascend]      = new AscendCommandHandler(),
             [CommandType.Map]         = new MapCommandHandler(),
             [CommandType.Shop]        = new ShopCommandHandler(),
             [CommandType.Sell]        = new SellCommandHandler(),
@@ -170,6 +171,8 @@ public class GameLoop
         _currentRoom.Visited = true;
 
         InitContext();
+        _context.FloorHistory[1] = startRoom;
+        _context.FloorEntranceRoom = startRoom;
         RunLoop();
     }
 
@@ -201,6 +204,10 @@ public class GameLoop
         _currentRoom.Visited = true;
 
         InitContext();
+        // Restore floor history from saved state
+        foreach (var (floor, room) in state.FloorHistory)
+            _context.FloorHistory[floor] = room;
+        _context.FloorEntranceRoom = state.FloorEntranceRoom ?? state.CurrentRoom;
         RunLoop();
     }
 

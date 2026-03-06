@@ -63,36 +63,21 @@ public static class SaveSystem
             UnlockedSkills = state.Player.Skills.UnlockedSkills.Select(s => s.ToString()).ToList(),
             StatusEffects = state.Player.ActiveEffects.ToList(),
             Version = SaveData.CurrentVersion,
-            Rooms = roomMap.Values.Select(r => new RoomSaveData
-            {
-                Id = r.Id,
-                Description = r.Description,
-                ExitIds = r.Exits.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Id),
-                Enemy = r.Enemy,
-                Items = r.Items.ToList(),
-                IsExit = r.IsExit,
-                Visited = r.Visited,
-                Looted = r.Looted,
-                HasShrine = r.HasShrine,
-                ShrineUsed = r.ShrineUsed,
-                Merchant = r.Merchant,
-                Hazard = r.Hazard,
-                RoomType = r.Type,
-                SpecialRoomUsed = r.SpecialRoomUsed,
-                BlessedHealApplied = r.BlessedHealApplied,
-                EnvironmentalHazard = r.EnvironmentalHazard,
-                Trap = r.Trap,
-                State = r.State,
-                BossState = r.Enemy is Dungnz.Systems.Enemies.DungeonBoss boss
-                    ? new BossSaveState
-                    {
-                        IsEnraged = boss.IsEnraged,
-                        IsCharging = boss.IsCharging,
-                        ChargeActive = boss.ChargeActive
-                    }
-                    : null
-            }).ToList()
+            Rooms = roomMap.Values.Select(ToRoomSaveData).ToList(),
+            FloorEntranceRoomId = state.FloorEntranceRoom?.Id
         };
+
+        if (state.FloorHistory.Count > 0)
+        {
+            saveData.FloorHistoryRooms = new();
+            saveData.FloorHistoryEntranceIds = new();
+            foreach (var (floor, entranceRoom) in state.FloorHistory)
+            {
+                var floorRooms = CollectRooms(entranceRoom);
+                saveData.FloorHistoryRooms[floor] = floorRooms.Values.Select(ToRoomSaveData).ToList();
+                saveData.FloorHistoryEntranceIds[floor] = entranceRoom.Id;
+            }
+        }
 
         Directory.CreateDirectory(SaveDirectory);
         var finalPath = Path.Combine(SaveDirectory, $"{saveName}.json");
@@ -158,6 +143,7 @@ public static class SaveSystem
                     Description = roomData.Description ?? string.Empty,
                     Enemy = roomData.Enemy,
                     IsExit = roomData.IsExit,
+                    IsEntrance = roomData.IsEntrance,
                     Visited = roomData.Visited,
                     Looted = roomData.Looted,
                     HasShrine = roomData.HasShrine,
@@ -214,7 +200,9 @@ public static class SaveSystem
             if (saveData.StatusEffects != null)
                 saveData.Player.ActiveEffects.AddRange(saveData.StatusEffects);
 
-            return new GameState(saveData.Player, currentRoom, saveData.CurrentFloor, saveData.Seed, saveData.Difficulty);
+            return new GameState(saveData.Player, currentRoom, saveData.CurrentFloor, saveData.Seed, saveData.Difficulty,
+                floorHistory: RestoreFloorHistory(saveData),
+                floorEntranceRoom: saveData.FloorEntranceRoomId.HasValue && roomDict.TryGetValue(saveData.FloorEntranceRoomId.Value, out var entrRoom) ? entrRoom : null);
         }
         catch (JsonException ex)
         {
@@ -262,6 +250,87 @@ public static class SaveSystem
         return visited;
     }
 
+    private static RoomSaveData ToRoomSaveData(Room r) => new()
+    {
+        Id = r.Id,
+        Description = r.Description,
+        ExitIds = r.Exits.ToDictionary(kvp => kvp.Key, kvp => kvp.Value.Id),
+        Enemy = r.Enemy,
+        Items = r.Items.ToList(),
+        IsExit = r.IsExit,
+        IsEntrance = r.IsEntrance,
+        Visited = r.Visited,
+        Looted = r.Looted,
+        HasShrine = r.HasShrine,
+        ShrineUsed = r.ShrineUsed,
+        Merchant = r.Merchant,
+        Hazard = r.Hazard,
+        RoomType = r.Type,
+        SpecialRoomUsed = r.SpecialRoomUsed,
+        BlessedHealApplied = r.BlessedHealApplied,
+        EnvironmentalHazard = r.EnvironmentalHazard,
+        Trap = r.Trap,
+        State = r.State,
+        BossState = r.Enemy is Dungnz.Systems.Enemies.DungeonBoss boss
+            ? new BossSaveState
+            {
+                IsEnraged = boss.IsEnraged,
+                IsCharging = boss.IsCharging,
+                ChargeActive = boss.ChargeActive
+            }
+            : null
+    };
+
+    private static Dictionary<int, Room> RestoreFloorHistory(SaveData data)
+    {
+        var floorHistory = new Dictionary<int, Room>();
+        if (data.FloorHistoryRooms == null || data.FloorHistoryEntranceIds == null)
+            return floorHistory;
+
+        foreach (var (floor, roomList) in data.FloorHistoryRooms)
+        {
+            var floorRoomDict = new Dictionary<Guid, Room>();
+            foreach (var roomData in roomList)
+            {
+                var room = new Room
+                {
+                    Id = roomData.Id,
+                    Description = roomData.Description ?? string.Empty,
+                    Enemy = roomData.Enemy,
+                    IsExit = roomData.IsExit,
+                    IsEntrance = roomData.IsEntrance,
+                    Visited = roomData.Visited,
+                    Looted = roomData.Looted,
+                    HasShrine = roomData.HasShrine,
+                    ShrineUsed = roomData.ShrineUsed,
+                    Merchant = roomData.Merchant,
+                    Hazard = roomData.Hazard,
+                    Type = roomData.RoomType,
+                    SpecialRoomUsed = roomData.SpecialRoomUsed,
+                    BlessedHealApplied = roomData.BlessedHealApplied,
+                    EnvironmentalHazard = roomData.EnvironmentalHazard,
+                    Trap = roomData.Trap,
+                    State = roomData.State
+                };
+                foreach (var item in roomData.Items ?? new List<Item>())
+                    room.AddItem(item);
+                floorRoomDict[room.Id] = room;
+            }
+            foreach (var roomData in roomList)
+            {
+                if (roomData.ExitIds == null) continue;
+                var room = floorRoomDict[roomData.Id];
+                foreach (var exit in roomData.ExitIds)
+                    if (floorRoomDict.TryGetValue(exit.Value, out var targetRoom))
+                        room.Exits[exit.Key] = targetRoom;
+            }
+            if (data.FloorHistoryEntranceIds.TryGetValue(floor, out var entranceId) &&
+                floorRoomDict.TryGetValue(entranceId, out var entranceRoom))
+                floorHistory[floor] = entranceRoom;
+        }
+        return floorHistory;
+    }
+
     /// <summary>
     /// Recursively migrates a SaveData object from any old version to the latest version.
     /// Throws <see cref="InvalidDataException"/> if the save version is unknown or unsupported.
@@ -271,6 +340,7 @@ public static class SaveSystem
         return data.Version switch
         {
             SaveData.CurrentVersion => data,
+            1 => MigrateToLatest(MigrateV1ToV2(data)),
             0 => MigrateToLatest(MigrateV0ToV1(data)),
             _ => throw new InvalidDataException($"Unknown save version {data.Version}. Expected {SaveData.CurrentVersion} or earlier.")
         };
@@ -288,6 +358,13 @@ public static class SaveSystem
         // UnlockedSkills defaults to empty (already the field default).
         // StatusEffects defaults to empty (already the field default).
         data.Version = 1;
+        return data;
+    }
+
+    private static SaveData MigrateV1ToV2(SaveData data)
+    {
+        // V1 -> V2: Added FloorHistoryRooms, FloorHistoryEntranceIds, FloorEntranceRoomId (nullable, default null = empty).
+        data.Version = 2;
         return data;
     }
 }
@@ -313,6 +390,12 @@ public class GameState
     /// <summary>The difficulty level chosen when this run began.</summary>
     public Difficulty Difficulty { get; }
 
+    /// <summary>Maps floor number → entrance room of that floor, enabling ascension back to previous floors.</summary>
+    public Dictionary<int, Room> FloorHistory { get; }
+
+    /// <summary>The entrance room of the current floor. Used to restore FloorEntranceRoom on load.</summary>
+    public Room? FloorEntranceRoom { get; }
+
     /// <summary>
     /// Creates a new game state with the given player, current room, and floor number.
     /// </summary>
@@ -321,21 +404,25 @@ public class GameState
     /// <param name="currentFloor">The floor number the player is currently on. Defaults to 1.</param>
     /// <param name="seed">The seed used to generate the dungeon. Defaults to null.</param>
     /// <param name="difficulty">The difficulty level for this run. Defaults to Normal.</param>
+    /// <param name="floorHistory">The floor history mapping floor numbers to entrance rooms.</param>
+    /// <param name="floorEntranceRoom">The entrance room of the current floor.</param>
     /// <exception cref="ArgumentNullException">Thrown when either <paramref name="player"/> or <paramref name="currentRoom"/> is <see langword="null"/>.</exception>
-    public GameState(Player player, Room currentRoom, int currentFloor = 1, int? seed = null, Difficulty difficulty = Difficulty.Normal)
+    public GameState(Player player, Room currentRoom, int currentFloor = 1, int? seed = null, Difficulty difficulty = Difficulty.Normal, Dictionary<int, Room>? floorHistory = null, Room? floorEntranceRoom = null)
     {
         Player = player ?? throw new ArgumentNullException(nameof(player));
         CurrentRoom = currentRoom ?? throw new ArgumentNullException(nameof(currentRoom));
         CurrentFloor = currentFloor;
         Seed = seed;
         Difficulty = difficulty;
+        FloorHistory = floorHistory ?? new();
+        FloorEntranceRoom = floorEntranceRoom;
     }
 }
 
 internal class SaveData
 {
     /// <summary>Current save format version.</summary>
-    public const int CurrentVersion = 1;
+    public const int CurrentVersion = 2;
 
     public required Player Player { get; init; }
     public required Guid CurrentRoomId { get; init; }
@@ -356,7 +443,16 @@ internal class SaveData
     /// <summary>The difficulty level selected when this run was started.</summary>
     public Difficulty Difficulty { get; init; } = Difficulty.Normal;
 
-    /// <summary>Save format version. 0 = pre-v3 legacy save; 1 = v3+.</summary>
+    /// <summary>Floor history: maps floor number → list of rooms for that floor (entrance-reachable graph).</summary>
+    public Dictionary<int, List<RoomSaveData>>? FloorHistoryRooms { get; set; }
+
+    /// <summary>Floor history: maps floor number → entrance room ID for that floor.</summary>
+    public Dictionary<int, Guid>? FloorHistoryEntranceIds { get; set; }
+
+    /// <summary>The entrance room ID of the current floor, or null if not tracked.</summary>
+    public Guid? FloorEntranceRoomId { get; set; }
+
+    /// <summary>Save format version. 0 = pre-v3 legacy save; 1 = v3+; 2 = floor ascension.</summary>
     [System.Text.Json.Serialization.JsonPropertyName("version")]
     public int Version { get; set; }
 }
@@ -369,6 +465,7 @@ internal class RoomSaveData
     public Enemy? Enemy { get; init; }
     public required List<Item> Items { get; init; }
     public required bool IsExit { get; init; }
+    public bool IsEntrance { get; init; }
     public required bool Visited { get; init; }
     public required bool Looted { get; init; }
     public bool HasShrine { get; init; }

@@ -114,6 +114,12 @@ public class Room
     public bool IsExit { get; set; }
 
     /// <summary>
+    /// Gets or sets whether this room is the entrance to this floor (i.e. the starting room).
+    /// Used by the ascend command to verify the player is at the correct room to go back up.
+    /// </summary>
+    public bool IsEntrance { get; set; }
+
+    /// <summary>
     /// Gets or sets whether the player has previously entered this room. Used to suppress the
     /// full room description on re-entry and to render the mini-map.
     /// </summary>

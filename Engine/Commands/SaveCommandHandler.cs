@@ -13,7 +13,7 @@ internal sealed class SaveCommandHandler : ICommandHandler
             context.Display.ShowError("Save as what? Usage: SAVE <name>");
             return;
         }
-        SaveSystem.SaveGame(new GameState(context.Player, context.CurrentRoom, context.CurrentFloor, context.Seed, context.DifficultyLevel), argument);
+        SaveSystem.SaveGame(new GameState(context.Player, context.CurrentRoom, context.CurrentFloor, context.Seed, context.DifficultyLevel, context.FloorHistory, context.FloorEntranceRoom), argument);
         context.Logger.LogInformation("Game saved to {SaveFile}", argument);
         context.Display.ShowMessage($"Game saved as '{argument}'.");
     }

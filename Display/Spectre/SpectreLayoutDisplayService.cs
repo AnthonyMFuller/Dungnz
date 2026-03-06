@@ -241,9 +241,9 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     // ── Map rendering helpers ─────────────────────────────────────────────────
 
     private void RenderMapPanel(Room currentRoom) =>
-        UpdateMapPanel(BuildMapMarkup(currentRoom));
+        UpdateMapPanel(BuildMapMarkup(currentRoom, _currentFloor));
 
-    private static string BuildMapMarkup(Room currentRoom)
+    private static string BuildMapMarkup(Room currentRoom, int currentFloor = 1)
     {
         // BFS to assign (x, y) coordinates to every reachable room
         var positions = new Dictionary<Room, (int x, int y)>();
@@ -301,7 +301,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
                     sb.Append(x < maxX ? "    " : "   ");
                     continue;
                 }
-                sb.Append(GetMapRoomSymbol(r, currentRoom));
+                sb.Append(GetMapRoomSymbol(r, currentRoom, currentFloor));
                 if (x < maxX)
                 {
                     bool east = r.Exits.ContainsKey(Direction.East) && grid.ContainsKey((x + 1, y));
@@ -330,7 +330,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         bool hasBoss = false, hasEnemy = false, hasExit = false, hasShrine = false;
         bool hasMerchant = false, hasTrap = false, hasArmory = false, hasLibrary = false;
         bool hasFShrine = false, hasBlessed = false, hasHazard = false, hasDark = false;
-        bool hasCleared = false, hasUnknown = false;
+        bool hasCleared = false, hasUnknown = false, hasEntrance = false;
 
         foreach (var kv in grid)
         {
@@ -343,6 +343,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             
             // Check merchant independently so it always appears in legend even when the room also has an alive enemy (#1146)
             if (rL.Merchant != null)                                                           hasMerchant = true;
+            if (rL.IsEntrance && currentFloor > 1)                     { hasEntrance = true; continue; }
             if (rL.IsExit && rL.Enemy?.HP > 0)                         { hasBoss     = true; continue; }
             if (rL.IsExit)                                              { hasExit     = true; continue; }
             if (rL.Enemy?.HP > 0)                                       { hasEnemy    = true; continue; }
@@ -358,6 +359,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             hasCleared = true;
         }
 
+        if (hasEntrance) entries.Add("[blue][[^]][/] Entrance");
         if (hasBoss)     entries.Add("[bold red][[B]][/] Boss");
         if (hasEnemy)    entries.Add("[red][[!]][/] Enemy");
         if (hasExit)     entries.Add("[white][[E]][/] Exit");
@@ -385,10 +387,11 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         return sb.ToString().TrimEnd();
     }
 
-    private static string GetMapRoomSymbol(Room r, Room currentRoom)
+    private static string GetMapRoomSymbol(Room r, Room currentRoom, int currentFloor = 1)
     {
         if (r == currentRoom)                                                    return "[bold yellow][[@]][/]";
         if (!r.Visited)                                                          return "[grey][[?]][/]";
+        if (r.IsEntrance && currentFloor > 1)                                   return "[blue][[^]][/]";
         if (r.IsExit && r.Enemy != null && r.Enemy.HP > 0)                      return "[bold red][[B]][/]";
         if (r.IsExit)                                                            return "[white][[E]][/]";
         if (r.Enemy != null && r.Enemy.HP > 0)                                  return "[red][[!]][/]";
@@ -834,7 +837,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         var sb = new StringBuilder();
         sb.AppendLine("[grey]── Navigation ──[/]");
         sb.AppendLine("[yellow]go [[n|s|e|w]][/]  Move   [grey]│[/]  [yellow]look[/]  Redescribe   [grey]│[/]  [yellow]map[/]  Mini-map");
-        sb.AppendLine("[yellow]descend[/]  Descend to the next floor");
+        sb.AppendLine("[yellow]descend[/]  Descend to the next floor   [grey]│[/]  [yellow]ascend[/]  Return to previous floor");
         sb.AppendLine();
         sb.AppendLine("[grey]── Items ──[/]");
         sb.AppendLine("[yellow]take [[item]][/]   [yellow]use [[item]][/]   [yellow]equip [[item]][/]   [yellow]examine [[target]][/]");

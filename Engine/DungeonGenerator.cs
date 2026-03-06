@@ -121,6 +121,7 @@ public class DungeonGenerator
         // Set start and exit rooms
         var startRoom = grid[0, 0];
         var exitRoom = grid[height - 1, width - 1];
+        startRoom.IsEntrance = true;
         exitRoom.IsExit = true;
         exitRoom.Description = "A grand chamber with ornate pillars and a massive stone door leading to freedom.";
 
