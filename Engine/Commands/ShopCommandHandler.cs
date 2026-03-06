@@ -18,13 +18,6 @@ internal sealed class ShopCommandHandler : ICommandHandler
         // Keep the shop open in a loop so the player can sell then buy (or vice versa)
         while (true)
         {
-            if (merchant.Stock.Count == 0)
-            {
-                context.Display.ShowMessage("The merchant has nothing for sale.");
-                context.Display.ShowMessage(context.Narration.Pick(MerchantNarration.NoBuy));
-                return;
-            }
-            
             context.Display.ShowMessage($"=== MERCHANT SHOP ({merchant.Name}) ===");
             context.Display.ShowMessage(MerchantNarration.GetFloorGreeting(context.CurrentFloor));
             var shopChoice = context.Display.ShowShopWithSellAndSelect(
@@ -46,6 +39,12 @@ internal sealed class ShopCommandHandler : ICommandHandler
             // shopChoice is 1-based item index
             if (shopChoice >= 1)
             {
+                if (merchant.Stock.Count == 0)
+                {
+                    context.Display.ShowMessage("The merchant has nothing for sale.");
+                    context.Display.ShowMessage(context.Narration.Pick(MerchantNarration.NoBuy));
+                    return;
+                }
                 if (shopChoice > merchant.Stock.Count)
                 {
                     context.Display.ShowMessage("That item is no longer available.");
