@@ -16,10 +16,26 @@
 | Name | Role | Charter | Status |
 |------|------|---------|--------|
 | Coulson | Lead | .ai-team/agents/coulson/charter.md | ✅ Active |
-| Hill | C# Dev | .ai-team/agents/hill/charter.md | ✅ Active |
-| Barton | Systems Dev | .ai-team/agents/barton/charter.md | ✅ Active |
-| Romanoff | Tester | .ai-team/agents/romanoff/charter.md | ✅ Active |
+| Hill | C# Dev (P1 Gameplay Focus) | .ai-team/agents/hill/charter.md | ✅ Active |
+| Barton | Systems Dev / Display Specialist (Trial) | .ai-team/agents/barton/charter.md | ✅ Active |
+| Romanoff | QA Engineer | .ai-team/agents/romanoff/charter.md | ✅ Active |
 | Fury | Content Writer | .ai-team/agents/fury/charter.md | ✅ Active |
 | Fitz | DevOps | .ai-team/agents/fitz/charter.md | ✅ Active |
 | Scribe | Session Logger | .ai-team/agents/scribe/charter.md | ✅ Active |
 | Ralph | Work Monitor | — | 🔄 Monitor |
+
+## Role Updates (2026-03-06)
+
+The following role changes are effective immediately as of the Design Review ceremony:
+
+| Agent | Previous Role | New Role | Change |
+|-------|--------------|----------|--------|
+| Romanoff | Tester | QA Engineer | Promoted — full PR review mandate, can block merges, owns 80% coverage gate |
+| Barton | Systems Dev | Systems Dev + Display Specialist (Trial) | 2-week trial owning `Display/` + all SpectreLayoutDisplayService bugs |
+| Hill | C# Dev (general) | C# Dev (P1 Gameplay Focus) | Refocused on P1 bugs; explicitly removed from `Display/` ownership |
+| Fury | Content Writer | Content Writer (Pipeline Active) | Content pipeline activated — recipes, items, enemies, narration |
+| Fitz | DevOps | DevOps | Assigned to fix known `squad-release.yml` CI/CD issue |
+
+### Process Change
+All PRs now require Romanoff review before merge. Direct pushes to master are prohibited.
+Flow: **Issue → Branch → PR → Romanoff review → merge**
