@@ -1,3 +1,4 @@
+using System.Text;
 using Dungnz.Engine;
 using Dungnz.Models;
 using Dungnz.Systems;
@@ -48,7 +49,12 @@ public partial class SpectreLayoutDisplayService
             .BorderColor(Color.Yellow);
 
         if (_ctx.IsLiveActive)
+        {
+            _contentLines.Clear();
+            _contentHeader = "⚔  ITEM DROP";
+            _contentBorderColor = Color.Yellow;
             _ctx.UpdatePanel(SpectreLayout.Panels.Content, panel);
+        }
         else
             AnsiConsole.Write(panel);
     }
@@ -415,6 +421,31 @@ public partial class SpectreLayoutDisplayService
         if (opts.Count == 0) return null;
         opts.Add(("← Cancel", null));
 
+        if (_ctx.IsLiveActive)
+        {
+            int selected = 0;
+            while (true)
+            {
+                var sb = new StringBuilder();
+                for (int i = 0; i < opts.Count; i++)
+                {
+                    if (i == selected)
+                        sb.AppendLine($"[bold yellow]▶ {opts[i].Label}[/]");
+                    else
+                        sb.AppendLine($"  {opts[i].Label}");
+                }
+                SetContent(sb.ToString().TrimEnd(), "[bold]✨ Skill Tree[/]");
+                var key = AnsiConsole.Console.Input.ReadKey(intercept: true);
+                if (key == null) return opts[selected].Value;
+                switch (key.Value.Key)
+                {
+                    case System.ConsoleKey.UpArrow:   selected = (selected - 1 + opts.Count) % opts.Count; break;
+                    case System.ConsoleKey.DownArrow: selected = (selected + 1) % opts.Count; break;
+                    case System.ConsoleKey.Enter:     return opts[selected].Value;
+                }
+            }
+        }
+
         return PauseAndRun(() =>
             AnsiConsole.Prompt(
                 new SelectionPrompt<(string Label, Skill? Value)>()
@@ -505,36 +536,118 @@ public partial class SpectreLayoutDisplayService
         }
     }
 
-    // Generic selection prompt wrappers that use PauseAndRun
+    // ──────────────────────────────────────────────────────────────────────────
+    // Content-panel menu (safe while Live is active — no exclusivity conflict)
+    // ──────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Renders a navigable menu to the content panel and reads keys directly,
+    /// avoiding the <see cref="Spectre.Console.DefaultExclusivityMode"/> lock
+    /// held by the Live display loop.
+    /// </summary>
+    private T ContentPanelMenu<T>(string title, IReadOnlyList<(string Label, T Value)> items)
+    {
+        int selected = 0;
+        while (true)
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (i == selected)
+                    sb.AppendLine($"[bold yellow]▶ {items[i].Label}[/]");
+                else
+                    sb.AppendLine($"  {items[i].Label}");
+            }
+            SetContent(sb.ToString().TrimEnd(), title);
+
+            var key = AnsiConsole.Console.Input.ReadKey(intercept: true);
+            if (key == null) return items[selected].Value;
+            switch (key.Value.Key)
+            {
+                case System.ConsoleKey.UpArrow:
+                    selected = (selected - 1 + items.Count) % items.Count;
+                    break;
+                case System.ConsoleKey.DownArrow:
+                    selected = (selected + 1) % items.Count;
+                    break;
+                case System.ConsoleKey.Enter:
+                    return items[selected].Value;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Nullable variant of <see cref="ContentPanelMenu{T}"/>.
+    /// The last item whose <c>Value</c> is <see langword="null"/> acts as a
+    /// "Go Back / Cancel" option.
+    /// </summary>
+    private T? ContentPanelMenuNullable<T>(string title, IReadOnlyList<(string Label, T? Value)> items)
+        where T : class
+    {
+        int selected = 0;
+        while (true)
+        {
+            var sb = new StringBuilder();
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (i == selected)
+                    sb.AppendLine($"[bold yellow]▶ {items[i].Label}[/]");
+                else
+                    sb.AppendLine($"  {items[i].Label}");
+            }
+            SetContent(sb.ToString().TrimEnd(), title);
+
+            var key = AnsiConsole.Console.Input.ReadKey(intercept: true);
+            if (key == null) return items[selected].Value;
+            switch (key.Value.Key)
+            {
+                case System.ConsoleKey.UpArrow:
+                    selected = (selected - 1 + items.Count) % items.Count;
+                    break;
+                case System.ConsoleKey.DownArrow:
+                    selected = (selected + 1) % items.Count;
+                    break;
+                case System.ConsoleKey.Enter:
+                    return items[selected].Value;
+            }
+        }
+    }
+
+    // Generic selection prompt wrappers — use content-panel menu when Live is
+    // active (safe), fall back to AnsiConsole.Prompt for startup (pre-Live).
 
     private T SelectionPromptValue<T>(string title, IEnumerable<(string Label, T Value)> options)
         where T : notnull
     {
         var list = options.ToList();
-        return PauseAndRun(() =>
-            AnsiConsole.Prompt(
-                new SelectionPrompt<(string Label, T Value)>()
-                    .Title(title)
-                    .PageSize(15)
-                    .UseConverter(o => o.Label)
-                    .HighlightStyle(new Style(Color.Yellow))
-                    .AddChoices(list))
-            .Value);
+        if (_ctx.IsLiveActive)
+            return ContentPanelMenu(title, list);
+
+        return AnsiConsole.Prompt(
+            new SelectionPrompt<(string Label, T Value)>()
+                .Title(title)
+                .PageSize(15)
+                .UseConverter(o => o.Label)
+                .HighlightStyle(new Style(Color.Yellow))
+                .AddChoices(list))
+            .Value;
     }
 
     private T? NullableSelectionPrompt<T>(string title, IEnumerable<(string Label, T? Value)> options)
         where T : class
     {
         var list = options.ToList();
-        return PauseAndRun(() =>
-            AnsiConsole.Prompt(
-                new SelectionPrompt<(string Label, T? Value)>()
-                    .Title(title)
-                    .PageSize(15)
-                    .UseConverter(o => o.Label)
-                    .HighlightStyle(new Style(Color.Yellow))
-                    .AddChoices(list))
-            .Value);
+        if (_ctx.IsLiveActive)
+            return ContentPanelMenuNullable(title, list);
+
+        return AnsiConsole.Prompt(
+            new SelectionPrompt<(string Label, T? Value)>()
+                .Title(title)
+                .PageSize(15)
+                .UseConverter(o => o.Label)
+                .HighlightStyle(new Style(Color.Yellow))
+                .AddChoices(list))
+            .Value;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
@@ -612,6 +725,7 @@ public partial class SpectreLayoutDisplayService
     /// <summary>Returns a display name for the given room based on its type.</summary>
     private static string GetRoomDisplayName(Room room) => room.Type switch
     {
+        RoomType.Standard         => "Dungeon Room",
         RoomType.Dark             => "Dark Chamber",
         RoomType.Scorched         => "Scorched Hall",
         RoomType.Flooded          => "Flooded Passage",
@@ -620,6 +734,7 @@ public partial class SpectreLayoutDisplayService
         RoomType.ForgottenShrine  => "Forgotten Shrine",
         RoomType.PetrifiedLibrary => "Petrified Library",
         RoomType.ContestedArmory  => "Contested Armory",
-        _                         => "Room",
+        RoomType.TrapRoom         => "Trap Room",
+        _                         => "Dungeon Room",
     };
 }

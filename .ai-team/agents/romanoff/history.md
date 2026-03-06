@@ -1330,3 +1330,45 @@ With `SelfHealCooldown=1` and check-first: fires on turn 2 (correct, matching as
 5. Consolidate duplicate TierColor/PrimaryStatLabel methods
 6. Add nesting counter to pause/resume to prevent double-pause deadlock
 
+
+---
+
+### 2026-06-10 — Full Display Layer Bug Audit (P0 confirmed + 17 additional bugs)
+
+**Task:** Deep audit of the entire display layer. User reported menus cause element duplication and `take` command breaks the UI.  
+**Output:** `.ai-team/decisions/inbox/romanoff-display-bug-audit.md`
+
+**Total bugs found: 18 (1 P0, 8 P1, 6 P2, 3 P3)**
+
+#### P0 — Game-Breaking
+- **BUG-1:** ALL ~16 in-game interactive menus throw `InvalidOperationException` when Live is running. `AnsiConsole.Live().Start()` holds Spectre's `DefaultExclusivityMode._running = 1` flag for the entire callback lifetime (including while blocked on `_resumeLiveEvent.Wait()`). `AnsiConsole.Prompt(SelectionPrompt)` tries to acquire the same lock → throws. `PauseAndRun`'s pause mechanism does NOT release the lock. **Every single combat turn crashes.** Every take menu, sell, equip, shop, shrine, trap, armory, ability, level-up menu crashes.
+  - **Fix:** Replace all `AnsiConsole.Prompt(SelectionPrompt)` in `PauseAndRun` paths with a custom `RawSelectionMenu<T>` using `AnsiConsole.Console.Input.ReadKey(intercept: true)` — the same approach `ReadCommandInput` uses successfully.
+
+#### P1 — Major UX Breaks
+- **BUG-2:** PauseAndRun uses blind `Thread.Sleep(100)` with no acknowledgement that the live thread has actually entered `_resumeLiveEvent.Wait()`. Race condition on loaded systems.
+- **BUG-3:** `_resumeLiveEvent` (ManualResetEvent) race between two sequential PauseAndRun calls — second pause may be missed because the event wasn't fully reset before the next cycle.
+- **BUG-4:** After `take` command, content panel stuck on "📦 Pickup". No `ShowRoom`/`RefreshDisplay` called. Player must type `look` to see updated room.
+- **BUG-5:** After combat win, map panel still shows `[!]` (enemy icon) even after `Enemy = null`. No `RenderMapPanel` or `ShowRoom` called after `CombatResult.Won` in `GoCommandHandler`.
+- **BUG-6:** `ShowRoom` always calls `AppendLog("Entered room")` unconditionally. `RefreshDisplay` calls `ShowRoom`. `ApplyRoomHazard` calls `RefreshDisplay` every turn → log spammed with "Entered [room]" on every action in a hazard room.
+- **BUG-7:** Hazard damage message (`ShowMessage("🔥 lava sears you")`) is appended to content then immediately erased by `RefreshDisplay` → `ShowRoom` → `SetContent`. Player never sees it in the content panel (only in log).
+- **BUG-8:** `ShowCombatStart` does NOT clear `_contentLines` before appending. Old room description bleeds into the combat start view — room text + "⚔ COMBAT" stacked together.
+- **BUG-9:** After equip/unequip, content panel is left on equipment comparison or confirmation messages. No `ShowRoom` called. Panel stuck until player types `look`.
+
+#### P2 — Notable Defects
+- **BUG-10:** `ShowEquipmentComparison` bypasses `SetContent()`, calling `_ctx.UpdatePanel` directly. Internal `_contentLines/_contentHeader/_contentBorderColor` not updated. Any subsequent `AppendContent` or `RefreshContentPanel` call silently restores the OLD pre-comparison content over the comparison table.
+- **BUG-11:** `RefreshDisplay` calls `ShowPlayerStats` then `ShowRoom` (which also calls `RenderStatsPanel` internally). Stats panel rendered twice per `RefreshDisplay`. `ShowRoom` then `ShowMap` both call `RenderMapPanel` — map panel rendered twice too.
+- **BUG-12:** `GetMapRoomSymbol` returns `[A]`/`[L]`/`[F]` for ContestedArmory/PetrifiedLibrary/ForgottenShrine without checking `SpecialRoomUsed`. These rooms keep special icons after clearing. TrapRoom correctly checks `!r.SpecialRoomUsed`.
+- **BUG-13:** `ShowCombatStatus` calls `SetContent` (clears content) every combat round, wiping all accumulated `ShowCombatMessage` lines. Players only ever see the HP bars + messages from the CURRENT round.
+- **BUG-14:** `ShowFloorBanner` sets `_currentFloor` but doesn't call `RenderMapPanel`. Map panel header shows old floor number until next `ShowRoom` call.
+- **BUG-15:** `TakeAllItems` calls `ShowItemPickup` (→ `SetContent`) for each item. Each call replaces the entire content panel. Only the last item's pickup view survives.
+
+#### P3 — Minor/Cosmetic
+- **BUG-16:** `GetRoomDisplayName` returns "Room" for the default case — most room types get a generic panel header.
+- **BUG-17:** `ShowIntroNarrative` always returns `false`. Callers that rely on the return value will always skip any "wait for player" logic.
+- **BUG-18:** `RefreshDisplay` calls `ShowRoom` before `ShowMap`, so `ShowRoom` renders the map panel with the OLD `_currentFloor` value; corrected by `ShowMap` immediately after.
+
+#### Key Architectural Learnings
+- Spectre's `DefaultExclusivityMode` is a process-wide int flag, not a thread-local or reentrant lock. Any `AnsiConsole.Prompt` call from ANY thread while `AnsiConsole.Live().Start()` is running will throw. The only safe input approach inside Live is raw `ReadKey`.
+- `ShowRoom` has 3 side effects beyond rendering content: (1) updates `_cachedRoom`, (2) appends to log, (3) renders map panel. These side effects make it dangerous to call from `RefreshDisplay` without considering the log spam.
+- `SetContent` is a destructive replace operation. `AppendContent` is additive. These should not be mixed in sequences where preservation of earlier messages matters (combat messages, hazard messages).
+- `ShowEquipmentComparison` is the only method that writes a non-Markup `Panel` (containing a `Table`) directly to the content panel, bypassing the string buffer. This creates a two-class system of content updates that will cause state divergence.

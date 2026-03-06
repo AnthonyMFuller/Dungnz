@@ -82,6 +82,7 @@ internal sealed class TakeCommandHandler : ICommandHandler
         context.Events?.RaiseItemPicked(context.Player, item, context.CurrentRoom);
         context.Stats.ItemsFound++;
         if (item.Type == ItemType.Gold) { context.Stats.GoldCollected += item.StatModifier; context.SessionStats.GoldEarned += item.StatModifier; }
+        context.Display.ShowRoom(context.CurrentRoom);
     }
 
     private void TakeAllItems(CommandContext context)
@@ -103,16 +104,16 @@ internal sealed class TakeCommandHandler : ICommandHandler
                 context.Display.ShowError($"❌ Inventory full! {item.Name} left behind.");
                 break;
             }
-            int slotsCurrent = context.Player.Inventory.Count;
-            int weightCurrent = context.Player.Inventory.Sum(i => i.Weight);
-            context.Display.ShowItemPickup(item, slotsCurrent, Player.MaxInventorySize, weightCurrent, InventoryManager.MaxWeight);
-            context.Display.ShowMessage(ItemInteractionNarration.PickUp(item));
+            context.Display.ShowMessage($"📦 Picked up: {item.Name}");
             context.Events?.RaiseItemPicked(context.Player, item, context.CurrentRoom);
             context.Stats.ItemsFound++;
             if (item.Type == ItemType.Gold) { context.Stats.GoldCollected += item.StatModifier; context.SessionStats.GoldEarned += item.StatModifier; }
             taken++;
         }
         if (taken > 0)
+        {
             context.Display.ShowMessage(context.Narration.Pick(_lootLines));
+            context.Display.ShowRoom(context.CurrentRoom);
+        }
     }
 }

@@ -156,6 +156,7 @@ internal sealed class GoCommandHandler : ICommandHandler
                 context.CurrentRoom.State = RoomState.Cleared;
                 context.Display.ShowMessage(context.Narration.Pick(RoomStateNarration.ClearedRoom));
                 context.Display.ShowPlayerStats(context.Player);
+                context.Display.ShowRoom(context.CurrentRoom);
             }
 
             if (result == CombatResult.Fled)
