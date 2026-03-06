@@ -57,7 +57,7 @@ public static class SpectreLayout
                     .Ratio(3)
                     .SplitRows(
                         new Layout(Panels.Log).Ratio(7),   // 70% of bottom height
-                        new Layout(Panels.Input).Ratio(3)  // 30% of bottom height
+                        new Layout(Panels.Input).Ratio(3).MinimumSize(4)  // 30% of bottom height
                     )
             );
 

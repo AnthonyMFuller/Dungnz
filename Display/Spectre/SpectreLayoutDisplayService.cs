@@ -46,6 +46,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     // Log panel buffer (markup strings)
     private readonly List<string> _logHistory = new();
     private const int MaxLogHistory = 50;
+    private const int MaxDisplayedLog = 12;
 
     // Cached state for auto-refresh
     private Player? _cachedPlayer;
@@ -180,7 +181,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
 
     private void UpdateLogPanel()
     {
-        var content = string.Join("\n", _logHistory.TakeLast(MaxLogHistory));
+        var content = string.Join("\n", _logHistory.TakeLast(MaxDisplayedLog));
         var panel = new Panel(new Markup(content))
             .Header("[bold grey]Message Log[/]")
             .Border(BoxBorder.Rounded)
