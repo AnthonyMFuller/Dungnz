@@ -437,10 +437,19 @@ public partial class SpectreLayoutDisplayService
     private T PauseAndRun<T>(Func<T> action)
     {
         if (!_ctx.IsLiveActive) return action();
-        _pauseLiveEvent.Set();
-        Thread.Sleep(100);
+        
+        bool isTopLevel = Interlocked.Increment(ref _pauseDepth) == 1;
+        if (isTopLevel)
+        {
+            _pauseLiveEvent.Set();
+            Thread.Sleep(100);
+        }
         try { return action(); }
-        finally { _resumeLiveEvent.Set(); }
+        finally 
+        { 
+            if (Interlocked.Decrement(ref _pauseDepth) == 0)
+                _resumeLiveEvent.Set(); 
+        }
     }
 
     // Generic selection prompt wrappers that use PauseAndRun

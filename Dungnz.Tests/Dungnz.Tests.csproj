@@ -5,6 +5,7 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
     <IsPackable>false</IsPackable>
+    <ExcludeByFile>**/Program.cs</ExcludeByFile>
   </PropertyGroup>
 
   <ItemGroup>

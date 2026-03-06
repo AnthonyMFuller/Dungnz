@@ -114,6 +114,7 @@ internal sealed class GoCommandHandler : ICommandHandler
                 _                 => $"You trigger a hazard and take {dmg} damage!"
             };
             context.Display.ShowMessage($"⚠ {hazardMsg} HP: {context.Player.HP}/{context.Player.MaxHP}");
+            context.Display.ShowPlayerStats(context.Player);
             if (context.Player.HP <= 0)
             {
                 context.ExitRun("a dungeon trap");
@@ -154,6 +155,7 @@ internal sealed class GoCommandHandler : ICommandHandler
                 context.Display.ShowMessage(context.Narration.Pick(_postCombatLines, enemyName));
                 context.CurrentRoom.State = RoomState.Cleared;
                 context.Display.ShowMessage(context.Narration.Pick(RoomStateNarration.ClearedRoom));
+                context.Display.ShowPlayerStats(context.Player);
             }
 
             if (result == CombatResult.Fled)

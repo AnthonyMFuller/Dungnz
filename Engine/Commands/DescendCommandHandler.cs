@@ -44,10 +44,10 @@ internal sealed class DescendCommandHandler : ICommandHandler
         var (newStart, _) = gen.Generate(playerLevel: context.Player.Level, floorMultiplier: floorMult, difficulty: context.Difficulty, floor: context.CurrentFloor);
         context.CurrentRoom = newStart;
         context.CurrentRoom.Visited = true;
-        context.Display.ShowMessage($"Floor {context.CurrentFloor}");
         var descendVariant = DungeonVariant.ForFloor(context.CurrentFloor);
-        context.Display.ShowMessage($"=== {descendVariant.Name} ===");
+        context.Display.ShowFloorBanner(context.CurrentFloor, FinalFloor, descendVariant);
         context.Display.ShowMessage(descendVariant.EntryMessage);
         context.Display.ShowRoom(context.CurrentRoom);
+        context.Display.ShowMap(context.CurrentRoom, context.CurrentFloor);
     }
 }

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text.RegularExpressions;
 using Dungnz.Engine;
 using Dungnz.Models;
@@ -10,6 +11,7 @@ namespace Dungnz.Display;
 /// Spectre.Console-backed implementation of IDisplayService.
 /// Replaces hand-rolled ANSI with Spectre widgets.
 /// </summary>
+[ExcludeFromCodeCoverage]
 public sealed class SpectreDisplayService : IDisplayService
 {
     /// <inheritdoc/>

@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
 using Dungnz.Engine;
@@ -20,6 +21,7 @@ namespace Dungnz.Display.Spectre;
 /// Live display by signaling <see cref="_pauseLiveEvent"/>, run a <see cref="SelectionPrompt{T}"/>,
 /// then resume Live. This is acceptable for turn-based games per Anthony's decision.</para>
 /// </remarks>
+[ExcludeFromCodeCoverage]
 public partial class SpectreLayoutDisplayService : IDisplayService
 {
     private readonly Layout _layout;
@@ -34,7 +36,10 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     private readonly List<string> _contentLines = new();
     private string _contentHeader = "📜 Adventure";
     private Color _contentBorderColor = Color.Blue;
-    private const int MaxContentLines = 100;
+    private const int MaxContentLines = 50;
+    
+    // Nesting depth for PauseAndRun to avoid deadlock in nested menus (#1077)
+    private int _pauseDepth = 0;
 
     // Log panel buffer (markup strings)
     private readonly List<string> _logHistory = new();
@@ -104,52 +109,17 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     }
 
     /// <summary>
-    /// Pauses Live, runs a SelectionPrompt, then resumes Live.
+    /// Resets all cached state between game runs. Called at start of each Run().
     /// </summary>
-    private T RunPrompt<T>(Func<T> promptFunc) where T : notnull
+    public void Reset()
     {
-        // If Live isn't running, just run the prompt directly
-        if (!_ctx.IsLiveActive)
-        {
-            return promptFunc();
-        }
-
-        // Signal pause and wait for Live to acknowledge
-        _pauseLiveEvent.Set();
-        Thread.Sleep(100); // Give Live loop time to pause
-
-        try
-        {
-            return promptFunc();
-        }
-        finally
-        {
-            // Resume Live
-            _resumeLiveEvent.Set();
-        }
-    }
-
-    /// <summary>
-    /// Pauses Live, runs a nullable SelectionPrompt, then resumes Live.
-    /// </summary>
-    private T? RunNullablePrompt<T>(Func<T?> promptFunc) where T : class
-    {
-        if (!_ctx.IsLiveActive)
-        {
-            return promptFunc();
-        }
-
-        _pauseLiveEvent.Set();
-        Thread.Sleep(100);
-
-        try
-        {
-            return promptFunc();
-        }
-        finally
-        {
-            _resumeLiveEvent.Set();
-        }
+        _cachedPlayer = null;
+        _cachedRoom = null;
+        _contentLines.Clear();
+        _logHistory.Clear();
+        _currentFloor = 1;
+        _contentHeader = "📜 Adventure";
+        _contentBorderColor = Color.Blue;
     }
 
     // ── Panel update helpers ──────────────────────────────────────────────────
@@ -363,18 +333,22 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             var rL = kv.Value;
             if (rL == currentRoom) continue;
             if (!rL.Visited)                                            { hasUnknown  = true; continue; }
+            
+            // Skip cleared rooms from legend (they render as [+], not their type symbol)
+            bool isCleared = rL.Visited && rL.Enemy?.HP <= 0;
+            
             if (rL.IsExit && rL.Enemy?.HP > 0)                         { hasBoss     = true; continue; }
             if (rL.IsExit)                                              { hasExit     = true; continue; }
             if (rL.Enemy?.HP > 0)                                       { hasEnemy    = true; continue; }
             if (rL.HasShrine && !rL.ShrineUsed)                        { hasShrine   = true; continue; }
             if (rL.Merchant != null)                                    { hasMerchant = true; continue; }
             if (rL.Type == RoomType.TrapRoom && !rL.SpecialRoomUsed)   { hasTrap     = true; continue; }
-            if (rL.Type == RoomType.ContestedArmory)                   { hasArmory   = true; continue; }
-            if (rL.Type == RoomType.PetrifiedLibrary)                  { hasLibrary  = true; continue; }
-            if (rL.Type == RoomType.ForgottenShrine)                   { hasFShrine  = true; continue; }
+            if (rL.Type == RoomType.ContestedArmory && !isCleared)     { hasArmory   = true; continue; }
+            if (rL.Type == RoomType.PetrifiedLibrary && !isCleared)    { hasLibrary  = true; continue; }
+            if (rL.Type == RoomType.ForgottenShrine && !isCleared)     { hasFShrine  = true; continue; }
             if (rL.EnvironmentalHazard == RoomHazard.BlessedClearing)  { hasBlessed  = true; continue; }
-            if (rL.EnvironmentalHazard != RoomHazard.None)             { hasHazard   = true; continue; }
-            if (rL.Type == RoomType.Dark)                              { hasDark     = true; continue; }
+            if (rL.EnvironmentalHazard != RoomHazard.None && !isCleared) { hasHazard = true; continue; }
+            if (rL.Type == RoomType.Dark && !isCleared)                { hasDark     = true; continue; }
             hasCleared = true;
         }
 
@@ -487,7 +461,11 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         sb.AppendLine("[bold red]  ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝[/]");
         sb.AppendLine();
         sb.Append("[grey]              A dungeon awaits...[/]");
-        SetContent(sb.ToString(), "🏰 DUNGNZ", Color.Red);
+
+        if (_ctx.IsLiveActive)
+            SetContent(sb.ToString(), "🏰 DUNGNZ", Color.Red);
+        else
+            AnsiConsole.Write(new Markup(sb.ToString() + "\n\n"));
     }
 
     /// <inheritdoc/>
@@ -931,7 +909,12 @@ public partial class SpectreLayoutDisplayService : IDisplayService
                  + "comprehension. The air below reeks of sulfur and old blood. Torches flicker without wind.\n"
                  + "Something vast and patient watches from the deep.\n\n"
                  + "[yellow][[ Press Enter to begin your descent... ]][/]";
-        SetContent(lore, "📜 Lore", Color.Grey);
+        
+        if (_ctx.IsLiveActive)
+            SetContent(lore, "📜 Lore", Color.Grey);
+        else
+            AnsiConsole.Write(new Markup(lore + "\n\n"));
+        
         return false;
     }
 
@@ -945,7 +928,12 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         if (prestige.BonusStartAttack  > 0) sb.AppendLine($"[green]Bonus Attack:[/]   +{prestige.BonusStartAttack}");
         if (prestige.BonusStartDefense > 0) sb.AppendLine($"[green]Bonus Defense:[/]  +{prestige.BonusStartDefense}");
         if (prestige.BonusStartHP      > 0) sb.AppendLine($"[green]Bonus HP:[/]       +{prestige.BonusStartHP}");
-        SetContent(sb.ToString().TrimEnd(), "⭐ Prestige", Color.Yellow);
+        
+        var content = sb.ToString().TrimEnd();
+        if (_ctx.IsLiveActive)
+            SetContent(content, "⭐ Prestige", Color.Yellow);
+        else
+            AnsiConsole.Write(new Markup(content + "\n\n"));
     }
 
     /// <inheritdoc/>
@@ -1006,9 +994,9 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     {
         _contentHeader = "⚔  Combat";
         _contentBorderColor = Color.Red;
-        _contentLines.Clear();
-        AppendContent("[bold red]⚔  COMBAT BEGINS  ⚔[/]");
-        AppendContent($"[bold red]{Markup.Escape(enemy.Name)}[/]");
+        AppendContent("");
+        AppendContent("[bold red]⚔ ─── COMBAT ─── ⚔[/]");
+        AppendContent($"[red]Enemy: {Markup.Escape(enemy.Name)}[/]");
         AppendLog($"Combat started: {enemy.Name}", "combat");
     }
 
@@ -1089,7 +1077,9 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         sb.AppendLine();
         sb.AppendLine($"[grey]Enemies slain:[/]  {stats.EnemiesDefeated}");
         sb.AppendLine($"[grey]Floors reached:[/] {stats.FloorsVisited}");
-        sb.Append($"[grey]Turns survived:[/] {stats.TurnsTaken}");
+        sb.AppendLine($"[grey]Gold earned:[/]    {stats.GoldCollected}");
+        sb.AppendLine($"[grey]Items found:[/]    {stats.ItemsFound}");
+        sb.Append($"[grey]Turns taken:[/]    {stats.TurnsTaken}");
         SetContent(sb.ToString().TrimEnd(), "☠  Game Over", Color.DarkRed);
     }
 

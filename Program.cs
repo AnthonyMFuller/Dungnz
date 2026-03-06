@@ -27,13 +27,7 @@ logger.LogInformation("Dungnz starting...");
 
 var prestige = PrestigeSystem.Load();
 
-// Start Spectre Live rendering loop on a background task
 var displayService = new SpectreLayoutDisplayService();
-_ = displayService.StartAsync();
-
-// Give the Live loop time to initialize before the game starts
-await Task.Delay(200);
-
 var inputReader = new ConsoleInputReader();
 IDisplayService display = displayService;
 
@@ -42,9 +36,12 @@ var result = startup.Run();
 
 if (result is StartupResult.ExitGame)
 {
-    displayService.StopLive();
     return;
 }
+
+// Start Spectre Live rendering loop now that startup is complete
+_ = displayService.StartAsync();
+await Task.Delay(200);
 
 // Initialize data
 EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");

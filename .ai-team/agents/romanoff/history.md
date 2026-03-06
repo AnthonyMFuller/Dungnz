@@ -1246,3 +1246,87 @@ With `SelfHealCooldown=1` and check-first: fires on turn 2 (correct, matching as
 - `Systems/EquipmentManager.cs` — HandleEquip, HandleUnequip, LevenshteinDistance
 - `Engine/Commands/CommandContext.cs` — all required fields for handler tests
 - `Engine/Commands/*.cs` — individual handlers (internal sealed classes)
+
+---
+
+### 2026-03-06 — Deep TUI Code Audit (Spectre.Console Display Implementation)
+
+**Task:** Complete audit of Spectre.Console Live+Layout display system
+**Requested by:** Anthony (user reports interface is broken)
+**Output:** `.ai-team/decisions/inbox/romanoff-tui-audit-bugs.md`
+
+**Findings:** 24 bugs identified across 4 severity levels
+- CRITICAL: 4 (intro rendering failure, first room race condition, stale cached state, command prompt staleness)
+- HIGH: 5 (missing equip feedback, combat context loss, log truncation, nested pause deadlock, dead return value)
+- MEDIUM: 6 (HP bar safety, map legend, duplicate methods, regex performance, emoji support)
+- LOW: 9 (hardcoded help, header lag, timestamp format, missing icons, inconsistent stats, color mapping, map overflow, dead code)
+
+**Files Audited:**
+1. `Display/Spectre/SpectreLayoutDisplayService.cs` (~1170 lines) — main display logic
+2. `Display/Spectre/SpectreLayoutDisplayService.Input.cs` (~564 lines) — input-coupled methods
+3. `Display/Spectre/SpectreLayout.cs` — 5-panel layout structure
+4. `Display/Spectre/SpectreLayoutContext.cs` — thread-safe Live context wrapper
+5. `Display/IDisplayService.cs` — interface contract
+6. `Program.cs` — startup flow, Live initialization
+7. `Engine/StartupOrchestrator.cs` — pre-game menu flow
+8. `Engine/IntroSequence.cs` — intro narrative and player setup
+9. `Engine/GameLoop.cs` — main game loop, display method calls
+
+## Learnings
+
+**Threading model:**
+- Live render loop runs on background thread (StartAsync → StartLive)
+- Game logic runs on main thread
+- `SpectreLayoutContext.UpdatePanel()` uses lock + ctx?.Refresh() — thread-safe by design
+- Pause/resume pattern: game thread signals `_pauseLiveEvent`, Live loop waits, game runs SelectionPrompt, signals `_resumeLiveEvent`
+- Race condition risk: Live must be fully started (ctx set) before game loop calls display methods
+
+**Layout structure:**
+- 5 panels: Map (top-left 60%), Stats (top-right 40%), Content (middle 50%), Log (bottom-left 70%), Input (bottom-right 30%)
+- Content panel uses buffered append (TakeLast 50 of 100 max lines)
+- Log panel uses buffered append (TakeLast 50 of 50 max lines)
+- Map and Stats panels are fully regenerated on each update (no buffer)
+
+**State management patterns:**
+- `_cachedPlayer` and `_cachedRoom` store last-rendered state for auto-refresh
+- Content panel header (`_contentHeader`) and border color (`_contentBorderColor`) change contextually (Adventure → Combat → Loot)
+- No reset mechanism between runs — state persists across multiple games in same process
+
+**Key architectural decisions:**
+- Option E: Live+Layout with full-screen panels + pause-for-input (per Anthony's design)
+- Acceptable for turn-based games (per decisions.md)
+- Display methods branch on `_ctx.IsLiveActive`: if false, use AnsiConsole.Write directly (fallback for pre-Live rendering)
+- Input-coupled methods (ShowInventoryAndSelect, SelectDifficulty, etc.) pause Live, run prompt, resume Live
+
+**Critical bugs explained:**
+1. **Intro renders nothing:** ShowIntroNarrative and ShowPrestigeInfo call SetContent when Live isn't active yet → content updates layout buffer but nothing renders to console (no fallback AnsiConsole.Write)
+2. **First room race:** Live starts, 200ms delay, then game loop runs → if Live hasn't set ctx yet, display updates are no-ops
+3. **Stale cache:** _cachedPlayer/_cachedRoom not cleared between runs → second run shows first run's player data
+4. **Command prompt staleness:** ShowCommandPrompt displays mini HP bar in Input panel, called once per turn → HP changes mid-turn (combat, hazard) not reflected until next turn
+
+**Code quality observations:**
+- Duplicate helper methods: TierColor/InputTierColor, PrimaryStatLabel/InputPrimaryStatLabel (Input.cs lines 529-548 are identical to main file)
+- Dead code: RunPrompt (main file) is never called, PauseAndRun (Input.cs) is used instead
+- Fragile pause/resume: nested SelectionPrompt calls (combat menu → ability submenu) could double-signal _pauseLiveEvent → resume state corruption
+- Hardcoded UI strings: help text (lines 791-809), class icons (Input.cs lines 512-521), status effect icons (lines 1138-1153)
+
+**Testing gaps identified:**
+- No unit tests for SpectreLayoutDisplayService (display layer is untested)
+- No integration tests for Live startup/pause/resume flow
+- No tests for _cachedPlayer/_cachedRoom refresh logic
+- No tests for nested SelectionPrompt scenarios (deadlock risk)
+
+**File structure insights:**
+- Partial class split: main file has display-only methods, Input.cs has input-coupled methods (clear separation per Anthony's design note at IDisplayService.cs lines 12-21)
+- Helper methods duplicated between files (TierColor, PrimaryStatLabel) — both files need them for markup generation
+- SpectreLayoutContext is a clean thread-safe wrapper (lock + nullable ctx check) — good design
+- BFS map rendering (BuildMapMarkup lines 275-298) is solid, but could overflow on large dungeons
+
+**Most urgent fixes for Hill/Barton:**
+1. Add AnsiConsole.Write fallbacks to ShowIntroNarrative and ShowPrestigeInfo
+2. Add ManualResetEventSlim for Live-ready signal, wait before starting game loop
+3. Add public Reset() method to clear _cachedPlayer, _cachedRoom, content/log buffers
+4. Call ShowCommandPrompt(_player) after HP/MP changes (combat end, hazard, potion)
+5. Consolidate duplicate TierColor/PrimaryStatLabel methods
+6. Add nesting counter to pause/resume to prevent double-pause deadlock
+
