@@ -151,6 +151,9 @@ public class GameLoop
     /// <param name="startRoom">The first room the player occupies when the loop begins.</param>
     public void Run(Player player, Room startRoom)
     {
+        if (_display is Display.Spectre.SpectreLayoutDisplayService spectre)
+            spectre.Reset();
+        
         _player = player;
         _currentRoom = startRoom;
         _stats = new RunStats();
@@ -180,6 +183,10 @@ public class GameLoop
         ArgumentNullException.ThrowIfNull(state);
         ArgumentNullException.ThrowIfNull(state.Player);
         ArgumentNullException.ThrowIfNull(state.CurrentRoom);
+        
+        if (_display is Display.Spectre.SpectreLayoutDisplayService spectre)
+            spectre.Reset();
+        
         _player = state.Player;
         _currentRoom = state.CurrentRoom;
         _currentFloor = state.CurrentFloor;
@@ -242,7 +249,7 @@ public class GameLoop
     {
         while (true)
         {
-            _display.ShowCommandPrompt();
+            _display.ShowCommandPrompt(_player);
             var input = _input.ReadLine() ?? string.Empty;
             var cmd = CommandParser.Parse(input);
             _context.TurnConsumed = true;

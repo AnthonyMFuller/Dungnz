@@ -1449,6 +1449,7 @@ public class CombatEngine : ICombatEngine
                         _display.ShowMessage("You feel healthier! +5 Max HP");
                         break;
                 }
+                _display.ShowPlayerStats(player);
             }
         }
     }
