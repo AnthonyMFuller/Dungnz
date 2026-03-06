@@ -2335,3 +2335,88 @@ No blocking issues for .NET 10 (current target in Dungnz.csproj).
 **PR:** #1071 (co-committed with Barton's input methods on `squad/1067-input-methods`)
 **Issues closed:** #1063, #1065, #1066
 
+
+
+### 2026-03-06 — Display-Layer Bug Fixes (#1075, #1076, #1077, #1083, #1085, #1086, #1087)
+
+**Commit:** 5340855 (committed alongside #1078-1088 fixes in same session)
+**Branch:** `scribe/log-2026-03-06-tui-bug-hunt`
+
+Fixed 7 display-layer bugs in `SpectreLayoutDisplayService` that caused blank screens, stale state, deadlocks, and inconsistent UI rendering.
+
+**Files modified:**
+- `Display/Spectre/SpectreLayoutDisplayService.cs` (main class)
+- `Display/Spectre/SpectreLayoutDisplayService.Input.cs` (partial class)
+- `Engine/GameLoop.cs` (added Reset() calls)
+
+**#1075 — ShowIntroNarrative and ShowPrestigeInfo render blank before Live starts:**
+- Added `AnsiConsole.Write()` fallback branch to both methods when `!_ctx.IsLiveActive`
+- Pattern matches `ShowTitle()`: if Live active, use `SetContent()`, else write directly to console
+- Fixes: Lore and prestige info now visible during character creation (before Live loop starts)
+
+**#1076 — Stale cached player/room state persists between game runs:**
+- Added `public void Reset()` method that clears `_cachedPlayer`, `_cachedRoom`, `_contentLines`, `_logHistory`, `_currentFloor`, and resets headers/colors
+- Called at start of both `GameLoop.Run(Player, Room)` and `GameLoop.Run(GameState)` methods
+- Fixes: Display state is clean for each new game run (important for loaded saves)
+
+**#1077 — Nested PauseAndRun deadlock risk in combat ability submenu:**
+- Added `private int _pauseDepth = 0;` field (in main class file, not partial)
+- Modified `PauseAndRun<T>()` in `Input.cs` to track nesting depth with `Interlocked.Increment/Decrement`
+- Only pause/resume Live events at top level (depth == 1 / depth == 0)
+- Fixes: Combat menu → Ability submenu works without corrupting pause state
+
+**#1083 — Content panel cleared on combat start — room context lost:**
+- Changed `ShowCombatStart()` to append instead of clear: removed `_contentLines.Clear()`
+- Prepends blank line separator, then combat header, then enemy name
+- Room description remains visible above combat log during fight
+- Fixes: Player can still see room description and items while in combat
+
+**#1085 — Dead code: RunPrompt and RunNullablePrompt never called:**
+- Deleted `RunPrompt<T>` and `RunNullablePrompt<T>` methods from main class file
+- The correct method `PauseAndRun<T>` in `Input.cs` is the one actually used by all input methods
+- Fixes: Removed ~50 lines of confusing dead code
+
+**#1086 — Map legend shows room types not visible on map:**
+- In `BuildMapMarkup()` legend building loop, added `bool isCleared = rL.Visited && rL.Enemy?.HP <= 0`
+- Skip cleared rooms when setting type flags (Dark, Armory, Library, FShrine, Hazard)
+- Legend now only shows symbols that are actually rendered on the map
+- Fixes: No `[[D]] Dark` in legend when all Dark rooms are cleared and render as `[+]`
+
+**#1087 — MaxContentLines(100) vs TakeLast(50) inconsistency:**
+- Changed `private const int MaxContentLines = 100;` to `50`
+- Matches `RefreshContentPanel()` which calls `_contentLines.TakeLast(50)`
+- Fixes: Content buffer and display are now consistent; no dead memory
+
+**Tests:** All 1674 tests pass.
+
+## Learnings
+
+**AnsiConsole.Write() fallback pattern:**
+- Display methods that render before Live starts (title, lore, prestige) MUST check `_ctx.IsLiveActive`
+- If Live is active, use `SetContent()` to update panel; otherwise use `AnsiConsole.Write(new Markup(...))` directly
+- This pattern ensures content is visible during startup sequence (before Live loop begins)
+
+**Display state management between runs:**
+- Cached state (`_cachedPlayer`, `_cachedRoom`, content/log history) must be cleared on each game start
+- `Reset()` method provides centralized cleanup called by `GameLoop.Run()` methods
+- Important for loaded saves and consecutive game runs in same process
+
+**PauseAndRun nesting:**
+- Nested SelectionPrompts (menu → submenu) require depth tracking
+- Use `Interlocked` for thread-safe counter; only signal events at top level (depth 0/1)
+- Prevents pause/resume event corruption when submenus call PauseAndRun recursively
+
+**Content panel persistence in combat:**
+- Never call `_contentLines.Clear()` during combat — room context must remain visible
+- Use `AppendContent("")` separator + new content instead of replacing
+- Player needs to see room description, items, and combat log simultaneously
+
+**Map legend accuracy:**
+- Legend should only show symbols that are ACTUALLY RENDERED on the current map
+- Cleared rooms render as `[+]`, not their original type symbol (`[D]`, `[A]`, etc.)
+- Check `isCleared` flag before setting type flags in legend builder loop
+
+**Memory/display consistency:**
+- Buffer size constants (MaxContentLines) must match usage patterns (TakeLast N)
+- If buffer holds 100 but only displays 50, you're wasting memory and confusing future maintainers
+- Keep buffer size = display size unless there's a documented reason to differ
