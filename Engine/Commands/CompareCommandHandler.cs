@@ -34,6 +34,7 @@ internal sealed class CompareCommandHandler : ICommandHandler
         {
             context.TurnConsumed = false;
             context.Display.ShowError($"You don't have '{argument}' in your inventory.");
+            context.Display.ShowRoom(context.CurrentRoom);
             return;
         }
 
@@ -41,6 +42,7 @@ internal sealed class CompareCommandHandler : ICommandHandler
         {
             context.TurnConsumed = false;
             context.Display.ShowError($"{item.Name} cannot be equipped, so there's nothing to compare.");
+            context.Display.ShowRoom(context.CurrentRoom);
             return;
         }
 

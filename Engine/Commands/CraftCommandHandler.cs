@@ -52,6 +52,7 @@ internal sealed class CraftCommandHandler : ICommandHandler
         {
             context.TurnConsumed = false;
             context.Display.ShowError($"Unknown recipe: {argument}");
+            context.Display.ShowRoom(context.CurrentRoom);
             return;
         }
 
@@ -62,5 +63,6 @@ internal sealed class CraftCommandHandler : ICommandHandler
             context.Display.ShowPlayerStats(context.Player);
         }
         else context.Display.ShowError(msg2);
+        context.Display.ShowRoom(context.CurrentRoom);
     }
 }

@@ -14,6 +14,7 @@ internal sealed class UseCommandHandler : ICommandHandler
             if (usable.Count == 0)
             {
                 context.Display.ShowError("You have no usable items in your inventory.");
+                context.Display.ShowRoom(context.CurrentRoom);
                 return;
             }
             var selected = context.Display.ShowUseMenuAndSelect(usable.AsReadOnly());
@@ -51,6 +52,7 @@ internal sealed class UseCommandHandler : ICommandHandler
             {
                 context.TurnConsumed = false;
                 context.Display.ShowError($"You don't have '{argument}'.");
+                context.Display.ShowRoom(context.CurrentRoom);
                 return;
             }
 
@@ -62,6 +64,7 @@ internal sealed class UseCommandHandler : ICommandHandler
                 context.TurnConsumed = false;
                 var names = string.Join(", ", bestCandidates.Select(x => x.Item.Name));
                 context.Display.ShowError($"Did you mean one of: {names}? Please be more specific.");
+                context.Display.ShowRoom(context.CurrentRoom);
                 return;
             }
 
@@ -185,9 +188,6 @@ internal sealed class UseCommandHandler : ICommandHandler
                 break;
         }
         
-        if (context.TurnConsumed)
-        {
-            context.Display.ShowRoom(context.CurrentRoom);
-        }
+        context.Display.ShowRoom(context.CurrentRoom);
     }
 }
