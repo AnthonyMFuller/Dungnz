@@ -2420,3 +2420,40 @@ Fixed 7 display-layer bugs in `SpectreLayoutDisplayService` that caused blank sc
 - Buffer size constants (MaxContentLines) must match usage patterns (TakeLast N)
 - If buffer holds 100 but only displays 50, you're wasting memory and confusing future maintainers
 - Keep buffer size = display size unless there's a documented reason to differ
+
+### 2026-03-06 — Gear Panel + Layout Restructure (#1103, #1104)
+
+**PR:** #1105 — `feat: Add Gear panel and vertical Log/Command stack`
+**Branch:** `squad/1103-gear-panel-and-layout-improvements`
+
+**Issues addressed:**
+
+#### #1103 — Add dedicated Gear panel showing all 10 equipment slots
+- `SpectreLayout.cs`: Added `Panels.Gear = "Gear"` constant; restructured layout to 6 panels
+- Layout is now: TopRow(20%) = Map|Stats; MiddleRow(50%) = Content|Gear; BottomRow(30%) = Log/Input stacked
+- Added Gear panel placeholder with gold border and `[bold yellow]⚔  Gear[/]` header
+- `SpectreLayoutDisplayService.cs`: Added private `RenderGearPanel(Player player)` method
+  - Uses inner `AddSlot(icon, slotName, item)` lambda pattern (consistent with `ShowEquipment`)
+  - Shows all 10 slots: Weapon, Accessory, Head, Shoulders, Chest, Hands, Legs, Feet, Back, Off-Hand
+  - Reuses existing `TierColor()` and `PrimaryStatLabel()` helpers from `SpectreLayoutDisplayService.Input.cs`
+  - Updates panel via `_ctx.UpdatePanel(SpectreLayout.Panels.Gear, panel)`
+- Removed 2-slot gear summary (Weapon + Chest) from `RenderStatsPanel` — Stats panel is now stats-only
+- `ShowPlayerStats(player)` now calls both `RenderStatsPanel` and `RenderGearPanel`
+
+#### #1104 — Stack Message Log and Command vertically; widen Command
+- `SpectreLayout.cs`: Changed `BottomRow` from `SplitColumns` to `SplitRows`
+- Log takes 70% of bottom row height, Input takes 30% — both span full terminal width
+
+**Key file paths:**
+- `Display/Spectre/SpectreLayout.cs` — layout tree and panel constants (~100 lines, easy to read entirely)
+- `Display/Spectre/SpectreLayoutDisplayService.cs` — main display service; `RenderStatsPanel` ~line 403, `RenderGearPanel` added after it, `ShowPlayerStats` ~line 627
+- `Display/Spectre/SpectreLayoutDisplayService.Input.cs` — `TierColor()` at line 591, `PrimaryStatLabel()` at line 602
+
+**Patterns and conventions established:**
+- Inner `AddSlot(icon, slotName, item)` local function is the standard pattern for slot-list rendering in both `ShowEquipment` (content panel) and `RenderGearPanel` (gear panel)
+- Gear panel uses `_cachedPlayer` indirectly — `ShowPlayerStats` updates `_cachedPlayer` and calls `RenderGearPanel`; no separate cached gear player needed
+- `[ExcludeFromCodeCoverage]` on the class means no tests needed for display methods
+- Architecture test `Display_Should_Not_Depend_On_System_Console` — never use `Console.*` directly in Display namespace
+
+**Build & Test Status:**
+- ✅ `dotnet test --nologo -v q` — 1674/1674 passing
