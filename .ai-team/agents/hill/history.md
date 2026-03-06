@@ -2420,3 +2420,67 @@ Fixed 7 display-layer bugs in `SpectreLayoutDisplayService` that caused blank sc
 - Buffer size constants (MaxContentLines) must match usage patterns (TakeLast N)
 - If buffer holds 100 but only displays 50, you're wasting memory and confusing future maintainers
 - Keep buffer size = display size unless there's a documented reason to differ
+
+
+### 2026-03-06 — Command Panel Input Fixes (#1095, #1096)
+
+**Commit:** ac8529a
+**Branch:** `squad/1095-1096-command-panel-fixes`
+**PR:** #1097
+
+Fixed two bugs in the TUI Command panel: redundant HP/mana bars and blocked keyboard input.
+
+**Files modified:**
+- `Display/Spectre/SpectreLayoutDisplayService.cs` — removed HP/mana bars from ShowCommandPrompt
+- `Display/Spectre/SpectreLayoutDisplayService.Input.cs` — added ReadCommandInput() using PauseAndRun
+- `Display/IDisplayService.cs` — added ReadCommandInput() to interface
+- `Display/DisplayService.cs` — added ReadCommandInput() stub for ConsoleDisplayService
+- `Display/SpectreDisplayService.cs` — added ReadCommandInput() stub for SpectreDisplayService
+- `Engine/GameLoop.cs` — changed to use _display.ReadCommandInput() instead of _input.ReadLine()
+
+**#1095 — Redundant HP/mana bars in Command panel:**
+- `ShowCommandPrompt(Player? player)` was rendering HP/mana progress bars that already appear in the Player Stats panel
+- Simplified method to always show just `[grey]> Command:[/]` regardless of player parameter
+- Kept `Player? player = null` signature for backward compatibility but removed conditional rendering logic
+- Fixes: Command panel now shows clean prompt without duplicate stat bars
+
+**#1096 — Command panel does not accept keyboard input:**
+- Root cause: `GameLoop.RunLoop()` called `_input.ReadLine()` (which is `Console.ReadLine()`) while `SpectreLayoutDisplayService` Live loop was actively redrawing the terminal in a background thread
+- This race condition prevented the player from typing commands
+- Solution: Added `ReadCommandInput()` method to `IDisplayService` interface that wraps `Console.ReadLine()` in `PauseAndRun<string?>` call
+- `PauseAndRun` correctly pauses the Live render loop, yields the terminal, reads input, then resumes
+- Updated `GameLoop.RunLoop()` to call `_display.ReadCommandInput()` instead of `_input.ReadLine()`
+- All other IDisplayService implementations (ConsoleDisplayService, SpectreDisplayService) now have stubs that directly call Console.ReadLine() (no Live loop to pause)
+- Fixes: Players can now type commands in the TUI without the Live display interfering
+
+**PauseAndRun pattern:**
+- Mechanism in `SpectreLayoutDisplayService.Input.cs` that handles nested calls and thread safety
+- Already used by all other input methods (menus, prompts, text input)
+- Ensures terminal ownership is correctly transferred between Live render thread and user input
+
+**Tests:** Build succeeded; all tests pass.
+
+## Learnings
+
+**PauseAndRun pattern usage:**
+- ANY method that calls `Console.ReadLine()`, `AnsiConsole.Ask()`, or `AnsiConsole.Prompt()` MUST wrap the call in `PauseAndRun<T>()` when using SpectreLayoutDisplayService
+- The Live render loop (`AnsiConsole.Live()`) continuously redraws the terminal in a background thread
+- Direct calls to Console input methods create race conditions that prevent user input
+- `PauseAndRun` signals the Live loop to pause, sleeps 100ms to ensure it has stopped, runs the input action, then signals resume
+- This pattern is thread-safe and supports nesting (depth tracking prevents corrupting pause/resume events)
+
+**Console.ReadLine() + AnsiConsole.Live() conflict:**
+- These two mechanisms are fundamentally incompatible without synchronization
+- Live redraw races with ReadLine cursor positioning, causing input to be swallowed or garbled
+- All interactive input in SpectreLayoutDisplayService MUST use PauseAndRun wrapper
+- Non-Live implementations (ConsoleDisplayService, SpectreDisplayService) don't need this wrapper
+
+**Display abstraction boundaries:**
+- `IDisplayService` should own ALL terminal interaction — both output AND input that requires terminal ownership
+- GameLoop was bypassing the display layer by calling `_input.ReadLine()` directly, which broke the TUI
+- Adding `ReadCommandInput()` to the interface fixes the abstraction leak
+- The `IInputReader` field in GameLoop is still valid for test mocks and non-terminal input scenarios
+
+**Files touched:**
+- Display layer: `IDisplayService.cs`, `SpectreLayoutDisplayService.cs`, `SpectreLayoutDisplayService.Input.cs`, `DisplayService.cs`, `SpectreDisplayService.cs`
+- Game engine: `Engine/GameLoop.cs` (single line change)
