@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using System.Text.RegularExpressions;
 using Dungnz.Engine;
@@ -20,6 +21,7 @@ namespace Dungnz.Display.Spectre;
 /// Live display by signaling <see cref="_pauseLiveEvent"/>, run a <see cref="SelectionPrompt{T}"/>,
 /// then resume Live. This is acceptable for turn-based games per Anthony's decision.</para>
 /// </remarks>
+[ExcludeFromCodeCoverage]
 public partial class SpectreLayoutDisplayService : IDisplayService
 {
     private readonly Layout _layout;

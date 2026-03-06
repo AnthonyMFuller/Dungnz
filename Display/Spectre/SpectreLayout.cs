@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 
@@ -7,6 +8,7 @@ namespace Dungnz.Display.Spectre;
 /// Defines the 5-panel Spectre.Console Live+Layout structure for the game UI.
 /// Layout ratios: Top row 30% (Map 60% | Stats 40%), Content 50%, Bottom row 20% (Log 70% | Input 30%).
 /// </summary>
+[ExcludeFromCodeCoverage]
 public static class SpectreLayout
 {
     /// <summary>Panel name constants for layout updates.</summary>

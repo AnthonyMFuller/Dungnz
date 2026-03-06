@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Spectre.Console;
 using Spectre.Console.Rendering;
 
@@ -14,6 +15,7 @@ namespace Dungnz.Display.Spectre;
 /// <para>The context is set from within the Live.Start() callback and used
 /// by the game thread to push panel updates.</para>
 /// </remarks>
+[ExcludeFromCodeCoverage]
 public sealed class SpectreLayoutContext
 {
     private LiveDisplayContext? _ctx;
