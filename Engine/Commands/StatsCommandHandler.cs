@@ -8,5 +8,6 @@ internal sealed class StatsCommandHandler : ICommandHandler
     {
         context.Display.ShowPlayerStats(context.Player);
         context.Display.ShowMessage($"Floor: {context.CurrentFloor} / {FinalFloor}");
+        context.Display.ShowRoom(context.CurrentRoom);
     }
 }

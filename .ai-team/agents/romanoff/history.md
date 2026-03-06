@@ -8,6 +8,65 @@
 
 ## Learnings
 
+### 2026-03-04 — Merchant Sell/Shop Flow Test Coverage Gap Analysis
+
+**Context:**
+- User reported: "Sell command → select item → sell item → stuck on 'sell yes/no' menu"
+- Four bugs identified:
+  - **BUG-A**: SellCommandHandler doesn't call ShowRoom() after successful sell
+  - **BUG-B**: SellCommandHandler has no sell-multiple loop
+  - **BUG-C**: ShopCommandHandler doesn't call ShowRoom() on leave
+  - **BUG-D**: ContentPanelMenu<T> Escape/Q returns items[selected].Value instead of cancel option
+
+**Test Coverage Analysis:**
+
+**SellSystemTests.cs** has 10 tests covering:
+- ✅ ComputeSellPrice formula for all tiers
+- ✅ Happy path: item removed, gold increased
+- ✅ Equipped items excluded from sell menu
+- ✅ Gold-type items not sellable
+- ✅ No merchant error handling
+- ✅ Sell from inside shop (regression #574)
+- ✅ Cancel sell with "N"
+
+**Missing Test Coverage — Critical Gaps:**
+
+1. **No ShowRoom() verification after sell** (BUG-A)
+   - Existing tests verify inventory/gold changes but NOT display state
+   - Need: `Sell_Success_CallsShowRoom()` test
+   - Verify: `display.RoomDisplayed` or equivalent flag after sell completes
+   - This is why content panel stays on confirm menu
+
+2. **No multi-sell loop test** (BUG-B)
+   - Current tests: single sell then quit
+   - Need: `Sell_AfterFirstSale_ShowsSellMenuAgainForSecondItem()`
+   - Scenario: `"sell", "1", "Y", "1", "Y", "quit"` to sell 2 items
+   - Verify: both items removed, gold = sum of both prices
+   - Current code has no loop; returns after first sale
+
+3. **No ShowRoom() verification after leaving shop** (BUG-C)
+   - ShopCommandHandler line 30: `return;` after "You leave the shop" message
+   - Need: `Shop_LeaveShop_CallsShowRoom()` test
+   - Verify: display state reset to room view, not stuck on shop panel
+
+4. **No ContentPanelMenu Escape behavior test** (BUG-D)
+   - Lines 583-585: Escape/Q return `items[selected].Value` not cancel value
+   - Should return last item (cancel option) regardless of selection
+   - Need: `ContentPanelMenu_Escape_ReturnsCancelOption()` test
+   - This is a Display layer test, not in SellSystemTests
+
+**Test Pattern for Display State Verification:**
+
+All 4 gaps require mocking/tracking display method calls. FakeDisplayService needs:
+```csharp
+public bool ShowRoomCalled { get; private set; }
+public void ShowRoom(Room room, string directions) => ShowRoomCalled = true;
+```
+
+Then tests can assert `display.ShowRoomCalled.Should().BeTrue()` after sell/shop operations.
+
+**Merchant sell flow test gaps found: no ShowRoom() call verification, no multi-sell loop test, no ContentPanelMenu Escape test**
+
 ### 2026-03-03 — HelpDisplayRegressionTests for HELP Markup Crash Prevention (#870)
 
 **PR:** #886 — `test: add HelpDisplayRegressionTests for HELP markup stability`  
@@ -1372,3 +1431,47 @@ With `SelfHealCooldown=1` and check-first: fires on turn 2 (correct, matching as
 - `ShowRoom` has 3 side effects beyond rendering content: (1) updates `_cachedRoom`, (2) appends to log, (3) renders map panel. These side effects make it dangerous to call from `RefreshDisplay` without considering the log spam.
 - `SetContent` is a destructive replace operation. `AppendContent` is additive. These should not be mixed in sequences where preservation of earlier messages matters (combat messages, hazard messages).
 - `ShowEquipmentComparison` is the only method that writes a non-Markup `Panel` (containing a `Table`) directly to the content panel, bypassing the string buffer. This creates a two-class system of content updates that will cause state divergence.
+
+
+---
+
+### 2026-03-06 — Merchant Menu Bug Fix Tests (#1157, #1158, #1156, #1159)
+
+**Task:** Write tests for Hill's 4 merchant menu bug fixes:
+1. SellCommandHandler ShowRoom restoration on all exit paths (#1157)
+2. Multi-sell loop support (#1158)
+3. ShopCommandHandler ShowRoom restoration on Leave (#1156)
+4. ContentPanelMenu<T> Escape/Q returns cancel sentinel (#1159)
+
+**Output:** 8 new tests in `SellSystemTests.cs`, enhancements to `FakeDisplayService`
+
+#### Tests Written
+**ShowRoom Restoration (#1157):**
+- `Sell_Success_CallsShowRoom` — verifies ShowRoom called after successful sale
+- `Sell_Cancel_CallsShowRoom` — verifies ShowRoom called when canceling at sell menu (idx=0)
+- `Sell_NoItems_CallsShowRoom` — verifies ShowRoom called when no sellable items
+- `Sell_NoMerchant_DoesNotCallShowRoom` — verifies ShowRoom NOT called on error path
+
+**Multi-Sell Loop (#1158):**
+- `Sell_CanSellMultipleItems_InOneSession` — verifies multiple items can be sold before exiting
+- `Sell_AfterCancelConfirm_ContinuesLoop` — verifies loop continues after canceling a confirm (NO) but then confirming the next one (YES)
+
+**Shop ShowRoom Restoration (#1156):**
+- `Shop_Leave_CallsShowRoom` — verifies ShowRoom called when selecting Leave (0)
+- `Shop_NoMerchant_Error_NoShowRoom` — verifies ShowRoom NOT called on error path
+
+#### FakeDisplayService Enhancements
+Added queue-based response support for testing multi-turn interactions:
+- `ShowRoomCallCount` (int) — tracks how many times ShowRoom was called
+- `SellMenuSelectResponses` (Queue<int>?) — queue of sell menu selections for multi-sell tests
+- `ConfirmMenuResponses` (Queue<bool>?) — queue of confirmation responses
+- `ShopMenuSelectResponses` (Queue<int>?) — queue of shop menu selections
+
+When queues are configured, `ShowSellMenuAndSelect`, `ShowConfirmMenu`, and `ShowShopWithSellAndSelect` dequeue responses in order. Falls back to `_input` reader if queues are null/empty.
+
+## Learnings
+- **FakeDisplayService needs ShowRoomCallCount to test display restoration** — Command handlers that restore the room view via `ShowRoom()` need a simple counter to verify the call was made.
+- **Multi-sell loop tests require queue-based response mocking in FakeDisplayService** — Testing multi-turn interactions (sell item 1 → confirm → sell item 2 → confirm → cancel) requires pre-configured response sequences. Queue-based mocking allows tests to simulate complex user flows without complex input reader setup.
+- **All command handler tests should verify ShowRoom() is called at end** — Regression #1157, #1156 show that forgetting to call `ShowRoom()` leaves the UI in an inconsistent state. Tests that verify ShowRoom restoration catch this entire class of bugs.
+- **Arrange-Act-Assert pattern scales well for command handler tests** — Setup helpers (`MakeSellSetup`) + queue-based responses + final assertions on player state + display calls = clean, focused tests.
+

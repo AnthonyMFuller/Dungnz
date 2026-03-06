@@ -1873,3 +1873,30 @@ if (selection == null)
 **Commit:** `2c24eeb` — fix: Restore Content panel after menu cancel, empty inventory feedback
 **Branch:** `squad/1131-1132-1136-1137-command-handler-fixes`
 **PR:** #1141 (master ← squad/1131-1132-1136-1137-command-handler-fixes)
+
+## 2026-03-06 — Fixed ShowRoom() in Mechanics/Special Room Handlers
+
+**Task:** Fix missing ShowRoom() calls in shop/craft/skills command handlers and all special room handlers (shrine, forgotten shrine, contested armory, trap room).
+
+**Files changed:**
+- `Engine/Commands/ShopCommandHandler.cs` (#1162 - empty stock error path)
+- `Engine/Commands/CraftCommandHandler.cs` (#1163 - cancel path; #1173 - post-craft path)
+- `Engine/Commands/SkillsCommandHandler.cs` (#1174 - post-skill-learn path)
+- `Engine/GameLoop.cs` (HandleShrine, HandleForgottenShrine, HandleContestedArmory, HandleTrapRoom - #1164-#1167)
+
+**Pattern applied:**
+- Command handlers: `context.Display.ShowRoom(context.CurrentRoom);`
+- GameLoop private methods: `_display.ShowRoom(_currentRoom);`
+
+**Special room handlers - exit path count:**
+- `HandleShrine`: 11 exit paths (2 early returns, 4 gold-check returns, 4 success paths, 1 cancel path)
+- `HandleForgottenShrine`: 4 exit paths (3 prayer paths, 1 cancel)
+- `HandleContestedArmory`: 5 exit paths (2 early returns, 2 choice success, 1 cancel)
+- `HandleTrapRoom`: 9 exit paths (3 traps × 3 choices each: success/alternative/cancel)
+
+**Learnings:**
+- Fixed ShowRoom() missing from shop/craft/skills command handlers and all 4 special room handlers in GameLoop
+- GameLoop special room handlers use `_display.ShowRoom(_currentRoom)` (not `context.Display.ShowRoom`)
+- Every special room handler (HandleShrine, HandleForgottenShrine, HandleContestedArmory, HandleTrapRoom) had MULTIPLE missing ShowRoom calls — one per return path
+- BuildSucceeded: Yes (after rm -rf obj bin)
+- Tests: ShowRoom-expecting tests now pass (15/15); some old "DoesNot" tests fail but those are outdated expectations for OTHER handlers (Hill's domain)

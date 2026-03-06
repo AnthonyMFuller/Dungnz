@@ -2703,3 +2703,107 @@ Fixed 7 display-layer bugs in `SpectreLayoutDisplayService` that caused blank sc
 - `MinimumSize()` in `SplitRows()` context controls row height (vertical), in `SplitColumns()` it would control column width (horizontal)
 - Ratio-based layouts can collapse too small on tiny terminals — use `MinimumSize()` to enforce usability minimums
 
+
+### 2026-06-14 — Merchant Menu Bugs Fixed (#1156, #1157, #1158, #1159)
+
+**Commit:** c17cd7e — `fix: restore room view after sell/shop and fix escape key in menus`
+**PR:** #1160
+
+**Issues addressed:**
+
+#### #1157 — Sell confirm menu persists after successful sell
+- **Root cause:** `SellCommandHandler` didn't call `ShowRoom()` after sale/cancel, leaving confirm menu in content panel
+- **Fix:** Added `ShowRoom(context.CurrentRoom)` at end of handler (after while loop exits)
+  - Called on all normal exit paths: cancel at menu, no items to sell, successful sales
+  - NOT called on error path (no merchant) — error paths preserve current display state
+
+#### #1158 — SellCommandHandler should allow selling multiple items
+- **Root cause:** Handler returned after first sale, forcing player to re-invoke `sell` command
+- **Fix:** Wrapped entire flow in `while (true)` loop (matches `ShopCommandHandler` pattern)
+  - Re-calculates `sellable` each iteration (inventory changes as items are sold)
+  - Loop continues until: player selects Cancel (idx == 0) OR no sellable items remain
+  - "Changed your mind" (cancel confirm) uses `continue` to re-show menu, not break
+
+#### #1156 — ShopCommandHandler doesn't restore room view on Leave
+- **Root cause:** When `shopChoice == 0` (Leave), handler returned without calling `ShowRoom()`
+- **Fix:** Added `ShowRoom(context.CurrentRoom)` before return on Leave path (line 30)
+  - NOT added to "no merchant" error path (same pattern as SellCommandHandler)
+
+#### #1159 — ContentPanelMenu Escape returns selected item instead of cancel
+- **Root cause:** `SpectreLayoutDisplayService.Input.cs` line 585: `case ConsoleKey.Escape: return items[selected].Value;`
+- **Codebase convention:** Last item in every menu is always the cancel/leave/no option
+- **Fix:** Changed to `return items[items.Count - 1].Value;` (returns last item, which is cancel)
+
+**Test infrastructure added:**
+- 8 new tests in `SellSystemTests.cs`:
+  - `Sell_Success_CallsShowRoom` — validates ShowRoom called after sale
+  - `Sell_Cancel_CallsShowRoom` — validates ShowRoom called when player cancels at menu (idx == 0)
+  - `Sell_NoItems_CallsShowRoom` — validates ShowRoom called when inventory has no sellable items
+  - `Sell_NoMerchant_DoesNotCallShowRoom` — validates ShowRoom NOT called on error path (no merchant)
+  - `Sell_CanSellMultipleItems_InOneSession` — validates while loop allows selling 2+ items without re-invoking command
+  - `Sell_AfterCancelConfirm_ContinuesLoop` — validates "Changed your mind" (No confirm) re-shows sell menu
+  - `Shop_Leave_CallsShowRoom` — validates ShowRoom called when player selects Leave (shopChoice == 0)
+  - `Shop_NoMerchant_Error_NoShowRoom` — validates ShowRoom NOT called on error path (no merchant)
+
+**Test infrastructure updates:**
+- `FakeDisplayService.cs`:
+  - Added `ShowRoomCallCount` property to track ShowRoom() call frequency
+  - Added `SellMenuSelectResponses`, `ConfirmMenuResponses`, `ShopMenuSelectResponses` queues for deterministic menu navigation in tests
+  - `ShowSellMenuAndSelect` now dequeues from `SellMenuSelectResponses` if configured (was always reading from `_input`)
+
+**Test bug fix:**
+- `Sell_NoMerchant_DoesNotCallShowRoom` and `Shop_NoMerchant_Error_NoShowRoom` initially failed because they expected `ShowRoomCallCount == initialCount`
+- **Issue:** `GameLoop.Run()` calls `RefreshDisplay()` at startup (line 170), which calls `ShowRoom()` once before command processing
+- **Fix:** Changed assertions from `.Should().Be(initialShowRoomCount)` to `.Should().Be(initialShowRoomCount + 1)` to account for RefreshDisplay()'s ShowRoom call
+- **Rationale:** Tests validate that *command handlers* don't call ShowRoom on error paths, but GameLoop's RefreshDisplay call is unavoidable and expected
+
+## Learnings
+
+**Convention: ALWAYS call ShowRoom() at end of every command handler to restore content panel**
+- Command handlers that open menus (sell, shop, inventory, skills, equip, compare, etc.) mutate the content panel
+- `ShowRoom()` restores the room view, ensuring content panel shows current state
+- **Exception:** Error paths (no merchant, invalid input, etc.) should NOT call ShowRoom() — preserve current display state and show error
+
+**ContentPanelMenu Escape/Q should return last item (cancel sentinel), not current selection**
+- Codebase convention: Last menu item is ALWAYS the cancel/leave/no option
+- Pressing Escape/Q should select cancel, regardless of current highlighted item
+- Pattern applies to: sell menu (0 = Cancel), shop menu (0 = Leave), confirm menu (false = No), etc.
+
+**SellCommandHandler now has a while(true) sell loop (like ShopCommandHandler)**
+- Allows selling multiple items per `sell` command invocation (UX improvement)
+- Loop exits when: player cancels (idx == 0) OR inventory has no sellable items
+- "Changed your mind" (No at confirm) continues loop (re-shows sell menu) — doesn't break
+
+**Test pattern: RefreshDisplay() call in GameLoop.Run() affects ShowRoomCallCount**
+- `GameLoop.Run()` calls `RefreshDisplay()` at line 170 (before command loop starts)
+- `RefreshDisplay()` calls `ShowRoom()`, incrementing `ShowRoomCallCount` by 1
+- Tests that measure ShowRoom frequency must account for this initial call
+- Pattern: `initialCount = display.ShowRoomCallCount; loop.Run(); display.ShowRoomCallCount.Should().Be(initialCount + 1);` for "no extra ShowRoom" assertions
+
+**Key file paths:**
+- `Engine/Commands/SellCommandHandler.cs` — sell command with multi-sell loop
+- `Engine/Commands/ShopCommandHandler.cs` — shop command (calls SellCommandHandler on shopChoice == -1)
+- `Display/Spectre/SpectreLayoutDisplayService.Input.cs` — ContentPanelMenu (Escape/Q handling)
+- `Dungnz.Tests/SellSystemTests.cs` — sell/shop command tests
+- `Dungnz.Tests/Helpers/FakeDisplayService.cs` — test double for IDisplayService
+
+## 2026-03-06: Fixed missing ShowRoom() calls in command handlers
+
+**Issue:** Deep menu audit found that many command handlers display content in the panel but never call `ShowRoom()` afterward, leaving stale content visible until the player types `LOOK`.
+
+**Fixed handlers:**
+- `InventoryCommandHandler` — add `ShowRoom()` after item selection (item detail + comparison path)
+- `UseCommandHandler` — add `ShowRoom()` at end when turn consumed (after using item from menu)
+- `CompareCommandHandler` — add `ShowRoom()` after showing comparison
+- `ExamineCommandHandler` — add `ShowRoom()` after item detail/comparison (both room item and inventory item paths)
+- `StatsCommandHandler` — add `ShowRoom()` after stats display
+- `MapCommandHandler` — add `ShowRoom()` after map update
+- `HelpCommandHandler` — add `ShowRoom()` after help display
+- `EquipmentCommandHandler` — add `ShowRoom()` after equipment display
+
+**Pattern established:**
+Every handler that sets content panel content MUST call `ShowRoom()` before returning (unless already called on cancel path). This is now the established convention — future handlers must follow this pattern.
+
+**Testing:** All 1695 tests pass.
+**Commit:** c72dbe8 on branch `scribe/log-merchant-menu-2026-03-06`
+**Issues closed:** #1168, #1169, #1170, #1171, #1172, #1175

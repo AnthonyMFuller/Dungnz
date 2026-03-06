@@ -26,6 +26,7 @@ internal sealed class ExamineCommandHandler : ICommandHandler
         if (roomItem != null)
         {
             context.Display.ShowItemDetail(roomItem);
+            context.Display.ShowRoom(context.CurrentRoom);
             return;
         }
 
@@ -42,6 +43,7 @@ internal sealed class ExamineCommandHandler : ICommandHandler
                 context.Display.ShowEquipmentComparison(context.Player, currentlyEquipped, invItem);
             }
 
+            context.Display.ShowRoom(context.CurrentRoom);
             return;
         }
 

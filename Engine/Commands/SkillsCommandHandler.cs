@@ -25,6 +25,7 @@ internal sealed class SkillsCommandHandler : ICommandHandler
             context.Display.ShowMessage($"You learned {skill}!");
         else
             context.Display.ShowMessage($"Cannot learn {skill} right now.");
+        context.Display.ShowRoom(context.CurrentRoom);
         context.TurnConsumed = false;
     }
 }

@@ -27,5 +27,6 @@ internal sealed class EquipmentCommandHandler : ICommandHandler
     public void Handle(string argument, CommandContext context)
     {
         context.Equipment.ShowEquipment(context.Player);
+        context.Display.ShowRoom(context.CurrentRoom);
     }
 }

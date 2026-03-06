@@ -44,6 +44,7 @@ internal sealed class ShopCommandHandler : ICommandHandler
                 {
                     context.Display.ShowMessage("The merchant has nothing for sale.");
                     context.Display.ShowMessage(context.Narration.Pick(MerchantNarration.NoBuy));
+                    context.Display.ShowRoom(context.CurrentRoom);
                     return;
                 }
                 if (shopChoice > merchant.Stock.Count)

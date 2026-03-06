@@ -3287,3 +3287,27 @@ Replace `SelectionPrompt` with a custom ReadKey-based menu rendered in the conte
 **Also found:** PauseAndRun race condition (#1133), PauseAndRun deadlock with Live exclusivity (#1134), null ReadKey wrong default (#1135), equip cancel TurnConsumed (#1136), empty shop loop (#1137), ForgottenShrine/ContestedArmory label-handler mismatches (#1138, #1139), duplicate helper methods (#1140), empty inventory silent no-op (#1132).
 
 **Summary Document:** `.ai-team/decisions/inbox/coulson-ui-bug-hunt-2.md`
+
+---
+
+### 2026-03-06: Merchant menu bug triage and issues filed
+
+**By:** Coulson
+**What:** Identified 4 bugs in merchant sell/shop flow and filed GitHub issues.
+**Why:** User reported sell confirm menu persisting after sale. Comprehensive root cause analysis revealed both handler-level and display service issues.
+
+## Issues Filed
+| Issue | Priority | Title |
+|-------|----------|-------|
+| #1157 | Critical | Sell confirm menu persists after successful sell |
+| #1158 | Enhancement | SellCommandHandler should allow selling multiple items |
+| #1156 | High | ShopCommandHandler doesn't restore room view on Leave |
+| #1159 | High | ContentPanelMenu Escape returns selected instead of cancel |
+
+**Decision record:** `.ai-team/decisions/inbox/coulson-merchant-menu-bugs.md`
+
+## Learnings
+- **ContentPanelMenu Escape/Q behavior:** Escape and Q keys return the currently selected item value instead of the cancel sentinel. This is a UX bug — pressing Escape on a "Sell? Yes/No" menu can accidentally confirm if Yes is highlighted. Convention: last menu item is always cancel, so Escape should return `items[items.Count - 1]`.
+- **SellCommandHandler and ShopCommandHandler exit pattern:** Both handlers lack `ShowRoom()` calls on their exit paths. After a successful sale or menu interaction, the content panel is not refreshed and shows stale menu markup. This is a systematic pattern failure.
+- **Command handler convention:** Always call `context.Display.ShowRoom(context.CurrentRoom)` at the end of a command handler to restore the content panel to the normal room view. This ensures clean UI state regardless of which path (success/cancel/error) the handler took.
+- **Interactive transaction loops:** Merchant sell and shop flows should wrap their transaction logic in `while(true)` loops to allow players to perform multiple transactions in one command session. This pattern is already established in `ShopCommandHandler` and should be mirrored in `SellCommandHandler`.
