@@ -3010,3 +3010,31 @@ Total: 8-11 days for all three if done sequentially.
 
 **Root Cause Analysis:**
 The systemic failure is that command handlers treat `ShowRoom` as optional. There is no enforced pattern that "every command that changes display state must restore room view." Recommendation: Create a CommandHandlerBase class with a `finally` block that calls `ShowRoom`, or add a post-command hook in GameLoop that unconditionally calls `ShowRoom` after every command (unless command explicitly opts out).
+
+
+### 2026-03-06: Design Review — Bug-Fix Sprint + Role Transitions
+
+**Facilitator:** Coulson
+**Participants:** Coulson, Hill, Barton, Romanoff, Fitz, Fury
+
+**Role changes effective immediately:**
+1. Romanoff: Promoted to QA Engineer — full PR review authority, can block merges, owns coverage gate
+2. Barton: Display Specialist trial — owns all SpectreLayoutDisplayService display bugs + ShowRoom() integration
+3. Hill: Focused on P1 gameplay bugs — SetBonusManager, loot scaling, HP clamping, cross-cutting constants
+4. Fury: Content pipeline activated — pending content issues to be filed separately
+5. Fitz: Owns squad-release.yml fix
+
+**Issues created this session:** #1177, #1178, #1179
+
+**Issues skipped (confirmed duplicates of closed issues):**
+- Issue B (ContentPanelMenu Escape) → duplicate of #1159 (closed)
+- Issue C (Boss loot scaling) → duplicate of #989 (closed)
+- Issue D (Enemy HP negative) → duplicate of #990 (closed)
+
+**Architecture decisions:**
+- ShowRoom() root fix strategy: CommandHandlerBase finally block OR GameLoop post-command hook preferred over 11 individual callsite patches (#1177)
+- Barton owns the display layer for this trial; Hill must not touch Display/ files
+- Romanoff blocks any PR without adequate test coverage
+
+**Process:**
+- Issue → Branch → PR → Romanoff review → merge (no direct to master)
