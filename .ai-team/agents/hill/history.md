@@ -2675,3 +2675,31 @@ Fixed 7 display-layer bugs in `SpectreLayoutDisplayService` that caused blank sc
 - Always save/restore display state (content, header, border) around destructive display operations.
 - Menu methods should either: (1) restore state before returning, or (2) document that caller must refresh.
 - Use finally blocks to ensure restoration even on exception/cancel.
+
+### 2026-04-08 — UI Layout Bugs Fixed (#1143, #1144)
+
+**Commit:** fc26b10 — `fix: limit Message Log to 12 displayed messages, enforce Command panel min size`
+
+**Issues addressed:**
+
+#### #1144 — Message Log shows too many messages
+- `Display/Spectre/SpectreLayoutDisplayService.cs`:
+  - Buffer size `MaxLogHistory = 50` controls how many messages are kept in memory
+  - Display method `UpdateLogPanel()` was showing all 50 via `TakeLast(MaxLogHistory)`
+- **Fix:** Added `MaxDisplayedLog = 12` constant; changed `UpdateLogPanel()` to use `TakeLast(MaxDisplayedLog)` instead
+  - Buffer still retains 50 messages (for potential scrollback or debugging)
+  - Panel now renders only the 12 most recent messages
+
+#### #1143 — Command panel can collapse to unusable size
+- `Display/Spectre/SpectreLayout.cs` line 60:
+  - Input layout node: `new Layout(Panels.Input).Ratio(3)` allocates 30% of bottom row height
+  - On small terminals, 30% could collapse to < 3 rows, making the Command panel unusable
+- **Fix:** Added `.MinimumSize(4)` to Input layout: `new Layout(Panels.Input).Ratio(3).MinimumSize(4)`
+  - In a `SplitRows()` context, `MinimumSize` controls height (rows), not width
+  - Command panel is now always at least 4 rows tall, regardless of terminal size
+
+**Key Learnings:**
+- `MaxLogHistory` controls buffer size (memory), `MaxDisplayedLog` controls display size (UI) — separating these allows for large buffers without overwhelming the UI
+- `MinimumSize()` in `SplitRows()` context controls row height (vertical), in `SplitColumns()` it would control column width (horizontal)
+- Ratio-based layouts can collapse too small on tiny terminals — use `MinimumSize()` to enforce usability minimums
+

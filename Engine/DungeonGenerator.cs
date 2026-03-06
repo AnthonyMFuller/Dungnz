@@ -166,6 +166,25 @@ public class DungeonGenerator
             }
         }
 
+        // Guarantee at least one merchant per floor (fixes #1145)
+        bool hasMerchant = false;
+        for (int y = 0; y < height; y++)
+            for (int x = 0; x < width; x++)
+                if (grid[y, x].Merchant != null) { hasMerchant = true; break; }
+
+        if (!hasMerchant)
+        {
+            var candidates = new List<Room>();
+            for (int y = 0; y < height; y++)
+                for (int x = 0; x < width; x++)
+                {
+                    var r = grid[y, x];
+                    if (r != startRoom && r != exitRoom) candidates.Add(r);
+                }
+            if (candidates.Count > 0)
+                candidates[_rng.Next(candidates.Count)].Merchant = Merchant.CreateRandom(_rng, floor, _allItems, difficulty);
+        }
+
         // Place items in some rooms
         for (int y = 0; y < height; y++)
         {
