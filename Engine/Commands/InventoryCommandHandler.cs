@@ -21,6 +21,7 @@ internal sealed class InventoryCommandHandler : ICommandHandler
                 var equipped = context.GetCurrentlyEquippedForItem(context.Player, selectedItem);
                 context.Display.ShowEquipmentComparison(context.Player, equipped, selectedItem);
             }
+            context.Display.ShowRoom(context.CurrentRoom);
         }
         else
         {

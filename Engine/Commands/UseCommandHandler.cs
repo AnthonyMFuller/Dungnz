@@ -184,5 +184,10 @@ internal sealed class UseCommandHandler : ICommandHandler
                 context.Display.ShowError($"You can't use {item.Name}.");
                 break;
         }
+        
+        if (context.TurnConsumed)
+        {
+            context.Display.ShowRoom(context.CurrentRoom);
+        }
     }
 }
