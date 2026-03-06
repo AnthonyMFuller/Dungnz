@@ -487,7 +487,11 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         sb.AppendLine("[bold red]  ╚═════╝  ╚═════╝ ╚═╝  ╚═══╝ ╚═════╝ ╚═╝  ╚═══╝╚══════╝[/]");
         sb.AppendLine();
         sb.Append("[grey]              A dungeon awaits...[/]");
-        SetContent(sb.ToString(), "🏰 DUNGNZ", Color.Red);
+
+        if (_ctx.IsLiveActive)
+            SetContent(sb.ToString(), "🏰 DUNGNZ", Color.Red);
+        else
+            AnsiConsole.Write(new Markup(sb.ToString() + "\n\n"));
     }
 
     /// <inheritdoc/>
