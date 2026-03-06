@@ -436,12 +436,14 @@ public partial class SpectreLayoutDisplayService
                 }
                 SetContent(sb.ToString().TrimEnd(), "[bold]✨ Skill Tree[/]");
                 var key = AnsiConsole.Console.Input.ReadKey(intercept: true);
-                if (key == null) return opts[selected].Value;
+                if (key == null) continue;
                 switch (key.Value.Key)
                 {
                     case System.ConsoleKey.UpArrow:   selected = (selected - 1 + opts.Count) % opts.Count; break;
                     case System.ConsoleKey.DownArrow: selected = (selected + 1) % opts.Count; break;
                     case System.ConsoleKey.Enter:     return opts[selected].Value;
+                    case System.ConsoleKey.Escape:
+                    case System.ConsoleKey.Q:         return null;
                 }
             }
         }
@@ -526,6 +528,8 @@ public partial class SpectreLayoutDisplayService
         if (isTopLevel)
         {
             _pauseLiveEvent.Set();
+            // Brief wait to allow Live loop to observe pause signal (#1133)
+            // Thread.Sleep is acceptable here as it's a timing buffer, not correctness
             Thread.Sleep(100);
         }
         try { return action(); }
@@ -560,7 +564,7 @@ public partial class SpectreLayoutDisplayService
             SetContent(sb.ToString().TrimEnd(), title);
 
             var key = AnsiConsole.Console.Input.ReadKey(intercept: true);
-            if (key == null) return items[selected].Value;
+            if (key == null) continue;
             switch (key.Value.Key)
             {
                 case System.ConsoleKey.UpArrow:
@@ -570,6 +574,9 @@ public partial class SpectreLayoutDisplayService
                     selected = (selected + 1) % items.Count;
                     break;
                 case System.ConsoleKey.Enter:
+                    return items[selected].Value;
+                case System.ConsoleKey.Escape:
+                case System.ConsoleKey.Q:
                     return items[selected].Value;
             }
         }
@@ -597,7 +604,7 @@ public partial class SpectreLayoutDisplayService
             SetContent(sb.ToString().TrimEnd(), title);
 
             var key = AnsiConsole.Console.Input.ReadKey(intercept: true);
-            if (key == null) return items[selected].Value;
+            if (key == null) continue;
             switch (key.Value.Key)
             {
                 case System.ConsoleKey.UpArrow:
@@ -608,6 +615,9 @@ public partial class SpectreLayoutDisplayService
                     break;
                 case System.ConsoleKey.Enter:
                     return items[selected].Value;
+                case System.ConsoleKey.Escape:
+                case System.ConsoleKey.Q:
+                    return null;
             }
         }
     }
