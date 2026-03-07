@@ -17,6 +17,9 @@
     <Compile Remove="Dungnz.Display/**" />
     <Compile Remove="Dungnz.Engine/**" />
     <Compile Remove="Models/**" />
+    <Compile Remove="Data/**" />
+    <Compile Remove="Systems/**" />
+    <Compile Remove="Engine/EnemyTypeRegistry.cs" />
     <Compile Remove="scripts/**" />
     <Content Remove="Data/**/*.cs" />
   </ItemGroup>
@@ -35,6 +38,8 @@
 
   <ItemGroup>
     <ProjectReference Include="Dungnz.Engine/Dungnz.Engine.csproj" />
+    <ProjectReference Include="Dungnz.Data/Dungnz.Data.csproj" />
+    <ProjectReference Include="Dungnz.Systems/Dungnz.Systems.csproj" />
   </ItemGroup>
 
   <ItemGroup>

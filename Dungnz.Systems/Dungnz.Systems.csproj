@@ -18,4 +18,13 @@
     <PackageReference Include="NJsonSchema" Version="11.5.2" />
   </ItemGroup>
 
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Dungnz.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Dungnz</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
 </Project>

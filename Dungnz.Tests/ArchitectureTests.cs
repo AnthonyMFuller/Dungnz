@@ -4,6 +4,7 @@ using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
 using Dungnz.Engine;
+using Dungnz.Systems;
 using Dungnz.Models;
 using Xunit;
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
