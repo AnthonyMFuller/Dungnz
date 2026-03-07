@@ -570,8 +570,10 @@ Dungnz/
 │   ├── StubCombatEngine.cs      # Deterministic test stub
 │   ├── CommandParser.cs         # Maps raw text input → ParsedCommand (verb + argument)
 │   ├── DungeonGenerator.cs      # Procedural grid generation with BFS connectivity check
-│   └── EnemyFactory.cs          # Spawns regular enemies or boss variants by floor
-├── Models/                      # Pure data: Player, Room, Enemy, Item, enums, events
+│   ├── EnemyFactory.cs          # Spawns regular enemies or boss variants by floor
+│   └── EnemyTypeRegistry.cs     # Runtime JSON polymorphism for all Enemy subtypes
+├── Dungnz.Models/               # Class library: pure domain models, zero external deps
+│   └── (Player, Room, Enemy, Item, SkillTree, MerchantInventoryConfig, DefaultItems, ...)
 ├── Data/
 │   ├── enemy-stats.json         # Stats and ASCII art for all 29+ enemy types
 │   ├── item-stats.json          # 119 items: stats, tiers, passiveEffectId, setId, classRestriction
@@ -593,14 +595,12 @@ Dungnz/
     ├── FloorSpawnPools.cs       # Per-floor enemy spawn tables (60/30/10 distribution)
     ├── FloorTransitionNarration.cs # Atmospheric text for floor 5→6, 6→7, 7→8 transitions
     ├── InventoryManager.cs      # Take, use, and item dispatch
-    ├── MerchantInventoryConfig.cs  # Loads and queries merchant-inventory.json
     ├── NarrationService.cs      # General combat and exploration flavour text
     ├── PassiveEffectProcessor.cs   # Legendary passive effect handlers (vampiric, reflect, phoenix…)
     ├── PrestigeSystem.cs        # Cross-run win tracking and prestige bonuses
     ├── RoomDescriptions.cs      # Floor-themed room description pools (8 floors × 4 each)
     ├── SaveSystem.cs            # Full game-state serialisation/deserialisation
     ├── SetBonusManager.cs       # 3 equipment sets with 2- and 3-piece bonus detection
-    ├── SkillTree.cs             # Passive skill unlock and bonus application
     ├── StatusEffectManager.cs   # Per-turn effect ticking and stat modifiers
     └── Enemies/                 # One class per enemy type + BossVariants.cs
 ```
