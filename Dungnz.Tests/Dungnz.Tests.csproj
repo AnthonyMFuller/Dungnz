@@ -36,6 +36,8 @@
     <ProjectReference Include="..\Dungnz.Models\Dungnz.Models.csproj" />
     <ProjectReference Include="..\Dungnz.Data\Dungnz.Data.csproj" />
     <ProjectReference Include="..\Dungnz.Systems\Dungnz.Systems.csproj" />
+    <ProjectReference Include="..\Dungnz.Display\Dungnz.Display.csproj" />
+    <ProjectReference Include="..\Dungnz.Engine\Dungnz.Engine.csproj" />
   </ItemGroup>
 
 </Project>
