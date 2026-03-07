@@ -1,4 +1,4 @@
-using Dungnz.Engine;
+using Dungnz.Models;
 
 namespace Dungnz.Tests.Helpers;
 

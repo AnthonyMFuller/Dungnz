@@ -2,7 +2,6 @@ namespace Dungnz.Systems;
 
 using System;
 using System.Linq;
-using Dungnz.Display;
 using Dungnz.Models;
 
 /// <summary>Identifies when a passive item effect should be triggered.</summary>

@@ -3424,3 +3424,58 @@ Team structure is 80% correct. The 6-agent model works. Problem is **workload di
 
 **Decision Document:** `.ai-team/decisions/inbox/coulson-team-composition-review.md`
 
+
+---
+
+### 2026-03-06: Multi-Project Architecture Design
+**By:** Coulson (Lead)
+**Requested by:** Anthony
+
+#### Architecture Decisions Made
+
+**Target state:** 5 class library projects + 1 thin executable
+
+| Project | Role | NuGet deps |
+|---|---|---|
+| `Dungnz.Models` | Domain models + interface contracts | none |
+| `Dungnz.Data` | Static data arrays (DefaultItems, CombatNarration) | none |
+| `Dungnz.Systems` | All game systems (includes Enemies/) | MEL, NJsonSchema |
+| `Dungnz.Display` | All rendering (Spectre) | Spectre.Console |
+| `Dungnz.Engine` | Orchestration (GameLoop, CombatEngine, Commands) | MEL |
+| `Dungnz` (exe) | Program.cs + Data JSON files | Serilog packages |
+
+**Dependency order (acyclic):** Models ← Data ← Systems ← Display ← Engine ← Dungnz(exe)
+
+**Three circular dependencies found and resolved before split:**
+1. `Display ↔ Engine` — IDisplayService used StartupMenuOption from Engine while Engine used IDisplayService from Display. Fix: move IDisplayService, IInputReader, IMenuNavigator, StartupMenuOption to Models.
+2. `Systems ↔ Display` — 5 Systems managers imported Dungnz.Display for IDisplayService. Fixed by resolution #1 above.
+3. `Models ↔ Systems.Enemies` — Enemy.cs had 30+ compile-time `[JsonDerivedType]` attributes referencing concrete types in Systems. Fix: runtime JSON type registration via EnemyTypeRegistry in Engine layer. Removes Models→Systems compile dependency entirely.
+
+**InternalsVisibleTo:** Each extracted library project must declare `InternalsVisibleTo("Dungnz.Tests")`. Currently only the monolith has this.
+
+**ArchUnitNET:** Both test architecture files currently load `typeof(GameLoop).Assembly` only. Must be updated to load all 5 library assemblies after extraction.
+
+#### Issues Created (AnthonyMFuller/Dungnz)
+
+- **#1187** — Create multi-project class library scaffolding (no code moves, foundation)
+- **#1188** — Resolve circular dep: move interface contracts to Models layer
+- **#1189** — Resolve circular dep: replace JsonDerivedType with runtime enemy type registration
+- **#1190** — Extract Dungnz.Models class library
+- **#1191** — Extract Dungnz.Data class library
+- **#1192** — Extract Dungnz.Systems class library
+- **#1193** — Extract Dungnz.Display class library
+- **#1194** — Extract Dungnz.Engine class library
+- **#1195** — Finalize Dungnz.csproj as thin executable entry point
+- **#1196** — Update Dungnz.Tests for multi-project solution
+
+Critical path: #1187 → #1188 → #1189 → #1190 → #1191 → #1192 → #1193 → #1194 → #1195 → #1196 (strictly sequential — each must build green before next starts)
+
+#### Risks Identified
+
+- **HIGH:** Runtime JSON registration misses an enemy subclass → save/load breaks. Mitigation: test that registry covers all concrete Enemy subclasses via reflection.
+- **MEDIUM:** ArchUnitNET multi-assembly loading may surface new rule violations previously hidden by single-assembly scope. Expected — treat as genuine violations to address.
+- **MEDIUM:** `InternalsVisibleTo` missing on any library causes test compile failure immediately upon test project ref addition.
+- **LOW:** `CombatEngine` is 1,709 lines — high-risk file move but no logic changes, low actual risk.
+- **LOW:** `Data/*.json` files must keep `CopyToOutputDirectory` in the executable project.
+
+**Decision document:** `.ai-team/decisions/inbox/coulson-multiproject-architecture.md`

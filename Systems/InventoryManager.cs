@@ -1,6 +1,5 @@
 namespace Dungnz.Systems;
 using Dungnz.Models;
-using Dungnz.Display;
 
 /// <summary>
 /// Handles player inventory operations: taking items from rooms, using items, and

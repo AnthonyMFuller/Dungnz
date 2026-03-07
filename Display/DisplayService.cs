@@ -1,4 +1,3 @@
-using Dungnz.Engine;
 using Dungnz.Models;
 
 namespace Dungnz.Display;
@@ -1137,7 +1136,7 @@ public class ConsoleDisplayService : IDisplayService
     /// <summary>
     /// Displays prestige level card. Only called when prestige.PrestigeLevel > 0.
     /// </summary>
-    public void ShowPrestigeInfo(Systems.PrestigeData prestige)
+    public void ShowPrestigeInfo(PrestigeData prestige)
     {
         var yellow = Systems.ColorCodes.Yellow;
         var reset = Systems.ColorCodes.Reset;
@@ -1181,7 +1180,7 @@ public class ConsoleDisplayService : IDisplayService
     /// <summary>
     /// Shows class cards with ASCII stat bars and inline prestige bonuses, returns the player's validated choice.
     /// </summary>
-    public PlayerClassDefinition SelectClass(Systems.PrestigeData? prestige)
+    public PlayerClassDefinition SelectClass(PrestigeData? prestige)
     {
         var cyan = Systems.ColorCodes.Cyan;
         var yellow = Systems.ColorCodes.Yellow;
@@ -1384,7 +1383,7 @@ public class ConsoleDisplayService : IDisplayService
     }
     
     /// <summary>Renders the box-drawn victory screen with player name, level, floors conquered, and run statistics.</summary>
-    public void ShowVictory(Player player, int floorsCleared, Systems.RunStats stats)
+    public void ShowVictory(Player player, int floorsCleared, RunStats stats)
     {
         const int W = 42;
         var border = new string('═', W);
@@ -1405,7 +1404,7 @@ public class ConsoleDisplayService : IDisplayService
     }
     
     /// <summary>Renders the box-drawn game over screen with player name, level, cause of death, and run statistics.</summary>
-    public void ShowGameOver(Player player, string? killedBy, Systems.RunStats stats)
+    public void ShowGameOver(Player player, string? killedBy, RunStats stats)
     {
         const int W = 42;
         var border = new string('═', W);

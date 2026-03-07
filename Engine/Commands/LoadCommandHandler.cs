@@ -1,6 +1,7 @@
 namespace Dungnz.Engine.Commands;
 
 using Dungnz.Systems;
+using Dungnz.Models;
 using Microsoft.Extensions.Logging;
 
 internal sealed class LoadCommandHandler : ICommandHandler

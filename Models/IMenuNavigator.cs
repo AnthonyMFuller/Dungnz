@@ -1,4 +1,4 @@
-namespace Dungnz.Engine;
+namespace Dungnz.Models;
 
 /// <summary>
 /// Presents the player with a fixed list of choices and returns their selection.

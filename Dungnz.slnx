@@ -1,4 +1,9 @@
 <Solution>
   <Project Path="Dungnz.csproj" />
   <Project Path="Dungnz.Tests/Dungnz.Tests.csproj" />
+  <Project Path="Dungnz.Models/Dungnz.Models.csproj" />
+  <Project Path="Dungnz.Data/Dungnz.Data.csproj" />
+  <Project Path="Dungnz.Systems/Dungnz.Systems.csproj" />
+  <Project Path="Dungnz.Display/Dungnz.Display.csproj" />
+  <Project Path="Dungnz.Engine/Dungnz.Engine.csproj" />
 </Solution>

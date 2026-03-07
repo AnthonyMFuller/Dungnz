@@ -1,6 +1,7 @@
 namespace Dungnz.Engine.Commands;
 
 using Dungnz.Systems;
+using Dungnz.Models;
 
 internal sealed class LeaderboardCommandHandler : ICommandHandler
 {

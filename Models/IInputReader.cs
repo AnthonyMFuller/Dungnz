@@ -1,4 +1,4 @@
-namespace Dungnz.Engine;
+namespace Dungnz.Models;
 
 /// <summary>
 /// Abstraction over a line-based text input source, enabling the game to read

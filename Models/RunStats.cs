@@ -1,4 +1,4 @@
-namespace Dungnz.Systems;
+namespace Dungnz.Models;
 
 using System.Text.Json;
 

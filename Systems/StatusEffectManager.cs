@@ -1,6 +1,5 @@
 namespace Dungnz.Systems;
 using Dungnz.Models;
-using Dungnz.Display;
 
 /// <summary>
 /// Tracks and processes active status effects (poison, bleed, stun, regen, etc.) for both

@@ -1,4 +1,4 @@
-using Dungnz.Engine;
+using Dungnz.Models;
 using Dungnz.Tests.Helpers;
 using Xunit;
 
