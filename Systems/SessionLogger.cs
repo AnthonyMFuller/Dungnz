@@ -1,4 +1,5 @@
 namespace Dungnz.Systems;
+using Dungnz.Models;
 
 using System.Text.Json;
 using Microsoft.Extensions.Logging;

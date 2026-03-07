@@ -1,4 +1,4 @@
-namespace Dungnz.Engine;
+namespace Dungnz.Models;
 
 /// <summary>
 /// Represents the player's choice at the main startup menu.

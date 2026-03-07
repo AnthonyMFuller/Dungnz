@@ -1,6 +1,6 @@
 namespace Dungnz.Models;
 
-/// <summary>Discriminated union returned by <see cref="Display.IDisplayService.ShowTakeMenuAndSelect"/>.</summary>
+/// <summary>Discriminated union returned by <see cref="IDisplayService.ShowTakeMenuAndSelect"/>.</summary>
 public abstract record TakeSelection
 {
     private TakeSelection() { }

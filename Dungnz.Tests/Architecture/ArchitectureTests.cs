@@ -1,5 +1,6 @@
 using System.Reflection;
 using Dungnz.Display;
+using Dungnz.Models;
 using Dungnz.Engine;
 using Xunit;
 

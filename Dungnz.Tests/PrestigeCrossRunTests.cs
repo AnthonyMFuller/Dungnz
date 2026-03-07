@@ -1,4 +1,5 @@
 using Dungnz.Systems;
+using Dungnz.Models;
 using FluentAssertions;
 using Xunit;
 

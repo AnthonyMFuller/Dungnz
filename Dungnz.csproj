@@ -11,6 +11,11 @@
 
   <ItemGroup>
     <Compile Remove="Dungnz.Tests/**" />
+    <Compile Remove="Dungnz.Models/**" />
+    <Compile Remove="Dungnz.Data/**" />
+    <Compile Remove="Dungnz.Systems/**" />
+    <Compile Remove="Dungnz.Display/**" />
+    <Compile Remove="Dungnz.Engine/**" />
     <Compile Remove="scripts/**" />
     <Content Remove="Data/**/*.cs" />
   </ItemGroup>
@@ -25,6 +30,10 @@
     <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
       <_Parameter1>Dungnz.Tests</_Parameter1>
     </AssemblyAttribute>
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="Dungnz.Engine/Dungnz.Engine.csproj" />
   </ItemGroup>
 
   <ItemGroup>

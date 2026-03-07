@@ -2,7 +2,6 @@ namespace Dungnz.Tests;
 using Xunit;
 using Dungnz.Models;
 using Dungnz.Systems;
-using Dungnz.Display;
 using Dungnz.Tests.Helpers;
 
 /// <summary>

@@ -1,7 +1,5 @@
-using Dungnz.Engine;
-using Dungnz.Models;
 
-namespace Dungnz.Display;
+namespace Dungnz.Models;
 
 /// <summary>
 /// Defines all output and input operations the game uses to communicate
@@ -219,13 +217,13 @@ public interface IDisplayService
     bool ShowIntroNarrative();
 
     /// <summary>Displays prestige level card. Only called when prestige.PrestigeLevel > 0.</summary>
-    void ShowPrestigeInfo(Dungnz.Systems.PrestigeData prestige);
+    void ShowPrestigeInfo(PrestigeData prestige);
 
     /// <summary>Shows colored difficulty cards with mechanical context and returns the player's validated choice.</summary>
     Dungnz.Models.Difficulty SelectDifficulty();
 
     /// <summary>Shows class cards with ASCII stat bars and inline prestige bonuses, returns the player's validated choice.</summary>
-    Dungnz.Models.PlayerClassDefinition SelectClass(Dungnz.Systems.PrestigeData? prestige);
+    Dungnz.Models.PlayerClassDefinition SelectClass(PrestigeData? prestige);
 
     /// <summary>
     /// Renders a box-drawn card for each shop item with type icon, tier-colored name,
@@ -302,7 +300,7 @@ public interface IDisplayService
     /// <param name="player">The player's final state.</param>
     /// <param name="floorsCleared">Number of floors cleared.</param>
     /// <param name="stats">Run statistics.</param>
-    void ShowVictory(Player player, int floorsCleared, Dungnz.Systems.RunStats stats);
+    void ShowVictory(Player player, int floorsCleared, RunStats stats);
 
     /// <summary>
     /// Displays game over screen with cause of death and run statistics.
@@ -310,7 +308,7 @@ public interface IDisplayService
     /// <param name="player">The player's final state.</param>
     /// <param name="killedBy">Optional cause of death.</param>
     /// <param name="stats">Run statistics.</param>
-    void ShowGameOver(Player player, string? killedBy, Dungnz.Systems.RunStats stats);
+    void ShowGameOver(Player player, string? killedBy, RunStats stats);
 
     /// <summary>
     /// Renders the enemy's ASCII art in a styled box before combat, if art is present.
@@ -399,7 +397,7 @@ public interface IDisplayService
     Item? ShowUseMenuAndSelect(IReadOnlyList<Item> usable);
 
     /// <summary>Presents room items as an arrow-key menu. Returns a <see cref="Models.TakeSelection"/> or null for cancel.</summary>
-    Models.TakeSelection? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems);
+    TakeSelection? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems);
 
     /// <summary>Shows the main startup menu. When <paramref name="hasSaves"/> is false, the Load Save option is omitted.</summary>
     StartupMenuOption ShowStartupMenu(bool hasSaves);
