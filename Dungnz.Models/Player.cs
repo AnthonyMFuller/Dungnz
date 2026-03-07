@@ -10,7 +10,7 @@ public partial class Player
 
     /// <summary>
     /// Gets the list of status effects currently active on the player. Used for save/load
-    /// persistence and is managed directly by <see cref="Dungnz.Systems.StatusEffectManager"/>.
+    /// persistence and is managed directly by <c>StatusEffectManager</c>.
     /// </summary>
     public List<ActiveEffect> ActiveEffects { get; } = new();
 

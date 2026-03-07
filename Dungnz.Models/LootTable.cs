@@ -1,7 +1,5 @@
 namespace Dungnz.Models;
 
-using Dungnz.Data;
-
 /// <summary>
 /// Defines the drop pool for a specific enemy, combining a configurable list of chance-based
 /// item drops (e.g., boss keys) with a tiered random item system that scales with player level.

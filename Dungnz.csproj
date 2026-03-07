@@ -16,6 +16,7 @@
     <Compile Remove="Dungnz.Systems/**" />
     <Compile Remove="Dungnz.Display/**" />
     <Compile Remove="Dungnz.Engine/**" />
+    <Compile Remove="Models/**" />
     <Compile Remove="scripts/**" />
     <Content Remove="Data/**/*.cs" />
   </ItemGroup>
