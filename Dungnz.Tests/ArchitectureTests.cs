@@ -57,7 +57,7 @@ public class ArchitectureTests
             .Where(t => t.IsSubclassOf(enemyType) && !t.IsAbstract)
             .ToHashSet();
 
-        var registeredTypes = EnemyTypeRegistry.RegisteredTypes().Values.ToHashSet();
+        var registeredTypes = Dungnz.Engine.EnemyTypeRegistry.RegisteredTypes().Values.ToHashSet();
 
         var missing = allSubclasses.Except(registeredTypes).ToList();
 
