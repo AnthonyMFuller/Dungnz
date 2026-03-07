@@ -16,12 +16,6 @@
     <Compile Remove="Dungnz.Systems/**" />
     <Compile Remove="Dungnz.Display/**" />
     <Compile Remove="Dungnz.Engine/**" />
-    <Compile Remove="Models/**" />
-    <Compile Remove="Data/**" />
-    <Compile Remove="Display/**" />
-    <Compile Remove="Systems/**" />
-    <Compile Remove="Engine/**" />
-    <Compile Remove="scripts/**" />
     <Content Remove="Data/**/*.cs" />
   </ItemGroup>
 
@@ -32,26 +26,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>Dungnz.Tests</_Parameter1>
-    </AssemblyAttribute>
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="Dungnz.Display/Dungnz.Display.csproj" />
     <ProjectReference Include="Dungnz.Engine/Dungnz.Engine.csproj" />
-    <ProjectReference Include="Dungnz.Data/Dungnz.Data.csproj" />
-    <ProjectReference Include="Dungnz.Systems/Dungnz.Systems.csproj" />
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.3" />
     <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.3" />
-    <PackageReference Include="NJsonSchema" Version="11.5.2" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
-    <PackageReference Include="Spectre.Console" Version="0.54.0" />
-
   </ItemGroup>
 
 </Project>
