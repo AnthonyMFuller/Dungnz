@@ -32,12 +32,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Dungnz.csproj" />
     <ProjectReference Include="..\Dungnz.Models\Dungnz.Models.csproj" />
     <ProjectReference Include="..\Dungnz.Data\Dungnz.Data.csproj" />
     <ProjectReference Include="..\Dungnz.Systems\Dungnz.Systems.csproj" />
     <ProjectReference Include="..\Dungnz.Display\Dungnz.Display.csproj" />
     <ProjectReference Include="..\Dungnz.Engine\Dungnz.Engine.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\Data\**" Exclude="..\Data\**\*.cs">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <Link>Data\%(RecursiveDir)%(Filename)%(Extension)</Link>
+    </Content>
   </ItemGroup>
 
 </Project>

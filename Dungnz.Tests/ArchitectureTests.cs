@@ -3,6 +3,8 @@ using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
 using ArchUnitNET.xUnit;
+using Dungnz.Data;
+using Dungnz.Display;
 using Dungnz.Engine;
 using Dungnz.Systems;
 using Dungnz.Models;
@@ -18,7 +20,13 @@ namespace Dungnz.Tests;
 public class ArchitectureTests
 {
     private static readonly Architecture Architecture =
-        new ArchLoader().LoadAssemblies(typeof(GameLoop).Assembly, typeof(Enemy).Assembly).Build();
+        new ArchLoader().LoadAssemblies(
+            typeof(GameLoop).Assembly,          // Dungnz.Engine
+            typeof(Enemy).Assembly,             // Dungnz.Models
+            typeof(InventoryManager).Assembly,  // Dungnz.Systems
+            typeof(ConsoleDisplayService).Assembly, // Dungnz.Display
+            typeof(CombatNarration).Assembly    // Dungnz.Data
+        ).Build();
 
     // TODO: Re-enable when ArchUnitNET supports NotCallMethod (requires newer version)
     // [Fact]
