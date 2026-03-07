@@ -3,6 +3,7 @@ namespace Dungnz.Systems;
 using System;
 using System.IO;
 using System.Text.Json;
+using Dungnz.Engine;
 using Dungnz.Models;
 
 /// <summary>
@@ -20,11 +21,7 @@ public static class SaveSystem
 
     internal static void OverrideSaveDirectory(string path) => SaveDirectory = path;
 
-    private static readonly JsonSerializerOptions JsonOptions = new()
-    {
-        WriteIndented = true,
-        DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull
-    };
+    private static readonly JsonSerializerOptions JsonOptions = EnemyTypeRegistry.CreateOptions();
 
     static SaveSystem()
     {

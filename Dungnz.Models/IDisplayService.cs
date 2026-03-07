@@ -174,7 +174,7 @@ public interface IDisplayService
     /// Displays a message with the specified ANSI color applied.
     /// </summary>
     /// <param name="message">The message text to display.</param>
-    /// <param name="color">The ANSI color code to apply (from <see cref="Systems.ColorCodes"/>).</param>
+    /// <param name="color">The ANSI color code to apply (from <c>ColorCodes</c>).</param>
     void ShowColoredMessage(string message, string color);
 
     /// <summary>
@@ -182,7 +182,7 @@ public interface IDisplayService
     /// the standard combat message indentation.
     /// </summary>
     /// <param name="message">The combat message text to display.</param>
-    /// <param name="color">The ANSI color code to apply (from <see cref="Systems.ColorCodes"/>).</param>
+    /// <param name="color">The ANSI color code to apply (from <c>ColorCodes</c>).</param>
     void ShowColoredCombatMessage(string message, string color);
 
     /// <summary>

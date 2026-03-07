@@ -1,4 +1,4 @@
-namespace Dungnz.Data;
+namespace Dungnz.Models;
 
 using Dungnz.Models;
 

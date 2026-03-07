@@ -85,7 +85,7 @@ public class Item
 
     /// <summary>
     /// Gets or sets the carry weight of this item. Defaults to <c>1</c>.
-    /// Used by <see cref="Dungnz.Systems.InventoryManager"/> to enforce the per-player weight limit.
+    /// Used by <c>InventoryManager</c> to enforce the per-player weight limit.
     /// </summary>
     public int Weight { get; set; } = 1;
 

@@ -33,6 +33,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Dungnz.csproj" />
+    <ProjectReference Include="..\Dungnz.Models\Dungnz.Models.csproj" />
   </ItemGroup>
 
 </Project>

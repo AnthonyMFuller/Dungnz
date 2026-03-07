@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Text.Json.Serialization;
 using ArchUnitNET.Domain;
 using ArchUnitNET.Fluent;
 using ArchUnitNET.Loader;
@@ -8,19 +7,17 @@ using Dungnz.Engine;
 using Dungnz.Models;
 using Xunit;
 using static ArchUnitNET.Fluent.ArchRuleDefinition;
-using SystemType = System.Type;
-using SystemAssembly = System.Reflection.Assembly;
 
 namespace Dungnz.Tests;
 
 /// <summary>
 /// Architecture enforcement tests that validate layer boundaries and prevent
-/// common bugs (e.g., missing JsonDerivedType registrations that cause save crashes).
+/// common bugs (e.g., missing enemy type registrations that cause save crashes).
 /// </summary>
 public class ArchitectureTests
 {
     private static readonly Architecture Architecture =
-        new ArchLoader().LoadAssemblies(typeof(GameLoop).Assembly).Build();
+        new ArchLoader().LoadAssemblies(typeof(GameLoop).Assembly, typeof(Enemy).Assembly).Build();
 
     // TODO: Re-enable when ArchUnitNET supports NotCallMethod (requires newer version)
     // [Fact]
@@ -47,26 +44,24 @@ public class ArchitectureTests
     }
 
     [Fact]
-    public void AllEnemySubclasses_MustHave_JsonDerivedTypeAttribute()
+    public void EnemyTypeRegistry_MustRegister_AllConcreteEnemySubclasses()
     {
-        // Every concrete Enemy subclass must be registered on the Enemy base class
-        // This prevents the P0 boss serialization crash bug from recurring
+        // EnemyTypeRegistry must register every concrete Enemy subclass so that
+        // polymorphic save/load never silently loses type information.
         var enemyType = typeof(Enemy);
-        var assembly = System.Reflection.Assembly.GetAssembly(enemyType)!;
-        
-        var subclasses = assembly.GetTypes()
+
+        // Only inspect the main game assembly — test helpers that extend Enemy should not require registration
+        var gameAssembly = typeof(GameLoop).Assembly;
+        var allSubclasses = gameAssembly.GetTypes()
             .Where(t => t.IsSubclassOf(enemyType) && !t.IsAbstract)
-            .ToList();
-        
-        var registeredTypes = enemyType
-            .GetCustomAttributes<JsonDerivedTypeAttribute>()
-            .Select(a => a.DerivedType)
             .ToHashSet();
-        
-        var missing = subclasses.Where(t => !registeredTypes.Contains(t)).ToList();
-        
+
+        var registeredTypes = EnemyTypeRegistry.RegisteredTypes().Values.ToHashSet();
+
+        var missing = allSubclasses.Except(registeredTypes).ToList();
+
         Assert.True(missing.Count == 0,
-            $"The following Enemy subclasses are missing [JsonDerivedType] on Enemy base class " +
+            $"The following Enemy subclasses are missing from EnemyTypeRegistry " +
             $"and will cause save crashes: {string.Join(", ", missing.Select(t => t.Name))}");
     }
 }

@@ -1,5 +1,6 @@
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using Dungnz.Engine;
 using Dungnz.Models;
 using Dungnz.Systems;
 using Dungnz.Systems.Enemies;
@@ -84,7 +85,7 @@ public class SerializationSnapshotTests
     public Task Enemy_Serialization_MatchesSnapshot()
     {
         var goblin = new Goblin();
-        var json = JsonSerializer.Serialize<Enemy>(goblin, SnapshotJsonOptions);
+        var json = JsonSerializer.Serialize<Enemy>(goblin, EnemyTypeRegistry.CreateOptions());
         return Verifier.Verify(json);
     }
 

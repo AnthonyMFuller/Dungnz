@@ -1,54 +1,12 @@
-using System.Text.Json.Serialization;
-using Dungnz.Systems.Enemies;
-
 namespace Dungnz.Models;
 
 /// <summary>
 /// Abstract base class for all dungeon enemies. Defines core combat stats, special mechanic
 /// flags, and the loot table used when the enemy is defeated. Concrete enemy types derive
 /// from this class and configure their specific behaviours in their constructors.
+/// Polymorphic JSON serialisation is configured at runtime via <c>EnemyTypeRegistry</c>
+/// to avoid a compile-time circular dependency between Dungnz.Models and Dungnz.Systems.Enemies.
 /// </summary>
-[JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
-[JsonDerivedType(typeof(Goblin), "goblin")]
-[JsonDerivedType(typeof(GoblinShaman), "goblinshaman")]
-[JsonDerivedType(typeof(Skeleton), "skeleton")]
-[JsonDerivedType(typeof(Troll), "troll")]
-[JsonDerivedType(typeof(DarkKnight), "darkknight")]
-[JsonDerivedType(typeof(Mimic), "mimic")]
-[JsonDerivedType(typeof(StoneGolem), "stonegolem")]
-[JsonDerivedType(typeof(VampireLord), "vampirelord")]
-[JsonDerivedType(typeof(Wraith), "wraith")]
-[JsonDerivedType(typeof(DungeonBoss), "dungeonboss")]
-[JsonDerivedType(typeof(GoblinWarchief), "goblinwarchief")]
-[JsonDerivedType(typeof(PlagueHoundAlpha), "plaguehoundalpha")]
-[JsonDerivedType(typeof(IronSentinel), "ironsentinel")]
-[JsonDerivedType(typeof(BoneArchon), "bonearchon")]
-[JsonDerivedType(typeof(CrimsonVampire), "crimsonvampire")]
-[JsonDerivedType(typeof(LichKing), "lichking")]
-[JsonDerivedType(typeof(StoneTitan), "stonetitan")]
-[JsonDerivedType(typeof(ShadowWraith), "shadowwraith")]
-[JsonDerivedType(typeof(VampireBoss), "vampireboss")]
-[JsonDerivedType(typeof(GiantRat), "giantrat")]
-[JsonDerivedType(typeof(CursedZombie), "cursedzombie")]
-[JsonDerivedType(typeof(BloodHound), "bloodhound")]
-[JsonDerivedType(typeof(IronGuard), "ironguard")]
-[JsonDerivedType(typeof(NightStalker), "nightstalker")]
-[JsonDerivedType(typeof(FrostWyvern), "frostwyvern")]
-[JsonDerivedType(typeof(ChaosKnight), "chaosknight")]
-[JsonDerivedType(typeof(ShadowImp), "shadowimp")]
-[JsonDerivedType(typeof(CarrionCrawler), "carrioncrawler")]
-[JsonDerivedType(typeof(DarkSorcerer), "darksorcerer")]
-[JsonDerivedType(typeof(BoneArcher), "bonearcher")]
-[JsonDerivedType(typeof(CryptPriest), "cryptpriest")]
-[JsonDerivedType(typeof(PlagueBear), "plaguebear")]
-[JsonDerivedType(typeof(SiegeOgre), "siegeogre")]
-[JsonDerivedType(typeof(BladeDancer), "bladedancer")]
-[JsonDerivedType(typeof(ManaLeech), "manaleech")]
-[JsonDerivedType(typeof(ShieldBreaker), "shieldbreaker")]
-[JsonDerivedType(typeof(ArchlichSovereign), "archlichsovereign")]
-[JsonDerivedType(typeof(AbyssalLeviathan), "abyssalleviathan")]
-[JsonDerivedType(typeof(InfernalDragon), "infernaldragon")]
-[JsonDerivedType(typeof(GenericEnemy), "genericenemy")]
 public abstract class Enemy
 {
     /// <summary>Gets or sets the enemy's display name used in combat and room descriptions.</summary>
