@@ -1,10 +1,9 @@
 namespace Dungnz.Engine.Commands;
 
-internal sealed class HelpCommandHandler : ICommandHandler
+internal sealed class HelpCommandHandler : CommandHandlerBase
 {
-    public void Handle(string argument, CommandContext context)
+    protected override void HandleCore(string argument, CommandContext context)
     {
         context.Display.ShowHelp();
-        context.Display.ShowRoom(context.CurrentRoom);
     }
 }

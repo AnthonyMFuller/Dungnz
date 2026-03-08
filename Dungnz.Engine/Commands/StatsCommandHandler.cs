@@ -1,13 +1,12 @@
 namespace Dungnz.Engine.Commands;
 
-internal sealed class StatsCommandHandler : ICommandHandler
+internal sealed class StatsCommandHandler : CommandHandlerBase
 {
     private const int FinalFloor = DungeonGenerator.FinalFloor;
 
-    public void Handle(string argument, CommandContext context)
+    protected override void HandleCore(string argument, CommandContext context)
     {
         context.Display.ShowPlayerStats(context.Player);
         context.Display.ShowMessage($"Floor: {context.CurrentFloor} / {FinalFloor}");
-        context.Display.ShowRoom(context.CurrentRoom);
     }
 }
