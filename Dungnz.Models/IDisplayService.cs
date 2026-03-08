@@ -426,4 +426,13 @@ public interface IDisplayService
     /// <param name="room">The current room to display.</param>
     /// <param name="floor">The current dungeon floor number shown in the map panel header.</param>
     void RefreshDisplay(Player player, Room room, int floor);
+
+    /// <summary>
+    /// Updates the ability cooldown state displayed in the stats panel HUD during combat.
+    /// Called each turn after <c>TickCooldowns()</c>. Only abilities that have a cooldown
+    /// mechanic (<c>CooldownTurns &gt; 0</c>) are passed; <c>turnsRemaining == 0</c> means ready.
+    /// Default is a no-op — only the Spectre layout renderer overrides this.
+    /// </summary>
+    /// <param name="cooldowns">Cooldown state for each ability with a cooldown mechanic. Pass an empty list outside of combat.</param>
+    void UpdateCooldownDisplay(IReadOnlyList<(string name, int turnsRemaining)> cooldowns) { }
 }

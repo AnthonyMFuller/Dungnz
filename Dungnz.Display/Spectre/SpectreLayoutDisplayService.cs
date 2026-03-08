@@ -47,6 +47,9 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     private Room? _cachedRoom;
     private int _currentFloor = 1;
 
+    // Cached ability cooldown state for combat HUD (Issue #1268)
+    private IReadOnlyList<(string name, int turnsRemaining)> _cachedCooldowns = [];
+
     private static readonly Regex AnsiEscapePattern = new(@"\x1B\[[0-9;]*m", RegexOptions.Compiled);
 
     /// <summary>
@@ -409,6 +412,16 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             sb.AppendLine($"MP {mpBar} [bold]{player.Mana}/{player.MaxMana}[/]");
         }
 
+        // Cooldown state display (Issue #1268) — only shown during combat when abilities are tracked
+        if (_cachedCooldowns.Count > 0)
+        {
+            var cdParts = _cachedCooldowns.Select(c =>
+                c.turnsRemaining == 0
+                    ? $"[green]{Markup.Escape(c.name)}:✅[/]"
+                    : $"[grey]{Markup.Escape(c.name)}:[/][yellow]{c.turnsRemaining}t[/]");
+            sb.AppendLine($"[dim]CD:[/] {string.Join("  ", cdParts)}");
+        }
+
         sb.AppendLine();
         sb.AppendLine($"[red]ATK[/] [bold]{player.Attack}[/]   [cyan]DEF[/] [bold]{player.Defense}[/]");
         sb.AppendLine($"[yellow]Gold[/] {player.Gold}g");
@@ -513,6 +526,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     {
         bool isNewRoom = _cachedRoom?.Id != room.Id;
         _cachedRoom = room;
+        _cachedCooldowns = []; // clear combat cooldown HUD when re-entering room context (Issue #1268)
 
         var sb = new StringBuilder();
 
@@ -682,6 +696,14 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         _cachedPlayer = player;
         RenderStatsPanel(player);
         RenderGearPanel(player);
+    }
+
+    /// <inheritdoc/>
+    public void UpdateCooldownDisplay(IReadOnlyList<(string name, int turnsRemaining)> cooldowns)
+    {
+        _cachedCooldowns = cooldowns;
+        if (_cachedPlayer != null)
+            RenderStatsPanel(_cachedPlayer);
     }
 
     /// <inheritdoc/>
