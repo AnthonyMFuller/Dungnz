@@ -3479,3 +3479,38 @@ Critical path: #1187 → #1188 → #1189 → #1190 → #1191 → #1192 → #1193
 - **LOW:** `Data/*.json` files must keep `CopyToOutputDirectory` in the executable project.
 
 **Decision document:** `.ai-team/decisions/inbox/coulson-multiproject-architecture.md`
+
+---
+
+### 2026-03-06: CombatEngine Decomposition — Status Effects, Abilities, Logging (Issue #1205, PR #1222)
+
+**Context:** Final phase of the CombatEngine decomposition. PRs #1203 (scaffold) and #1204 (AttackResolver) were already merged. This migration completed the remaining three concerns.
+
+**Changes implemented:**
+
+**Pass A — StatusEffectApplicator:**
+- Migrated `ApplyOnDeathEffects` (CursedZombie/PlagueBear on-death effects)
+- Migrated `CheckOnDeathEffects` (ArchlichSovereign revive mechanic)
+- Implemented `ResetCombatEffects` (replaces 16-line inline block in HandleLootAndXP)
+- CombatEngine retains thin private delegates
+
+**Pass B — AbilityProcessor:**
+- Added `SetStats(RunStats)` to `IAbilityProcessor` (mirrors AttackResolver pattern) to preserve stat tracking
+- Migrated `HandleAbilityMenu` (silence check, cooldown/mana classify, ability execution)
+- Migrated `HandleItemMenu` (consumable filter, item use)
+- CombatEngine.RunCombat calls `_abilityProcessor.SetStats(_stats)` at combat start
+
+**Pass C — CombatLogger:**
+- Migrated `ColorizeDamage` + private `ReplaceLastOccurrence` helper
+- Migrated `ShowDeathNarration` (boss vs regular death text)
+- Migrated `ShowRecentTurns` (accepts `IReadOnlyList<CombatTurn>` parameter)
+- Implemented `LogTurn` as `turnLog.Add(turn)`
+
+**Intentionally left in CombatEngine:**
+- `ResetFleeState` — contains boss-specific flee cleanup (IsCharging, ChargeActive, IsEnraged, etc.) that diverges from ResetCombatEffects. Flee path did not previously call `PassiveEffectProcessor.ResetCombatState` so merging would be a behavioral change.
+
+**Verification:** All 1757 tests pass. Zero behavioral change.
+
+**Key pattern established:**
+- When migrating methods that track RunStats, add `SetStats(RunStats)` to the interface and call it in `RunCombat` alongside `_attackResolver.SetStats`.
+- The three interfaces (IStatusEffectApplicator, IAbilityProcessor, ICombatLogger) are all injected via CombatEngine constructor with optional parameters, defaulting to concrete instances.
