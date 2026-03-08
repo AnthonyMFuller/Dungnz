@@ -541,6 +541,7 @@ public class CombatEngine : ICombatEngine
         if (enemy is GoblinShaman shaman && shaman.HP < shaman.MaxHP / 2 && _shamanHealCooldown == 0)
         {
             _shamanHealCooldown = 3;
+            ShowIntentTelegraph(enemy, "Dark Mending");
             _display.ShowCombatMessage("The shaman mutters a guttural incantation. Dark energy knits its wounds closed!");
             int heal = (int)(shaman.MaxHP * 0.20);
             shaman.HP = Math.Min(shaman.MaxHP, shaman.HP + heal);
@@ -642,6 +643,7 @@ public class CombatEngine : ICombatEngine
             switch (_rng.Next(3))
             {
                 case 0:
+                    ShowIntentTelegraph(enemy, "Stunning Blow");
                     _display.ShowCombatMessage("The elite lands a stunning blow — your head rings!");
                     _statusEffects.Apply(player, StatusEffect.Stun, 1);
                     return;
@@ -711,6 +713,7 @@ public class CombatEngine : ICombatEngine
                 {
                     isFlameBreath = true;
                     fd.FlameBreathCooldown = 2;
+                    ShowIntentTelegraph(enemy, "Flame Breath");
                     _display.ShowCombatMessage($"🔥 The {enemy.Name} unleashes a torrent of Flame Breath!");
                 }
             }
@@ -719,6 +722,7 @@ public class CombatEngine : ICombatEngine
             if (enemy is AbyssalLeviathan lev && lev.TurnCount > 3 && lev.TurnCount % 3 == 1 && !lev.IsSubmerged)
             {
                 isTidalSlam = true;
+                ShowIntentTelegraph(enemy, "Tidal Slam");
                 _display.ShowCombatMessage("⚡ The Leviathan erupts from the depths with a Tidal Slam!");
             }
 
@@ -738,6 +742,7 @@ public class CombatEngine : ICombatEngine
             int enemyDmg;
             if (isFrostBreath)
             {
+                ShowIntentTelegraph(enemy, "Frost Breath");
                 // Frost Breath ignores player DEF
                 enemyDmg = Math.Max(1, enemyEffAtk);
                 _display.ShowCombatMessage($"❄ The {enemy.Name} unleashes Frost Breath — DEF ignored!");
@@ -980,7 +985,25 @@ public class CombatEngine : ICombatEngine
             _turnLog.Add(new CombatTurn(enemy.Name, "Attack", enemyDmgFinal, isCrit, false, statusApplied));
         }
     }
-    
+
+    /// <summary>
+    /// Displays a one-line intent telegraph before an enemy executes a special ability,
+    /// giving the player awareness of what is about to land.
+    /// </summary>
+    private void ShowIntentTelegraph(Enemy enemy, string abilityName)
+    {
+        string verb = abilityName switch
+        {
+            "Frost Breath"  => "coils back, drawing icy breath",
+            "Flame Breath"  => "rears its head, jaw aglow with fire",
+            "Tidal Slam"    => "surges violently beneath the surface",
+            "Dark Mending"  => "channels dark energy",
+            "Stunning Blow" => "winds up for a crushing strike",
+            _               => enemy is DungeonBoss ? "draws on terrifying power" : "gathers itself"
+        };
+        _display.ShowCombatMessage($"⚠ {enemy.Name} {verb} — {abilityName} incoming!");
+    }
+
     /// <summary>
     /// Executes the phase ability effect for a boss when an HP threshold is crossed.
     /// Each ability fires exactly once per combat (guarded by <see cref="DungeonBoss.FiredPhases"/>).
