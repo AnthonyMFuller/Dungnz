@@ -8,6 +8,18 @@ using Dungnz.Systems;
 /// </summary>
 public interface IAttackResolver
 {
+    /// <summary>
+    /// The current combat turn number. Set by <see cref="CombatEngine"/> after each
+    /// increment so that early-combat dodge bonuses (e.g. Eagle Eye) apply correctly.
+    /// </summary>
+    int CombatTurn { get; set; }
+
+    /// <summary>
+    /// Provides the run-scoped stats accumulator so the resolver can record damage
+    /// dealt/taken. Must be called at the start of each combat encounter.
+    /// </summary>
+    void SetStats(RunStats stats);
+
     /// <summary>Resolves the player attack action against the enemy for one turn.</summary>
     void PerformPlayerAttack(Player player, Enemy enemy);
 
