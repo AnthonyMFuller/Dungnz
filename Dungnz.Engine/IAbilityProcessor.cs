@@ -8,6 +8,12 @@ using Dungnz.Systems;
 /// </summary>
 public interface IAbilityProcessor
 {
+    /// <summary>
+    /// Provides the run-scoped stats accumulator so the processor can record ability
+    /// usage and damage. Must be called at the start of each combat encounter.
+    /// </summary>
+    void SetStats(RunStats stats);
+
     /// <summary>Presents the ability selection menu and executes the chosen ability.</summary>
     AbilityMenuResult HandleAbilityMenu(Player player, Enemy enemy);
 

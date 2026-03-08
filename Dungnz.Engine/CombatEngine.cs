@@ -103,36 +103,8 @@ public class CombatEngine : ICombatEngine
         _combatLogger = combatLogger ?? new CombatLogger(_display, _narration);
     }
 
-    /// <summary>
-    /// Replaces only the last occurrence of <paramref name="find"/> in <paramref name="source"/>.
-    /// Safe because damage values always appear at the end of narration strings.
-    /// </summary>
-    private static string ReplaceLastOccurrence(string source, string find, string replace)
-    {
-        int lastIndex = source.LastIndexOf(find);
-        if (lastIndex < 0) return source;
-        return source.Substring(0, lastIndex) + replace + source.Substring(lastIndex + find.Length);
-    }
-
-    /// <summary>
-    /// Colorizes damage numbers in combat messages. Damage in red, healing in green,
-    /// crits in yellow + bold.
-    /// </summary>
     private string ColorizeDamage(string message, int damage, bool isCrit = false, bool isHealing = false)
-    {
-        var damageStr = damage.ToString();
-        var coloredDamage = isHealing 
-            ? ColorCodes.Colorize(damageStr, ColorCodes.Green)
-            : ColorCodes.Colorize(damageStr, ColorCodes.BrightRed);
-        
-        if (isCrit)
-        {
-            // Crits get bold yellow wrapper
-            return ColorCodes.Colorize(ReplaceLastOccurrence(message, damageStr, coloredDamage), ColorCodes.Yellow + ColorCodes.Bold);
-        }
-        
-        return ReplaceLastOccurrence(message, damageStr, coloredDamage);
-    }
+        => _combatLogger.ColorizeDamage(message, damage, isCrit, isHealing);
 
     /// <summary>
     /// Runs a complete combat encounter between <paramref name="player"/> and
@@ -156,6 +128,7 @@ public class CombatEngine : ICombatEngine
     {
         if (stats != null) _stats = stats;
         _attackResolver.SetStats(_stats);
+        _abilityProcessor.SetStats(_stats);
 
         // Restore any status effects persisted on the player (e.g., across save/load)
         foreach (var ae in player.ActiveEffects)
@@ -458,101 +431,11 @@ public class CombatEngine : ICombatEngine
         }
     }
 
-    /// <summary>
-    /// Displays the last three entries from the combat turn log, giving the player a
-    /// concise summary of recent exchanges before they choose their next action.
-    /// </summary>
-    private void ShowRecentTurns()
-    {
-        var recent = _turnLog.Count > 3 ? _turnLog.Skip(_turnLog.Count - 3).ToList() : _turnLog;
-        if (recent.Count == 0) return;
-
-        _display.ShowMessage("─── Recent turns ───");
-        foreach (var turn in recent)
-        {
-            string line;
-            if (turn.IsDodge)
-                line = $"  {turn.Actor}: {turn.Action} → {ColorCodes.Gray}dodged{ColorCodes.Reset}";
-            else if (turn.IsCrit)
-                line = $"  {turn.Actor}: {turn.Action} → {ColorCodes.Bold}{ColorCodes.Yellow}CRIT{ColorCodes.Reset} {ColorCodes.BrightRed}{turn.Damage}{ColorCodes.Reset} dmg";
-            else
-                line = $"  {turn.Actor}: {turn.Action} → {ColorCodes.BrightRed}{turn.Damage}{ColorCodes.Reset} dmg";
-
-            if (turn.StatusApplied != null)
-                line += $" [{ColorCodes.Green}{turn.StatusApplied}{ColorCodes.Reset}]";
-
-            _display.ShowMessage(line);
-        }
-    }
-    
     private AbilityMenuResult HandleAbilityMenu(Player player, Enemy enemy)
-    {
-        if (_statusEffects.HasEffect(player, StatusEffect.Silence))
-        {
-            _display.ShowCombatMessage("You are silenced and cannot use abilities!");
-            return AbilityMenuResult.Cancel;
-        }
-
-        var unlocked = _abilities.GetUnlockedAbilities(player);
-        if (!unlocked.Any())
-        {
-            _display.ShowMessage("You haven't unlocked any abilities yet!");
-            return AbilityMenuResult.Cancel;
-        }
-        
-        // Classify abilities into available and unavailable
-        var unavailable = new List<(Ability, bool, int, bool)>();
-        var available = new List<Ability>();
-        foreach (var ability in unlocked)
-        {
-            if (_abilities.IsOnCooldown(ability.Type))
-                unavailable.Add((ability, true, _abilities.GetCooldown(ability.Type), false));
-            else if (player.Mana < ability.ManaCost)
-                unavailable.Add((ability, false, 0, true));
-            else
-                available.Add(ability);
-        }
-
-        var selectedAbility = _display.ShowAbilityMenuAndSelect(unavailable, available);
-        if (selectedAbility == null)
-            return AbilityMenuResult.Cancel;
-
-        // Execute the selected ability
-        var hpBeforeAbility = enemy.HP;
-        var result = _abilities.UseAbility(player, enemy, selectedAbility.Type, _statusEffects, _display);
-        
-        if (result == UseAbilityResult.Success)
-        {
-            _display.ShowMessage($"{ColorCodes.Bold}{ColorCodes.Yellow}[{selectedAbility.Name} activated — {selectedAbility.Description}]{ColorCodes.Reset}");
-            // Bug #111: track ability damage in run stats
-            if (enemy.HP < hpBeforeAbility)
-                _stats.DamageDealt += hpBeforeAbility - enemy.HP;
-            _stats.AbilitiesUsed++;
-            return AbilityMenuResult.Used;
-        }
-        
-        _display.ShowMessage($"Cannot use ability: {result}");
-        return AbilityMenuResult.Cancel;
-    }
+        => _abilityProcessor.HandleAbilityMenu(player, enemy);
 
     private AbilityMenuResult HandleItemMenu(Player player, Enemy enemy)
-    {
-        var consumables = player.Inventory
-            .Where(i => i.Type == ItemType.Consumable)
-            .ToList();
-
-        if (consumables.Count == 0)
-        {
-            _display.ShowMessage("You have no usable items!");
-            return AbilityMenuResult.Cancel;
-        }
-
-        var selected = _display.ShowCombatItemMenuAndSelect(consumables);
-        if (selected == null) return AbilityMenuResult.Cancel;
-
-        _inventoryManager.UseItem(player, selected.Name);
-        return AbilityMenuResult.Used;
-    }
+        => _abilityProcessor.HandleItemMenu(player, enemy);
     
     private void PerformPlayerAttack(Player player, Enemy enemy)
         => _attackResolver.PerformPlayerAttack(player, enemy);
@@ -1189,23 +1072,7 @@ public class CombatEngine : ICombatEngine
         }
         
         _events?.RaiseCombatEnded(player, enemy, CombatResult.Won);
-        _statusEffects.Clear(player);
-        _statusEffects.Clear(enemy);
-        player.ActiveEffects.Clear();
-        player.ResetComboPoints();
-        player.LastStandTurns = 0;
-        player.EvadeNextAttack = false;
-        player.WardingVeilActive = false;
-        player.ActiveMinions.Clear();
-        player.ActiveTraps.Clear();
-        player.TrapTriggeredThisCombat = false;
-        player.DivineHealUsedThisCombat = false;
-        player.HunterMarkUsedThisCombat = false;
-        player.DivineShieldTurnsRemaining = 0;
-        player.LichsBargainActive = false;
-        player.IsManaShieldActive = false;
-        PassiveEffectProcessor.ResetCombatState(player);
-        player.ResetCombatPassives(); // Fix #544: revert BattleHardened ATK stacks; Fix #546: clear DivineBulwarkFired
+        _statusEffectApplicator.ResetCombatEffects(player, enemy);
     }
     
     private void CheckLevelUp(Player player)
@@ -1244,43 +1111,15 @@ public class CombatEngine : ICombatEngine
     /// Checks boss revive conditions and on-death effects. Returns true if enemy revived (combat continues).
     /// </summary>
     private bool CheckOnDeathEffects(Player player, Enemy enemy, Random rng)
-    {
-        // ArchlichSovereign revive: once per combat at 0 HP after adds were summoned
-        if (enemy is ArchlichSovereign lich && !lich.HasRevived && lich.Phase2Triggered && lich.TurnCount >= 0)
-        {
-            lich.HasRevived = true;
-            lich.HP = (int)(lich.MaxHP * 0.20);
-            lich.DamageImmune = false;
-            lich.AddsAlive = 0;
-            _display.ShowCombatMessage("⚠ The Archlich reforms from sheer necromantic will — it rises at 20% HP!");
-            return true; // enemy revived
-        }
-        return false;
-    }
+        => _statusEffectApplicator.CheckOnDeathEffects(player, enemy, rng);
 
     /// <summary>Applies on-death effects to the player (e.g. CursedZombie Weakened).</summary>
     private void ApplyOnDeathEffects(Player player, Enemy enemy)
-    {
-        if (enemy.OnDeathEffect.HasValue)
-        {
-            _statusEffects.Apply(player, enemy.OnDeathEffect.Value, 3);
-            _display.ShowCombatMessage($"The dying {enemy.Name} curses you — {enemy.OnDeathEffect.Value} applied!");
-        }
-        // PlagueBear: 40% chance to reapply Poison on death
-        if (enemy.PoisonOnDeathChance > 0 && _rng.NextDouble() < enemy.PoisonOnDeathChance)
-        {
-            _statusEffects.Apply(player, StatusEffect.Poison, 3);
-            _display.ShowCombatMessage($"The {enemy.Name}'s corpse releases a final cloud of plague!");
-        }
-    }
+        => _statusEffectApplicator.ApplyOnDeathEffects(player, enemy);
 
-    private void ShowDeathNarration(Enemy enemy)
-    {
-        if (enemy is DungeonBoss)
-            _display.ShowCombat(BossNarration.GetDeath(enemy.Name));
-        else
-            _display.ShowCombat(_narration.Pick(EnemyNarration.GetDeaths(enemy.Name), enemy.Name));
-    }
+    private void ShowDeathNarration(Enemy enemy) => _combatLogger.ShowDeathNarration(enemy);
+
+    private void ShowRecentTurns() => _combatLogger.ShowRecentTurns(_turnLog);
 
     private bool RollDodge(int defense) => _attackResolver.RollDodge(defense);
 
