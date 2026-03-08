@@ -1958,3 +1958,27 @@ Never call `AnsiConsole.Prompt()` while `Live.Start()` callback is running. The 
 - **`_cachedCooldowns = []`** (C# 12 collection expression) works cleanly for empty list initialization of `IReadOnlyList<T>` fields in .NET 10
 - **Stats panel vs Content panel split:** `ShowCombatStatus` only updates the Content panel (the narrative); `RenderStatsPanel` owns the top-right Stats panel. HUD additions belong in `RenderStatsPanel`, not `ShowCombatStatus`
 - **Pre-tick snapshot pattern for toast detection:** capture `GetCooldown() > 0` state before `TickCooldowns()`, compare after — any that went to 0 fire a toast
+
+### 2026-03-08 — Wired Narration Call Sites in CombatEngine (#1271/#1272)
+
+**Context:** Three narration methods were added to `NarrationService` in recent PRs (#1271, #1272) with `TODO(Barton)` comments requesting they be wired into `CombatEngine`. The methods — `GetEnemyIdleTaunt`, `GetEnemyDesperationLine`, and `GetPhaseAwareAttackNarration` — existed but were never called.
+
+**Solution:**
+- **Idle taunts:** Added call after `EnemyHitMessages` in the normal-attack path of `PerformEnemyTurn`. Guard: `_combatTurn % 3 == 0 && !isFrostBreath && !isFlameBreath && !isTidalSlam && !wasCharged` to exclude all special-ability turns.
+- **Desperation lines:** Added a once-per-combat block at the top of `PerformEnemyTurn` (after stun/freeze early returns). Uses new `_desperationNarrationFired` bool field; fires when `enemy.HP <= enemy.MaxHP * 0.25`.
+- **Phase narration:** Added call immediately after `PerformPlayerAttack(player, enemy)` in the main combat loop (ATTACK branch). Uses existing `_combatTurn`, calculates `playerHpPct` and `enemyHpPct` from live HP values.
+
+**Turn counter:** `_combatTurn` already existed and is incremented at the top of each turn cycle — no new field needed.
+
+**Files Modified:**
+- `Dungnz.Engine/CombatEngine.cs` — added `_desperationNarrationFired` field, reset in init block, three narration call sites
+
+**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/1282
+**Build:** ✅ Success (0 errors, 0 warnings)
+**Closes (partial):** #1271, #1272
+
+## Learnings (continued)
+
+- **`_combatTurn` already existed** — always check existing fields before adding new ones. The turn counter was already incremented per full turn cycle and exposed via `_attackResolver.CombatTurn`.
+- **Normal-attack guard pattern:** To distinguish "normal attack" from special-ability turns inside `PerformEnemyTurn`, gate on `!isFrostBreath && !isFlameBreath && !isTidalSlam && !wasCharged` — these booleans are set in the same method scope before the hit block.
+- **Fire-once flags** should be reset alongside `_undyingWillUsed` and other per-combat booleans in the initialization block (~line 155).

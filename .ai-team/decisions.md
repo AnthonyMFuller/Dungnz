@@ -3732,3 +3732,126 @@ Added hook in `CombatEngine.PerformEnemyTurn()` at line 796-810:
 - Player reactions to enemy crits ("You barely survived that!")
 - Crit magnitude tiers if damage multipliers expand
 
+
+---
+
+## 2026-03-05: Enemy Intent Telegraph Implementation
+
+**Author:** Barton  
+**Date:** 2026-03-05  
+**PR:** #1280
+
+### Decision
+
+Telegraph special enemy attacks using **Option A** (same-turn warning before the attack resolves), not Option B (prior-turn warning), for all non-boss enemies.
+
+### Rationale
+
+Option B is already implemented for `DungeonBoss` via the `IsCharging` / `ChargeActive` flag pair — it telegraphs one turn early and skips damage on the warn turn. Extending Option B to non-boss enemies (FrostBreath, FlameBreath, TidalSlam) would require new boolean state flags on `Enemy.cs`, which adds model complexity for a cosmetic UX improvement.
+
+Option A adds the warning message at the top of the special-attack turn itself. The player can't dodge the current hit, but they learn the ability exists and its cycle pattern — enabling counter-play for subsequent occurrences.
+
+### Scope
+
+`ShowIntentTelegraph()` is intentionally narrow: it only fires for named special attacks (5 currently). Normal melee hits, passive regen, and boss phase triggers are **not** telegraphed — those already have descriptive inline messages.
+
+### Extensibility
+
+To add a telegraph for a new special attack, call `ShowIntentTelegraph(enemy, "Ability Name")` immediately before the ability resolves in `PerformEnemyTurn`. Add a matching verb string to the switch expression in `ShowIntentTelegraph` if a custom verb is desired; the generic fallback handles unknown abilities automatically.
+
+---
+
+## 2026-03-08: Narration Call Wiring in CombatEngine
+
+**Date:** 2026-03-08  
+**Author:** Barton  
+**Related Issues:** #1271, #1272  
+**PR:** #1282
+
+### Decision 1: Reuse `_combatTurn` for turn gating
+
+**Context:** The task spec suggested adding `_combatTurnNumber`. `_combatTurn` already exists, is incremented at the top of each full turn cycle, and is already shared with `_attackResolver`.
+
+**Decision:** Reuse `_combatTurn`. No new field added.
+
+**Rationale:** Avoids duplicate state that could diverge. The existing field already encodes "full turn number" (player + enemy = 1 increment).
+
+### Decision 2: Idle taunt gated on special-attack exclusion booleans
+
+**Context:** The task said "only on normal attack turns (not ability turns, not boss-phase turns)." In `PerformEnemyTurn`, the special-attack paths set local booleans (`isFrostBreath`, `isFlameBreath`, `isTidalSlam`, `wasCharged`) before the unified hit block.
+
+**Decision:** Guard idle taunt with `!isFrostBreath && !isFlameBreath && !isTidalSlam && !wasCharged`.
+
+**Rationale:** These flags are the definitive record of what kind of attack just landed. This is simpler than an explicit "isNormalAttack" flag and stays correct as new special attacks are added (they should get their own bool too).
+
+### Decision 3: Desperation placed after stun/freeze early-returns, before AI block
+
+**Context:** The task said "at the START of the enemy's turn." The stun/freeze checks bail out entirely (the enemy truly takes no turn). Desperation should still be blocked if the enemy is stunned.
+
+**Decision:** Place desperation check after the stun/freeze early returns but before the AI action-choice block.
+
+**Rationale:** An enemy that can't act shouldn't be narrated as desperate — the scene is incoherent. Placing it before the AI block ensures it fires regardless of which AI action the enemy eventually takes.
+
+### Decision 4: Phase narration fires after PerformPlayerAttack regardless of hit/miss
+
+**Context:** `PerformPlayerAttack` is a void delegation to `_attackResolver`; there is no hit/miss return value at the CombatEngine level. The task said "wherever the player lands a hit."
+
+**Decision:** Wire phase narration immediately after `PerformPlayerAttack(player, enemy)` in the ATTACK branch, unconditionally (no hit/miss guard).
+
+**Rationale:** `GetPhaseAwareAttackNarration` returns atmospheric flavor about the phase of the fight (turn number, HP ratios), not hit-specific flavor. It is meaningful on miss turns too. If this needs to be restricted to hits in future, `PerformPlayerAttack` should return a result type — that's a separate refactor.
+
+---
+
+## 2026-03-08: Romanoff PR Review Round 2 — Blocking Issues
+
+**Date:** 2026-03-08  
+**Author:** Romanoff  
+**Status:** For team awareness
+
+### PR #1279 — Fury: Mid-Combat Banter (squad/1271-mid-combat-banter)
+
+#### ❌ Blocking: NarrationService.GetEnemyCritReaction signature conflict
+
+**Problem:** PR #1279 has `GetEnemyCritReaction` returning `string?` (nullable). PR #1275 (now approved, merging to main) changes the method to return `string` (non-null, with `_defaultCritReaction` fallback in `EnemyNarration.GetCritReactions()`).
+
+**Impact:** When #1279 tries to merge after #1275 lands, there will be a merge conflict in `NarrationService.cs`.
+
+**Resolution:** Fury must rebase `squad/1271-mid-combat-banter` on main after #1275 merges. The CombatEngine null guard (`if (!string.IsNullOrEmpty(critReaction))`) is harmless to keep even after the signature change.
+
+**Owner:** Fury  
+**Depends on:** #1275 merge
+
+### PR #1280 — Barton: Enemy Intent Telegraph (squad/1270-enemy-intent-telegraph)
+
+#### ✅ No blocking issues
+
+All checks pass. Same rebase dependency as #1279 (same base branches, same files modified). Barton should rebase after #1275 merges before CI can run cleanly.
+
+**Owner:** Barton  
+**Depends on:** #1275 merge
+
+### Coverage Gate — Dungnz.Display
+
+#### Context (resolved in PR #1277)
+
+`Dungnz.Display` was at 50.57% line coverage vs. the 70% threshold. The Spectre TUI classes are not measured by coverlet (they require live terminal infrastructure). The actual gap was in `ConsoleDisplayService` at 50% — the class IS exercised in tests but many methods were untested.
+
+#### Resolution
+
+Added 38 targeted tests to `ConsoleDisplayServiceCoverageTests.cs`:
+- `ShowTitle`, `ShowEnhancedTitle` (title rendering paths)
+- `ShowMap` with 6 scenarios (BFS renderer, room symbols, connectors)
+- `ShowRoom` with environmental hazards and special room types
+- `SelectDifficulty`, `SelectClass` (with and without prestige) — `SelectClass` alone was 0/78 coverage
+- Interactive methods via `FakeInputReader` injection: `ShowConfirmMenu`, `ShowShopAndSelect`, `ShowSellMenuAndSelect`, `ShowShrineMenuAndSelect`
+- `ShowInventoryAndSelect` (empty inventory path)
+
+**Result:** `Dungnz.Display` 50.57% → 74.09%. All 1815 tests pass. Gate cleared.
+
+#### Key Learning
+
+`SelectClass` (78 sequence points, 0% covered) was the highest-value single target. It calls `StatBar` (which was also 0% covered) — one test covered both. When hunting coverage gaps, look for large uncovered methods first.
+
+### Standard: FakeInputReader injection pattern for ConsoleDisplayService
+
+All interactive `ConsoleDisplayService` methods that use `_input.ReadLine()` can be tested by injecting `new FakeInputReader("1")` at construction time. Methods that use `Console.ReadLine()` directly (e.g., `ShowInventoryAndSelect`) need `Console.SetIn(new StringReader("x"))` or must be tested via empty-input paths.
