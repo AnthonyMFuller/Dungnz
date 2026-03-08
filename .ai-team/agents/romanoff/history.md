@@ -1608,3 +1608,39 @@ When queues are configured, `ShowSellMenuAndSelect`, `ShowConfirmMenu`, and `Sho
 - ❌ PR #1255 — Restore deleted files, document set bonus changes
 - ❌ PR #1259 — Add missing MaxHP/MaxMana and CritChanceBonus fixes
 - ❌ PR #1261 — Restore deleted files, remove unrelated changes, improve test depth
+
+### 2026-03-08 — Combat Baseline Tests (#1273)
+
+**PR:** #1277 — `test: add 11 combat baseline tests`
+**Branch:** `squad/1273-combat-baseline-tests`
+**File Created:** `Dungnz.Tests/CombatBaselineTests.cs`
+
+**Tests written: 11 methods, 14 test cases (Theory × 4 classes)**
+- All 14 test cases pass. 0 skipped.
+- Full suite: 1791 tests, 0 failures.
+
+**Key findings from reading the combat code:**
+
+1. **Turn loop order** (CombatEngine.cs ~line 185–400): `ProcessTurnStart(player/enemy)` → passive effects → periodic damage → player death check → enemy death check → mana regen → cooldown tick → boss phase check → player acts → enemy acts. Status effects fire BEFORE player or enemy get their turn. Enemy death from DoT is caught at the START of the turn (player never attacks that turn).
+
+2. **Boss phases use `FiredPhases` HashSet as the deduplication guard** (DungeonBoss.cs + CombatEngine.cs ~line 244–254). Phase fires when `hp/maxHP <= threshold && !FiredPhases.Contains(abilityName)`. Fires every turn-start check until the name is added. This is the correct hook for the "exactly once" assertion.
+
+3. **Cooldown lifecycle** (AbilityManager.cs): `PutOnCooldown(type, n)` sets `_cooldowns[type] = n`. `TickCooldowns()` decrements. `IsOnCooldown(type)` checks `_cooldowns[type] > 0`. After exactly n ticks: 0, IsOnCooldown = false. Verified with Fortify (3-turn cooldown).
+
+4. **Status effect ticking** (StatusEffectManager.cs): `ProcessTurnStart` applies damage, then decrements `RemainingTurns`, then removes if `<= 0`. Duration=2 means: tick 1 → stays (1 remaining), tick 2 → removed (0). Both Burn (fallback=8) and Poison (fallback=3) tick on the same ProcessTurnStart call — no ordering issue between them.
+
+5. **Narration hooks**: Combat intro calls `_display.ShowCombat(...)` once before the turn loop starts. `ShowDeathNarration` also calls `ShowCombat`. For a 1-turn combat: 2 `"combat:"` entries in AllOutput (intro + death). Intro always precedes first `"status:"` entry.
+
+6. **Ability damage is NOT guarded by class restriction in `UseAbility`** — only level, cooldown, and mana are checked. Class restriction is only enforced in `GetUnlockedAbilities` / `GetAvailableAbilities`. Direct `UseAbility` calls bypass the class check. Test calls it directly for clean isolation.
+
+7. **Existing bugs confirmed from history doc but not blocking tests**:
+   - Boss loot scaling broken (HandleLootAndXP ignores isBossRoom/floor)
+   - Enemy HP can go negative in some paths (basic Enemy_Stub uses `Math.Max(0, ...)`)
+   - SoulHarvest dual implementation risk
+
+**Test patterns that work well:**
+- Injecting `StatusEffectManager` with pre-applied effects via constructor injection — works because effects are keyed by object reference, and `player.ActiveEffects` restoration only applies to the player, not enemy.
+- `AllOutput.Where(x => x.StartsWith("combat:"))` to spy on `ShowCombat` calls without checking string content (NarrationSpy pattern).
+- `DungeonBoss.FiredPhases.Contains("abilityName")` as the authoritative "fired once" assertion — avoids message string checks.
+- `new DungeonBoss()` then set HP/MaxHP/Defense directly for boss tests — public parameterless equivalent constructor works; `Phases.Add(new BossPhase(...))` modifies the list correctly.
+- Avoid `player.HP < 100` when player starts with hp > 100 — use `player.HP < player.MaxHP` instead.

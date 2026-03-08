@@ -3555,3 +3555,180 @@ Added three test suites to close high-priority testing gaps:
 - Consider CommandHandlerShowRoomTests as template for future command handler tests
 - Save/load tests should always verify AI-specific state (boss mechanics, pack counts, etc.)
 - Integration tests should cover full user workflows, not just isolated units
+
+---
+
+## 2026-03-08: Combat Improvement Plan — Phase Overview
+
+**Decided by:** Coulson, Barton, Fury, Romanoff  
+**Date:** 2026-03-08  
+**Status:** Approved, implementation started
+
+### Three-Phase Approach
+
+1. **P0 Quick Wins (2-3 sessions)**
+   - Cooldown HUD visibility fix
+   - Enemy crit reaction narration
+   - Pure display changes, zero logic risk
+
+2. **P1 Core (5-6 sessions)**
+   - Enemy telegraph system (reuses boss patterns)
+   - Mid-combat banter
+   - Phase-aware narration
+
+3. **P2 Stretch (3-4 sessions)**
+   - Momentum resource system
+   - Requires CombatEngine state machine expansion (MEDIUM risk)
+
+### Key Finding
+
+Cooldowns already work correctly. The problem is visibility — they're tracked but never shown on the main HUD. Players can't see ability cooldown status without opening the menu, so they default to attack spam.
+
+### Critical Dependency
+
+**No combat PRs merge until Romanoff's 11-test baseline exists (PR #1277).**
+- Baseline validates turn loop phase ordering
+- Cooldown mechanics (block + tick)
+- Ability damage quantification
+- Multi-effect status interactions
+- Boss phase transitions
+
+---
+
+## 2026-03-08: Cooldown HUD Display Pattern — Default Interface Methods
+
+**Author:** Barton  
+**Issue:** #1268  
+**PR:** #1276  
+**Date:** 2026-03-08
+
+### Decision
+
+When adding display-only hooks to `IDisplayService`, use default interface methods rather than abstract members requiring all 5 implementations to add stubs.
+
+### Rationale
+
+- Only `SpectreLayoutDisplayService` needs cooldown rendering
+- Other 4 implementations (Spectre legacy, Console, FakeDisplay, TestDisplay) have nothing to render
+- Default no-op method reduces implementation surface from 5 files to 1
+- Pattern is language-standard in C# 13 / .NET 10
+
+### Application
+
+Add `UpdateCooldownDisplay(IReadOnlyList<(string name, int turnsRemaining)> cooldowns)` as default method. Test stubs inherit no-op automatically.
+
+### Future Guidance
+
+All display-only features specific to Spectre Live renderer should follow this pattern instead of polluting `IDisplayService` with stubs.
+
+---
+
+## 2026-03-08: Combat Baseline Testing Patterns — Romanoff QA Standards
+
+**Author:** Romanoff  
+**Issue:** #1273  
+**PR:** #1277  
+**Date:** 2026-03-08
+
+### Pattern 1: Narration Tests
+
+Assert via message counts + ordering, never string content.
+
+```
+AllOutput.Count(x => x.StartsWith("combat:")).Should().Be(3);
+AllOutput.IndexOf("combat:crit").Should().BeLessThan(AllOutput.IndexOf("combat:damage"));
+```
+
+**Rationale:** Tests remain resilient when narration copy is updated. Message ordering validates narrative sequencing.
+
+### Pattern 2: Boss Phase Deduplication
+
+Assert via `FiredPhases` HashSet, not display message counts.
+
+```
+boss.FiredPhases.Should().Contain("abilityName");
+```
+
+**Rationale:** The HashSet is the actual deduplication guard in production code. Avoids coupling tests to display strings.
+
+### Pattern 3: Ability Isolation Tests
+
+Call `AbilityManager.UseAbility()` directly, not full `RunCombat()`.
+
+**Rationale:** Ability pipeline is isolated from combat loop, input reader, and other noise. Restriction check lives in `GetAvailableAbilities()`, not `UseAbility()`, so direct calls are acceptable.
+
+### Pattern 4: Pre-Combat Status Setup
+
+Construct `StatusEffectManager`, call `Apply()` on enemy, inject via engine constructor:
+
+```
+var sem = new StatusEffectManager();
+sem.Apply(enemy, new PoisonEffect(), 3);
+new CombatEngine(..., statusEffects: sem)
+```
+
+**Rationale:** Engine does NOT clear enemy effects on start (only player.ActiveEffects). This is clean pre-combat status setup.
+
+### Pattern 5: Damage Assertion Sentinel
+
+Use `player.HP.Should().BeLessThan(player.MaxHP)`, not hardcoded HP values.
+
+**Rationale:** If `MakePlayer()` evolves, assertion remains valid. Never hardcode starting HP.
+
+---
+
+## 2026-03-08: Enemy Crit Reactions — Personality-Driven Content
+
+**Author:** Fury  
+**Issue:** #1269  
+**PR:** #1275  
+**Date:** 2026-03-08
+
+### Coverage
+
+All 31 enemy types have personality-driven crit reactions:
+- 93 total lines of content (3-4 lines per enemy)
+- Static `_critReactions` dictionary in EnemyNarration.cs
+- Keys are case-insensitive via `StringComparer.OrdinalIgnoreCase`
+
+### Personality Archetypes
+
+| Enemy Type | Voice | Sample |
+|---|---|---|
+| Goblin | Gleeful, cocky | "HEHEHE! Didn't see that coming?" |
+| Skeleton | Cold, mocking | "Foolish mortal. Your bones will join mine." |
+| Dark Knight | Arrogant, threatening | "Pathetic. I've cleaved kingdoms." |
+| Wraith | Unsettling, ethereal | "Your life force splinters." |
+| Infernal Dragon | Dramatic, primal | "FLAMES CONSUME! Ash is all you'll leave!" |
+| Vampire Lord | Seductive, predatory | "Exquisite! Your blood sings to me." |
+| Mimic | Deceptive, hungry | "You thought it treasure. It WAS your doom!" |
+| Iron Guard | Disciplined, methodical | "Steel discipline meets your reckless thrashing." |
+
+### Tone Principles
+
+✅ **DO:**
+- Match MCU-style dramatic language
+- Varied sentence structure (short + long)
+- Reference enemy lore/mechanics
+- Make threats feel earned
+
+❌ **DON'T:**
+- Cartoonish evil or slapstick
+- Generic villain monologue
+- Break fourth wall or modern slang
+- Reference player class/stats
+
+### Integration
+
+Added hook in `CombatEngine.PerformEnemyTurn()` at line 796-810:
+1. Roll crit chance
+2. If critical: fetch custom reaction
+3. Display reaction (BrightRed + Bold) OR fallback to "💥 Critical hit!"
+4. Apply damage multiplier
+
+### Future Work
+
+- Boss crit reactions (BossNarration has parallel system)
+- Player reactions to enemy crits ("You barely survived that!")
+- Crit magnitude tiers if damage multipliers expand
+

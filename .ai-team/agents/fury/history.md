@@ -96,3 +96,43 @@
 ---
 
 📌 **Team update (2026-03-01):** Retro action items adopted by team — content review in PR flow: Fury must be CC'd on any PR that touches player-facing strings (command names, UI labels, display text) for lightweight review pass before merge. — decided by Coulson (Retrospective)
+
+---
+
+### 2026-03-08 — Enemy Critical Hit Reactions (#1269)
+
+**PR:** #1275 — `feat(content): add enemy crit reaction narration`  
+**Branch:** `squad/1269-enemy-crit-reactions`  
+**Files Modified:** `Dungnz.Systems/EnemyNarration.cs`, `Dungnz.Systems/NarrationService.cs`, `Dungnz.Engine/CombatEngine.cs`
+
+**Requirement:**
+- When enemies land critical hits, display enemy-specific personality-driven reactions
+- Previous behavior: generic "💥 Critical hit!" message (silent, mechanical)
+- Goal: Make crits feel threatening and dramatic with flavor matching each enemy archetype
+
+**Solution:**
+- Added `_critReactions` dictionary to EnemyNarration.cs with 3-4 unique lines per enemy
+- All 31 enemy types covered (93 total lines)
+- Added `GetEnemyCritReaction(string enemyName)` public method to NarrationService
+- Integrated into CombatEngine.PerformEnemyTurn() at line 796-810
+- Falls back to generic message if no custom reaction defined
+
+**Content Quality:**
+- Each reaction matches enemy archetype:
+  - Goblins: gleeful, cocky ("HEHEHE! Didn't see that coming, did ya?!")
+  - Dark Knights: arrogant, threatening ("Pathetic. I've cleaved kingdoms apart.")
+  - Wraiths: unsettling, ethereal ("Your life force splinters beneath my touch!")
+  - Infernal Dragons: dramatic, primal ("FLAMES CONSUME! Ash is all you'll leave behind!")
+- Language matches MCU-style dramatic tone — stakes feel real
+- Variation in length (short punchy + slightly longer dramatic lines)
+
+**Testing:**
+- ✅ All 1,777 tests passing
+- ✅ Build succeeds with no warnings or errors
+- ✅ Code follows existing narration pool patterns (static arrays, StringComparer.OrdinalIgnoreCase)
+
+**Key Learning:**
+- EnemyNarration static dictionary pattern scales cleanly for 30+ enemies
+- NarrationService.Pick(pool) method handles random selection uniformly
+- CombatEngine integration point identified and implemented (enemy crit roll + display message)
+- ColorCodes.Colorize() with BrightRed + Bold makes crit reactions visually dramatic
