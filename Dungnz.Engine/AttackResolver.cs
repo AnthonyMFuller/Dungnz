@@ -123,6 +123,8 @@ public class AttackResolver : IAttackResolver
         else
         {
             var playerEffAtk = player.Attack + _statusEffects.GetStatModifier(player, "Attack");
+            int attackBonus = SetBonusManager.GetActiveBonuses(player).Sum(b => b.AttackBonus);
+            playerEffAtk += attackBonus;
             var effectiveDef = Math.Max(0, enemy.Defense - player.EnemyDefReduction);
             var playerDmg = Math.Max(1, playerEffAtk - effectiveDef);
 
