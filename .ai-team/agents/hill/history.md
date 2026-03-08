@@ -2807,3 +2807,57 @@ Every handler that sets content panel content MUST call `ShowRoom()` before retu
 **Testing:** All 1695 tests pass.
 **Commit:** c72dbe8 on branch `scribe/log-merchant-menu-2026-03-06`
 **Issues closed:** #1168, #1169, #1170, #1171, #1172, #1175
+
+---
+
+### 2026-03-08 — Fixed Enemy AI Registry + Created CommandHandlerBase (#1225 #1226)
+
+**PR:** #1260 — `fix(engine): register all 29 enemy AI types + CommandHandlerBase`
+**Branch:** `squad/1225-1226-engine-fixes`
+
+**Issues addressed:**
+
+#### #1226 — EnemyAIRegistry registers only 2 of 29 enemy types
+- **Root cause:** `EnemyAIRegistry` dictionary only contained 2 entries: `Goblin` and `Skeleton`
+- 27 other enemy types returned `null` from `GetAI()`, meaning they had no combat AI behavior
+- **Fix:**
+  - Created `DefaultEnemyAI` class — simple attack strategy for enemies without specialized behavior
+  - Registered all 38 enemy types in the registry:
+    - 2 with specialized AI: `Goblin` (cowardly opportunist), `Skeleton` (relentless bone rattler)
+    - 24 regular enemies with `DefaultEnemyAI`: BladeDancer, BloodHound, BoneArcher, CarrionCrawler, ChaosKnight, CryptPriest, CursedZombie, DarkKnight, DarkSorcerer, FrostWyvern, GiantRat, GoblinShaman, IronGuard, ManaLeech, Mimic, NightStalker, PlagueBear, ShadowImp, ShieldBreaker, SiegeOgre, StoneGolem, Troll, VampireLord, Wraith
+    - 12 boss variants with `DefaultEnemyAI`: GoblinWarchief, PlagueHoundAlpha, IronSentinel, BoneArchon, CrimsonVampire, LichKing, StoneTitan, ShadowWraith, VampireBoss, ArchlichSovereign, AbyssalLeviathan, InfernalDragon
+  - Reused singleton instances (`_defaultAI`, `_goblinAI`, `_skeletonAI`) to avoid allocating 38 instances
+
+#### #1225 — CommandHandlerBase does not exist (Retro D2)
+- **Root cause:** No base class or interface enforced the ShowRoom() convention established during menu audit
+- Every command handler that sets content panel content should call `ShowRoom()` to restore room view
+- **Fix:**
+  - Created `CommandHandlerBase` abstract class with template method pattern:
+    - `Handle(argument, context)` calls `HandleCore()` then conditionally calls `ShowRoom()`
+    - `HandleCore()` is abstract — subclasses implement core command logic
+    - `ShouldRefreshRoom()` virtual method (default true) — override to skip ShowRoom for informational commands (SAVE, LEADERBOARD, LISTSAVES)
+  - Migrated 3 handlers as proof of concept:
+    - `StatsCommandHandler` — removed explicit `ShowRoom()` call, now handled by base class
+    - `MapCommandHandler` — removed explicit `ShowRoom()` call, now handled by base class
+    - `HelpCommandHandler` — removed explicit `ShowRoom()` call, now handled by base class
+
+**Full migration deferred:**
+- Remaining 16 handlers (Inventory, Use, Compare, Examine, Equip, Shop, Sell, etc.) still use `ICommandHandler` directly
+- Full migration is a follow-up task — this PR establishes the pattern and infrastructure
+
+**Build & Test Status:**
+- ✅ `dotnet build --nologo` — 0 errors, 0 warnings
+- All existing tests pass (EnemyAI tests now pass for all enemy types)
+
+**Key Learnings:**
+- **Single Responsibility for AI**: DefaultEnemyAI provides a sensible fallback so `GetAI()` never returns null for registered types
+- **Template Method Pattern**: CommandHandlerBase uses Template Method to enforce ShowRoom convention without requiring explicit calls in every handler
+- **Opt-out vs Opt-in**: ShouldRefreshRoom() defaults to true (most handlers need ShowRoom) — only informational commands override to false
+
+**Key file paths:**
+- `Dungnz.Engine/EnemyAIRegistry.cs` — registry dictionary with all 38 enemy types
+- `Dungnz.Engine/DefaultEnemyAI.cs` — fallback AI for enemies without specialized behavior
+- `Dungnz.Engine/Commands/CommandHandlerBase.cs` — base class with template method pattern
+- `Dungnz.Engine/Commands/StatsCommandHandler.cs` — migrated to CommandHandlerBase
+- `Dungnz.Engine/Commands/MapCommandHandler.cs` — migrated to CommandHandlerBase
+- `Dungnz.Engine/Commands/HelpCommandHandler.cs` — migrated to CommandHandlerBase
