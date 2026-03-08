@@ -51,4 +51,30 @@ public class NarrationServiceTests
         var svc = new NarrationService();
         Assert.True(svc.Chance(1.0));
     }
+
+    [Theory]
+    [InlineData(RoomNarrationState.FirstVisit)]
+    [InlineData(RoomNarrationState.ActiveEnemies)]
+    [InlineData(RoomNarrationState.Cleared)]
+    [InlineData(RoomNarrationState.Merchant)]
+    [InlineData(RoomNarrationState.Shrine)]
+    [InlineData(RoomNarrationState.Boss)]
+    public void GetRoomEntryNarration_ReturnsNonEmptyString(RoomNarrationState state)
+    {
+        var svc = new NarrationService();
+        var result = svc.GetRoomEntryNarration(state);
+        Assert.False(string.IsNullOrEmpty(result));
+    }
+
+    [Fact]
+    public void GetRoomEntryNarration_ReturnsDifferentLinesOnMultipleCalls()
+    {
+        var svc = new NarrationService();
+        var results = new HashSet<string>();
+        for (int i = 0; i < 20; i++)
+        {
+            results.Add(svc.GetRoomEntryNarration(RoomNarrationState.FirstVisit));
+        }
+        Assert.True(results.Count > 1, "Expected variety in narration picks");
+    }
 }
