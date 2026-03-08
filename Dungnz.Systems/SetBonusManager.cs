@@ -118,7 +118,7 @@ public static class SetBonusManager
         },
         new SetBonus
         {
-            SetId = "shadowstalker", PiecesRequired = 4,
+            SetId = "shadowstep-set", PiecesRequired = 4,
             Description = "Shadowstep 4-piece: every hit guarantees Bleed on the target",
             SetBonusAppliesBleed = true
         },
@@ -227,6 +227,8 @@ public static class SetBonusManager
         player.SetBonusMaxHP    = totalHP;
         player.SetBonusMaxMana  = totalMana;
         player.SetBonusDodge    = totalDodge;
+        player.MaxHP   += totalHP;
+        player.MaxMana += totalMana;
 
         // Wire 4-piece set bonus flags onto the player so combat systems can read them.
         player.DamageReflectPercent = active.Sum(b => b.DamageReflectPercent);

@@ -123,6 +123,7 @@ public class AttackResolver : IAttackResolver
         else
         {
             var playerEffAtk = player.Attack + _statusEffects.GetStatModifier(player, "Attack");
+            playerEffAtk += SetBonusManager.GetActiveBonuses(player).Sum(b => b.AttackBonus);
             var effectiveDef = Math.Max(0, enemy.Defense - player.EnemyDefReduction);
             var playerDmg = Math.Max(1, playerEffAtk - effectiveDef);
 
@@ -327,7 +328,8 @@ public class AttackResolver : IAttackResolver
         {
             float bonus = (player.EquippedWeapon?.CritChance ?? 0)
                         + (player.EquippedAccessory?.CritChance ?? 0)
-                        + player.AllEquippedArmor.Sum(a => a.CritChance);
+                        + player.AllEquippedArmor.Sum(a => a.CritChance)
+                        + SetBonusManager.GetActiveBonuses(player).Sum(b => b.CritChanceBonus);
             baseCrit += bonus;
         }
         return _rng.NextDouble() < baseCrit;
