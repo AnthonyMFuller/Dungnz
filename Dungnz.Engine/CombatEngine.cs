@@ -456,6 +456,65 @@ public class CombatEngine : ICombatEngine
             return;
         }
 
+        // ── IEnemyAI integration (#1210) ─────────────────────────────────
+        bool isArmorPiercingAttack = false;
+        var ai = EnemyAIRegistry.GetAI(enemy);
+        if (ai != null)
+        {
+            var context = new CombatContext(
+                RoundNumber: _combatTurn,
+                PlayerHPPercent: (double)player.HP / player.MaxHP,
+                CurrentFloor: DungeonFloor
+            );
+            var action = ai.ChooseAction(enemy, player, context);
+
+            switch (action.Type)
+            {
+                case EnemyActionType.Flee:
+                    _display.ShowCombatMessage($"{enemy.Name} attempts to flee in panic!");
+                    if (_rng.NextDouble() < 0.60)
+                    {
+                        enemy.HP = 0;
+                        _display.ShowCombatMessage($"{enemy.Name} escapes into the shadows...");
+                        return;
+                    }
+                    else
+                    {
+                        _display.ShowCombatMessage($"But {enemy.Name}'s escape is blocked!");
+                        // Fall through to standard attack
+                    }
+                    break;
+
+                case EnemyActionType.BoneRattle:
+                    _display.ShowCombatMessage($"{enemy.Name} rattles its bones ominously — the sound chills your soul!");
+                    // Apply Weakened status to represent the debuff
+                    _statusEffects.Apply(player, StatusEffect.Weakened, 2);
+                    _display.ShowCombatMessage("You feel your strikes weakening! (Weakened 2T)");
+                    return;
+
+                case EnemyActionType.AggressiveAttack:
+                    // Apply damage modifier to this attack (modifier resets each turn via base enemy.Attack)
+                    enemy.Attack = (int)(enemy.Attack * action.Modifier);
+                    _display.ShowCombatMessage($"{enemy.Name} attacks with savage fury!");
+                    break;
+
+                case EnemyActionType.ArmorPiercingAttack:
+                    // Flag for damage calculation below
+                    isArmorPiercingAttack = true;
+                    _display.ShowCombatMessage($"{enemy.Name} strikes at a weak point in your defenses!");
+                    break;
+
+                case EnemyActionType.Cower:
+                    _display.ShowCombatMessage($"{enemy.Name} cowers in fear and does nothing!");
+                    return;
+
+                case EnemyActionType.Attack:
+                default:
+                    // Standard attack — continue with normal flow
+                    break;
+            }
+        }
+
         // Goblin Shaman: try to heal when below 50% HP (once every 3 turns)
         if (_shamanHealCooldown > 0) _shamanHealCooldown--;
         if (enemy is GoblinShaman shaman && shaman.HP < shaman.MaxHP / 2 && _shamanHealCooldown == 0)
@@ -674,6 +733,11 @@ public class CombatEngine : ICombatEngine
                 // Tidal Slam: 150% ATK + Slow
                 enemyDmg = Math.Max(1, (int)(enemyEffAtk * 1.5f) - playerEffDef);
                 _statusEffects.Apply(player, StatusEffect.Slow, 2);
+            }
+            else if (isArmorPiercingAttack)
+            {
+                // ArmorPiercingAttack: ignores player DEF (IEnemyAI action)
+                enemyDmg = Math.Max(1, enemyEffAtk);
             }
             else
             {

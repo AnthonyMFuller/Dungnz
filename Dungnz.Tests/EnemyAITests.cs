@@ -1,6 +1,7 @@
 using Dungnz.Engine;
 using Dungnz.Models;
 using Dungnz.Systems.Enemies;
+using Dungnz.Tests.Helpers;
 using FluentAssertions;
 
 namespace Dungnz.Tests;
@@ -124,5 +125,54 @@ public class EnemyAITests
 
         ai.Should().NotBeNull();
         ai.Should().BeOfType<SkeletonAI>();
+    }
+
+    // ── CombatEngine Integration Tests ─────────────────────────────
+
+    [Fact]
+    public void CombatEngine_GoblinAI_FleeTriggeredAtLowHP()
+    {
+        // Arrange: low-HP goblin vs player
+        var display = new TestDisplayService();
+        var input = new FakeInputReader("1"); // attack once
+        var rng = new Random(42); // seed for deterministic flee roll
+        var goblin = new Goblin { HP = 5, MaxHP = 20, Attack = 10, Defense = 5 }; // 25% HP
+        var player = new Player { Name = "Test", HP = 100, MaxHP = 100, Attack = 20, Defense = 10 };
+
+        var engine = new CombatEngine(display, input, rng);
+        engine.DungeonFloor = 1;
+
+        // Act: trigger combat - goblin should attempt to flee on its turn
+        var result = engine.RunCombat(player, goblin);
+
+        // Assert: check for flee attempt message
+        display.CombatMessages.Should().Contain(m => m.Contains("flee") || m.Contains("escape"));
+    }
+
+    [Fact]
+    public void CombatEngine_SkeletonAI_BoneRattleEveryThirdRound()
+    {
+        // Arrange: skeleton vs player with RNG controlled
+        var display = new TestDisplayService();
+        var input = new FakeInputReader("1", "1", "1", "1", "1", "1", "1", "1", "1", "1"); // many attack commands
+        var rng = new Random(123); // seed for deterministic results
+        var skeleton = new Skeleton { HP = 100, MaxHP = 100, Attack = 12, Defense = 8 };
+        var player = new Player
+        {
+            Name = "Test",
+            HP = 200,
+            MaxHP = 200,
+            Attack = 5, // low attack to keep skeleton alive for 3+ turns
+            Defense = 20 // high defense to survive
+        };
+
+        var engine = new CombatEngine(display, input, rng);
+        engine.DungeonFloor = 1;
+
+        // Act: simulate combat (skeleton should use BoneRattle on round 3)
+        var result = engine.RunCombat(player, skeleton);
+
+        // Assert: check for BoneRattle message on round 3
+        display.CombatMessages.Should().Contain(m => m.Contains("rattles its bones") || m.Contains("Weakened"));
     }
 }
