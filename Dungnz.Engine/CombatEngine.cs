@@ -97,7 +97,7 @@ public class CombatEngine : ICombatEngine
         _navigator = navigator;
         _difficulty = difficulty ?? DifficultySettings.For(Difficulty.Normal);
         _passives = new PassiveEffectProcessor(_display, _rng, _statusEffects);
-        _attackResolver = attackResolver ?? new AttackResolver(_display, _rng, _statusEffects, _narration);
+        _attackResolver = attackResolver ?? new AttackResolver(_display, _rng, _statusEffects, _narration, _passives, _difficulty, _turnLog);
         _abilityProcessor = abilityProcessor ?? new AbilityProcessor(_display, _abilities, _statusEffects, _inventoryManager);
         _statusEffectApplicator = statusEffectApplicator ?? new StatusEffectApplicator(_display, _rng, _statusEffects);
         _combatLogger = combatLogger ?? new CombatLogger(_display, _narration);
@@ -155,6 +155,7 @@ public class CombatEngine : ICombatEngine
     public CombatResult RunCombat(Player player, Enemy enemy, RunStats? stats = null)
     {
         if (stats != null) _stats = stats;
+        _attackResolver.SetStats(_stats);
 
         // Restore any status effects persisted on the player (e.g., across save/load)
         foreach (var ae in player.ActiveEffects)
@@ -210,6 +211,7 @@ public class CombatEngine : ICombatEngine
         while (true)
         {
             _combatTurn++;
+            _attackResolver.CombatTurn = _combatTurn;
             // Fix #167: capture stun state BEFORE ProcessTurnStart decrements durations
             bool playerStunnedThisTurn = _statusEffects.HasEffect(player, StatusEffect.Stun);
             bool enemyStunnedThisTurn  = _statusEffects.HasEffect(enemy,  StatusEffect.Stun);
@@ -553,232 +555,7 @@ public class CombatEngine : ICombatEngine
     }
     
     private void PerformPlayerAttack(Player player, Enemy enemy)
-    {
-        // AbyssalLeviathan submerge: player's attack is skipped
-        if (enemy.IsSubmerged)
-        {
-            _display.ShowCombatMessage("The Leviathan submerges — your attack meets only water!");
-            enemy.IsSubmerged = false;
-            return;
-        }
-
-        // ArchlichSovereign / DamageImmune: redirect hit to adds
-        if (enemy.DamageImmune && enemy.AddsAlive > 0)
-        {
-            _display.ShowCombatMessage("Your attack strikes one of the skeletal guardians!");
-            enemy.AddsAlive--;
-            if (enemy.AddsAlive == 0)
-            {
-                enemy.DamageImmune = false;
-                _display.ShowCombatMessage("The last guardian falls! The boss is vulnerable again!");
-            }
-            return;
-        }
-
-        // InfernalDragon flight phase: 40% miss chance
-        if (enemy.FlightPhaseActive && _rng.NextDouble() < 0.40)
-        {
-            _display.ShowCombatMessage("The dragon banks away — your attack misses!");
-            _turnLog.Add(new CombatTurn("You", "Attack", 0, false, true, null));
-            return;
-        }
-
-        // Use flat dodge chance for enemies like Wraith, otherwise DEF-based
-        bool dodged = enemy.FlatDodgeChance >= 0
-            ? _rng.NextDouble() < enemy.FlatDodgeChance
-            : RollDodge(enemy.Defense);
-
-        if (dodged)
-        {
-            var missPool = player.Class switch {
-                PlayerClass.Warrior => CombatNarration.WarriorMissMessages,
-                PlayerClass.Mage    => CombatNarration.MageMissMessages,
-                PlayerClass.Rogue   => CombatNarration.RogueMissMessages,
-                _                   => CombatNarration.PlayerMissMessages
-            };
-            _display.ShowCombatMessage(_narration.Pick(missPool, enemy.Name));
-            _turnLog.Add(new CombatTurn("You", "Attack", 0, false, true, null));
-
-            // BladeDancer: 50% counter on player dodge
-            if (enemy.OnDodgeCounterChance > 0 && _rng.NextDouble() < enemy.OnDodgeCounterChance)
-            {
-                _display.ShowCombatMessage($"The {enemy.Name} spins and counters your missed attack!");
-                var counterDmg = Math.Max(1, enemy.Attack - player.Defense);
-                player.TakeDamage(counterDmg);
-                _stats.DamageTaken += counterDmg;
-                _display.ShowCombatMessage(ColorizeDamage($"{enemy.Name} deals {counterDmg} counter damage!", counterDmg));
-            }
-        }
-        else
-        {
-            var playerEffAtk = player.Attack + _statusEffects.GetStatModifier(player, "Attack");
-            var effectiveDef = Math.Max(0, enemy.Defense - player.EnemyDefReduction);
-            var playerDmg = Math.Max(1, playerEffAtk - effectiveDef);
-
-            // SiegeOgre thick hide
-            if (enemy.ThickHideHitsRemaining > 0)
-            {
-                playerDmg = Math.Max(1, playerDmg - enemy.ThickHideDamageReduction);
-                enemy.ThickHideHitsRemaining--;
-                if (enemy.ThickHideHitsRemaining == 0)
-                    _display.ShowCombatMessage($"You break through the {enemy.Name}'s thick hide!");
-                else
-                    _display.ShowCombatMessage($"The {enemy.Name}'s thick hide absorbs some of the blow!");
-            }
-
-            var isCrit = RollCrit(player);
-            if (isCrit)
-            {
-                playerDmg *= 2;
-            }
-            // Warrior passive: +5% damage when HP < 50%
-            if (player.Class == PlayerClass.Warrior && player.HP < player.MaxHP / 2.0)
-                playerDmg = (int)(playerDmg * 1.05);
-            // Bug #86: PowerStrike skill passive â +15% damage
-            if (player.Skills.IsUnlocked(Skill.PowerStrike))
-                playerDmg = Math.Max(1, (int)(playerDmg * 1.15));
-            // Berserker's Edge passive: +10% damage per 25% HP missing
-            if (player.Skills.IsUnlocked(Skill.BerserkersEdge))
-            {
-                var hpPercent = (float)player.HP / player.MaxHP;
-                var multiplier = 1.0f;
-                if (hpPercent <= 0.25f) multiplier = 1.40f;      // 75% missing = +40%
-                else if (hpPercent <= 0.50f) multiplier = 1.30f; // 50% missing = +30%
-                else if (hpPercent <= 0.75f) multiplier = 1.20f; // 25% missing = +20%
-                else multiplier = 1.0f;                          // <25% missing = no bonus
-                playerDmg = Math.Max(1, (int)(playerDmg * multiplier));
-            }
-            // Last Stand damage boost — +50% damage
-            if (player.LastStandTurns > 0)
-                playerDmg = Math.Max(1, (int)(playerDmg * 1.5f));
-            // MartyrResolve passive (Paladin) — ATK +20% when HP < 20%
-            if (player.Skills.IsUnlocked(Skill.MartyrResolve) && player.HP < player.MaxHP * 0.20f)
-                playerDmg = Math.Max(1, (int)(playerDmg * 1.20));
-            // ApexPredator passive (Ranger) — +20% when enemy HP < 40%
-            if (player.Skills.IsUnlocked(Skill.ApexPredator) && enemy.HP < enemy.MaxHP * 0.40f)
-                playerDmg = Math.Max(1, (int)(playerDmg * 1.20));
-            // Hunter's Mark passive (Ranger) — first attack +25%
-            if (player.Class == PlayerClass.Ranger && !player.HunterMarkUsedThisCombat)
-            {
-                player.HunterMarkUsedThisCombat = true;
-                playerDmg = Math.Max(1, (int)(playerDmg * 1.25));
-                _display.ShowCombatMessage("🎯 Hunter's Mark! First strike deals bonus damage!");
-            }
-            
-            // Shadow Strike (Rogue): first attack each combat deals 2x damage
-            if (player.Class == PlayerClass.Rogue && player.ShadowStrikeReady)
-            {
-                playerDmg *= 2;
-                player.ShadowStrikeReady = false;
-                _display.ShowCombatMessage("[Shadow Strike] From the shadows — double damage!");
-            }
-            
-            // IronSentinel: 50% damage reduction from plating
-            if (enemy is IronSentinel sentinel)
-                playerDmg = Math.Max(1, (int)(playerDmg * (1.0 - sentinel.ProtectionDR)));
-
-            // Holy damage bonus vs undead enemies
-            if (enemy.IsUndead && player.HolyDamageVsUndead > 0f)
-            {
-                playerDmg = Math.Max(1, (int)(playerDmg * (1f + player.HolyDamageVsUndead)));
-                _display.ShowColoredCombatMessage($"✨ Holy damage — +{(int)(player.HolyDamageVsUndead * 100)}% vs undead!", ColorCodes.Yellow);
-            }
-            playerDmg = Math.Max(1, (int)(playerDmg * _difficulty.PlayerDamageMultiplier));
-            enemy.HP = Math.Max(0, enemy.HP - playerDmg);
-            _stats.DamageDealt += playerDmg;
-
-            // HPOnHit: heal player for aggregate equipped-item HP-on-hit value
-            int hpOnHit = (int)((player.EquippedWeapon?.HPOnHit ?? 0)
-                        + (player.EquippedAccessory?.HPOnHit ?? 0)
-                        + player.AllEquippedArmor.Sum(a => a.HPOnHit));
-            if (hpOnHit > 0 && player.HP < player.MaxHP)
-            {
-                player.Heal(hpOnHit);
-                _display.ShowColoredCombatMessage($"💚 HP on Hit: +{hpOnHit} HP", ColorCodes.Green);
-            }
-
-            // Fix #542: physical damage breaks Freeze
-            _statusEffects.NotifyPhysicalDamage(enemy);
-
-            // ── Passive effects: on player hit ──────────────────────────────
-            if (!enemy.IsDead)
-                _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnPlayerHit, enemy, playerDmg);
-            else
-            {
-                // Soul Harvest (Necromancer): heal 5 HP on enemy kill
-                if (player.Class == PlayerClass.Necromancer)
-                {
-                    player.Heal(5);
-                    _display.ShowCombatMessage("[Soul Harvest] You absorb the fallen's essence. +5 HP");
-                }
-                // on-kill bonus damage from thunderstrike
-                int killBonus = _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnEnemyKilled, enemy, playerDmg);
-                if (killBonus > 0) _stats.DamageDealt += killBonus;
-            }
-
-            var hitPool = player.Class switch {
-                PlayerClass.Warrior => CombatNarration.WarriorHitMessages,
-                PlayerClass.Mage    => CombatNarration.MageHitMessages,
-                PlayerClass.Rogue   => CombatNarration.RogueHitMessages,
-                PlayerClass.Paladin => CombatNarration.PaladinHitMessages,
-                PlayerClass.Necromancer => CombatNarration.NecromancerHitMessages,
-                PlayerClass.Ranger  => CombatNarration.RangerHitMessages,
-                _                   => CombatNarration.PlayerHitMessages
-            };
-            var critPool = player.Class switch {
-                PlayerClass.Warrior => CombatNarration.WarriorCritMessages,
-                PlayerClass.Mage    => CombatNarration.MageCritMessages,
-                PlayerClass.Rogue   => CombatNarration.RogueCritMessages,
-                _                   => CombatNarration.CritMessages
-            };
-            if (isCrit)
-            {
-                _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(critPool, enemy.Name, playerDmg), playerDmg, true));
-                _display.ShowCombatMessage(_narration.Pick(CombatNarration.CritFlavor));
-            }
-            else
-                _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(hitPool, enemy.Name, playerDmg), playerDmg));
-
-            // Killing-blow atmospheric flavor
-            if (enemy.IsDead)
-            {
-                var killPool = player.Class switch
-                {
-                    PlayerClass.Warrior or PlayerClass.Paladin => CombatNarration.KillMelee,
-                    PlayerClass.Ranger                         => CombatNarration.KillRanged,
-                    PlayerClass.Mage or PlayerClass.Necromancer => CombatNarration.KillMagic,
-                    _                                          => CombatNarration.KillGeneric
-                };
-                _display.ShowCombatMessage(_narration.Pick(killPool));
-            }
-
-            string? statusApplied = null;
-            // Bug #110: bleed-on-hit from equipped weapon (10% chance, 3 turns)
-            if (player.EquippedWeaponAppliesBleed && _rng.NextDouble() < 0.10)
-            {
-                _statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
-                statusApplied = "Bleed";
-                _display.ShowColoredCombatMessage($"{enemy.Name} is bleeding!", ColorCodes.Red);
-            }
-            // Shadowstep 4-pc set bonus: guaranteed bleed on every hit
-            if (player.SetBonusAppliesBleed && !enemy.IsDead)
-            {
-                _statusEffects.Apply(enemy, StatusEffect.Bleed, 3);
-                statusApplied ??= "Bleed";
-                _display.ShowColoredCombatMessage($"[Shadowstep] {enemy.Name} is bleeding!", ColorCodes.Red);
-            }
-            _turnLog.Add(new CombatTurn("You", "Attack", playerDmg, isCrit, false, statusApplied));
-
-            // IronGuard counter-strike: fires AFTER player hits, BEFORE status ticks
-            if (!enemy.IsDead && enemy.CounterStrikeChance > 0 && _rng.NextDouble() < enemy.CounterStrikeChance)
-            {
-                var counterDmg = Math.Max(1, playerDmg / 2);
-                player.TakeDamage(counterDmg);
-                _stats.DamageTaken += counterDmg;
-                _display.ShowCombatMessage(ColorizeDamage($"⚔ The {enemy.Name} counters with a swift riposte — {counterDmg} damage!", counterDmg));
-            }
-        }
-    }
+        => _attackResolver.PerformPlayerAttack(player, enemy);
     
     private void PerformEnemyTurn(Player player, Enemy enemy, bool stunOverride = false)
     {
@@ -1505,11 +1282,7 @@ public class CombatEngine : ICombatEngine
             _display.ShowCombat(_narration.Pick(EnemyNarration.GetDeaths(enemy.Name), enemy.Name));
     }
 
-    private bool RollDodge(int defense)
-    {
-        var dodgeChance = defense / (double)(defense + 20);
-        return _rng.NextDouble() < dodgeChance;
-    }
+    private bool RollDodge(int defense) => _attackResolver.RollDodge(defense);
 
     /// <summary>
     /// Rolls a dodge check for the player, incorporating base-defense probability,
@@ -1518,38 +1291,9 @@ public class CombatEngine : ICombatEngine
     /// </summary>
     /// <param name="player">The player attempting to dodge an incoming attack.</param>
     /// <returns><see langword="true"/> if the dodge succeeds; otherwise <see langword="false"/>.</returns>
-    private bool RollPlayerDodge(Player player)
-    {
-        // Bug #85: add flat equipment and class bonuses on top of DEF-based chance
-        float dodgeChance = player.Defense / (player.Defense + 20f)
-                          + player.DodgeBonus
-                          + player.ClassDodgeBonus
-                          + player.SetBonusDodge;
-        // Bug #86: Swiftness skill passive — +5% dodge chance
-        if (player.Skills.IsUnlocked(Skill.Swiftness))
-            dodgeChance += 0.05f;
-        // Quick Reflexes passive — +5% dodge chance
-        if (player.Skills.IsUnlocked(Skill.QuickReflexes))
-            dodgeChance += 0.05f;
-        // Eagle Eye (Ranger): +15% dodge on turns 1–2
-        if (player.Class == PlayerClass.Ranger && _combatTurn <= 2)
-            dodgeChance += 0.15f;
-        dodgeChance = Math.Min(dodgeChance, 0.95f);
-        return _rng.NextDouble() < dodgeChance;
-    }
-    
-    private bool RollCrit(Player? player = null)
-    {
-        float baseCrit = 0.15f;
-        if (player != null)
-        {
-            float bonus = (player.EquippedWeapon?.CritChance ?? 0)
-                        + (player.EquippedAccessory?.CritChance ?? 0)
-                        + player.AllEquippedArmor.Sum(a => a.CritChance);
-            baseCrit += bonus;
-        }
-        return _rng.NextDouble() < baseCrit;
-    }
+    private bool RollPlayerDodge(Player player) => _attackResolver.RollPlayerDodge(player);
+
+    private bool RollCrit(Player? player = null) => _attackResolver.RollCrit(player);
 
     /// <summary>Returns true when any of the player's equipped items has the given passive effect id.</summary>
     private static bool HasPassiveEffect(Player player, string effectId)
