@@ -16,9 +16,9 @@ namespace Dungnz.Display.Spectre;
 /// <para><strong>Threading model:</strong> The game thread calls methods on this service.
 /// All panel updates call <see cref="SpectreLayoutContext.UpdatePanel"/> which is thread-safe
 /// and automatically refreshes the Live display.</para>
-/// <para><strong>Input pattern:</strong> Input-coupled methods (menus, prompts) pause the
-/// Live display by signaling <see cref="_pauseLiveEvent"/>, run a <see cref="SelectionPrompt{T}"/>,
-/// then resume Live. This is acceptable for turn-based games per Anthony's decision.</para>
+/// <para><strong>Input pattern:</strong> Input-coupled methods use ReadKey-based input when
+/// Live is active. AnsiConsole.Prompt() is only used when Live is not running to avoid
+/// Spectre.Console exclusivity lock conflicts.</para>
 /// </remarks>
 [ExcludeFromCodeCoverage]
 public partial class SpectreLayoutDisplayService : IDisplayService
@@ -26,12 +26,8 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     private readonly Layout _layout;
     private readonly SpectreLayoutContext _ctx;
 
-    // Event signaling that Live should pause for a SelectionPrompt
-    private readonly ManualResetEventSlim _pauseLiveEvent = new(false);
-    private readonly ManualResetEventSlim _resumeLiveEvent = new(false);
+    // Event signaling that Live should exit
     private readonly ManualResetEventSlim _liveExitEvent = new(false);
-    // Signaled by the Live loop when it has actually entered the paused state (#1133)
-    private readonly ManualResetEventSlim _liveIsPausedEvent = new(false);
 
     // Content panel buffer (markup strings)
     private readonly List<string> _contentLines = new();
@@ -39,8 +35,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     private Color _contentBorderColor = Color.Blue;
     private const int MaxContentLines = 50;
     
-    // Nesting depth for PauseAndRun to avoid deadlock in nested menus (#1077)
-    private int _pauseDepth = 0;
+    // NOTE: _pauseDepth was removed along with PauseAndRun method (#1265)
 
     // Log panel buffer (markup strings)
     private readonly List<string> _logHistory = new();
@@ -80,22 +75,12 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             _ctx.SetContext(ctx);
             ctx.Refresh();
 
-            // Live render loop — wait for exit or pause signals
+            // Live render loop — wait for exit signal
             while (!_liveExitEvent.IsSet)
             {
-                // Check for pause request (SelectionPrompt needs console)
-                if (_pauseLiveEvent.IsSet)
-                {
-                    _pauseLiveEvent.Reset();
-                    _liveIsPausedEvent.Set(); // Confirm to PauseAndRun that we've paused (#1133)
-                    _resumeLiveEvent.Wait();
-                    _resumeLiveEvent.Reset();
-                    ctx.Refresh();
-                }
-                else
-                {
-                    Thread.Sleep(50); // Yield to avoid busy-waiting
-                }
+                // NOTE: Pause/resume logic removed (#1265) — never call AnsiConsole.Prompt()
+                // while Live is active. Use ReadKey-based input instead.
+                Thread.Sleep(50); // Yield to avoid busy-waiting
             }
 
             _ctx.ClearContext();
@@ -122,7 +107,6 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         _currentFloor = 1;
         _contentHeader = "Adventure";
         _contentBorderColor = Color.Blue;
-        _liveIsPausedEvent.Reset();
     }
 
     // ── Panel update helpers ──────────────────────────────────────────────────

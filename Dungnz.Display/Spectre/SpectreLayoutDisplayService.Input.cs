@@ -7,10 +7,9 @@ namespace Dungnz.Display.Spectre;
 
 /// <summary>
 /// Input-coupled methods for <see cref="SpectreLayoutDisplayService"/>.
-/// All methods that require user selection pause the Live render loop via
-/// <see cref="PauseAndRun{T}"/>, run a <see cref="SelectionPrompt{T}"/> or
-/// <see cref="TextPrompt{T}"/>, then resume Live.  Acceptable for a turn-based
-/// game per Anthony's decision (Option E).
+/// All methods use ReadKey-based input when Live is active to avoid
+/// Spectre.Console exclusivity lock conflicts. SelectionPrompt only used
+/// when Live is not active.
 /// </summary>
 public partial class SpectreLayoutDisplayService
 {
@@ -453,15 +452,14 @@ public partial class SpectreLayoutDisplayService
             }
         }
 
-        return PauseAndRun(() =>
-            AnsiConsole.Prompt(
-                new SelectionPrompt<(string Label, Skill? Value)>()
-                    .Title("[bold]✨ Skill Tree[/]")
-                    .PageSize(15)
-                    .UseConverter(o => o.Label)
-                    .HighlightStyle(new Style(Color.Yellow))
-                    .AddChoices(opts))
-            .Value);
+        return AnsiConsole.Prompt(
+            new SelectionPrompt<(string Label, Skill? Value)>()
+                .Title("[bold]✨ Skill Tree[/]")
+                .PageSize(15)
+                .UseConverter(o => o.Label)
+                .HighlightStyle(new Style(Color.Yellow))
+                .AddChoices(opts))
+            .Value;
     }
 
     /// <inheritdoc/>
@@ -518,31 +516,17 @@ public partial class SpectreLayoutDisplayService
     }
 
     // ──────────────────────────────────────────────────────────────────────────
-    // Pause/resume helpers
+    // NOTE: PauseAndRun was removed (#1265)
     // ──────────────────────────────────────────────────────────────────────────
-
-    /// <summary>
-    /// Pauses the Live render loop, executes <paramref name="action"/>, then resumes.
-    /// Works with any return type including nullable value types (no constraints).
-    /// </summary>
-    private T PauseAndRun<T>(Func<T> action)
-    {
-        if (!_ctx.IsLiveActive) return action();
-        
-        bool isTopLevel = Interlocked.Increment(ref _pauseDepth) == 1;
-        if (isTopLevel)
-        {
-            _pauseLiveEvent.Set();
-            _liveIsPausedEvent.Wait();   // Block until Live confirms it has paused (#1133)
-            _liveIsPausedEvent.Reset();
-        }
-        try { return action(); }
-        finally 
-        { 
-            if (Interlocked.Decrement(ref _pauseDepth) == 0)
-                _resumeLiveEvent.Set(); 
-        }
-    }
+    // PauseAndRun attempted to pause Live rendering to call AnsiConsole.Prompt().
+    // This approach is fundamentally broken: Spectre.Console's DefaultExclusivityMode
+    // holds _running=1 for the entire Live.Start() callback duration — blocking the
+    // render thread does NOT release the exclusivity lock. Any AnsiConsole.Prompt()
+    // call while Live is active finds _running==1 and throws InvalidOperationException.
+    //
+    // Solution: Use ReadKey-based ContentPanelMenu for all interactive input while Live
+    // is active. Guard with IsLiveActive checks and only call AnsiConsole.Prompt() when
+    // Live is not running.
 
     // ──────────────────────────────────────────────────────────────────────────
     // Content-panel menu (safe while Live is active — no exclusivity conflict)
