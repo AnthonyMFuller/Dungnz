@@ -1475,3 +1475,136 @@ When queues are configured, `ShowSellMenuAndSelect`, `ShowConfirmMenu`, and `Sho
 - **All command handler tests should verify ShowRoom() is called at end** — Regression #1157, #1156 show that forgetting to call `ShowRoom()` leaves the UI in an inconsistent state. Tests that verify ShowRoom restoration catch this entire class of bugs.
 - **Arrange-Act-Assert pattern scales well for command handler tests** — Setup helpers (`MakeSellSetup`) + queue-based responses + final assertions on player state + display calls = clean, focused tests.
 
+
+
+---
+
+### 2026-03-06 — PR Review Session: 4 PRs from Bug Hunt Sprint
+
+**Task:** Review and merge 4 PRs produced by the pre-v3 bug hunt sprint:
+- PR #1255: DevOps fixes (coverage.sh, Stryker, duplicate EnemyTypeRegistry)
+- PR #1259: SetBonusManager stat application fixes  
+- PR #1260: EnemyAIRegistry registration + CommandHandlerBase
+- PR #1261: Missing P0/P1 tests (ShowRoom contract, enemy save/load, game loop integration)
+
+#### PR #1255 — REJECTED ❌
+**Branch:** `squad/setbonus-fixes`  
+**Claimed fixes:** #1228 (coverage.sh 80→70%), #1229 (Stryker tool restore), #1230 (duplicate EnemyTypeRegistry)  
+**Build:** ✅ Pass  
+**Tests:** ✅ 1757/1757 pass  
+**Verdict:** BLOCKED — Critical file deletions
+
+**Issues found:**
+1. Three files completely EMPTIED instead of updated:
+   - `scripts/coverage.sh` — 23 lines deleted (should update threshold, not delete script)
+   - `.github/workflows/squad-stryker.yml` — 53 lines deleted (should change install→restore, not delete workflow)
+   - `Dungnz.Tests/ArchitectureTests.cs` — 76 lines deleted (should update namespace reference, not delete tests)
+
+2. PR body doesn't mention AttackResolver.cs and SetBonusManager.cs changes (set bonus fixes added but undocumented)
+
+**Why file deletions are critical:**
+- `coverage.sh` is the local dev coverage script — deleting it breaks local dev workflow
+- `squad-stryker.yml` is the mutation testing CI workflow — deleting it removes quality gate
+- `ArchitectureTests.cs` enforces layer boundaries and enemy registration — deleting it removes architectural safety net
+
+**Pattern:** This looks like a Git merge conflict resolution gone wrong. Instead of resolving conflicts by keeping updated content, someone selected "delete entire file" for all three conflicting files.
+
+#### PR #1259 — INCOMPLETE ❌
+**Branch:** `squad/1240-1242-1253-1254-setbonus-stat-fixes`  
+**Claimed fixes:** #1240, #1242, #1253, #1254 (all set bonus issues)  
+**Build:** ✅ Pass  
+**Tests:** ✅ 1759/1759 pass  
+**Verdict:** INCOMPLETE — only fixes 2 of 4 issues
+
+**What's actually fixed:**
+- ✅ #1240: Shadowstalker SetId mismatch (`shadowstalker` → `shadowstep-set`)
+- ✅ #1254: AttackBonus now included in damage calculation
+
+**What's still broken:**
+- ❌ #1242: MaxHP/MaxMana bonuses still NOT applied to player stats (lines 231-232 missing)
+- ❌ #1253: CritChanceBonus still NOT included in RollCrit calculation
+
+**Why this matters:**
+- Players equipping 2-piece Ironclad (+10 max HP) get zero HP benefit
+- Players equipping 2-piece Shadowstalker (+10% crit) get zero crit benefit
+- Set bonuses remain mostly cosmetic instead of functional
+
+**Pattern:** The PR title and body claim all 4 issues are fixed, but the diff only contains changes for 2 issues. Either the other fixes were lost in a merge conflict, or the PR was opened prematurely before work completed.
+
+#### PR #1260 — APPROVED ✅
+**Branch:** `squad/1225-1226-engine-fixes`  
+**Claimed fixes:** #1225 (CommandHandlerBase missing), #1226 (only 2/29 enemies have AI)  
+**Build:** ✅ Pass  
+**Tests:** ✅ 1759/1759 pass  
+**Verdict:** APPROVED — all issues correctly addressed
+
+**What was fixed:**
+- ✅ Created `CommandHandlerBase` with template method pattern for ShowRoom enforcement
+- ✅ Migrated 3 handlers as proof of concept (Stats, Map, Help)
+- ✅ Created `DefaultEnemyAI` for enemies without specialized behaviors
+- ✅ Registered all 38 enemy types in EnemyAIRegistry:
+  - 2 with specialized AI (Goblin, Skeleton)
+  - 24 regular enemies with DefaultEnemyAI
+  - 12 boss variants with DefaultEnemyAI
+
+**Minor note:** PR title says "29 enemy AI types" but actually registers 38 types. Body correctly says 38.
+
+**Why this PR is good:**
+- Solves the "no AI for 36 enemies" bug completely
+- CommandHandlerBase provides architectural foundation for consistent ShowRoom behavior
+- Clean template method pattern — subclasses override `ShouldRefreshRoom()` if needed
+- Ready to merge (but branch protection prevents direct merge)
+
+#### PR #1261 — BLOCKED ❌
+**Branch:** `squad/1227-1236-1252-missing-tests`  
+**Claimed fixes:** #1227 (enemy save/load tests), #1236 (ShowRoom contract tests), #1252 (game loop integration tests)  
+**Build:** ✅ Pass  
+**Tests:** ✅ 1775/1775 pass (+16 new tests)  
+**Verdict:** BLOCKED — same file deletion issues as #1255
+
+**What's good:**
+- ✅ 16 new tests added (8 ShowRoom contract, 6 enemy save/load, 4 game loop integration)
+- ✅ Tests verify critical gaps identified in bug hunt
+- ✅ Build and tests pass
+
+**What's bad:**
+- ❌ Same file deletion bugs as PR #1255 (squad-stryker.yml, ArchitectureTests.cs, coverage.sh all emptied)
+- ❌ Includes unrelated changes (AttackResolver, SetBonusManager, EnemyTypeRegistry deletion)
+- ⚠️ Test implementation is minimal — many tests are one-liners that may not provide deep coverage
+
+**Test quality concerns:**
+- `CommandHandlerShowRoomTests.cs` — all tests are single-line assertions verifying ShowRoomCallCount incremented by 1. No verification of what ShowRoom actually does.
+- `EnemySaveLoadTests.cs` — good coverage of round-trip serialization with multiple enemy types, AI state, flags
+- `GameLoopIntegrationTests.cs` — very basic smoke tests (combat→win, combat→death, status effects, level-up). No deep integration validation.
+
+**Pattern:** Same Git merge conflict resolution bug as #1255. The test additions are good, but the file deletions make this PR unmergeable.
+
+## Key Learnings
+
+### PR Quality Anti-Patterns Found
+1. **File deletion instead of conflict resolution** — Two PRs (#1255, #1261) emptied critical files instead of updating them. This suggests a Git workflow issue where merge conflicts were resolved by selecting "delete" instead of "merge."
+
+2. **Scope creep without documentation** — PR #1255 includes AttackResolver/SetBonusManager changes not mentioned in title/body/linked issues. PR #1261 includes the same unrelated changes. These should have been in PR #1259 or documented separately.
+
+3. **Incomplete work claimed as complete** — PR #1259 claims to close 4 issues but only fixes 2. This breaks trust in PR metadata and wastes reviewer time.
+
+4. **Minimal test implementations** — PR #1261 adds 16 tests, but many are trivial one-liners that don't provide deep coverage. Tests pass because they don't assert much.
+
+### What This Tells Us About the Sprint
+- **High velocity, low quality control** — 4 PRs produced quickly, but 3 of 4 have critical issues
+- **Git workflow needs attention** — File deletion pattern in 2 PRs suggests merge conflict resolution training gap
+- **PR review checklist needed** — Common issues (file deletions, scope creep, incomplete work) could be caught with a pre-submit checklist
+
+### Actions for Next Sprint
+1. **Git training** — Document proper merge conflict resolution (never select "delete entire file")
+2. **PR template** — Add checklist: "No files deleted unless intentional", "All linked issues actually fixed", "No unrelated changes"
+3. **Test quality gate** — Require at least 3 assertions per test method (or explicit waiver comment)
+4. **Branch protection** — PRs must pass QA review before merge (current setup allows self-merge)
+
+### What I Approved
+- ✅ PR #1260 — Clean, complete, correctly scoped, ready to merge
+
+### What Needs Rework
+- ❌ PR #1255 — Restore deleted files, document set bonus changes
+- ❌ PR #1259 — Add missing MaxHP/MaxMana and CritChanceBonus fixes
+- ❌ PR #1261 — Restore deleted files, remove unrelated changes, improve test depth
