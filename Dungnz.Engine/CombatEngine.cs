@@ -796,7 +796,15 @@ public class CombatEngine : ICombatEngine
             if (isCrit)
             {
                 enemyDmgFinal *= 2;
-                _display.ShowCombatMessage(ColorCodes.Colorize("💥 Critical hit!", ColorCodes.BrightRed + ColorCodes.Bold));
+                var critReaction = _narration.GetEnemyCritReaction(enemy.Name);
+                if (!string.IsNullOrEmpty(critReaction))
+                {
+                    _display.ShowCombatMessage(ColorCodes.Colorize(critReaction, ColorCodes.BrightRed + ColorCodes.Bold));
+                }
+                else
+                {
+                    _display.ShowCombatMessage(ColorCodes.Colorize("💥 Critical hit!", ColorCodes.BrightRed + ColorCodes.Bold));
+                }
             }
             // BattleHardened skill passive — 5% damage reduction (matches skill description)
             if (player.Skills.IsUnlocked(Skill.BattleHardened))

@@ -73,6 +73,13 @@ public class NarrationService
         };
     }
 
+    /// <summary>Returns a random critical hit reaction line for the given enemy name. Returns null if no custom reaction is defined.</summary>
+    public string? GetEnemyCritReaction(string enemyName)
+    {
+        var reactions = EnemyNarration.GetCritReactions(enemyName);
+        return reactions.Length > 0 ? Pick(reactions) : null;
+    }
+
     private static readonly string[] _firstVisitPool = new[]
     {
         "You step into shadow-drenched stone. The air tastes of rust and old death.",
