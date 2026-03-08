@@ -3106,3 +3106,125 @@ Full-team forward planning session. Game is stable (0 issues, 1,734 tests passin
 
 ## Full Session Log
 See `.ai-team/log/2026-03-06-forward-planning-session.md`
+
+---
+
+## Architecture Decision: Multi-Project Solution Split
+
+**Date:** 2026-03-06  
+**Author:** Coulson (Lead)  
+**Status:** Proposed  
+**Label:** architecture  
+
+### Context
+
+The solution is currently a single executable `Dungnz.csproj` containing all source code across five logical folders (`Models/`, `Systems/`, `Display/`, `Engine/`, `Data/`). A test project `Dungnz.Tests.csproj` references the monolith directly. This structure works but couples all layers at the build level, makes NuGet dependency ownership unclear, and prevents individual layers from being compiled, tested, or reasoned about in isolation.
+
+### Target Architecture
+
+**Project Dependency Graph (acyclic, top-down):**
+```
+Dungnz (exe)
+  └─ Dungnz.Engine
+       ├─ Dungnz.Display
+       │    ├─ Dungnz.Systems
+       │    │    ├─ Dungnz.Data
+       │    │    │    └─ Dungnz.Models  ← zero deps
+       │    │    └─ Dungnz.Models
+       │    └─ Dungnz.Models
+       ├─ Dungnz.Systems
+       ├─ Dungnz.Data
+       └─ Dungnz.Models
+```
+
+### Circular Dependencies to Resolve
+
+1. **Display ↔ Engine (IDisplayService ↔ StartupMenuOption)** — Move `IDisplayService`, `IInputReader`, `IMenuNavigator`, and `StartupMenuOption` from their current locations into `Models/`.
+2. **Systems ↔ Display (IDisplayService)** — Covered by Circular 1 fix.
+3. **Models ↔ Systems.Enemies (JsonDerivedType)** — Replace compile-time `[JsonDerivedType]` attributes with runtime JSON type registration via `JsonSerializerOptions` + `DefaultJsonTypeInfoResolver`.
+
+### Sequencing
+
+Layer-by-layer from bottom up (most independent first):
+1. **Scaffolding** — project files created, solution updated
+2. **Interface moves** — break Display↔Engine and Systems↔Display circular deps
+3. **JSON refactor** — break Models↔Systems.Enemies circular dep
+4. **Extract Models** → **Extract Data** → **Extract Systems** → **Extract Display** → **Extract Engine**
+5. **Thin executable** — Program.cs only
+6. **Test updates** — multi-assembly ArchUnitNET, project references, InternalsVisibleTo
+
+### Issues Created
+
+| # | Title |
+|---|---|
+| [#1187](https://github.com/AnthonyMFuller/Dungnz/issues/1187) | Create multi-project class library scaffolding |
+| [#1188](https://github.com/AnthonyMFuller/Dungnz/issues/1188) | Resolve circular dep — move interface contracts to Models layer |
+| [#1189](https://github.com/AnthonyMFuller/Dungnz/issues/1189) | Resolve circular dep — replace JsonDerivedType attributes with runtime enemy type registration |
+| [#1190](https://github.com/AnthonyMFuller/Dungnz/issues/1190) | Extract Dungnz.Models class library |
+| [#1191](https://github.com/AnthonyMFuller/Dungnz/issues/1191) | Extract Dungnz.Data class library |
+| [#1192](https://github.com/AnthonyMFuller/Dungnz/issues/1192) | Extract Dungnz.Systems class library |
+| [#1193](https://github.com/AnthonyMFuller/Dungnz/issues/1193) | Extract Dungnz.Display class library |
+| [#1194](https://github.com/AnthonyMFuller/Dungnz/issues/1194) | Extract Dungnz.Engine class library |
+| [#1195](https://github.com/AnthonyMFuller/Dungnz/issues/1195) | Finalize Dungnz.csproj as thin executable entry point |
+| [#1196](https://github.com/AnthonyMFuller/Dungnz/issues/1196) | Update Dungnz.Tests for multi-project solution |
+
+---
+
+## 2026-03-08: Retrospective Ceremony Decisions
+
+**By:** Coulson (Lead)  
+**Date:** 2026-03-08  
+**Ceremony:** Full-team retrospective  
+**Status:** Accepted
+
+### Decisions
+
+#### D1: P1 Gameplay Bugs Are Sprint Gate
+P1 gameplay bugs (SetBonusManager dead code, boss loot scaling, HP clamping, FinalFloor constant) must close before any new feature work begins. Romanoff should block feature PRs while P1 bugs are open. Hill owns all four fixes this sprint.
+
+#### D2: ShowRoom Root Fix Required — No More Callsite Patches
+Implement CommandHandlerBase with a `finally` block or a GameLoop post-command hook that unconditionally restores room view. Stop patching individual command handlers. Hill designs, Barton implements (Display trial scope), Romanoff validates.
+
+#### D3: SoulHarvest Integration Tests Gate EventBus
+Romanoff writes `CombatEngine.SoulHarvestIntegration.Tests.cs` asserting SoulHarvest fires exactly once per kill, including dual-path regression test. EventBus wiring remains blocked until these tests pass. No exceptions.
+
+#### D4: CombatEngine Decomposition Proposal This Sprint
+Coulson writes architecture proposal to extract AttackResolver, AbilityProcessor, StatusEffectApplicator, CombatLogger from CombatEngine.cs (1,709 LOC → ~5 focused components). Execution deferred to following sprint after SoulHarvest tests land.
+
+#### D5: Release Binary Smoke Test
+Fitz adds smoke test step to `squad-release.yml`: pipe quit command into published binary, assert clean exit before `gh release create`. 10-line addition. Covers runtime assembly resolution risks introduced by multi-project split.
+
+#### D6: Room State Narration Content Pipeline
+Fury produces room state narration pools (4-6 variants per state per floor theme: fresh, cleared, shrine, merchant, boss antechamber). Wire-up via `NarrationService.GetRoomEntryFlavor(room, floor)` in GoCommandHandler — assigned to Hill or Barton after content is ready.
+
+#### D7: Fury Early Consult on Player-Facing Text
+When any feature includes player-facing strings, consult Fury before implementation — not during PR review. This prevents late-stage rewrites and keeps narration consistent with floor themes.
+
+#### D8: Feature Branches From Master Only
+Hard rule, not a team norm. Every feature branch starts from master. No stacked branches. Stale-branch issues caused PR #798 to ship empty and PRs #767/#771 to be discarded. Romanoff should reject PRs branched from non-master.
+
+#### D9: Coverage Gate Restoration
+Restore 80% line coverage threshold in CI. Any future threshold change requires a structured annotation: reason + tracking issue for restoration. Romanoff and Fitz co-own.
+
+### Team Consensus Phase Priorities (N+1)
+
+1. **Enemy AI behaviors** — Barton implements IEnemyAI for all enemy types
+2. **Room state persistence + backtracking** — Hill implements in Engine
+3. **Room state narration** — Fury content + wire-up
+
+These three features are complementary: they all serve "make the dungeon feel real" and can ship in the same phase.
+
+### Individual Recommendations (Team Member #1 Priorities)
+
+| Member | Role | Top Recommendation |
+|--------|------|-------------------|
+| Hill | C# Dev | Room state persistence + backtracking |
+| Barton | Systems Dev / Display | Enemy AI behaviors via IEnemyAI |
+| Romanoff | QA Engineer | SoulHarvest integration tests to unblock EventBus |
+| Fury | Content Writer | Room state narration — context-aware room descriptions |
+| Fitz | DevOps | Release binary smoke test in CI |
+| Coulson | Lead | CombatEngine decomposition into focused components |
+
+---
+
+**Full Session Log:** See `.ai-team/log/2026-03-08-retro-session.md`
