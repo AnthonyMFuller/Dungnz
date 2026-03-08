@@ -315,7 +315,7 @@ public static class EnemyNarration
 
     private static readonly string[] _defaultIntro = { "The {0} attacks!" };
     private static readonly string[] _defaultDeath = { "The {0} falls." };
-    private static readonly string[] _defaultCritReaction = { "The {0} lands a brutal strike!" };
+    private static readonly string[] _defaultCritReaction = { "A brutal critical strike lands!" };
 
     /// <summary>Returns the pool of encounter introduction lines for the given enemy name.</summary>
     public static string[] GetIntros(string enemyName) =>

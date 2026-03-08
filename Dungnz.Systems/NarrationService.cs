@@ -73,11 +73,11 @@ public class NarrationService
         };
     }
 
-    /// <summary>Returns a random critical hit reaction line for the given enemy name. Returns null if no custom reaction is defined.</summary>
-    public string? GetEnemyCritReaction(string enemyName)
+    /// <summary>Returns a random critical hit reaction line for the given enemy name.</summary>
+    public string GetEnemyCritReaction(string enemyName)
     {
         var reactions = EnemyNarration.GetCritReactions(enemyName);
-        return reactions.Length > 0 ? Pick(reactions) : null;
+        return Pick(reactions);
     }
 
     private static readonly string[] _firstVisitPool = new[]
