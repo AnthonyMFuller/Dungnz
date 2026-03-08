@@ -80,6 +80,23 @@ public class NarrationService
         return Pick(reactions);
     }
 
+    /// <summary>Returns a random mid-combat idle taunt line for the given enemy name. Returns null if no custom line is defined.</summary>
+    public string? GetEnemyIdleTaunt(string enemyName)
+    {
+        var taunts = EnemyNarration.GetIdleTaunts(enemyName);
+        return taunts.Length > 0 ? Pick(taunts) : null;
+    }
+
+    /// <summary>Returns a random desperation line (< 25% HP) for the given enemy name. Returns null if no custom line is defined.</summary>
+    public string? GetEnemyDesperationLine(string enemyName)
+    {
+        var lines = EnemyNarration.GetDesperationLines(enemyName);
+        return lines.Length > 0 ? Pick(lines) : null;
+    }
+
+    // TODO(Barton): Call GetEnemyIdleTaunt(enemy.Name) every 3-4 turns in CombatEngine.PerformEnemyTurn() to display periodic mid-combat banter when no special action is taken
+    // TODO(Barton): Call GetEnemyDesperationLine(enemy.Name) in CombatEngine.PerformEnemyTurn() when enemy HP < 25% of MaxHP (before the turn action) to display final stand desperation
+
     private static readonly string[] _firstVisitPool = new[]
     {
         "You step into shadow-drenched stone. The air tastes of rust and old death.",

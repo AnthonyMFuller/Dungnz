@@ -313,9 +313,391 @@ public static class EnemyNarration
         }
     };
 
+    private static readonly Dictionary<string, string[]> _idleTaunts = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Goblin"] = new[]
+        {
+            "You're still standing? That's... impressive for a human.",
+            "Don't bother running. I'm faster than I look.",
+            "Boss said not to play with my food. But he's not here."
+        },
+        ["Skeleton"] = new[]
+        {
+            "Tick, tock. Your time runs short.",
+            "I've worn the bones of your kind before. They crackle nicely.",
+            "How long can flesh last against the eternal?"
+        },
+        ["Troll"] = new[]
+        {
+            "Troll stronger. Troll only get madder. You understand now?",
+            "Your weapons bounce off hide like pebbles. How does that feel?",
+            "Keep swinging. Eventually you'll tire. I never do."
+        },
+        ["Dark Knight"] = new[]
+        {
+            "Is that your best effort? How... disappointing.",
+            "I've fought in wars that would shatter your mind.",
+            "Every heartbeat brings you closer to the dark."
+        },
+        ["Malachar the Undying"] = new[]
+        {
+            "Centuries turn to dust. So shall you.",
+            "Feel my eternal hunger press against your fragile frame.",
+            "You struggle like all the others. It changes nothing."
+        },
+        ["Goblin Shaman"] = new[]
+        {
+            "The hex whispers your true name. Soon you'll understand.",
+            "My magic tastes your fear. It's quite delicious.",
+            "You dance for me now, puppet. Isn't it fun?"
+        },
+        ["Stone Golem"] = new[]
+        {
+            "Rock does not tire. You will.",
+            "Your pathetic flames cannot melt what is eternal.",
+            "Stand against me? You already fall."
+        },
+        ["Wraith"] = new[]
+        {
+            "The boundary between worlds grows thin for you.",
+            "I see through you. Your secrets, your end — all plain.",
+            "The cold around me is not coldness. It is emptiness."
+        },
+        ["Vampire Lord"] = new[]
+        {
+            "Your pulse quickens. How... tantalizing.",
+            "I've watched kingdoms rise and crumble. You won't even be a footnote.",
+            "Surrender your lifeblood willingly. It's less painful that way."
+        },
+        ["Mimic"] = new[]
+        {
+            "Underneath the lies, I am always HUNGRY.",
+            "You wanted treasure so badly. Careful what you wish for.",
+            "My form is whatever you want to see. My hunger never lies."
+        },
+        ["Giant Rat"] = new[]
+        {
+            "The warren grows every day. Where do you think they come from?",
+            "Squeak, squeak... that's the sound of your skull cracking.",
+            "Plague rats breed in corpses. Perhaps you'll be next."
+        },
+        ["Cursed Zombie"] = new[]
+        {
+            "The curse sings through my rotting sinews.",
+            "I'm already dead. What are you?",
+            "Your panic smells like rotten meat. I love that smell."
+        },
+        ["Blood Hound"] = new[]
+        {
+            "Every wound makes you easier to track.",
+            "The pack can taste you from miles away.",
+            "Even now, I hear your heartbeat. Thump-thump-thump."
+        },
+        ["Iron Guard"] = new[]
+        {
+            "I am the law. I am the order. I am your end.",
+            "For the Crown! For the realm! For your DOOM!",
+            "I've crushed a thousand rebels less skilled than you."
+        },
+        ["Night Stalker"] = new[]
+        {
+            "The darkness loves me. It whispers secrets only I can hear.",
+            "You never see the killing blow. That's the beauty of it.",
+            "Stay still. It'll be over quickly. Probably."
+        },
+        ["Frost Wyvern"] = new[]
+        {
+            "I've slept for ages beneath the ice. Your warmth is... nice.",
+            "Frost preserves things perfectly. You'll keep forever.",
+            "The blizzard remembers its children. I am its heir."
+        },
+        ["Chaos Knight"] = new[]
+        {
+            "Order fractures under my blade. Watch it shatter.",
+            "Reality bends when I walk. Can you feel it breaking?",
+            "Entropy always wins. And I am entropy's chosen."
+        },
+        ["Lich King"] = new[]
+        {
+            "I ruled when your ancestors were dust. I'll rule when you are too.",
+            "Magic flows from me like a river of shadow.",
+            "Your resistance only proves you have something worth taking."
+        },
+        ["Shadow Imp"] = new[]
+        {
+            "We crawl in the darkness. We multiply without end.",
+            "One of you. Dozens of us. Do the math, tiny one.",
+            "Shadows shimmer and our laughter echoes through the void."
+        },
+        ["Carrion Crawler"] = new[]
+        {
+            "The poison drips so slowly. You'll feel it for hours.",
+            "Decay is natural. Surrender to it.",
+            "My larvae thrive in dead flesh. You're about to be their feast."
+        },
+        ["Dark Sorcerer"] = new[]
+        {
+            "Magic is suffering. I've taught myself to love it.",
+            "Every spell I weave bends your reality further.",
+            "You fight against forces your mind can't comprehend."
+        },
+        ["Bone Archer"] = new[]
+        {
+            "I've fired ten thousand arrows. None have missed.",
+            "From darkness I wait. From silence I strike.",
+            "You think you're safe? My next shot disagrees."
+        },
+        ["Crypt Priest"] = new[]
+        {
+            "Death is divine. I am its prophet.",
+            "You pray to gods who've forgotten you. I never do.",
+            "Judgment is inevitable. It whispers your name."
+        },
+        ["Plague Bear"] = new[]
+        {
+            "The sickness is a gift. I give it gladly.",
+            "My claws drip with disease. Feast on it.",
+            "The rot grows stronger with every breath you take."
+        },
+        ["Siege Ogre"] = new[]
+        {
+            "I've brought down castle walls with my bare fists.",
+            "Your armor is tissue paper. Your shield is a joke.",
+            "Mighty? You're a mosquito. I am the storm."
+        },
+        ["Blade Dancer"] = new[]
+        {
+            "Watch me dance. Admire your own inevitable defeat.",
+            "Every movement is poetry. Every slash is your doom.",
+            "I've perfected the art of death. You're my masterpiece."
+        },
+        ["Mana Leech"] = new[]
+        {
+            "I feel your power draining into me. It tastes sweet.",
+            "What was yours is now mine. Such is the way of things.",
+            "You grow weak. I grow strong. This is justice."
+        },
+        ["Shield Breaker"] = new[]
+        {
+            "No defense stands before me. They all break eventually.",
+            "I've shattered shields forged by master smiths. Yours is next.",
+            "Your walls crumble. Your hope is next."
+        },
+        ["Archlich Sovereign"] = new[]
+        {
+            "I command the dead as I command you.",
+            "My reign stretches across centuries. Where is yours?",
+            "Bow before sovereignty. Or fall before it."
+        },
+        ["Abyssal Leviathan"] = new[]
+        {
+            "The deep calls. Soon you'll answer.",
+            "Pressure, darkness, cold — your tomb awaits.",
+            "Thrash all you like. The abyss does not yield."
+        },
+        ["Infernal Dragon"] = new[]
+        {
+            "The flames RISE! Can you feel the heat mounting?",
+            "I've incinerated armies. You're just another kindling.",
+            "Smoke rises. Ash falls. Your choice is already made."
+        }
+    };
+
+    private static readonly Dictionary<string, string[]> _desperationLines = new(StringComparer.OrdinalIgnoreCase)
+    {
+        ["Goblin"] = new[]
+        {
+            "This isn't how it was supposed to go!",
+            "You'll pay for this! You'll ALL pay for this!",
+            "Retreat isn't an option... but neither is losing!"
+        },
+        ["Skeleton"] = new[]
+        {
+            "The curse weakens! No, NO!",
+            "My form... it cannot be! I am ETERNAL!",
+            "Not like this. Not at the hands of a mortal!"
+        },
+        ["Troll"] = new[]
+        {
+            "Troll body breaks?! Impossible!",
+            "Something wrong... can't heal... can't THINK!",
+            "RRRAAHHH! FINISH IT IF YOU CAN!"
+        },
+        ["Dark Knight"] = new[]
+        {
+            "Impossible. I have not survived this long to fall to YOU!",
+            "The darkness... it abandons me?",
+            "No! I am the darkness! I cannot—"
+        },
+        ["Malachar the Undying"] = new[]
+        {
+            "After all this time... I am dying?",
+            "This is not how eternity ends!",
+            "No, no, NO! I am the ETERNAL HUNGER!"
+        },
+        ["Goblin Shaman"] = new[]
+        {
+            "The hex unravels! My power fades!",
+            "This magic can't hold... it's crumbling!",
+            "I feel the darkness pulling me down... down..."
+        },
+        ["Stone Golem"] = new[]
+        {
+            "Cracks spread... spreading... NO!",
+            "My form shatters! The spell breaks!",
+            "I... am... collapsing..."
+        },
+        ["Wraith"] = new[]
+        {
+            "I'm being pulled back... NO! NOT YET!",
+            "The void rejects me. This cannot happen!",
+            "I feel myself dispersing... fading into shadow..."
+        },
+        ["Vampire Lord"] = new[]
+        {
+            "Centuries of power... WASTED?!",
+            "The sun... even in shadow, I feel it closing in...",
+            "No! I will not crumble to dust this day!"
+        },
+        ["Mimic"] = new[]
+        {
+            "My form unstabilizes... my hunger... fading...",
+            "Cannot consume... cannot survive... NO!",
+            "My endless hunger meets its match. Impossible!"
+        },
+        ["Giant Rat"] = new[]
+        {
+            "The warren... they'll know I fell!",
+            "No! The pack depends on me!",
+            "SQUEAK! SQUEEEEEEEAK!"
+        },
+        ["Cursed Zombie"] = new[]
+        {
+            "The curse weakens... I feel... sensation?",
+            "No, no, the binding breaks! I'm becoming... aware!",
+            "I can almost remember what it meant to be alive..."
+        },
+        ["Blood Hound"] = new[]
+        {
+            "My blood... it burns! What's happening?!",
+            "The pack cries out! I hear them!",
+            "I'm losing the scent... the hunt is slipping..."
+        },
+        ["Iron Guard"] = new[]
+        {
+            "My armor fails me? Impossible!",
+            "The Crown's strength... abandoning me?",
+            "Stand down? NEVER! I will—"
+        },
+        ["Night Stalker"] = new[]
+        {
+            "The shadows... they won't answer me!",
+            "The darkness retreats? HOW?!",
+            "I'm being drawn into the light... NO!"
+        },
+        ["Frost Wyvern"] = new[]
+        {
+            "The ice melts... my power drains...",
+            "No! Not to a warm-blooded wretch!",
+            "The blizzard's hold breaks... I'm weakening..."
+        },
+        ["Chaos Knight"] = new[]
+        {
+            "Order... constricts around me!",
+            "The entropy fades! Reality solidifies!",
+            "I feel myself pulled toward... coherence?"
+        },
+        ["Lich King"] = new[]
+        {
+            "My reign of millennia... ending?",
+            "The magic is unstable! The phylactery—",
+            "Not this way... not to you!"
+        },
+        ["Shadow Imp"] = new[]
+        {
+            "We're dimming! The shadows shriek!",
+            "The legion scatters! No, hold together!",
+            "We fade... we scatter... we die..."
+        },
+        ["Carrion Crawler"] = new[]
+        {
+            "The poison... it consumes me instead!",
+            "My form dissolves! The decay accelerates!",
+            "Nooooo! The swarm abandons the queen!"
+        },
+        ["Dark Sorcerer"] = new[]
+        {
+            "The spell unravels! My power erupts!",
+            "The magic consumes itself! I CAN'T CONTROL IT!",
+            "Knowledge burns away... burning... burning..."
+        },
+        ["Bone Archer"] = new[]
+        {
+            "Impossible! How did you avoid the shot?!",
+            "My aim wavers... I'm losing focus!",
+            "Everything... darkens..."
+        },
+        ["Crypt Priest"] = new[]
+        {
+            "Death rejects me? The judgment... reverses?",
+            "I am the vessel... no... the vessel cracks!",
+            "The gods... they will not answer!"
+        },
+        ["Plague Bear"] = new[]
+        {
+            "My own disease consumes me!",
+            "The infection spirals... I feel it eating me alive!",
+            "ROOOAAAARRRRR! THE PAIN!"
+        },
+        ["Siege Ogre"] = new[]
+        {
+            "My strength... it fades!",
+            "The mighty fall... even I?",
+            "How can I be broken?! I AM UNBREAKABLE!"
+        },
+        ["Blade Dancer"] = new[]
+        {
+            "The rhythm breaks... my dance falters!",
+            "My grace... slipping... NO!",
+            "Every step is agony now. The dance ends..."
+        },
+        ["Mana Leech"] = new[]
+        {
+            "The power reverses! It burns me!",
+            "I'm drowning in stolen magic!",
+            "Emptiness... the hunger consumes me..."
+        },
+        ["Shield Breaker"] = new[]
+        {
+            "YOU'VE BROKEN ME?!",
+            "The tables turn... impossible!",
+            "I never thought... I could feel this vulnerable..."
+        },
+        ["Archlich Sovereign"] = new[]
+        {
+            "The guardians... they crumble!",
+            "My sovereignty crumbles with them!",
+            "Centuries of rule... ending now?"
+        },
+        ["Abyssal Leviathan"] = new[]
+        {
+            "The pressure... it crushes inward!",
+            "I surface, gasping... the light burns!",
+            "The abyss... it reclaims me..."
+        },
+        ["Infernal Dragon"] = new[]
+        {
+            "MY FLAMES SPUTTER?! IMPOSSIBLE!",
+            "The inferno dies! The fire fades!",
+            "I feel myself cooling... darkening... FALLING!"
+        }
+    };
+
     private static readonly string[] _defaultIntro = { "The {0} attacks!" };
     private static readonly string[] _defaultDeath = { "The {0} falls." };
     private static readonly string[] _defaultCritReaction = { "A brutal critical strike lands!" };
+    private static readonly string[] _defaultIdleTaunt = { "It circles closer, watching for an opening." };
+    private static readonly string[] _defaultDesperationLine = { "It senses its end approaching — and fights harder for it." };
 
     /// <summary>Returns the pool of encounter introduction lines for the given enemy name.</summary>
     public static string[] GetIntros(string enemyName) =>
@@ -328,4 +710,12 @@ public static class EnemyNarration
     /// <summary>Returns the pool of critical hit reaction lines for the given enemy name.</summary>
     public static string[] GetCritReactions(string enemyName) =>
         _critReactions.GetValueOrDefault(enemyName, _defaultCritReaction);
+
+    /// <summary>Returns the pool of mid-combat idle taunt lines for the given enemy name.</summary>
+    public static string[] GetIdleTaunts(string enemyName) =>
+        _idleTaunts.GetValueOrDefault(enemyName, _defaultIdleTaunt);
+
+    /// <summary>Returns the pool of desperation lines (< 25% HP) for the given enemy name.</summary>
+    public static string[] GetDesperationLines(string enemyName) =>
+        _desperationLines.GetValueOrDefault(enemyName, _defaultDesperationLine);
 }
