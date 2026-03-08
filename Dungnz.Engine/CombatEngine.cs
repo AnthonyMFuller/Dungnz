@@ -23,6 +23,12 @@ public class CombatEngine : ICombatEngine
     private readonly PassiveEffectProcessor _passives;
     private readonly DifficultySettings _difficulty;
     private readonly List<CombatTurn> _turnLog = new();
+
+    // Decomposition stubs — see #1203; logic migration follows in subsequent tasks
+    private readonly IAttackResolver _attackResolver;
+    private readonly IAbilityProcessor _abilityProcessor;
+    private readonly IStatusEffectApplicator _statusEffectApplicator;
+    private readonly ICombatLogger _combatLogger;
     private RunStats _stats = new();
     private int _baseEliteAttack;
     private int _baseEliteDefense;
@@ -78,7 +84,7 @@ public class CombatEngine : ICombatEngine
     /// Optional difficulty settings applied to damage scaling and flee mechanics.
     /// Defaults to <see cref="Difficulty.Normal"/> when <see langword="null"/>.
     /// </param>
-    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null, NarrationService? narration = null, InventoryManager? inventoryManager = null, IMenuNavigator? navigator = null, DifficultySettings? difficulty = null)
+    public CombatEngine(IDisplayService display, IInputReader? input = null, Random? rng = null, GameEvents? events = null, StatusEffectManager? statusEffects = null, AbilityManager? abilities = null, NarrationService? narration = null, InventoryManager? inventoryManager = null, IMenuNavigator? navigator = null, DifficultySettings? difficulty = null, IAttackResolver? attackResolver = null, IAbilityProcessor? abilityProcessor = null, IStatusEffectApplicator? statusEffectApplicator = null, ICombatLogger? combatLogger = null)
     {
         _display = display;
         _input = input ?? new ConsoleInputReader();
@@ -91,6 +97,10 @@ public class CombatEngine : ICombatEngine
         _navigator = navigator;
         _difficulty = difficulty ?? DifficultySettings.For(Difficulty.Normal);
         _passives = new PassiveEffectProcessor(_display, _rng, _statusEffects);
+        _attackResolver = attackResolver ?? new AttackResolver(_display, _rng, _statusEffects, _narration);
+        _abilityProcessor = abilityProcessor ?? new AbilityProcessor(_display, _abilities, _statusEffects, _inventoryManager);
+        _statusEffectApplicator = statusEffectApplicator ?? new StatusEffectApplicator(_display, _rng, _statusEffects);
+        _combatLogger = combatLogger ?? new CombatLogger(_display, _narration);
     }
 
     /// <summary>
