@@ -1900,3 +1900,31 @@ if (selection == null)
 - Every special room handler (HandleShrine, HandleForgottenShrine, HandleContestedArmory, HandleTrapRoom) had MULTIPLE missing ShowRoom calls — one per return path
 - BuildSucceeded: Yes (after rm -rf obj bin)
 - Tests: ShowRoom-expecting tests now pass (15/15); some old "DoesNot" tests fail but those are outdated expectations for OTHER handlers (Hill's domain)
+
+### 2026-03-06 — Fixed P0 Crash: Removed Broken PauseAndRun Method (#1265)
+
+**Context:** Game was crashing with `InvalidOperationException: Trying to run one or more interactive functions concurrently` when using Attack or any typed input during Live display.
+
+**Root Cause:**
+`PauseAndRun` attempted to pause Live rendering to call `AnsiConsole.Prompt()`. This approach was fundamentally broken because:
+- Spectre.Console's `DefaultExclusivityMode` holds an atomic `_running = 1` counter for the **entire duration** of `Live.Start()` callback
+- Blocking the render thread with `_resumeLiveEvent.Wait()` does NOT release the exclusivity lock
+- Any `AnsiConsole.Prompt()` called while Live is active finds `_running == 1` and throws `InvalidOperationException`
+
+**Solution:**
+- Removed `PauseAndRun` method entirely
+- Fixed `ShowSkillTreeMenu` to call `AnsiConsole.Prompt` directly when `!IsLiveActive` (no wrapper needed)
+- Removed all pause/resume infrastructure: `_pauseLiveEvent`, `_liveIsPausedEvent`, `_resumeLiveEvent`, `_pauseDepth`
+- Simplified Live render loop — just sleeps 50ms waiting for exit signal
+- Updated documentation to clarify the input pattern: ReadKey-based when Live is active, Prompt when not active
+
+**Files Modified:**
+- `Dungnz.Display/Spectre/SpectreLayoutDisplayService.Input.cs` — removed PauseAndRun, fixed ShowSkillTreeMenu
+- `Dungnz.Display/Spectre/SpectreLayoutDisplayService.cs` — removed pause event fields and loop logic
+
+**Key Learning:**
+Never call `AnsiConsole.Prompt()` while `Live.Start()` callback is running. The exclusivity lock is held for the entire callback duration regardless of blocking. Always use `ReadKey`-based input (like `ContentPanelMenu`) when Live is active, and guard with `IsLiveActive` checks if you need to fall back to `Prompt`.
+
+**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/1266
+**Build:** ✅ Success (0 errors)
+**Closes:** #1265
