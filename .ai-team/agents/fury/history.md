@@ -136,3 +136,50 @@
 - NarrationService.Pick(pool) method handles random selection uniformly
 - CombatEngine integration point identified and implemented (enemy crit roll + display message)
 - ColorCodes.Colorize() with BrightRed + Bold makes crit reactions visually dramatic
+
+---
+
+### 2026-03-09 — Combat Phase-Aware Narration (#1272)
+
+**PR:** #1281 — `feat: add combat phase-aware narration`  
+**Branch:** `squad/1272-phase-aware-narration`  
+**File Modified:** `Dungnz.Systems/NarrationService.cs`
+
+**Requirement:**
+- Combat narration messages were static regardless of fight progression
+- Need to vary player-facing combat messages based on how the fight is going
+- Three distinct phases: Opening / Mid-fight / Desperate
+
+**Solution:**
+- Added `GetPhaseAwareAttackNarration(int turnNumber, double playerHpPercent, double enemyHpPercent)` public method
+- Private `CombatPhase` enum: Opening (turns 1-3, both >70% HP) / MidFight (turns 4-7) / Desperate (<30% HP or turn 8+)
+- Private `DeterminePhase()` logic based on turn number and HP percentages
+- Three content pools: 6 lines per phase = 18 total narration lines
+
+**Content Quality:**
+- Opening phase examples:
+  - "You press the attack with confidence!"
+  - "Your strike lands true — this fight is yours to win!"
+  - "First blood to you — the dungeon will remember this."
+- Mid-fight phase examples:
+  - "The exchange grows brutal — neither side giving ground."
+  - "You find a gap in its guard. The price has been paid in bruises."
+  - "Both combatants are bloodied but unbroken."
+- Desperate phase examples:
+  - "Against all odds, your blade finds its mark!"
+  - "The end is near for one of you — make it count!"
+  - "You fight with the fury of someone who has nothing left to lose."
+
+**Method Signature:**
+```csharp
+public string GetPhaseAwareAttackNarration(int turnNumber, double playerHpPercent, double enemyHpPercent)
+```
+
+**Integration Note:**
+- TODO(Barton) comment left in NarrationService: Call from CombatEngine during player attack turn
+- Follows existing narration pattern (static arrays, Pick() method, phase determination logic)
+
+**Key Learning:**
+- Phase determination logic: Desperate checks first (OR condition: any threshold met), then Opening (AND: all conditions met), then default MidFight
+- Private enum + private helper method keep phase logic encapsulated within NarrationService
+- Narration content pools cluster by phase for readability and maintainability

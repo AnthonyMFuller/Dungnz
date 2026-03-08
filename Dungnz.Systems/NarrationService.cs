@@ -18,6 +18,16 @@ public enum RoomNarrationState
 /// </summary>
 public class NarrationService
 {
+    /// <summary>
+    /// Combat phase identifiers for phase-aware attack narration.
+    /// </summary>
+    private enum CombatPhase
+    {
+        Opening,    // Turns 1-3, both sides near full HP
+        MidFight,   // Turns 4+, moderate HP or tension
+        Desperate   // Either side below 30% HP, or turn 8+
+    }
+
     private readonly Random _rng;
 
     /// <summary>Initialises the service with an optional <see cref="Random"/> instance.</summary>
@@ -94,8 +104,25 @@ public class NarrationService
         return lines.Length > 0 ? Pick(lines) : null;
     }
 
+    /// <summary>Returns a phase-appropriate attack narration string based on combat progression.</summary>
+    /// <param name="turnNumber">Current combat turn (1-indexed).</param>
+    /// <param name="playerHpPercent">Player HP as 0.0–1.0.</param>
+    /// <param name="enemyHpPercent">Enemy HP as 0.0–1.0.</param>
+    public string GetPhaseAwareAttackNarration(int turnNumber, double playerHpPercent, double enemyHpPercent)
+    {
+        CombatPhase phase = DeterminePhase(turnNumber, playerHpPercent, enemyHpPercent);
+        return phase switch
+        {
+            CombatPhase.Opening => Pick(_openingAttackPool),
+            CombatPhase.MidFight => Pick(_midFightAttackPool),
+            CombatPhase.Desperate => Pick(_desperateAttackPool),
+            _ => Pick(_midFightAttackPool)
+        };
+    }
+
     // TODO(Barton): Call GetEnemyIdleTaunt(enemy.Name) every 3-4 turns in CombatEngine.PerformEnemyTurn() to display periodic mid-combat banter when no special action is taken
     // TODO(Barton): Call GetEnemyDesperationLine(enemy.Name) in CombatEngine.PerformEnemyTurn() when enemy HP < 25% of MaxHP (before the turn action) to display final stand desperation
+    // TODO(Barton): Call GetPhaseAwareAttackNarration() from CombatEngine during player attack turn and display the result
 
     private static readonly string[] _firstVisitPool = new[]
     {
@@ -162,4 +189,49 @@ public class NarrationService
         "The boss rises. Every fight before this was a warm-up.",
         "This is the moment. Win and ascend. Lose and feed the dark."
     };
+
+    private static readonly string[] _openingAttackPool = new[]
+    {
+        "You press the attack with confidence!",
+        "Your strike lands true — this fight is yours to win!",
+        "First blood to you — the dungeon will remember this.",
+        "You dance in, pressing your advantage. They won't recover quickly.",
+        "Your blade finds its mark. The tide turns in your favor.",
+        "You seize the moment, striking when they least expect it!"
+    };
+
+    private static readonly string[] _midFightAttackPool = new[]
+    {
+        "The exchange grows brutal — neither side giving ground.",
+        "You find a gap in its guard. The price has been paid in bruises.",
+        "Both combatants are bloodied but unbroken.",
+        "You press your attack, testing their defenses.",
+        "Sweat stings your eyes, but you keep fighting.",
+        "Every blow counts now. Neither of you can afford a mistake."
+    };
+
+    private static readonly string[] _desperateAttackPool = new[]
+    {
+        "Against all odds, your blade finds its mark!",
+        "The end is near for one of you — make it count!",
+        "You fight with the fury of someone who has nothing left to lose.",
+        "One final stand — your strike burns with desperation and resolve.",
+        "You drive forward, knowing this could be your last chance.",
+        "The air crackles with finality. Your attack could decide everything."
+    };
+
+    /// <summary>Determines the current combat phase based on turn number and HP percentages.</summary>
+    private static CombatPhase DeterminePhase(int turnNumber, double playerHpPercent, double enemyHpPercent)
+    {
+        // Desperate phase: either side below 30% HP, or turn 8+
+        if (playerHpPercent < 0.30 || enemyHpPercent < 0.30 || turnNumber >= 8)
+            return CombatPhase.Desperate;
+
+        // Opening phase: turns 1-3, both sides near full HP
+        if (turnNumber <= 3 && playerHpPercent > 0.70 && enemyHpPercent > 0.70)
+            return CombatPhase.Opening;
+
+        // Mid-fight: everything else
+        return CombatPhase.MidFight;
+    }
 }
