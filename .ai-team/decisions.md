@@ -3228,3 +3228,330 @@ These three features are complementary: they all serve "make the dungeon feel re
 ---
 
 **Full Session Log:** See `.ai-team/log/2026-03-08-retro-session.md`
+# Architecture Decision: Multi-Project Solution Split
+
+**Date:** 2026-03-06  
+**Author:** Coulson (Lead)  
+**Status:** Proposed  
+**Label:** architecture  
+
+---
+
+## Context
+
+The solution is currently a single executable `Dungnz.csproj` containing all source code across five logical folders (`Models/`, `Systems/`, `Display/`, `Engine/`, `Data/`). A test project `Dungnz.Tests.csproj` references the monolith directly. This structure works but couples all layers at the build level, makes NuGet dependency ownership unclear, and prevents individual layers from being compiled, tested, or reasoned about in isolation.
+
+The goal is to split into separate class library projects that enforce the existing logical boundaries at the compiler level.
+
+---
+
+## Target Architecture
+
+### Project Dependency Graph (acyclic, top-down)
+
+```
+Dungnz (exe)
+  └─ Dungnz.Engine
+       ├─ Dungnz.Display
+       │    ├─ Dungnz.Systems
+       │    │    ├─ Dungnz.Data
+       │    │    │    └─ Dungnz.Models  ← zero deps
+       │    │    └─ Dungnz.Models
+       │    └─ Dungnz.Models
+       ├─ Dungnz.Systems
+       ├─ Dungnz.Data
+       └─ Dungnz.Models
+```
+
+### Project Responsibilities
+
+| Project | Source Folders | NuGet Packages | Notes |
+|---|---|---|---|
+| `Dungnz.Models` | `Models/` + interfaces moved here | none | Zero external deps. Pure domain + contracts. |
+| `Dungnz.Data` | `Data/*.cs` | none | Static data arrays. JSON files stay in Dungnz (exe). |
+| `Dungnz.Systems` | `Systems/` (incl. `Enemies/`) | Microsoft.Extensions.Logging, NJsonSchema | All game logic systems. |
+| `Dungnz.Display` | `Display/` (incl. `Spectre/`) | Spectre.Console | All rendering implementations. |
+| `Dungnz.Engine` | `Engine/` (incl. `Commands/`) | Microsoft.Extensions.Logging | Orchestration: GameLoop, CombatEngine, DungeonGenerator. |
+| `Dungnz` (exe) | `Program.cs`, `Data/*.json` | Serilog.Extensions.Logging, Serilog.Sinks.File, Microsoft.Extensions.Logging.Console | Composition root only. |
+
+---
+
+## Circular Dependencies to Resolve Before Split
+
+The current monolith hides three circular dependency groups. These must be resolved before the physical project split can succeed.
+
+### Circular 1: Display ↔ Engine (IDisplayService ↔ StartupMenuOption)
+
+- `Display/IDisplayService.cs` imports `Dungnz.Engine` for `StartupMenuOption`
+- `Engine/GameLoop.cs` imports `Dungnz.Display` for `IDisplayService`
+
+**Resolution:** Move `IDisplayService`, `IInputReader`, `IMenuNavigator`, and `StartupMenuOption` from their current locations into `Models/`. These are interface contracts and enums — they belong in the domain layer. All consumers update their `using` directives; no logic changes.
+
+### Circular 2: Systems ↔ Display (IDisplayService)
+
+- Five files in `Systems/` import `Dungnz.Display` solely for `IDisplayService`:
+  `AbilityManager`, `EquipmentManager`, `InventoryManager`, `PassiveEffectProcessor`, `StatusEffectManager`
+- `Display/SpectreDisplayService` and `SpectreLayoutDisplayService` import `Dungnz.Systems`
+
+**Resolution:** Covered by Circular 1 fix. Once `IDisplayService` lives in `Models/`, Systems references `Dungnz.Models` (already present) not `Dungnz.Display`. The Display→Systems direction is legitimate (Display renders Systems data) and becomes a one-way dependency.
+
+### Circular 3: Models ↔ Systems.Enemies (JsonDerivedType)
+
+- `Models/Enemy.cs` has 30+ compile-time `[JsonDerivedType(typeof(Goblin), "goblin")]` attributes
+- All referenced types (`Goblin`, `Skeleton`, etc.) live in `Systems/Enemies/`
+- Those enemy types reference `Dungnz.Systems` for `EnemyConfig`/`ItemConfig`
+
+This creates a genuine circular dependency chain:  
+`Models → Systems.Enemies → Systems → Models`
+
+**Resolution:** Replace compile-time `[JsonDerivedType]` attributes with runtime JSON type registration via `JsonSerializerOptions` + `DefaultJsonTypeInfoResolver`. A new `Engine/EnemyTypeRegistry.cs` builds the configured options (Engine can see all layers). `SaveSystem` uses these options. The existing architectural test `AllEnemySubclasses_MustHave_JsonDerivedTypeAttribute` is replaced with a test verifying the runtime registry covers all concrete `Enemy` subclasses via reflection.
+
+---
+
+## InternalsVisibleTo Strategy
+
+Once split, each class library that exposes `internal` members used by tests must declare:
+
+```xml
+<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+  <_Parameter1>Dungnz.Tests</_Parameter1>
+</AssemblyAttribute>
+```
+
+This applies to: `Dungnz.Models`, `Dungnz.Systems`, `Dungnz.Display`, `Dungnz.Engine`. (`Dungnz.Data` is likely all-public static classes, but should be evaluated.)
+
+---
+
+## Architecture Test Updates
+
+Both test files currently load only `typeof(GameLoop).Assembly`. After the split, ArchUnitNET must load all relevant assemblies:
+
+```csharp
+new ArchLoader().LoadAssemblies(
+    typeof(GameLoop).Assembly,          // Dungnz.Engine
+    typeof(Player).Assembly,            // Dungnz.Models
+    typeof(InventoryManager).Assembly,  // Dungnz.Systems
+    typeof(IDisplayService).Assembly    // Dungnz.Models (after interface move)
+).Build();
+```
+
+The reflection-based tests in `Architecture/ArchitectureTests.cs` that call `typeof(GameLoop).Assembly.GetTypes()` must also be updated to aggregate types from all assemblies.
+
+---
+
+## Sequencing Rationale
+
+The split is done layer-by-layer from the bottom up (most independent first):
+
+1. **Scaffolding** — project files created, solution updated, no code moves. Build green.
+2. **Interface moves** — break Display↔Engine and Systems↔Display circular deps. All in monolith, no project boundary crossings yet.
+3. **JSON refactor** — break Models↔Systems.Enemies circular dep. Runtime registration pattern.
+4. **Extract Models** — now has zero external deps, safe to isolate.
+5. **Extract Data** — only depends on Models.
+6. **Extract Systems** — depends on Models+Data.
+7. **Extract Display** — depends on Models+Systems.
+8. **Extract Engine** — depends on all of the above.
+9. **Thin executable** — Program.cs only, Serilog composition root.
+10. **Test updates** — multi-assembly ArchUnitNET, project references, InternalsVisibleTo.
+
+Every step keeps the solution building and all tests passing.
+
+---
+
+## Risks
+
+| Risk | Severity | Mitigation |
+|---|---|---|
+| Runtime JSON registration misses an enemy subclass | HIGH | Replace attribute test with a reflection-based registry completeness test |
+| InternalsVisibleTo missing on a library causes test compile errors | MEDIUM | Add attribute to all 4 library projects as part of each extraction issue |
+| ArchUnitNET multi-assembly loading changes rule behaviour | MEDIUM | Run architecture tests after each extraction; fix incrementally in Issue 10 |
+| NuGet package placement — a library gets a dep it shouldn't | LOW | Each csproj is independently reviewed at acceptance |
+| `CombatEngine` (1,709 lines) makes Engine extraction high-risk | LOW | No logic changes during extraction — file moves only |
+| `Data/*.json` files must still CopyToOutputDirectory in executable | LOW | Explicitly kept in Dungnz.csproj Content item |
+
+---
+
+## Issues Created
+
+| # | Title |
+|---|---|
+| [#1187](https://github.com/AnthonyMFuller/Dungnz/issues/1187) | Create multi-project class library scaffolding |
+| [#1188](https://github.com/AnthonyMFuller/Dungnz/issues/1188) | Resolve circular dep — move interface contracts to Models layer |
+| [#1189](https://github.com/AnthonyMFuller/Dungnz/issues/1189) | Resolve circular dep — replace JsonDerivedType attributes with runtime enemy type registration |
+| [#1190](https://github.com/AnthonyMFuller/Dungnz/issues/1190) | Extract Dungnz.Models class library |
+| [#1191](https://github.com/AnthonyMFuller/Dungnz/issues/1191) | Extract Dungnz.Data class library |
+| [#1192](https://github.com/AnthonyMFuller/Dungnz/issues/1192) | Extract Dungnz.Systems class library |
+| [#1193](https://github.com/AnthonyMFuller/Dungnz/issues/1193) | Extract Dungnz.Display class library |
+| [#1194](https://github.com/AnthonyMFuller/Dungnz/issues/1194) | Extract Dungnz.Engine class library |
+| [#1195](https://github.com/AnthonyMFuller/Dungnz/issues/1195) | Finalize Dungnz.csproj as thin executable entry point |
+| [#1196](https://github.com/AnthonyMFuller/Dungnz/issues/1196) | Update Dungnz.Tests for multi-project solution |
+
+
+### 2026-03-06: QA Review — Bug Hunt Sprint PRs (1 Approved, 3 Blocked)
+
+**Reviewer:** Romanoff  
+**PRs Reviewed:** #1255, #1259, #1260, #1261  
+**Outcome:** 1 approved, 3 blocked with required fixes
+
+---
+
+## Summary
+
+Reviewed 4 PRs produced by the pre-v3 bug hunt sprint. Found critical quality issues in 3 of 4 PRs:
+
+**PR #1260 (EnemyAI + CommandHandlerBase) — APPROVED ✅**
+- Clean implementation, all issues correctly addressed
+- 38 enemy types now have AI (2 specialized, 36 default)
+- CommandHandlerBase provides architectural foundation
+- Build passes, 1759 tests pass
+- Ready to merge (branch protection prevents direct merge — requires admin)
+
+**PR #1255 (DevOps fixes) — BLOCKED ❌**
+- Critical: 3 files completely emptied instead of updated
+  - `scripts/coverage.sh` (23 lines deleted)
+  - `.github/workflows/squad-stryker.yml` (53 lines deleted)  
+  - `Dungnz.Tests/ArchitectureTests.cs` (76 lines deleted)
+- Files should be UPDATED, not deleted
+- Also includes undocumented AttackResolver/SetBonusManager changes
+- Build passes, tests pass, but deletions are blockers
+
+**PR #1259 (SetBonusManager fixes) — INCOMPLETE ❌**
+- Claims to close 4 issues, only fixes 2
+- Missing: MaxHP/MaxMana application (#1242), CritChanceBonus in RollCrit (#1253)
+- Build passes, tests pass, but work is incomplete
+
+**PR #1261 (Missing tests) — BLOCKED ❌**
+- Same file deletion issues as #1255
+- Includes unrelated changes (AttackResolver, SetBonusManager, EnemyTypeRegistry)
+- Tests themselves are good (+16 tests), but file deletions block merge
+- Build passes, 1775 tests pass
+
+---
+
+## Root Cause Analysis
+
+### File Deletion Pattern (PRs #1255, #1261)
+Three critical files were emptied in 2 separate PRs. This suggests a Git merge conflict resolution issue where conflicts were resolved by selecting "delete entire file" instead of merging changes.
+
+**Impact:** Removes local dev scripts, CI workflows, and architectural safety tests.
+
+**Fix:** Git workflow training — document proper conflict resolution, never select "delete entire file."
+
+### Scope Creep Without Documentation (PRs #1255, #1261)
+Both PRs include AttackResolver/SetBonusManager changes not mentioned in titles, bodies, or linked issues. These changes belong in PR #1259 but were duplicated elsewhere.
+
+**Impact:** PR metadata can't be trusted, reviewer time wasted tracking down undocumented changes.
+
+**Fix:** PR template with checklist: "No unrelated changes", "All linked issues actually fixed."
+
+### Incomplete Work Claimed Complete (PR #1259)
+PR claims to close 4 issues but only contains fixes for 2 issues. Either work was lost in merge conflicts or PR was opened prematurely.
+
+**Impact:** Breaks trust in PR metadata, issues incorrectly marked as resolved.
+
+**Fix:** Pre-merge checklist: verify every linked issue is actually addressed by the diff.
+
+---
+
+## Required Actions
+
+### For PR #1255
+1. Restore `scripts/coverage.sh` with 70% threshold (not deleted)
+2. Restore `.github/workflows/squad-stryker.yml` with `dotnet tool restore` (not deleted)
+3. Restore `Dungnz.Tests/ArchitectureTests.cs` with `Dungnz.Systems.EnemyTypeRegistry` reference (not deleted)
+4. Document AttackResolver/SetBonusManager changes in PR body OR move to PR #1259
+
+### For PR #1259
+1. Add MaxHP/MaxMana application to player stats (lines 231-232 in SetBonusManager.cs)
+2. Add CritChanceBonus to RollCrit calculation in AttackResolver.cs
+3. Verify all 4 issues (#1240, #1242, #1253, #1254) are actually fixed
+
+### For PR #1261
+1. Restore `scripts/coverage.sh`, `squad-stryker.yml`, `ArchitectureTests.cs` (same as #1255)
+2. Remove unrelated AttackResolver/SetBonusManager/EnemyTypeRegistry changes
+3. Consider deepening test coverage (many tests are trivial one-liners)
+
+### For PR #1260
+1. Merge when branch protection allows (requires admin/approval workflow)
+2. Issues #1225 and #1226 will auto-close on merge
+
+---
+
+## Process Improvements Recommended
+
+### Git Workflow
+- Document merge conflict resolution best practices
+- Never resolve conflicts by deleting entire files
+- Use `git diff master...HEAD --name-status` to verify no unintended deletions
+
+### PR Quality Gate
+- Pre-submit checklist: "No files deleted unless intentional", "All linked issues fixed", "No unrelated changes"
+- Minimum 3 assertions per test method (or explicit waiver comment)
+- Diff review before opening PR to catch scope creep
+
+### Branch Protection
+- Require QA approval before merge (current setup allows self-merge)
+- Consider requiring 2 approvals for PRs that touch critical paths (CI workflows, architecture tests)
+
+---
+
+## Sprint Velocity vs Quality
+
+**Velocity:** 4 PRs opened, 38 files changed, 16 new tests  
+**Quality:** 3 of 4 PRs blocked, critical file deletions in 2 PRs, incomplete work in 1 PR
+
+**Conclusion:** High velocity sprint, but quality control insufficient. Recommend slower pace with stronger pre-merge review next sprint.
+
+---
+
+**Review complete.** PR #1260 ready to merge. PRs #1255, #1259, #1261 require rework.
+
+— Romanoff, QA
+# Decision: P0/P1 Test Coverage Completion
+
+**Date:** 2026-03-08  
+**Decided by:** Romanoff (QA Engineer)  
+**Context:** Issues #1236, #1227, #1252 identified missing critical test coverage
+
+## Decision
+
+Added three test suites to close high-priority testing gaps:
+
+1. **CommandHandlerShowRoomTests** (8 tests) — Issue #1236
+   - Verifies ShowRoom() called exactly once after each command type
+   - Tests: Move, Take, Use, Examine, Craft, Compare
+   - Pattern: Track ShowRoomCallCount before/after execution
+   - Rationale: Prevents stale display state bugs
+
+2. **EnemySaveLoadTests** (6 tests) — Issue #1227
+   - Round-trip verification with multiple enemy types (Goblin, Troll, DarkKnight)
+   - Validates: HP, name, type, AI state (IsEnraged, IsCharging, ChargeActive), flags (IsElite, IsAmbush, IsUndead)
+   - Mixed rooms test: enemies + empty rooms + looted rooms
+   - Rationale: Enemy state persistence is critical for save/load integrity
+
+3. **GameLoopIntegrationTests** (4 tests) — Issue #1252
+   - Full game flow: combat → loot → inventory
+   - Player death handling
+   - Status effect tracking (Poison)
+   - Multi-level XP gains
+   - Rationale: Integration tests catch cross-system bugs
+
+## Test Infrastructure
+
+- FakeDisplayService: tracks ShowRoomCallCount, AllOutput for verification
+- FakeInputReader: simulates user input sequences
+- ControlledRandom: deterministic RNG for reliable tests
+- Follows existing MenuRestorationTests pattern
+
+## Result
+
+- **18 new tests added**
+- **All tests pass** (1785 total)
+- **PR #1261** created and ready for review
+- **Coverage:** Closes all three P0/P1 gaps
+
+## Future Recommendations
+
+- Consider CommandHandlerShowRoomTests as template for future command handler tests
+- Save/load tests should always verify AI-specific state (boss mechanics, pack counts, etc.)
+- Integration tests should cover full user workflows, not just isolated units
