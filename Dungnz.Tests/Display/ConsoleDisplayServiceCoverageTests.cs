@@ -2,6 +2,7 @@ using Dungnz.Display;
 using Dungnz.Models;
 using Dungnz.Systems;
 using Dungnz.Tests.Builders;
+using Dungnz.Tests.Helpers;
 using FluentAssertions;
 
 namespace Dungnz.Tests.Display;
@@ -474,5 +475,307 @@ public sealed class ConsoleDisplayServiceCoverageTests : IDisposable
         _svc.ShowEnemyArt(enemy);
         // No throw is the main assertion
         Output.Should().NotBeNull();
+    }
+
+    // ─── ShowTitle ───────────────────────────────────────────────────────────
+
+    [Fact]
+    public void ShowTitle_WritesDungeonCrawlerBanner()
+    {
+        _svc.ShowTitle();
+
+        Output.Should().Contain("DUNGEON CRAWLER");
+    }
+
+    // ─── ShowEnhancedTitle ───────────────────────────────────────────────────
+
+    [Fact]
+    public void ShowEnhancedTitle_WritesDungnzBanner()
+    {
+        _svc.ShowEnhancedTitle();
+
+        Output.Should().Contain("D  U  N  G  N  Z");
+    }
+
+    // ─── ShowMap ─────────────────────────────────────────────────────────────
+
+    [Fact]
+    public void ShowMap_SingleRoom_RendersMapHeader()
+    {
+        var room = new RoomBuilder().Named("Test Chamber").Build();
+
+        _svc.ShowMap(room, floor: 1);
+
+        Output.Should().Contain("MAP");
+        Output.Should().Contain("[*]"); // current room marker
+    }
+
+    [Fact]
+    public void ShowMap_WithVisitedNorthSouth_RendersConnectorRows()
+    {
+        var northRoom = new RoomBuilder().Named("North Hall").Build();
+        northRoom.Visited = true;
+        var southRoom = new RoomBuilder().Named("South Hall").Build();
+        southRoom.Visited = true;
+        var current = new RoomBuilder().Named("Current")
+            .WithExit(Direction.North, northRoom)
+            .WithExit(Direction.South, southRoom)
+            .Build();
+        northRoom.Exits[Direction.South] = current;
+        southRoom.Exits[Direction.North] = current;
+
+        _svc.ShowMap(current, floor: 1);
+
+        Output.Should().Contain("[*]");
+        Output.Should().Contain("|"); // N-S connector
+    }
+
+    [Fact]
+    public void ShowMap_WithVisitedEastWest_RendersHorizontalConnectors()
+    {
+        var eastRoom = new RoomBuilder().Named("East Hall").Build();
+        eastRoom.Visited = true;
+        var westRoom = new RoomBuilder().Named("West Hall").Build();
+        westRoom.Visited = true;
+        var current = new RoomBuilder().Named("Current")
+            .WithExit(Direction.East, eastRoom)
+            .WithExit(Direction.West, westRoom)
+            .Build();
+        eastRoom.Exits[Direction.West] = current;
+        westRoom.Exits[Direction.East] = current;
+
+        _svc.ShowMap(current, floor: 1);
+
+        Output.Should().Contain("[*]");
+        Output.Should().Contain("-"); // E-W connector
+    }
+
+    [Fact]
+    public void ShowMap_ExitRoom_ShowsExitMarker()
+    {
+        var exitRoom = new RoomBuilder().AsExit().Build();
+        exitRoom.Visited = true;
+        var current = new RoomBuilder()
+            .WithExit(Direction.East, exitRoom)
+            .Build();
+        exitRoom.Exits[Direction.West] = current;
+
+        _svc.ShowMap(current, floor: 1);
+
+        Output.Should().Contain("[E]");
+    }
+
+    [Fact]
+    public void ShowMap_RoomWithLiveEnemy_ShowsEnemyMarker()
+    {
+        var enemy = new EnemyBuilder().Named("Goblin").WithHP(10).Build();
+        var enemyRoom = new RoomBuilder().WithEnemy(enemy).Build();
+        enemyRoom.Visited = true;
+        var current = new RoomBuilder()
+            .WithExit(Direction.East, enemyRoom)
+            .Build();
+        enemyRoom.Exits[Direction.West] = current;
+
+        _svc.ShowMap(current, floor: 1);
+
+        Output.Should().Contain("[!]");
+    }
+
+    [Fact]
+    public void ShowMap_ShrineRoom_ShowsShrineMarker()
+    {
+        var shrineRoom = new RoomBuilder().WithShrine().Build();
+        shrineRoom.Visited = true;
+        var current = new RoomBuilder()
+            .WithExit(Direction.East, shrineRoom)
+            .Build();
+        shrineRoom.Exits[Direction.West] = current;
+
+        _svc.ShowMap(current, floor: 1);
+
+        Output.Should().Contain("[S]");
+    }
+
+    // ─── ShowRoom — environmental hazards ────────────────────────────────────
+
+    [Fact]
+    public void ShowRoom_LavaSeamHazard_ShowsHazardLine()
+    {
+        var room = new Room { Description = "A hot chamber.", EnvironmentalHazard = RoomHazard.LavaSeam };
+
+        _svc.ShowRoom(room);
+
+        Output.Should().Contain("Lava");
+    }
+
+    [Fact]
+    public void ShowRoom_CorruptedGroundHazard_ShowsHazardLine()
+    {
+        var room = new Room { Description = "A dark chamber.", EnvironmentalHazard = RoomHazard.CorruptedGround };
+
+        _svc.ShowRoom(room);
+
+        Output.Should().Contain("drain");
+    }
+
+    [Fact]
+    public void ShowRoom_BlessedClearingHazard_ShowsBlessingLine()
+    {
+        var room = new Room { Description = "A peaceful glade.", EnvironmentalHazard = RoomHazard.BlessedClearing };
+
+        _svc.ShowRoom(room);
+
+        Output.Should().Contain("blessed");
+    }
+
+    // ─── ShowRoom — special room types ───────────────────────────────────────
+
+    [Fact]
+    public void ShowRoom_ForgottenShrine_ShowsShrineHint()
+    {
+        var room = new RoomBuilder().OfType(RoomType.ForgottenShrine).Build();
+
+        _svc.ShowRoom(room);
+
+        Output.Should().Contain("SHRINE");
+    }
+
+    [Fact]
+    public void ShowRoom_PetrifiedLibrary_ShowsLibraryHint()
+    {
+        var room = new RoomBuilder().OfType(RoomType.PetrifiedLibrary).Build();
+
+        _svc.ShowRoom(room);
+
+        Output.Should().Contain("tomes");
+    }
+
+    [Fact]
+    public void ShowRoom_ContestedArmory_ShowsArmoryHint()
+    {
+        var room = new RoomBuilder().OfType(RoomType.ContestedArmory).Build();
+
+        _svc.ShowRoom(room);
+
+        Output.Should().Contain("ARMORY");
+    }
+
+    [Fact]
+    public void ShowRoom_WithMerchant_ShowsMerchantGreeting()
+    {
+        var room = new RoomBuilder().Build();
+        room.Merchant = new Merchant();
+
+        _svc.ShowRoom(room);
+
+        Output.Should().Contain("SHOP");
+    }
+
+    // ─── SelectDifficulty ────────────────────────────────────────────────────
+
+    [Fact]
+    public void SelectDifficulty_WithFakeInput_ReturnsCasual()
+    {
+        var svc = new ConsoleDisplayService(new FakeInputReader("1"));
+
+        var result = svc.SelectDifficulty();
+
+        result.Should().Be(Difficulty.Casual);
+    }
+
+    // ─── SelectClass ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public void SelectClass_NullPrestige_ReturnsFirstClass()
+    {
+        var svc = new ConsoleDisplayService(new FakeInputReader("1"));
+
+        var result = svc.SelectClass(prestige: null);
+
+        result.Should().NotBeNull();
+        result.Name.Should().Be("Warrior");
+    }
+
+    [Fact]
+    public void SelectClass_WithPrestige_ShowsPrestigeBonuses()
+    {
+        var svc = new ConsoleDisplayService(new FakeInputReader("1"));
+        var prestige = new PrestigeData { PrestigeLevel = 2, BonusStartAttack = 2, BonusStartDefense = 1, BonusStartHP = 5 };
+
+        var result = svc.SelectClass(prestige);
+
+        result.Should().NotBeNull();
+    }
+
+    // ─── ShowConfirmMenu ─────────────────────────────────────────────────────
+
+    [Fact]
+    public void ShowConfirmMenu_YesInput_ReturnsTrue()
+    {
+        var svc = new ConsoleDisplayService(new FakeInputReader("1"));
+
+        var result = svc.ShowConfirmMenu("Are you sure?");
+
+        result.Should().BeTrue();
+    }
+
+    [Fact]
+    public void ShowConfirmMenu_NoInput_ReturnsFalse()
+    {
+        var svc = new ConsoleDisplayService(new FakeInputReader("2"));
+
+        var result = svc.ShowConfirmMenu("Are you sure?");
+
+        result.Should().BeFalse();
+    }
+
+    // ─── ShowShopAndSelect ───────────────────────────────────────────────────
+
+    [Fact]
+    public void ShowShopAndSelect_WithFakeInput_ReturnsSelection()
+    {
+        var svc = new ConsoleDisplayService(new FakeInputReader("1"));
+        var stock = new[] { (new ItemBuilder().Named("Health Potion").WithHeal(30).Build(), 50) };
+
+        var result = svc.ShowShopAndSelect(stock, playerGold: 100);
+
+        result.Should().BeGreaterOrEqualTo(0);
+    }
+
+    // ─── ShowSellMenuAndSelect ────────────────────────────────────────────────
+
+    [Fact]
+    public void ShowSellMenuAndSelect_WithFakeInput_ReturnsSelection()
+    {
+        var svc = new ConsoleDisplayService(new FakeInputReader("1"));
+        var items = new[] { (new ItemBuilder().Named("Old Sword").WithDamage(3).Build(), 15) };
+
+        var result = svc.ShowSellMenuAndSelect(items, playerGold: 50);
+
+        result.Should().BeGreaterOrEqualTo(0);
+    }
+
+    // ─── ShowShrineMenuAndSelect ──────────────────────────────────────────────
+
+    [Fact]
+    public void ShowShrineMenuAndSelect_WithFakeInput_ReturnsFirstOption()
+    {
+        var svc = new ConsoleDisplayService(new FakeInputReader("1"));
+
+        var result = svc.ShowShrineMenuAndSelect(playerGold: 200, healCost: 30, blessCost: 50, fortifyCost: 75, meditateCost: 75);
+
+        result.Should().BeGreaterOrEqualTo(0);
+    }
+
+    // ─── ShowInventoryAndSelect ───────────────────────────────────────────────
+
+    [Fact]
+    public void ShowInventoryAndSelect_EmptyInventory_ReturnsNull()
+    {
+        var player = new PlayerBuilder().Build();
+
+        var result = _svc.ShowInventoryAndSelect(player);
+
+        result.Should().BeNull();
     }
 }

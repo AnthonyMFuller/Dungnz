@@ -219,7 +219,28 @@ public class CombatEngine : ICombatEngine
             if (player.Skills.IsUnlocked(Skill.LeyConduit))
                 manaRegen += 5;
             player.RestoreMana(manaRegen);
+
+            // Capture pre-tick cooldown state for ready notifications (Issue #1268)
+            var preTickOnCooldown = _abilities.GetUnlockedAbilities(player)
+                .Where(a => a.CooldownTurns > 0 && _abilities.GetCooldown(a.Type) > 0)
+                .Select(a => (a.Type, a.Name))
+                .ToList();
+
             _abilities.TickCooldowns();
+
+            // Toast when abilities come off cooldown (Issue #1268)
+            foreach (var (type, name) in preTickOnCooldown)
+            {
+                if (_abilities.GetCooldown(type) == 0)
+                    _display.ShowCombatMessage($"[green]✅ {name} is ready![/]");
+            }
+
+            // Update HUD cooldown display (Issue #1268)
+            var cdState = _abilities.GetUnlockedAbilities(player)
+                .Where(a => a.CooldownTurns > 0)
+                .Select(a => (a.Name, _abilities.GetCooldown(a.Type)))
+                .ToList<(string name, int turnsRemaining)>();
+            _display.UpdateCooldownDisplay(cdState);
             
             // Decrement Last Stand turns
             if (player.LastStandTurns > 0)
@@ -796,7 +817,15 @@ public class CombatEngine : ICombatEngine
             if (isCrit)
             {
                 enemyDmgFinal *= 2;
-                _display.ShowCombatMessage(ColorCodes.Colorize("💥 Critical hit!", ColorCodes.BrightRed + ColorCodes.Bold));
+                var critReaction = _narration.GetEnemyCritReaction(enemy.Name);
+                if (!string.IsNullOrEmpty(critReaction))
+                {
+                    _display.ShowCombatMessage(ColorCodes.Colorize(critReaction, ColorCodes.BrightRed + ColorCodes.Bold));
+                }
+                else
+                {
+                    _display.ShowCombatMessage(ColorCodes.Colorize("💥 Critical hit!", ColorCodes.BrightRed + ColorCodes.Bold));
+                }
             }
             // BattleHardened skill passive — 5% damage reduction (matches skill description)
             if (player.Skills.IsUnlocked(Skill.BattleHardened))
