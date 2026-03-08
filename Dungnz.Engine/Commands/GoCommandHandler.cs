@@ -92,6 +92,15 @@ internal sealed class GoCommandHandler : ICommandHandler
         }
 
         context.Display.ShowRoom(context.CurrentRoom);
+        
+        // Display dynamic room entry narration based on room state
+        var narrationState = DetermineRoomNarrationState(context.CurrentRoom);
+        var narrationLine = context.Narration.GetRoomEntryNarration(narrationState);
+        if (!string.IsNullOrEmpty(narrationLine))
+        {
+            context.Display.ShowMessage(narrationLine);
+        }
+        
         context.CurrentRoom.Visited = true;
         context.Events?.RaiseRoomEntered(context.Player, context.CurrentRoom, previousRoom);
         context.Logger.LogDebug("Player entered room at {RoomId}", context.CurrentRoom.Id);
@@ -217,5 +226,42 @@ internal sealed class GoCommandHandler : ICommandHandler
         {
             context.Display.ShowMessage("⚔ Trapped weapons line the walls. (USE ARMORY to approach)");
         }
+    }
+
+    private static RoomNarrationState DetermineRoomNarrationState(Room room)
+    {
+        // Priority order: Merchant > Shrine > Boss > Cleared > ActiveEnemies > FirstVisit
+        
+        if (room.Merchant != null)
+            return RoomNarrationState.Merchant;
+        
+        if (room.HasShrine)
+            return RoomNarrationState.Shrine;
+        
+        // Check if this is a boss room
+        if (room.Enemy != null && IsBossEnemy(room.Enemy))
+            return RoomNarrationState.Boss;
+        
+        // Check if room is cleared
+        if (room.IsCleared)
+            return RoomNarrationState.Cleared;
+        
+        // Check for active enemies
+        if (room.Enemy != null && !room.Enemy.IsDead)
+        {
+            return room.WasVisited ? RoomNarrationState.ActiveEnemies : RoomNarrationState.FirstVisit;
+        }
+        
+        // Default to FirstVisit for fresh rooms
+        return room.WasVisited ? RoomNarrationState.ActiveEnemies : RoomNarrationState.FirstVisit;
+    }
+
+    private static bool IsBossEnemy(Enemy enemy)
+    {
+        var enemyType = enemy.GetType();
+        return enemyType.Name is "DungeonBoss" 
+            or "ArchlichSovereign" 
+            or "AbyssalLeviathan" 
+            or "InfernalDragon";
     }
 }
