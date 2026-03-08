@@ -38,6 +38,7 @@ public class CombatEngine : ICombatEngine
     /// <summary>The current dungeon floor, used for loot scaling. Set by the caller before combat.</summary>
     public int DungeonFloor { get; set; } = 1;
     private bool _undyingWillUsed;
+    private bool _desperationNarrationFired;
     private string? _pendingAchievement;
     private const int MaxLevel = 20; // Fix #183
 
@@ -159,6 +160,7 @@ public class CombatEngine : ICombatEngine
         PassiveEffectProcessor.ResetCombatState(player);
         player.ResetCombatPassives();
         _undyingWillUsed = false;
+        _desperationNarrationFired = false;
         _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnCombatStart, enemy, 0);
 
         // Ring of Haste: reduce cooldowns on combat start
@@ -382,7 +384,12 @@ public class CombatEngine : ICombatEngine
             else if (choice == "A" || choice == "ATTACK")
             {
                 PerformPlayerAttack(player, enemy);
-                
+
+                double playerHpPct = (double)player.HP / player.MaxHP;
+                double enemyHpPct = (double)enemy.HP / enemy.MaxHP;
+                var phaseNarration = _narration.GetPhaseAwareAttackNarration(_combatTurn, playerHpPct, enemyHpPct);
+                _display.ShowCombatMessage(phaseNarration);
+
                 if (enemy.IsDead)
                 {
                     if (CheckOnDeathEffects(player, enemy, _rng)) continue; // enemy revived
@@ -475,6 +482,15 @@ public class CombatEngine : ICombatEngine
         {
             _display.ShowCombatMessage($"{enemy.Name} is frozen solid and cannot act!");
             return;
+        }
+
+        // Desperation narration: fire once when enemy HP falls below 25%
+        if (!_desperationNarrationFired && enemy.HP <= enemy.MaxHP * 0.25)
+        {
+            _desperationNarrationFired = true;
+            var desperationLine = _narration.GetEnemyDesperationLine(enemy.Name);
+            if (desperationLine != null)
+                _display.ShowCombatMessage(desperationLine);
         }
 
         // ── IEnemyAI integration (#1210) ─────────────────────────────────
@@ -873,6 +889,14 @@ public class CombatEngine : ICombatEngine
             player.TakeDamage(enemyDmgFinal);
             _stats.DamageTaken += enemyDmgFinal;
             _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(CombatNarration.EnemyHitMessages, enemy.Name, enemyDmgFinal), enemyDmgFinal));
+
+            // Idle taunt: every 3rd turn on a normal attack (no special abilities or charge)
+            if (_combatTurn % 3 == 0 && !isFrostBreath && !isFlameBreath && !isTidalSlam && !wasCharged)
+            {
+                var idleTaunt = _narration.GetEnemyIdleTaunt(enemy.Name);
+                if (idleTaunt != null)
+                    _display.ShowCombatMessage(idleTaunt);
+            }
 
             // Near-death atmospheric flavor (HP < 25%, ~50% chance to avoid spam)
             if (player.HP > 0 && player.HP < player.MaxHP * 0.25f && _rng.NextDouble() < 0.5)
