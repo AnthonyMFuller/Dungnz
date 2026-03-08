@@ -14,6 +14,8 @@ public class CommandContext
     public required Player Player { get; set; }
     /// <summary>The room the player currently occupies.</summary>
     public required Room CurrentRoom { get; set; }
+    /// <summary>The room the player was in before moving to CurrentRoom, or null if no previous room.</summary>
+    public Room? PreviousRoom { get; set; }
     /// <summary>The random-number generator for the current run.</summary>
     public required Random Rng { get; set; }
     /// <summary>Statistics accumulated during the current run.</summary>

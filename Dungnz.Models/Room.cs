@@ -131,6 +131,15 @@ public class Room
     /// </summary>
     public bool Looted { get; set; }
 
+    /// <summary>Gets whether the room has been cleared of all enemies. Alias for State == Cleared.</summary>
+    public bool IsCleared => State == RoomState.Cleared;
+
+    /// <summary>Gets whether the player has visited this room before. Alias for Visited.</summary>
+    public bool WasVisited => Visited;
+
+    /// <summary>Gets whether the room has been looted. Alias for Looted.</summary>
+    public bool IsLooted => Looted;
+
     /// <summary>
     /// Gets or sets whether this room contains a healing shrine the player can interact with.
     /// </summary>
