@@ -1928,3 +1928,33 @@ Never call `AnsiConsole.Prompt()` while `Live.Start()` callback is running. The 
 **PR:** https://github.com/AnthonyMFuller/Dungnz/pull/1266
 **Build:** ✅ Success (0 errors)
 **Closes:** #1265
+
+### 2026-03-08 — Added Cooldown Visibility to Combat HUD (#1268)
+
+**Context:** Ability cooldowns were tracked and enforced correctly, but completely invisible during normal combat. Players couldn't see which abilities were on cooldown or when they'd come back, leading to attack spam rather than tactical ability usage.
+
+**Solution:**
+- Added `UpdateCooldownDisplay(IReadOnlyList<(string name, int turnsRemaining)> cooldowns)` as a **default interface method** on `IDisplayService` (no-op default) — zero impact on test stubs
+- `SpectreLayoutDisplayService` overrides it: caches the list, re-renders the Stats panel to show a `CD:` line under the MP bar
+- Format: `CD: ShieldBash:2t  BattleCry:✅  Fortify:✅` — only abilities with a cooldown mechanic (CooldownTurns > 0) are shown; `✅` = ready, `Nt` = N turns remaining
+- Cleared when `ShowRoom()` is called (player leaves combat, section disappears)
+- `CombatEngine` calls this after `TickCooldowns()` each turn
+- Also added **toast notifications** via `ShowCombatMessage` when an ability transitions from on-cooldown → ready: `✅ Shield Bash is ready!`
+
+**Architecture note:** Used a default interface method rather than adding to all 5 `IDisplayService` implementations. .NET 10 fully supports this pattern.
+
+**Files Modified:**
+- `Dungnz.Models/IDisplayService.cs` — added `UpdateCooldownDisplay()` default method
+- `Dungnz.Display/Spectre/SpectreLayoutDisplayService.cs` — `_cachedCooldowns` field, `UpdateCooldownDisplay()` override, cooldown line in `RenderStatsPanel`, clear in `ShowRoom`
+- `Dungnz.Engine/CombatEngine.cs` — pre-tick capture, toasts, `UpdateCooldownDisplay()` call
+
+**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/1276
+**Build:** ✅ Success (0 errors, 0 warnings)
+**Closes:** #1268
+
+## Learnings
+
+- **Default interface methods are the right tool** when adding display-only hooks to `IDisplayService` — avoids touching all 5 implementations (FakeDisplayService, TestDisplayService, ConsoleDisplayService, SpectreDisplayService, SpectreLayoutDisplayService)
+- **`_cachedCooldowns = []`** (C# 12 collection expression) works cleanly for empty list initialization of `IReadOnlyList<T>` fields in .NET 10
+- **Stats panel vs Content panel split:** `ShowCombatStatus` only updates the Content panel (the narrative); `RenderStatsPanel` owns the top-right Stats panel. HUD additions belong in `RenderStatsPanel`, not `ShowCombatStatus`
+- **Pre-tick snapshot pattern for toast detection:** capture `GetCooldown() > 0` state before `TickCooldowns()`, compare after — any that went to 0 fire a toast
