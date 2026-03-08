@@ -56,6 +56,9 @@ public enum CommandType
     /// <summary>Return to the previous dungeon floor from the entrance of the current floor.</summary>
     Ascend,
 
+    /// <summary>Return to the room the player was in before moving to the current room.</summary>
+    Back,
+
     /// <summary>Render an ASCII mini-map of all discovered rooms, with the player's current position highlighted.</summary>
     Map,
 
@@ -162,6 +165,7 @@ public static class CommandParser
             "list" or "saves" or "listsaves" => new ParsedCommand { Type = CommandType.ListSaves },
             "descend" or "down" => new ParsedCommand { Type = CommandType.Descend },
             "ascend" or "up" or "u" => new ParsedCommand { Type = CommandType.Ascend },
+            "back" or "b" => new ParsedCommand { Type = CommandType.Back },
             "map" or "m" => new ParsedCommand { Type = CommandType.Map },
             "shop" or "buy" => new ParsedCommand { Type = CommandType.Shop },
             "sell" => new ParsedCommand { Type = CommandType.Sell },
@@ -191,7 +195,7 @@ public static class CommandParser
             "help", "?", "h", "quit", "exit", "q",
             "equip", "unequip", "equipment", "gear",
             "save", "load", "list", "saves", "listsaves",
-            "descend", "down", "ascend", "up", "map", "m",
+            "descend", "down", "ascend", "up", "back", "b", "map", "m",
             "shop", "buy", "sell",
             "prestige", "p", "skills", "skill", "learn",
             "craft", "leaderboard", "lb", "scores",

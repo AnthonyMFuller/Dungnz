@@ -47,6 +47,7 @@ internal sealed class DescendCommandHandler : ICommandHandler
         var gen = new DungeonGenerator(floorSeed, context.AllItems);
         var (newStart, _) = gen.Generate(playerLevel: context.Player.Level, floorMultiplier: floorMult, difficulty: context.Difficulty, floor: context.CurrentFloor);
         context.CurrentRoom = newStart;
+        context.PreviousRoom = null; // Can't go back across floors
         context.FloorEntranceRoom = newStart;
         context.CurrentRoom.Visited = true;
         var descendVariant = DungeonVariant.ForFloor(context.CurrentFloor);

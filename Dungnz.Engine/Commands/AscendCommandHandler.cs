@@ -37,6 +37,7 @@ internal sealed class AscendCommandHandler : ICommandHandler
         context.CurrentFloor--;
         context.FloorEntranceRoom = previousEntrance;
         context.CurrentRoom = previousEntrance;
+        context.PreviousRoom = null; // Can't go back across floors
 
         foreach (var line in FloorTransitionNarration.GetAscendSequence(context.CurrentFloor))
             context.Display.ShowMessage(line);

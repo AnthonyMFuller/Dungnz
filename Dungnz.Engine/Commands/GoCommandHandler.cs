@@ -77,6 +77,7 @@ internal sealed class GoCommandHandler : ICommandHandler
 
         // Move to new room
         var previousRoom = context.CurrentRoom;
+        context.PreviousRoom = previousRoom;
         context.CurrentRoom = nextRoom;
 
         // ~15% chance of a brief atmospheric flavor message before the room description
