@@ -1766,3 +1766,20 @@ When queues are configured, `ShowSellMenuAndSelect`, `ShowConfirmMenu`, and `Sho
 - **Rebase with `GIT_EDITOR=true git rebase --continue`:** Skip editor prompts during rebase by prefixing `GIT_EDITOR=true`.
 - **`--admin` flag required on self-authored PRs:** GitHub branch protection prevents self-review. Always use `gh pr merge --admin` for team agent PRs.
 - **Barton cherry-pick pattern:** When Barton builds on top of Hill's un-merged branch, rebase conflicts are expected. Take the MASTER HEAD version for files already merged, and manually merge doc comment differences for the remaining commits.
+
+### 2026-03-09: PR Review Session — Cleanup & Display Fixes
+
+**PRs Reviewed:**
+- **PR #1297** (docs): Orphaned momentum session log. **Approved & Merged.**
+- **PR #1298** (fix): Gear equip comparison, Gear panel refresh, ContentPanelMenu escape. **Approved & Merged.**
+
+**Review Findings:**
+- **PR #1297:** Pure documentation. Verified content matches recent momentum work.
+- **PR #1298:**
+  - **Comparison Fix:** Replaced direct `UpdatePanel` with `SetContent` to respect `_contentLines` buffer. Critical for Live mode persistence.
+  - **Gear Panel:** Added `RenderGearPanel` to `ShowRoom` to fix stale state after equip/room change.
+  - **Escape/Q:** Restored cancel behavior for menus with "Cancel" option by checking last item label. Targeted fix that preserves strict selection for other menus.
+
+**Action:**
+- Both PRs merged.
+- Decision log created: `.ai-team/decisions/inbox/romanoff-pr-review-2026-03-09.md`.
