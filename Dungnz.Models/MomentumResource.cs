@@ -42,11 +42,13 @@ public sealed class MomentumResource
     public void Reset() => Current = 0;
 
     /// <summary>
-    /// Atomically checks whether this resource is charged and, if so, resets it to zero.
+    /// Attempts to consume a full charge: resets <see cref="Current"/> to zero and returns
+    /// <see langword="true"/> when the resource is charged; returns <see langword="false"/>
+    /// and leaves <see cref="Current"/> unchanged when not yet charged.
     /// </summary>
     /// <returns>
-    /// <see langword="true"/> if the resource was charged (and has now been reset to zero);
-    /// <see langword="false"/> if the resource was not charged (no state change).
+    /// <see langword="true"/> if the resource was charged and has now been consumed;
+    /// <see langword="false"/> if the resource was not charged.
     /// </returns>
     public bool Consume()
     {

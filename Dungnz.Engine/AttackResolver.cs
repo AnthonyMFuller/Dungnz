@@ -125,6 +125,14 @@ public class AttackResolver : IAttackResolver
             var playerEffAtk = player.Attack + _statusEffects.GetStatModifier(player, "Attack");
             playerEffAtk += SetBonusManager.GetActiveBonuses(player).Sum(b => b.AttackBonus);
             var effectiveDef = Math.Max(0, enemy.Defense - player.EnemyDefReduction);
+
+            // WI-D: Ranger Focus charged — next attack ignores enemy armor
+            if (player.Class == PlayerClass.Ranger && (player.Momentum?.Consume() ?? false))
+            {
+                effectiveDef = 0;
+                _display.ShowColoredCombatMessage("[Focus] 🎯 Perfect aim — armor ignored!", ColorCodes.Yellow);
+            }
+
             var playerDmg = Math.Max(1, playerEffAtk - effectiveDef);
 
             // SiegeOgre thick hide
@@ -142,6 +150,12 @@ public class AttackResolver : IAttackResolver
             if (isCrit)
             {
                 playerDmg *= 2;
+            }
+            // WI-D: Warrior Fury charged — 2× damage (free crit)
+            if (player.Class == PlayerClass.Warrior && (player.Momentum?.Consume() ?? false))
+            {
+                playerDmg *= 2;
+                _display.ShowColoredCombatMessage("[Fury] ⚡ Momentum unleashed — devastating blow!", ColorCodes.Yellow + ColorCodes.Bold);
             }
             // Warrior passive: +5% damage when HP < 50%
             if (player.Class == PlayerClass.Warrior && player.HP < player.MaxHP / 2.0)
@@ -198,6 +212,14 @@ public class AttackResolver : IAttackResolver
             playerDmg = Math.Max(1, (int)(playerDmg * _difficulty.PlayerDamageMultiplier));
             enemy.HP = Math.Max(0, enemy.HP - playerDmg);
             _stats.DamageDealt += playerDmg;
+
+            // WI-C: Warrior Fury — +1 momentum on every successful attack
+            if (player.Class == PlayerClass.Warrior)
+            {
+                player.Momentum?.Add();
+                if (player.Momentum?.IsCharged == true)
+                    _display.ShowColoredCombatMessage("[Fury] ⚡ Momentum charged — next attack hits twice as hard!", ColorCodes.Yellow);
+            }
 
             // HPOnHit: heal player for aggregate equipped-item HP-on-hit value
             int hpOnHit = (int)((player.EquippedWeapon?.HPOnHit ?? 0)

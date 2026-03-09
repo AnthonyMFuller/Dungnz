@@ -1692,3 +1692,43 @@ When queues are configured, `ShowSellMenuAndSelect`, `ShowConfirmMenu`, and `Sho
 - `TestDisplayService` for status effect manager tests (no-op display)
 - `FakeDisplayService` + `FakeInputReader` + `ControlledRandom(0.9)` for combat tests
 - `EnemyStub(hp, atk, def, xp) { HP = 0 }` to simulate dead enemy at combat start
+
+---
+
+### 2026-03-10 — Momentum Resource Test Coverage (WI-F, #1274)
+
+**PR:** #1294 — `test: momentum resource coverage (#1274)`
+**Branch:** `squad/1274-momentum-tests`
+**File Created:** `Dungnz.Tests/MomentumResourceTests.cs`
+**Test count:** ~1858 → 1876 (+8 passing, +10 skipped)
+
+**What was written:**
+
+1. **MomentumResourceUnitTests (8 tests, all pass)**
+   — Uses a `file sealed class MomentumResource` stub that matches the Coulson/Hill spec exactly.
+   — Tests: Add single unit, Add multiple/clamp at max, Add(999) clamp, IsCharged below/at max, Reset, Consume when charged (returns true + resets), Consume when not charged (returns false + unchanged).
+   — Stub includes `Consume()` method (from Coulson triage doc) even though the task spec only showed Add/Reset.
+
+2. **MomentumResourcePlayerInitTests (4 tests, skipped)**
+   — `[Fact(Skip = "WI-B pending")]` — unblock when Hill's `Player.Momentum` wiring merges.
+   — Bodies fully commented with TODO instructions. Warrior max=5, Mage max=3, Rogue null, Ranger max=3.
+
+3. **MomentumEngineIntegrationTests (6 tests, skipped)**
+   — `[Fact(Skip = "WI-C/WI-D pending")]` — unblock when Barton's CombatEngine hooks merge.
+   — Warrior Fury: increment on damage taken, double-damage on charged swing.
+   — Mage Arcane Charge: increment on ability cast, zero mana cost when charged.
+   — Ranger Focus: increment on 0-damage turn, reset on HP damage.
+
+**Key findings:**
+- `MomentumResource` does NOT exist in `Dungnz.Models` yet — WI-B is still pending from Hill.
+- `Player.Momentum` does NOT exist yet — Player wiring is also WI-B.
+- Coulson's triage doc includes `Consume()` method not in the task spec; added it with tests since it's required for WI-D integration.
+- Paladin Devotion (max=4) is in the triage doc but NOT in the task test spec — intentionally omitted from Player init tests to match the spec as written. Flag for Hill to add when wiring.
+
+**Stub removal instructions (in the file comments):**
+1. Remove `file sealed class MomentumResource` block from `MomentumResourceTests.cs`
+2. Add `using Dungnz.Models;`
+3. Remove `[Fact(Skip = ...)]` from Player init and engine integration tests
+4. Uncomment assertion bodies
+
+**Pattern established:** `file sealed class` (C# 11 file-scoped types) for test stubs of not-yet-shipped types. Zero namespace pollution, removed cleanly when real type lands.

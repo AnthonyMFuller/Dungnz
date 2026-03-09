@@ -159,6 +159,8 @@ public class CombatEngine : ICombatEngine
         // ── Passive effects: combat start ────────────────────────────────────
         PassiveEffectProcessor.ResetCombatState(player);
         player.ResetCombatPassives();
+        // WI-C: initialise (or reset) momentum resource for classes that use it
+        InitPlayerMomentum(player);
         _undyingWillUsed = false;
         _desperationNarrationFired = false;
         _passives.ProcessPassiveEffects(player, PassiveEffectTrigger.OnCombatStart, enemy, 0);
@@ -299,7 +301,9 @@ public class CombatEngine : ICombatEngine
             if (playerStunnedThisTurn)
             {
                 _display.ShowCombatMessage("You are stunned and cannot act this turn!");
+                int hpBeforeStunTurn = player.HP;
                 PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
+                AddRangerFocusIfNoDamage(player, hpBeforeStunTurn);
                 if (player.HP <= 0) return CombatResult.PlayerDied;
                 continue;
             }
@@ -334,7 +338,9 @@ public class CombatEngine : ICombatEngine
                 else
                 {
                     _display.ShowMessage("You failed to flee!");
+                    int hpBeforeFleeTurn = player.HP;
                     PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
+                    AddRangerFocusIfNoDamage(player, hpBeforeFleeTurn);
                     if (player.HP <= 0) return CombatResult.PlayerDied;
                     continue;
                 }
@@ -346,7 +352,9 @@ public class CombatEngine : ICombatEngine
                 if (abilityResult == AbilityMenuResult.Cancel)
                 {
                     // Fix #611: cancel consumes the player's turn so enemy still acts
+                    int hpBeforeCancelTurn = player.HP;
                     PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
+                    AddRangerFocusIfNoDamage(player, hpBeforeCancelTurn);
                     if (player.HP <= 0) return CombatResult.PlayerDied;
                     continue;
                 }
@@ -360,7 +368,9 @@ public class CombatEngine : ICombatEngine
                         HandleLootAndXP(player, enemy);
                         return CombatResult.Won;
                     }
+                    int hpBeforeAbilityTurn = player.HP;
                     PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
+                    AddRangerFocusIfNoDamage(player, hpBeforeAbilityTurn);
                     if (player.HP <= 0) return CombatResult.PlayerDied;
                     continue;
                 }
@@ -376,7 +386,9 @@ public class CombatEngine : ICombatEngine
                 if (itemResult == AbilityMenuResult.Used)
                 {
                     // Enemy acts after item use
+                    int hpBeforeItemTurn = player.HP;
                     PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
+                    AddRangerFocusIfNoDamage(player, hpBeforeItemTurn);
                     if (player.HP <= 0) return CombatResult.PlayerDied;
                     continue;
                 }
@@ -411,7 +423,9 @@ public class CombatEngine : ICombatEngine
                     return CombatResult.Won;
                 }
 
+                int hpBeforeAttackTurn = player.HP;
                 PerformEnemyTurn(player, enemy, enemyStunnedThisTurn);
+                AddRangerFocusIfNoDamage(player, hpBeforeAttackTurn);
                 if (player.HP <= 0) return CombatResult.PlayerDied;
             }
             else
@@ -860,6 +874,10 @@ public class CombatEngine : ICombatEngine
             {
                 player.DivineShieldTurnsRemaining--;
                 _display.ShowCombatMessage($"Your Divine Shield absorbs the blow! ({player.DivineShieldTurnsRemaining} turns remaining)");
+                // WI-C: Paladin Devotion — shield absorption counts as momentum
+                player.Momentum?.Add();
+                if (player.Momentum?.IsCharged == true)
+                    _display.ShowColoredCombatMessage("[Devotion] ✨ Momentum charged — next Smite will stun!", Systems.ColorCodes.Yellow);
                 _turnLog.Add(new CombatTurn(enemy.Name, "Attack", 0, isCrit, false, null));
                 return;
             }
@@ -889,6 +907,17 @@ public class CombatEngine : ICombatEngine
             player.TakeDamage(enemyDmgFinal);
             _stats.DamageTaken += enemyDmgFinal;
             _display.ShowCombatMessage(ColorizeDamage(_narration.Pick(CombatNarration.EnemyHitMessages, enemy.Name, enemyDmgFinal), enemyDmgFinal));
+
+            // WI-C: Warrior Fury — +1 momentum when taking a hit
+            if (player.Class == PlayerClass.Warrior && enemyDmgFinal > 0)
+            {
+                player.Momentum?.Add();
+                if (player.Momentum?.IsCharged == true)
+                    _display.ShowColoredCombatMessage("[Fury] ⚡ Momentum charged — next attack hits twice as hard!", Systems.ColorCodes.Yellow);
+            }
+            // WI-C: Ranger Focus — taking HP damage breaks focus streak (reset)
+            if (player.Class == PlayerClass.Ranger && enemyDmgFinal > 0)
+                player.Momentum?.Reset();
 
             // Idle taunt: every 3rd turn on a normal attack (no special abilities or charge)
             if (_combatTurn % 3 == 0 && !isFrostBreath && !isFlameBreath && !isTidalSlam && !wasCharged)
@@ -1274,6 +1303,38 @@ public class CombatEngine : ICombatEngine
         || player.EquippedAccessory?.PassiveEffectId == effectId
         || player.AllEquippedArmor.Any(a => a.PassiveEffectId == effectId);
 
+    /// <summary>
+    /// Initialises (or re-initialises) the per-class <see cref="MomentumResource"/> at the
+    /// start of every combat encounter, ensuring Current always starts at zero.
+    /// Classes that use <see cref="Player.ComboPoints"/> (Rogue) or have no momentum
+    /// mechanic receive <see langword="null"/>.
+    /// </summary>
+    private static void InitPlayerMomentum(Player player)
+    {
+        player.Momentum = player.Class switch
+        {
+            PlayerClass.Warrior => new MomentumResource(5),
+            PlayerClass.Mage    => new MomentumResource(3),
+            PlayerClass.Paladin => new MomentumResource(4),
+            PlayerClass.Ranger  => new MomentumResource(3),
+            _                   => null
+        };
+    }
+
+    /// <summary>
+    /// WI-C: Awards Ranger one Focus point when an enemy turn ended with zero HP damage
+    /// (dodge, block, shield, Mana Shield full absorb, stun skip, etc.).
+    /// Also fires the charged message when Focus reaches maximum.
+    /// </summary>
+    private void AddRangerFocusIfNoDamage(Player player, int hpBeforeEnemyTurn)
+    {
+        if (player.Class != PlayerClass.Ranger || player.HP <= 0) return;
+        if (player.HP < hpBeforeEnemyTurn) return; // took HP damage — WI-C reset already fired
+        player.Momentum?.Add();
+        if (player.Momentum?.IsCharged == true)
+            _display.ShowColoredCombatMessage("[Focus] 🎯 Momentum charged — next attack ignores armor!", Systems.ColorCodes.Yellow);
+    }
+
     /// <summary>Resets all transient combat state after a successful flee.</summary>
     private void ResetFleeState(Player player, Enemy enemy)
     {
@@ -1293,6 +1354,7 @@ public class CombatEngine : ICombatEngine
         player.WardingVeilActive = false;
         player.IsManaShieldActive = false;
         player.ResetCombatPassives();
+        player.Momentum?.Reset(); // WI-C: flush momentum on flee
         // Fix #547: reset boss combat state on flee
         if (enemy is DungeonBoss fb)
         {

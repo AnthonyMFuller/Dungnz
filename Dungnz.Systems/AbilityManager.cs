@@ -256,6 +256,15 @@ public class AbilityManager
             display.ShowCombatMessage("Arcane Surge activated!");
         }
 
+        // WI-D: Mage Arcane Charge charged — next ability costs 0 mana
+        bool mageChargeConsumed = false;
+        if (player.Class == PlayerClass.Mage && (player.Momentum?.Consume() ?? false))
+        {
+            effectiveCost = 0;
+            mageChargeConsumed = true;
+            display.ShowColoredCombatMessage("[Arcane Charge] ⚡ Momentum unleashed — free cast!", ColorCodes.Yellow);
+        }
+
         // LichsBargain passive: HP < 15% = 0 cost abilities for 1 turn
         if (player.Class == PlayerClass.Necromancer && player.HasSkill(Skill.LichsBargain) 
             && player.HP < player.MaxHP * 0.15f)
@@ -285,6 +294,9 @@ public class AbilityManager
 
         if (_abilityFlavor.TryGetValue(type.ToString(), out var flavorText))
             display.ShowCombatMessage(flavorText);
+
+        // WI-D: Mage Arcane Charge — capture enemy HP before ability executes to apply 1.25× bonus
+        int enemyHpBeforeAbility = enemy.HP;
 
         switch (type)
         {
@@ -561,6 +573,15 @@ public class AbilityManager
                     display.ShowCombatMessage(enemy.IsUndead
                         ? $"Divine light sears the undead! Holy Strike deals {holyDmg} damage!"
                         : $"You channel holy power into your strike! ({holyDmg} damage)");
+                    // WI-D: Paladin Devotion charged — apply Stun on this Smite
+                    if (player.Momentum?.Consume() ?? false)
+                    {
+                        if (!enemy.IsDead && !enemy.IsImmuneToEffects)
+                        {
+                            statusEffects.Apply(enemy, StatusEffect.Stun, 1);
+                            display.ShowColoredCombatMessage("[Devotion] ✨ Holy surge — the enemy is stunned!", ColorCodes.Yellow);
+                        }
+                    }
                 }
                 break;
 
@@ -573,6 +594,10 @@ public class AbilityManager
                     var healAmt = (int)(player.MaxHP * healFraction);
                     player.Heal(healAmt);
                     display.ShowCombatMessage($"Divine energy floods your body! You heal {healAmt} HP!");
+                    // WI-C: Paladin Devotion — healing gains momentum
+                    player.Momentum?.Add();
+                    if (player.Momentum?.IsCharged == true)
+                        display.ShowColoredCombatMessage("[Devotion] ✨ Momentum charged — next Smite will stun!", ColorCodes.Yellow);
                 }
                 break;
 
@@ -580,6 +605,10 @@ public class AbilityManager
                 {
                     player.DivineShieldTurnsRemaining = 2;
                     display.ShowCombatMessage("A barrier of holy light surrounds you! (Divine Shield: 2 turns)");
+                    // WI-C: Paladin Devotion — casting Divine Shield gains momentum
+                    player.Momentum?.Add();
+                    if (player.Momentum?.IsCharged == true)
+                        display.ShowColoredCombatMessage("[Devotion] ✨ Momentum charged — next Smite will stun!", ColorCodes.Yellow);
                 }
                 break;
 
@@ -808,6 +837,29 @@ public class AbilityManager
                     }
                 }
                 break;
+        }
+
+        // WI-D: Mage Arcane Charge — apply 1.25× bonus to any damage dealt by this ability
+        if (mageChargeConsumed)
+        {
+            int abilityDamage = enemyHpBeforeAbility - enemy.HP;
+            if (abilityDamage > 0 && !enemy.IsDead)
+            {
+                int bonus = (int)(abilityDamage * 0.25f);
+                if (bonus > 0)
+                {
+                    enemy.HP = Math.Max(0, enemy.HP - bonus);
+                    display.ShowColoredCombatMessage($"[Arcane Charge] +{bonus} arcane overload damage!", ColorCodes.BrightCyan);
+                }
+            }
+        }
+
+        // WI-C: Mage Arcane Charge — increment momentum after every successful ability cast
+        if (player.Class == PlayerClass.Mage)
+        {
+            player.Momentum?.Add();
+            if (player.Momentum?.IsCharged == true)
+                display.ShowColoredCombatMessage("[Arcane Charge] ⚡ Momentum charged — next ability is free and hits harder!", ColorCodes.Yellow);
         }
         
         return UseAbilityResult.Success;
