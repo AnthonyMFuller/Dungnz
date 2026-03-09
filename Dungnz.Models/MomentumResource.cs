@@ -40,4 +40,18 @@ public sealed class MomentumResource
 
     /// <summary>Resets momentum to zero (called at the start or end of each combat).</summary>
     public void Reset() => Current = 0;
+
+    /// <summary>
+    /// Atomically checks whether this resource is charged and, if so, resets it to zero.
+    /// </summary>
+    /// <returns>
+    /// <see langword="true"/> if the resource was charged (and has now been reset to zero);
+    /// <see langword="false"/> if the resource was not charged (no state change).
+    /// </returns>
+    public bool Consume()
+    {
+        if (!IsCharged) return false;
+        Reset();
+        return true;
+    }
 }
