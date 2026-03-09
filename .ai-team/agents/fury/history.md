@@ -183,3 +183,55 @@ public string GetPhaseAwareAttackNarration(int turnNumber, double playerHpPercen
 - Phase determination logic: Desperate checks first (OR condition: any threshold met), then Opening (AND: all conditions met), then default MidFight
 - Private enum + private helper method keep phase logic encapsulated within NarrationService
 - Narration content pools cluster by phase for readability and maintainability
+
+---
+
+### 2026-03-09 — Content Batch: Floor Descent, Merchant Variety, Shrine GrantNothing, Enemy Narrations (#1250 #1247 #1245 #1244)
+
+**PR:** #1285 — `content: Narration gaps — floor descent, merchant, shrine, enemy flavors`
+**Branch:** `squad/content-batch-1250-1247-1245-1244`
+**Files Modified:** `Dungnz.Systems/FloorTransitionNarration.cs`, `Dungnz.Systems/MerchantNarration.cs`, `Dungnz.Systems/ShrineNarration.cs`, `Dungnz.Systems/EnemyNarration.cs`
+
+**#1250 — Floor 1 Descent Narration**
+- Added `ToFloor1` pool (5 lines) and wired `1 => ToFloor1` into `GetSequence()`
+- Tone: Goblin Caves, first-step-into-the-abyss, animal smell, crude walls, distant laughter
+- Pattern: builds dread line by line, ends with "Floor 1. The dungeon begins here."
+- All other floors use same 5-line build + floor announcement pattern — matched it exactly
+
+**#1247 — Merchant Greetings Expansion**
+- Base `Greetings` pool: 12 → 18 entries
+- New personality types added: gruff/arms-crossed, warm-but-grudging, impatient, merchandise-paranoid, methodical coin-counter, short-tempered
+- Checked existing 12 for tone coverage before writing new ones — no duplicates
+- Merchant base pool should feel fresh across 6+ encounters before repeating
+
+**#1245 — Shrine GrantNothing**
+- Pool: 2 → 6 entries
+- Expanded tone range: dignified non-need, patient exhale, ambiguous rune-flicker, ancient indifference
+- Key constraint: shrine should feel *indifferent* or *mildly disappointed*, not hostile or comical
+- Avoid shrine "judging" too harshly — the player did nothing wrong by walking away
+
+**#1244 — 21 Enemy Custom Intros + Deaths**
+Enemy archetype notes for future consistency:
+- **Giant Rat**: feral, desperate, plague-eyed, fast — not majestic
+- **Cursed Zombie**: shambling, relentless, trailing wrongness — no personality
+- **Blood Hound**: pack-hunter, quiet approach, scent-driven
+- **Iron Guard**: disciplined, military cadence, "form over fury"
+- **Night Stalker**: announces itself only with shadow — no sound, no preamble
+- **Frost Wyvern**: cold and ancient; falls still, doesn't melt
+- **Chaos Knight**: reality distorts in its wake; death = air snapping back
+- **Lich King**: no flourish at death — it simply *ceases*
+- **Shadow Imp**: plural by nature — swarm enters, swarm scatters
+- **Carrion Crawler**: sound + smell precede it; death = deflation not explosion
+- **Dark Sorcerer**: clinical and absent-expressioned; death = power winked out
+- **Bone Archer**: announces itself with the bowstring creak or a near-miss
+- **Crypt Priest**: liturgical rhythm; incantation breaks mid-word at death
+- **Plague Bear**: fury and mass; death shakes the floor
+- **Siege Ogre**: fills the doorway; death is architectural
+- **Blade Dancer**: graceful entry and ungraceful death — the contrast is the point
+- **Mana Leech**: attracted to your power; death = power unraveling inside it
+- **Shield Breaker**: no introduction, just charge; death = all force suddenly inert
+- **Archlich Sovereign**: sovereign posture, commands the dead in entry; crown hits stone first
+- **Abyssal Leviathan**: vast, unhurried, fills the chamber; death = pressure drop and stillness
+- **Infernal Dragon**: heat and light arrive before it does; death = furnace dying
+
+**Build:** ✅ 0 warnings, 0 errors
