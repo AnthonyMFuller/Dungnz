@@ -565,7 +565,9 @@ public partial class SpectreLayoutDisplayService
                     return items[selected].Value;
                 case System.ConsoleKey.Escape:
                 case System.ConsoleKey.Q:
-                    return items[items.Count - 1].Value;
+                    // Non-nullable menu: caller expects a definite selection.
+                    // Escape/Q do not cancel — ignore and let the user choose.
+                    break;
             }
         }
     }
