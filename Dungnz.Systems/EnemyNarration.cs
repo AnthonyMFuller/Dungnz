@@ -120,6 +120,132 @@ public static class EnemyNarration
             "The Mimic's disguise falls apart as it expires — just a pile of teeth and wood.",
             "The Mimic snaps once more, weakly, then lies still — its treasure finally real.",
             "The Mimic shudders, its lid slamming shut forever."
+        },
+        ["Giant Rat"] = new[]
+        {
+            "The Giant Rat convulses and is still, its plague-eyes glazed.",
+            "The Giant Rat crumples mid-stride, momentum spent, finally quiet.",
+            "A final, shrill squeak — then nothing. The Giant Rat doesn't get up."
+        },
+        ["Cursed Zombie"] = new[]
+        {
+            "The Cursed Zombie sags mid-step and does not rise again.",
+            "The curse holding it together unravels. It collapses in sections.",
+            "Whatever was driving the Cursed Zombie forward goes out of it all at once."
+        },
+        ["Blood Hound"] = new[]
+        {
+            "The Blood Hound collapses mid-stride, the hunt ending where it stood.",
+            "A short whimper, then the Blood Hound goes down, the scent of you its last sensation.",
+            "The Blood Hound skids across the stone and lies still. The chase is over."
+        },
+        ["Iron Guard"] = new[]
+        {
+            "The Iron Guard buckles, discipline failing, and hits the floor with a tremendous crash.",
+            "With a groan of stressed metal, the Iron Guard folds and goes down.",
+            "The Iron Guard's spear clatters first. Then the Iron Guard follows."
+        },
+        ["Night Stalker"] = new[]
+        {
+            "The Night Stalker crumples from somewhere just behind you, its silence finally permanent.",
+            "It drops without a sound — as it lived, so it ends.",
+            "The Night Stalker fades from the shadows into them, and does not return."
+        },
+        ["Frost Wyvern"] = new[]
+        {
+            "The Frost Wyvern falls and does not melt. It simply goes very still.",
+            "Ice cracks from the Frost Wyvern's body as it collapses, the cold bleeding out of it.",
+            "The Frost Wyvern crashes down, wings spread, a monument of ice and silence."
+        },
+        ["Chaos Knight"] = new[]
+        {
+            "The Chaos Knight's momentum fails — it stumbles, and reality snaps back as it falls.",
+            "The distortions collapse inward as the Chaos Knight drops. The air stills.",
+            "The Chaos Knight hits the floor and the chaos goes with it. Silence rushes in."
+        },
+        ["Lich King"] = new[]
+        {
+            "The Lich King simply stops. No final words. No dramatics. It ceases.",
+            "The crown hits the stone first. Then the Lich King crumbles into it, piece by piece.",
+            "Centuries of power unravel in a single moment. What remains barely constitutes remains."
+        },
+        ["Shadow Imp"] = new[]
+        {
+            "The Shadow Imps scatter, shrieking, and blink out one by one in small pops of darkness.",
+            "The swarm breaks apart — a chorus of tiny screams, then nothing.",
+            "The shadows they came from reclaim them. The room is quiet again."
+        },
+        ["Carrion Crawler"] = new[]
+        {
+            "The Carrion Crawler twitches, legs curling inward, its venom pooling beneath it.",
+            "With a wet, diminishing chittering, the Carrion Crawler rolls onto its back and goes still.",
+            "The Carrion Crawler collapses mid-lunge and deflates. The smell lingers."
+        },
+        ["Dark Sorcerer"] = new[]
+        {
+            "The Dark Sorcerer's spell dies with it — a flash, a crack, then silence.",
+            "The Dark Sorcerer drops with the same absence of expression it lived with.",
+            "The power winked out of it like a candle. It falls, and the air is ordinary again."
+        },
+        ["Bone Archer"] = new[]
+        {
+            "The Bone Archer's bow drops first — then the skeleton, arrows scattering across the stone.",
+            "A last arrow goes wide as the Bone Archer falls, its aim finally failing.",
+            "The Bone Archer shatters backward, ribs first, and the quiver empties around it."
+        },
+        ["Crypt Priest"] = new[]
+        {
+            "The Crypt Priest's incantation breaks mid-word. It folds silently to the stone.",
+            "The runes orbiting its skull extinguish one by one. The Crypt Priest follows.",
+            "Its final prayer goes unanswered. The Crypt Priest slumps forward and is still."
+        },
+        ["Plague Bear"] = new[]
+        {
+            "The Plague Bear crashes down, shaking the floor, its growl fading into a wet rattle.",
+            "It sways once, enormous, then the Plague Bear falls — disease and all.",
+            "The Plague Bear's roar becomes a sigh and then stops. The dungeon is quieter for it."
+        },
+        ["Siege Ogre"] = new[]
+        {
+            "The Siege Ogre topples like something architectural. The dungeon takes a moment to settle.",
+            "It falls in stages — first the knees, then everything else. The floor doesn't forgive it.",
+            "The Siege Ogre crashes down with the sound of a building deciding to give up."
+        },
+        ["Blade Dancer"] = new[]
+        {
+            "The Blade Dancer's final spin ends awkwardly. The grace, at last, is gone.",
+            "A blade clatters wide and the Blade Dancer goes down mid-movement, the dance cut short.",
+            "The Blade Dancer stills. The performance is over."
+        },
+        ["Mana Leech"] = new[]
+        {
+            "The Mana Leech shudders as the stolen energy unravels inside it — then goes flat.",
+            "The Mana Leech releases its hold and drops, the hunger finally extinguished.",
+            "It deflates, slowly, like something that no longer has anything to hold it together."
+        },
+        ["Shield Breaker"] = new[]
+        {
+            "The Shield Breaker drops its weapon first, then follows it. All that force, suddenly inert.",
+            "The Shield Breaker hits the floor with nothing left in it.",
+            "It falls like a wall coming down — inevitable, complete, final."
+        },
+        ["Archlich Sovereign"] = new[]
+        {
+            "The Archlich Sovereign's crown clatters to the floor. The dead drop with it.",
+            "The sovereignty ends. The Archlich Sovereign crumbles, and the centuries leave it.",
+            "It stills — not with a bang, but with the quiet finality of a dynasty ending."
+        },
+        ["Abyssal Leviathan"] = new[]
+        {
+            "The Abyssal Leviathan rolls slowly, impossibly large, and goes still. The pressure drops.",
+            "A deep, shuddering exhalation — then the Abyssal Leviathan settles into the floor and moves no more.",
+            "The darkness that followed it recedes. The Abyssal Leviathan does not."
+        },
+        ["Infernal Dragon"] = new[]
+        {
+            "The Infernal Dragon's fire gutters out. It collapses with a sound like a furnace dying.",
+            "The flames die first. Then the Infernal Dragon follows, smoke rising from the stone.",
+            "Heat leaves the room all at once as the Infernal Dragon crashes down. The quiet is absolute."
         }
     };
 
