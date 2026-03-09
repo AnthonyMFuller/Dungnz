@@ -2807,3 +2807,38 @@ Every handler that sets content panel content MUST call `ShowRoom()` before retu
 **Testing:** All 1695 tests pass.
 **Commit:** c72dbe8 on branch `scribe/log-merchant-menu-2026-03-06`
 **Issues closed:** #1168, #1169, #1170, #1171, #1172, #1175
+
+## 2026-03-10: WI-B + WI-E — MomentumResource model layer + display (#1274)
+
+**Branch:** `squad/1274-momentum-model-display` | **PR:** #1293
+
+### Changes
+
+**WI-B — Model layer:**
+- Created `Dungnz.Models/MomentumResource.cs` — sealed class with `Current`, `Maximum`, `IsCharged`, `Add(int)`, `Reset()`. Validates `maximum > 0` with `ArgumentOutOfRangeException`.
+- Added `public MomentumResource? Momentum { get; set; }` to `Dungnz.Models/Player.cs` (in the passives section alongside `BattleHardenedStacks`). Nullable — Rogue stays on ComboPoints, null for unsupported classes.
+- Added `Momentum?.Reset()` to `ResetCombatPassives()` in `Player.cs`.
+- **Initialization deferred to CombatEngine (Barton)** — consistent with how `BattleHardenedStacks` works: no constructor needed, `Momentum` starts null and CombatEngine sets `new MomentumResource(max)` per class on combat start.
+
+**WI-E — Display layer:**
+- Updated `RenderStatsPanel()` in `Dungnz.Display/Spectre/SpectreLayoutDisplayService.cs` (~line 431).
+- Added block below existing Rogue combo display: checks `player.Momentum is { } momentum`.
+- Label switch: Warrior="Fury", Mage="Charge", Paladin="Devotion", Ranger="Focus", _="Momentum".
+- Dot bar: `new string('●', current) + new string('○', max - current)`.
+- Charged suffix: `" [bold cyan][CHARGED][/]"` when `IsCharged`.
+
+### Learnings
+
+**MomentumResource initialization pattern:**
+- Follow BattleHardenedStacks pattern: property starts null/0 on model, CombatEngine owns per-class initialization at combat start. Do NOT add a Player constructor or per-class initialization in the model layer.
+- Per-class max values: Warrior=5, Mage=3, Paladin=4, Ranger=3, Rogue=null (ComboPoints).
+
+**Display pattern for class resource bars:**
+- Template established: `[yellow]✦ {Label}[/] {dots}{chargedSuffix}` in `RenderStatsPanel()`.
+- Rogue combo is rendered only when `ComboPoints > 0`; Momentum is rendered whenever `Momentum is not null` (even at 0 so player sees the bar immediately on entering combat).
+- `[bold cyan][CHARGED][/]` is the charged color convention.
+
+**Key files:**
+- `Dungnz.Models/MomentumResource.cs` — new sealed class
+- `Dungnz.Models/Player.cs` — Momentum property + ResetCombatPassives()
+- `Dungnz.Display/Spectre/SpectreLayoutDisplayService.cs` — RenderStatsPanel() momentum display block
