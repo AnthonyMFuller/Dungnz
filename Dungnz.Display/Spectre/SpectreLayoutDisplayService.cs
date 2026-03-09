@@ -434,6 +434,21 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             sb.AppendLine($"[yellow]✦ Combo[/] {dots}");
         }
 
+        if (player.Momentum is { } momentum)
+        {
+            var label = player.Class switch
+            {
+                PlayerClass.Warrior => "Fury",
+                PlayerClass.Mage    => "Charge",
+                PlayerClass.Paladin => "Devotion",
+                PlayerClass.Ranger  => "Focus",
+                _                   => "Momentum"
+            };
+            var dots = new string('●', momentum.Current) + new string('○', momentum.Maximum - momentum.Current);
+            var chargedSuffix = momentum.IsCharged ? " [bold cyan][CHARGED][/]" : string.Empty;
+            sb.AppendLine($"[yellow]✦ {label}[/] {dots}{chargedSuffix}");
+        }
+
         UpdateStatsPanel(sb.ToString().TrimEnd());
     }
 

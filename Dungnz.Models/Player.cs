@@ -90,6 +90,14 @@ public partial class Player
     /// <summary>Warrior: current Battle Hardened stacks (max 4, each granting +2 ATK).</summary>
     public int BattleHardenedStacks { get; set; } = 0;
 
+    /// <summary>
+    /// Per-class momentum resource. Non-null for Warrior (Fury, max 5), Mage (Arcane Charge, max 3),
+    /// Paladin (Devotion, max 4), and Ranger (Focus, max 3). Null for Rogue (uses
+    /// <see cref="ComboPoints"/> instead) and all other classes.
+    /// Initialized by <c>CombatEngine</c> on first combat start for the relevant classes.
+    /// </summary>
+    public MomentumResource? Momentum { get; set; }
+
     /// <summary>Mage: true when the next ability costs 1 less mana (set after spending mana).</summary>
     public bool ArcaneSurgeReady { get; set; } = false;
 
@@ -111,6 +119,7 @@ public partial class Player
         ArcaneSurgeReady = false;
         ShadowStrikeReady = true;
         DivineBulwarkFired = false;
+        Momentum?.Reset();
     }
 
     // ── 4-piece set bonus flags (set by SetBonusManager.ApplySetBonuses) ──────
