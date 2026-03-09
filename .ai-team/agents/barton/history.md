@@ -1958,3 +1958,52 @@ Never call `AnsiConsole.Prompt()` while `Live.Start()` callback is running. The 
 - **`_cachedCooldowns = []`** (C# 12 collection expression) works cleanly for empty list initialization of `IReadOnlyList<T>` fields in .NET 10
 - **Stats panel vs Content panel split:** `ShowCombatStatus` only updates the Content panel (the narrative); `RenderStatsPanel` owns the top-right Stats panel. HUD additions belong in `RenderStatsPanel`, not `ShowCombatStatus`
 - **Pre-tick snapshot pattern for toast detection:** capture `GetCooldown() > 0` state before `TickCooldowns()`, compare after — any that went to 0 fire a toast
+
+### 2026-03-10 — WI-C + WI-D — CombatEngine momentum increment + threshold effects (#1274)
+
+**Context:** Issue #1274, part of the momentum resource system for per-class resource mechanics.
+Hill had already pushed `MomentumResource` model + `Player.Momentum` on `squad/1274-momentum-model-display`. Romanoff had already written skipped integration tests on `squad/1274-momentum-tests` that also expect a `Consume()` method.
+
+**Approach:**
+1. Created `squad/1274-momentum-engine` from master
+2. Cherry-picked Hill's model commit (084242e) — `MomentumResource.cs` + `Player.Momentum { get; set; }` + `Momentum?.Reset()` in `ResetCombatPassives()`
+3. Added `MomentumResource.Consume()` — returns `bool`, resets on true — required by Romanoff's unit tests
+4. Added WI-C (increment) and WI-D (threshold) hooks
+
+**WI-C hooks added:**
+- **Warrior Fury:** `Add(1)` in `AttackResolver.PerformPlayerAttack` after damage is applied; `Add(1)` in `CombatEngine.PerformEnemyTurn` at `player.TakeDamage()` call with `enemyDmgFinal > 0`
+- **Mage Arcane Charge:** `Add(1)` at the bottom of `AbilityManager.UseAbility` before `return Success` (fires for all ability types, all classes — but guarded by `player.Class == Mage`)
+- **Paladin Devotion:** `Add(1)` in `PerformEnemyTurn` when DivineShield absorbs a blow; `Add(1)` in `AbilityManager` case `LayOnHands` after heal; `Add(1)` in `AbilityManager` case `DivineShield` after cast
+- **Ranger Focus:** `Add(1)` via new `AddRangerFocusIfNoDamage(player, hpBefore)` helper at all 5 main-loop `PerformEnemyTurn` call sites; `Reset()` in `PerformEnemyTurn` when `player.TakeDamage(enemyDmgFinal)` is called with actual damage
+
+**WI-D hooks added (all use `Consume()` pattern — atomic check + reset):**
+- **Warrior Fury (×5):** In `AttackResolver` after crit check — `if (Consume()) playerDmg *= 2;` with Fury message
+- **Mage Arcane Charge (×3):** In `AbilityManager.UseAbility` before mana spend — `if (Consume()) effectiveCost = 0;`. After switch — HP-before/after delta × 0.25 bonus damage applied
+- **Paladin Devotion (×4):** In `AbilityManager` case `HolyStrike` — `if (Consume()) Apply(Stun, 1)`; guarded by `!IsImmuneToEffects`
+- **Ranger Focus (×3):** In `AttackResolver` before damage calc — `if (Consume()) effectiveDef = 0;`
+
+**Architecture decisions:**
+- `InitPlayerMomentum(Player)` is a private static CombatEngine helper — creates new MomentumResource per class at each combat start (Rogue/Necromancer/others get `null`). Called right after `ResetCombatPassives()` at combat start.
+- `AddRangerFocusIfNoDamage(player, hpBefore)` private helper avoids repeating HP-tracking logic at 5 separate call sites
+- HP-before/after tracking approach is cleaner than modifying PerformEnemyTurn return type. HP compare is `player.HP == hpBefore` — works for all 0-damage paths (dodge, block, DivineShield absorb, ManaShield full absorb, stun skip)
+- Mage 1.25× damage: captured `enemyHpBeforeAbility` before the switch block; applied `(delta × 0.25)` extra damage after switch. Handles ALL ability types that deal damage without touching individual cases.
+- Paladin WI-C uses "DivineShield cast" AND "DivineShield absorb" AND "LayOnHands heal" as triggers. "Holy Smite heal component" interpreted as LayOnHands (the dedicated Paladin heal ability).
+- Paladin WI-D: "next Smite" interpreted as `HolyStrike` (the Paladin offensive strike ability).
+
+**Files changed:**
+- `Dungnz.Models/MomentumResource.cs` — added `Consume()` method
+- `Dungnz.Engine/AttackResolver.cs` — Warrior WI-C Add, Warrior WI-D Fury 2×, Ranger WI-D DEF=0
+- `Dungnz.Engine/CombatEngine.cs` — `InitPlayerMomentum()`, `AddRangerFocusIfNoDamage()`, `ResetFleeState` Reset, combat-start Init, PerformEnemyTurn Warrior/Ranger hooks + Paladin DivineShield Add, 5 call-site Ranger Focus checks
+- `Dungnz.Systems/AbilityManager.cs` — Mage WI-D (0 cost + 1.25×), Mage WI-C Add, Paladin WI-C (LayOnHands + DivineShield), Paladin WI-D (HolyStrike Stun)
+
+**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/1295
+**Branch:** `squad/1274-momentum-engine`
+**Build:** ✅ 0 errors, 0 warnings
+
+## Learnings
+
+- **`Consume()` > `IsCharged + Reset()`:** Romanoff's tests expect a `Consume()` method on MomentumResource. It returns bool and atomically checks+resets. Always prefer `Consume()` for WI-D threshold effects — cleaner than two-step check.
+- **HP-before/after for zero-damage tracking:** When you need to detect "did the player take HP damage this enemy turn" across many possible return paths in `PerformEnemyTurn`, tracking `hpBefore` at the call site and comparing after is the least-invasive approach. Avoids changing PerformEnemyTurn's return type or adding fields.
+- **Cherry-pick team branch work:** When another agent's branch isn't merged to master yet, `git cherry-pick <commit-sha>` is the clean way to include their work as a foundation.
+- **`Mage 1.25× damage via delta pattern`:** Capture `enemyHpBeforeAbility` before the switch block, compute `delta = enemyHpBefore - enemy.HP` after, apply bonus as `enemy.HP -= (int)(delta * 0.25f)`. This handles all damage-dealing ability cases without touching each case individually.
+- **Paladin "Holy Smite" = HolyStrike:** The spec said "Holy Smite heal component fires" for WI-C, and "next Smite cast" for WI-D. In the codebase, `AbilityType.HolyStrike` is the Paladin offensive strike, and `AbilityType.LayOnHands` is the dedicated heal. Mapping: DivineShield absorb + LayOnHands = WI-C; HolyStrike = WI-D target.
