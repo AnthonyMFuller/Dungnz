@@ -5,7 +5,6 @@ using Dungnz.Systems;
 
 internal sealed class DescendCommandHandler : ICommandHandler
 {
-    private const int FinalFloor = DungeonGenerator.FinalFloor;
 
     public void Handle(string argument, CommandContext context)
     {
@@ -16,7 +15,7 @@ internal sealed class DescendCommandHandler : ICommandHandler
             return;
         }
 
-        if (context.CurrentFloor >= FinalFloor)
+        if (context.CurrentFloor >= DungeonGenerator.FinalFloor)
         {
             context.Stats.FinalLevel = context.Player.Level;
             context.Stats.TimeElapsed = DateTime.UtcNow - context.RunStart;
@@ -51,7 +50,7 @@ internal sealed class DescendCommandHandler : ICommandHandler
         context.FloorEntranceRoom = newStart;
         context.CurrentRoom.Visited = true;
         var descendVariant = DungeonVariant.ForFloor(context.CurrentFloor);
-        context.Display.ShowFloorBanner(context.CurrentFloor, FinalFloor, descendVariant);
+        context.Display.ShowFloorBanner(context.CurrentFloor, DungeonGenerator.FinalFloor, descendVariant);
         context.Display.ShowMessage(descendVariant.EntryMessage);
         context.Display.ShowRoom(context.CurrentRoom);
         context.Display.ShowMap(context.CurrentRoom, context.CurrentFloor);

@@ -5,8 +5,6 @@ using Dungnz.Systems;
 
 internal sealed class AscendCommandHandler : ICommandHandler
 {
-    private const int FinalFloor = DungeonGenerator.FinalFloor;
-
     public void Handle(string argument, CommandContext context)
     {
         if (!context.CurrentRoom.IsEntrance)
@@ -44,7 +42,7 @@ internal sealed class AscendCommandHandler : ICommandHandler
         context.Display.ShowMessage($"You ascend back to floor {context.CurrentFloor}.");
 
         var ascendVariant = DungeonVariant.ForFloor(context.CurrentFloor);
-        context.Display.ShowFloorBanner(context.CurrentFloor, FinalFloor, ascendVariant);
+        context.Display.ShowFloorBanner(context.CurrentFloor, DungeonGenerator.FinalFloor, ascendVariant);
         context.Display.ShowRoom(context.CurrentRoom);
         context.Display.ShowMap(context.CurrentRoom, context.CurrentFloor);
     }
