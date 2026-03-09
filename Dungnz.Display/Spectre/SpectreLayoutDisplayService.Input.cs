@@ -27,34 +27,66 @@ public partial class SpectreLayoutDisplayService
             ? $"[dim]{Markup.Escape(oldItem.Name)}[/] [dim](equipped)[/]"
             : "[dim](nothing equipped)[/]";
 
-        var table = new Table()
-            .Border(TableBorder.Rounded)
-            .BorderColor(Color.Blue)
-            .AddColumn(new TableColumn(newHeader).Centered())
-            .AddColumn(new TableColumn(oldHeader).Centered());
-
-        AddIntCompareRow(table, "ATK",       newItem.AttackBonus,      oldItem?.AttackBonus      ?? 0);
-        AddIntCompareRow(table, "DEF",       newItem.DefenseBonus,     oldItem?.DefenseBonus     ?? 0);
-        AddIntCompareRow(table, "Max MP",    newItem.MaxManaBonus,     oldItem?.MaxManaBonus     ?? 0);
-        AddIntCompareRow(table, "HP/hit",    newItem.HPOnHit,          oldItem?.HPOnHit          ?? 0);
-        AddPctCompareRow(table, "Dodge",     newItem.DodgeBonus,       oldItem?.DodgeBonus       ?? 0f);
-        AddPctCompareRow(table, "Crit",      newItem.CritChance,       oldItem?.CritChance       ?? 0f);
-        AddPctCompareRow(table, "Block",     newItem.BlockChanceBonus, oldItem?.BlockChanceBonus ?? 0f);
-
-        var panel = new Panel(table)
-            .Header("[bold yellow]⚔  ITEM DROP[/]")
-            .Border(BoxBorder.Rounded)
-            .BorderColor(Color.Yellow);
-
         if (_ctx.IsLiveActive)
         {
-            _contentLines.Clear();
-            _contentHeader = "⚔  ITEM DROP";
-            _contentBorderColor = Color.Yellow;
-            _ctx.UpdatePanel(SpectreLayout.Panels.Content, panel);
+            // Build the comparison as markup text and push it through SetContent so
+            // _contentLines is populated correctly.  Subsequent ShowMessage calls will
+            // then *append* below the comparison rather than overwriting it.
+            var sb = new StringBuilder();
+            sb.AppendLine($"{newHeader}  [dim]vs[/]  {oldHeader}");
+            sb.AppendLine();
+            AppendIntCompareLine(sb, "ATK",    newItem.AttackBonus,      oldItem?.AttackBonus      ?? 0);
+            AppendIntCompareLine(sb, "DEF",    newItem.DefenseBonus,     oldItem?.DefenseBonus     ?? 0);
+            AppendIntCompareLine(sb, "Max MP", newItem.MaxManaBonus,     oldItem?.MaxManaBonus     ?? 0);
+            AppendIntCompareLine(sb, "HP/hit", newItem.HPOnHit,          oldItem?.HPOnHit          ?? 0);
+            AppendPctCompareLine(sb, "Dodge",  newItem.DodgeBonus,       oldItem?.DodgeBonus       ?? 0f);
+            AppendPctCompareLine(sb, "Crit",   newItem.CritChance,       oldItem?.CritChance       ?? 0f);
+            AppendPctCompareLine(sb, "Block",  newItem.BlockChanceBonus, oldItem?.BlockChanceBonus ?? 0f);
+            var text = sb.ToString().TrimEnd();
+            if (text.Length == 0)
+                text = $"{newHeader}\n[dim](no stat differences)[/]";
+            SetContent(text, "⚔  ITEM COMPARISON", Color.Yellow);
         }
         else
+        {
+            // Pre-Live path (startup flows): render rich Spectre Table directly.
+            var table = new Table()
+                .Border(TableBorder.Rounded)
+                .BorderColor(Color.Blue)
+                .AddColumn(new TableColumn(newHeader).Centered())
+                .AddColumn(new TableColumn(oldHeader).Centered());
+
+            AddIntCompareRow(table, "ATK",    newItem.AttackBonus,      oldItem?.AttackBonus      ?? 0);
+            AddIntCompareRow(table, "DEF",    newItem.DefenseBonus,     oldItem?.DefenseBonus     ?? 0);
+            AddIntCompareRow(table, "Max MP", newItem.MaxManaBonus,     oldItem?.MaxManaBonus     ?? 0);
+            AddIntCompareRow(table, "HP/hit", newItem.HPOnHit,          oldItem?.HPOnHit          ?? 0);
+            AddPctCompareRow(table, "Dodge",  newItem.DodgeBonus,       oldItem?.DodgeBonus       ?? 0f);
+            AddPctCompareRow(table, "Crit",   newItem.CritChance,       oldItem?.CritChance       ?? 0f);
+            AddPctCompareRow(table, "Block",  newItem.BlockChanceBonus, oldItem?.BlockChanceBonus ?? 0f);
+
+            var panel = new Panel(table)
+                .Header("[bold yellow]⚔  ITEM DROP[/]")
+                .Border(BoxBorder.Rounded)
+                .BorderColor(Color.Yellow);
             AnsiConsole.Write(panel);
+        }
+    }
+
+    private static void AppendIntCompareLine(StringBuilder sb, string label, int newVal, int oldVal)
+    {
+        if (newVal == 0 && oldVal == 0) return;
+        int delta = newVal - oldVal;
+        var deltaMarkup = delta > 0 ? $" [green]+{delta}[/]" : delta < 0 ? $" [red]{delta}[/]" : "";
+        sb.AppendLine($"  [dim]{label,-8}[/] [bold]{newVal}[/]  [dim](was {oldVal})[/]{deltaMarkup}");
+    }
+
+    private static void AppendPctCompareLine(StringBuilder sb, string label, float newVal, float oldVal)
+    {
+        if (newVal == 0f && oldVal == 0f) return;
+        float delta = newVal - oldVal;
+        var deltaMarkup = delta > 0.001f ? $" [green]+{delta:P0}[/]"
+                        : delta < -0.001f ? $" [red]{delta:P0}[/]" : "";
+        sb.AppendLine($"  [dim]{label,-8}[/] [bold]{newVal:P0}[/]  [dim](was {oldVal:P0})[/]{deltaMarkup}");
     }
 
     private static void AddIntCompareRow(Table t, string label, int newVal, int oldVal)
@@ -565,9 +597,17 @@ public partial class SpectreLayoutDisplayService
                     return items[selected].Value;
                 case System.ConsoleKey.Escape:
                 case System.ConsoleKey.Q:
-                    // Non-nullable menu: caller expects a definite selection.
-                    // Escape/Q do not cancel — ignore and let the user choose.
+                {
+                    // Return the last item's value when it carries a "← Cancel" sentinel label.
+                    // Menus without an explicit cancel option (e.g. class/difficulty selection)
+                    // are only shown pre-Live via AnsiConsole.Prompt, so this code path is never
+                    // reached for them — ignoring Escape there remains the correct behaviour.
+                    var lastEntry = items[items.Count - 1];
+                    if (lastEntry.Label.Contains("Cancel", StringComparison.OrdinalIgnoreCase)
+                        || lastEntry.Label.StartsWith("←"))
+                        return lastEntry.Value;
                     break;
+                }
             }
         }
     }
