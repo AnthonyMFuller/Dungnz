@@ -82,6 +82,10 @@ public static class ShrineNarration
     public static readonly string[] GrantNothing =
     {
         "The shrine watches you leave. It has waited this long.",
-        "Its light dims slightly as you turn away. Perhaps it was judging you. Perhaps not."
+        "Its light dims slightly as you turn away. Perhaps it was judging you. Perhaps not.",
+        "You leave it untouched. The shrine does not call after you. It doesn't need to.",
+        "Whatever lives in the stone releases a long, patient breath. Another time, perhaps.",
+        "Something flickers in the runes as you turn away. Disappointment — or relief. Hard to say.",
+        "The stone hums on, indifferent. It has seen thousands pass without touching it. One more changes nothing."
     };
 }

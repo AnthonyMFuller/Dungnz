@@ -283,3 +283,21 @@ Implemented six CI/CD and infrastructure enhancements across multiple PRs:
 - Reviewers now see coverage impact directly in PR without local test run
 - Coverage reports persisted as artifacts for historical reference
 - Supports both opencover (existing) and cobertura (new) formats
+
+---
+
+## Learnings
+
+### Issue #1228 — coverage.sh threshold sync (PR #1283)
+**Changed:** `scripts/coverage.sh` threshold from 80% to 70% to match CI gate.  
+**Why:** Script comment said "Anthony directive" for 80%, but CI was lowered to 70% per issue #906. Divergence meant local runs would fail at 70–79% even when CI would pass. CI is authoritative; local script mirrors it.  
+**Rule confirmed:** When CI and local scripts diverge, CI wins. Update the script to match.
+
+### Issue #1231 — CodeQL missing restore step (PR #1284)
+**Changed:** `.github/workflows/codeql.yml` — added NuGet cache step + explicit `dotnet restore Dungnz.slnx` before build; added `--no-restore` to build step.  
+**Why:** CodeQL was the only workflow without explicit restore. Implicit restore via `dotnet build` works today but breaks silently if `--no-restore` is ever added for performance. Consistency across all workflows is a reliability requirement.  
+**Pattern:** All workflows should follow: cache → restore → build (`--no-restore`) → test (`--no-build`).
+
+### Issue #1230 — duplicate EnemyTypeRegistry (closed, no code change)
+**Assessment:** Pure C# namespace collision — no CI/CD-specific concern beyond what normal build compilation catches. The compiler will flag ambiguity at build time on the next PR touching those types. Hill's #1224 resolves the duplication at the source.  
+**Closed as:** Covered by #1224.

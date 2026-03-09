@@ -62,6 +62,132 @@ public static class EnemyNarration
             "The treasure chest you were reaching for SNAPS open — it's a Mimic!",
             "What you took for a pile of gold unfurls, rows of teeth gleaming — a Mimic!",
             "The innocent-looking chest suddenly sprouts legs and lunges — Mimic!",
+        },
+        ["Giant Rat"] = new[]
+        {
+            "A Giant Rat bolts from the shadows — all hunger and speed and matted fur!",
+            "You hear it before you see it: claws on stone, frantic and close!",
+            "A Giant Rat bursts from a crack in the wall, teeth first, eyes wild with desperation!"
+        },
+        ["Cursed Zombie"] = new[]
+        {
+            "A Cursed Zombie lurches forward, trailing something that isn't blood, eyes fixed on nothing.",
+            "The stench arrives first — then the Cursed Zombie, shuffling and relentless.",
+            "A Cursed Zombie rounds the corner and locks onto you with hollow, plague-glazed eyes."
+        },
+        ["Blood Hound"] = new[]
+        {
+            "Low to the ground, eyes locked on you, the Blood Hound begins its approach without sound.",
+            "A Blood Hound drops into a hunting crouch and freezes — then erupts toward you!",
+            "You smell the Blood Hound before you see it. It has definitely already smelled you."
+        },
+        ["Iron Guard"] = new[]
+        {
+            "The Iron Guard advances in lock-step, shield raised, face unreadable behind blank steel.",
+            "Disciplined footfalls fill the corridor — the Iron Guard rounds the corner with purpose.",
+            "An Iron Guard steps into the torchlight, halts, and levels its spear. No hesitation."
+        },
+        ["Night Stalker"] = new[]
+        {
+            "You don't hear the Night Stalker coming. The first sign is the shadow that shouldn't be there.",
+            "A flicker at the edge of the torchlight — then the Night Stalker is close. Much too close.",
+            "The torches drop to near-nothing. In the dark, the Night Stalker moves."
+        },
+        ["Frost Wyvern"] = new[]
+        {
+            "Ice crackles underfoot before the Frost Wyvern rounds the corner, wings filling the passage.",
+            "The temperature drops sharply — then the Frost Wyvern descends from the vaulted ceiling!",
+            "A Frost Wyvern lands in the corridor ahead, exhaling a breath that frosts the stone."
+        },
+        ["Chaos Knight"] = new[]
+        {
+            "Reality distorts in its wake as the Chaos Knight charges, armor warping with every step!",
+            "The Chaos Knight tears into the room from nowhere in particular, trailing fractures in the air.",
+            "A Chaos Knight erupts from a shimmer of torn space, weapon already raised!"
+        },
+        ["Lich King"] = new[]
+        {
+            "The Lich King does not rush. It steps from the dark and regards you with centuries of patience.",
+            "Cold radiates from the Lich King's hollow gaze. It has stood in this dungeon longer than the stone.",
+            "The Lich King raises one skeletal hand. The air goes dead around it."
+        },
+        ["Shadow Imp"] = new[]
+        {
+            "Tiny shapes peel away from the walls — the Shadow Imps swarm from every dark corner!",
+            "A chittering rises from the shadows and a Shadow Imp drops from the ceiling, followed by more.",
+            "The torchlight shrinks as Shadow Imps pour in, filling the edges of the room with motion."
+        },
+        ["Carrion Crawler"] = new[]
+        {
+            "A wet chittering fills the chamber as the Carrion Crawler erupts from a crack in the wall!",
+            "The Carrion Crawler hauls itself from the dark on too many legs, mandibles working eagerly.",
+            "Before you see the Carrion Crawler, you smell it — rot and venom and something worse."
+        },
+        ["Dark Sorcerer"] = new[]
+        {
+            "The Dark Sorcerer regards you with cold calculation, already shaping something lethal.",
+            "Light bends around the Dark Sorcerer's hands as it steps into view — composing your death.",
+            "A Dark Sorcerer emerges, robes immaculate, expression absent. It looks bored. That's worse."
+        },
+        ["Bone Archer"] = new[]
+        {
+            "From the dark above, a bowstring creaks. The Bone Archer has had you in its sights already.",
+            "An arrow skips off the stone at your feet — the Bone Archer announces itself from the shadows.",
+            "Bone-white fingers draw back a bow as the Bone Archer takes position across the chamber."
+        },
+        ["Crypt Priest"] = new[]
+        {
+            "Robed and deliberate, the Crypt Priest raises its staff and begins to speak. Names. Not yours. Not yet.",
+            "The Crypt Priest glides forward, expressionless, one hand raised in prayer — to something old and unkind.",
+            "Dark scripture hangs in the air as the Crypt Priest enters, runes orbiting its head like broken stars."
+        },
+        ["Plague Bear"] = new[]
+        {
+            "The Plague Bear bursts through the far wall, matted and raging, disease trailing in its wake!",
+            "A deep, wet snarl fills the room before the Plague Bear shoulders through the entrance!",
+            "The Plague Bear rises on its hind legs, a mountain of sickness and fury, and roars."
+        },
+        ["Siege Ogre"] = new[]
+        {
+            "The floor trembles. Then the Siege Ogre fills the doorway — and keeps filling it.",
+            "Masonry cracks as the Siege Ogre forces itself through a wall not meant for anything its size.",
+            "The Siege Ogre plants its feet and spreads its arms. It is daring you to try."
+        },
+        ["Blade Dancer"] = new[]
+        {
+            "The Blade Dancer spins into view, twin blades tracing arcs of silver light — already in motion.",
+            "Blades catch the torchlight a heartbeat before the Blade Dancer arrives. It moves like thought.",
+            "The Blade Dancer slips from the shadows mid-spin, and the dance has already started."
+        },
+        ["Mana Leech"] = new[]
+        {
+            "The Mana Leech darts forward, drawn by the pulse of your power — needle-eyed and precise.",
+            "You feel your strength pull toward something before you see the Mana Leech emerging from the dark.",
+            "A Mana Leech skitters across the ceiling and drops, already latched onto your energy."
+        },
+        ["Shield Breaker"] = new[]
+        {
+            "The Shield Breaker rolls its neck, locks onto you, and charges with absolute commitment.",
+            "The Shield Breaker stops three feet away, tilts its head, and swings. No preamble.",
+            "Built to destroy defenses, the Shield Breaker regards your armor like a puzzle it intends to solve."
+        },
+        ["Archlich Sovereign"] = new[]
+        {
+            "Bone-white and crowned, the Archlich Sovereign raises one hand. The dead stir in answer.",
+            "The Archlich Sovereign drifts forward in absolute silence, trailing the weight of conquered centuries.",
+            "Ancient authority radiates from the Archlich Sovereign like cold from deep stone. It has not lost before."
+        },
+        ["Abyssal Leviathan"] = new[]
+        {
+            "Something vast moves in the flooded dark. The walls crack under the pressure of its approach.",
+            "A shape fills the chamber from floor to ceiling — the Abyssal Leviathan has been waiting here.",
+            "The darkness moves. Then the Abyssal Leviathan separates itself from it, enormous and unhurried."
+        },
+        ["Infernal Dragon"] = new[]
+        {
+            "The heat arrives before the Infernal Dragon does. Then the light. Then the roar.",
+            "Stone blackens ahead of the Infernal Dragon as it rounds the corner, wings scraping the vault.",
+            "The Infernal Dragon drops from above in a column of flame, and the room becomes a furnace."
         }
     };
 

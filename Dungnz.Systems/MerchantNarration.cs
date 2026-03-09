@@ -22,7 +22,13 @@ public static class MerchantNarration
         "\"Everything has a price down here. I just happen to know what it is.\"",
         "A figure assembled from patience and shadow. \"Take your time. You probably won't.\"",
         "\"I've been waiting,\" it says, which should be reassuring. It isn't.",
-        "The merchant doesn't greet you. Just watches, as if calculating something."
+        "The merchant doesn't greet you. Just watches, as if calculating something.",
+        "\"Sit down. Or stand. Not like I care.\" It leans back, arms crossed.",
+        "\"You look like you made it on grit more than skill.\" A pause. \"Respect.\"",
+        "\"Quick now — I don't stay in one place long. What do you need?\"",
+        "\"Don't touch the merchandise.\" A beat. \"Anymore.\"",
+        "A figure sorting coin behind a cloth-covered table glances up once, then goes back to counting.",
+        "\"Business or browsing? I've run out of patience for browsers.\""
     };
 
     // Shown after a purchase

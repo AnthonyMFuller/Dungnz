@@ -6,6 +6,16 @@ namespace Dungnz.Systems;
 /// </summary>
 public static class FloorTransitionNarration
 {
+    /// <summary>Descent into Floor 1: the first step into the dungeon.</summary>
+    public static readonly string[] ToFloor1 =
+    {
+        "The entrance seals behind you. Or you imagined it. Hard to say.",
+        "The air changes immediately — damp, hot, smelling of animal and old smoke.",
+        "Torchlight trembles on walls carved by something that didn't care about straight lines.",
+        "Somewhere below, something laughs. It doesn't know you're here yet.",
+        "Floor 1. The dungeon begins here. So does everything that follows.",
+    };
+
     /// <summary>Descent into Floor 2: deeper, torch smoke thickens.</summary>
     public static readonly string[] ToFloor2 =
     {
@@ -79,6 +89,7 @@ public static class FloorTransitionNarration
     /// <summary>Returns the transition sequence for the given target floor, or empty if none exists.</summary>
     public static string[] GetSequence(int targetFloor) => targetFloor switch
     {
+        1 => ToFloor1,
         2 => ToFloor2,
         3 => ToFloor3,
         4 => ToFloor4,

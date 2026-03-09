@@ -1239,6 +1239,13 @@ public partial class SpectreLayoutDisplayService : IDisplayService
 
         foreach (Match match in matches)
         {
+            // Guard: skip matches that overlap an already-processed region.
+            // On well-formed input this never fires, but malformed or
+            // overlapping ANSI sequences could produce match.Index < lastIndex,
+            // which would make the Substring length negative and throw.
+            if (match.Index < lastIndex)
+                continue;
+
             // Append text before this match (escaped)
             if (match.Index > lastIndex)
             {
