@@ -1644,3 +1644,51 @@ When queues are configured, `ShowSellMenuAndSelect`, `ShowConfirmMenu`, and `Sho
 - `DungeonBoss.FiredPhases.Contains("abilityName")` as the authoritative "fired once" assertion — avoids message string checks.
 - `new DungeonBoss()` then set HP/MaxHP/Defense directly for boss tests — public parameterless equivalent constructor works; `Phases.Add(new BossPhase(...))` modifies the list correctly.
 - Avoid `player.HP < 100` when player starts with hp > 100 — use `player.HP < player.MaxHP` instead.
+
+### 2026-03-10 — Edge Case Coverage Batch (#1233 #1239 #1243 #1248 #1249 #1251)
+
+**PR:** #1292 — `test: Edge case coverage batch (#1251 #1249 #1248 #1243 #1239 #1233)`
+**Branch:** `squad/1233-1239-1243-1248-1249-1251-test-coverage`
+**File Created:** `Dungnz.Tests/EdgeCaseBatchTests.cs`
+**Test count:** 1815 → 1858 (+43 new tests)
+
+**Issues covered:**
+
+1. **#1251 — StatusEffectStatStackingTests (6 tests)**
+   - `GetStatModifier` sums all active effects additively, not via overwrite
+   - BattleCry (+Attack/4), Weakened (-Attack/2), Slow (-Attack/4), Fortified (+Defense/2), Curse (-Attack/4 and -Defense/4) all stack correctly
+   - Cross-stat isolation: Fortified does not affect Attack modifier
+
+2. **#1249 — NavigationDeadEndTests (5 tests)**
+   - `GoCommandHandler` fires `ShowError("You can't go that way.")` when exit is missing
+   - Bare `go` with no argument fires direction prompt error
+   - Unknown direction word fires invalid-direction error
+   - Uses `[Collection("PrestigeTests")]` (GameLoop integration pattern)
+
+3. **#1248 — LootTableFloorEdgeCaseTests (6 tests)**
+   - `RollDrop` with `dungeonFloor: 0` or negative — no exceptions, gold returned
+   - Epic path (floor >= 5) and legendary path (floor >= 6) not triggered at floor 0
+   - Uses `[Collection("LootTableTests")]` + `IDisposable` tier pool restore
+
+4. **#1243 — CombatDeadEnemyTests (5 tests)**
+   - Enemy at HP=0 on entry to `RunCombat`: loop catches `IsDead` after status tick, breaks immediately, returns `Won`
+   - No player input needed — resolves before reading combat menu
+   - Key finding: CombatEngine loop checks `enemy.IsDead` at the TOP of each turn, before requesting player input
+
+5. **#1239 — SetBonusThresholdTests (8 tests)**
+   - 1-piece: `SetBonusDefense`, `SetBonusMaxHP`, `SetBonusDodge`, `SetBonusMaxMana` all remain 0
+   - 2-piece: bonus activates after `ApplySetBonuses()` is called
+   - Key finding: `SetBonusCritChance` does NOT exist as a Player field — crit bonus from shadowstalker 2-piece lives only in the SetBonus list. Use `GetActiveBonuses()` + `SetBonusDodge` to verify shadowstalker activation.
+
+6. **#1233 — PlayerSettingsRoundTripTests (13 tests)**
+   - All 6 `PlayerClass` values and all 3 `Difficulty` (Casual/Normal/Hard) values round-trip via `SaveSystem.SaveGame/LoadGame`
+   - `Mana`, `MaxMana`, `CurrentFloor`, and `Seed` all survive round-trip
+   - Uses `[Collection("save-system")]` + temp directory + `IDisposable` cleanup pattern
+
+**Patterns Used:**
+- `[Collection("LootTableTests")]` + `IDisposable` for loot tier pool cleanup
+- `[Collection("save-system")]` + temp dir for save/load isolation
+- `[Collection("PrestigeTests")]` for GameLoop navigation tests (matching existing pattern)
+- `TestDisplayService` for status effect manager tests (no-op display)
+- `FakeDisplayService` + `FakeInputReader` + `ControlledRandom(0.9)` for combat tests
+- `EnemyStub(hp, atk, def, xp) { HP = 0 }` to simulate dead enemy at combat start
