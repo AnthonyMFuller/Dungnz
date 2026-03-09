@@ -6,8 +6,6 @@ using Microsoft.Extensions.Logging;
 
 internal sealed class GoCommandHandler : ICommandHandler
 {
-    private const int FinalFloor = DungeonGenerator.FinalFloor;
-
     private static readonly string[] _postCombatLines =
     {
         "The room falls silent. Nothing moves but the dust settling around the fallen {0}.",
@@ -183,7 +181,7 @@ internal sealed class GoCommandHandler : ICommandHandler
         // Check win/floor condition
         if (context.CurrentRoom.IsExit && context.CurrentRoom.Enemy == null)
         {
-            if (context.CurrentFloor >= FinalFloor)
+            if (context.CurrentFloor >= DungeonGenerator.FinalFloor)
             {
                 context.Stats.FinalLevel = context.Player.Level;
                 context.Stats.TimeElapsed = DateTime.UtcNow - context.RunStart;
