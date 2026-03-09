@@ -2007,3 +2007,37 @@ Hill had already pushed `MomentumResource` model + `Player.Momentum` on `squad/1
 - **Cherry-pick team branch work:** When another agent's branch isn't merged to master yet, `git cherry-pick <commit-sha>` is the clean way to include their work as a foundation.
 - **`Mage 1.25× damage via delta pattern`:** Capture `enemyHpBeforeAbility` before the switch block, compute `delta = enemyHpBefore - enemy.HP` after, apply bonus as `enemy.HP -= (int)(delta * 0.25f)`. This handles all damage-dealing ability cases without touching each case individually.
 - **Paladin "Holy Smite" = HolyStrike:** The spec said "Holy Smite heal component fires" for WI-C, and "next Smite cast" for WI-D. In the codebase, `AbilityType.HolyStrike` is the Paladin offensive strike, and `AbilityType.LayOnHands` is the dedicated heal. Mapping: DivineShield absorb + LayOnHands = WI-C; HolyStrike = WI-D target.
+
+---
+
+## 2026-03-09: Gear Equip, Panel Refresh, and Input Escape Fixes
+
+### Bug 1 — ShowEquipmentComparison bypassing _contentLines
+
+**Root cause:** `ShowEquipmentComparison` (in SpectreLayoutDisplayService.Input.cs) when Live was active would call `_contentLines.Clear()` then directly invoke `_ctx.UpdatePanel(SpectreLayout.Panels.Content, panel)` with a Spectre `Table` widget. This bypassed the `_contentLines` buffer entirely. The very next `ShowMessage` call (which runs in `DoEquip`) invokes `AppendContent` → `RefreshContentPanel()`, which rebuilds the Content panel from the now-empty `_contentLines`, immediately overwriting the comparison Table with a bare text panel. The comparison was effectively invisible — shown for 0ms.
+
+**Fix:** Replaced the Live-path direct panel update with `SetContent(text, "⚔  ITEM COMPARISON", Color.Yellow)`. Added two private markup-string helpers (`AppendIntCompareLine`, `AppendPctCompareLine`) that populate `_contentLines` with formatted markup. The pre-Live path (startup, pre-`StartAsync`) keeps the rich Spectre Table + `AnsiConsole.Write`. Now the comparison persists in `_contentLines`, and subsequent `ShowMessage` calls *append* below it rather than overwriting it.
+
+**Files:** `Dungnz.Display/Spectre/SpectreLayoutDisplayService.Input.cs`
+
+### Bug 2 — Gear Panel Not Updating After ShowRoom
+
+**Root cause:** `ShowRoom` re-rendered the Stats panel (`RenderStatsPanel(_cachedPlayer)`) but never called `RenderGearPanel`. While `DoEquip` correctly called `ShowPlayerStats` (which calls both RenderStatsPanel and RenderGearPanel) just before `EquipCommandHandler` invoked `ShowRoom`, the Gear panel was left unrefreshed on all other `ShowRoom` calls — e.g. after moving to a new room. More critically, `ShowRoom` is called by `EquipCommandHandler` immediately after equip, and if the gear update from `ShowPlayerStats` and the subsequent Stats re-render from `ShowRoom` happened in a tight batch, the Gear panel could appear stale.
+
+**Fix:** Added `RenderGearPanel(_cachedPlayer)` alongside `RenderStatsPanel(_cachedPlayer)` in `ShowRoom`. Updated the comment: "Auto-populate map, stats, and gear panels on room entry." This ensures the Gear panel is always authoritative after any `ShowRoom` call.
+
+**Files:** `Dungnz.Display/Spectre/SpectreLayoutDisplayService.cs`
+
+### Bug 3 — ContentPanelMenu Escape/Q Ignoring Cancel
+
+**Root cause:** `ContentPanelMenu<T>` (non-nullable variant, used when Live is active) previously auto-selected the last item on Escape/Q. Commit #1288 "fixed" this by making Escape/Q a no-op with the comment "Escape/Q do not cancel — ignore and let the user choose." This broke cancel for shop, sell, crafting, shrine, and armory menus — all of which end with `("← Cancel", 0)` as the last item. Players pressing Escape were stuck in the menu with no escape route.
+
+**Fix:** Added a cancel-sentinel check: if the last item's label contains "Cancel" (case-insensitive) or starts with "←", Escape/Q returns that item's value as the cancel sentinel. Menus without an explicit cancel option (SelectDifficulty, SelectClass) are always shown pre-Live via `AnsiConsole.Prompt` — they never reach `ContentPanelMenu` — so they are unaffected.
+
+**Files:** `Dungnz.Display/Spectre/SpectreLayoutDisplayService.Input.cs`
+
+### Patterns Established
+
+- `ShowRoom` should always refresh all three persistent panels: Map, Stats, AND Gear.
+- Content panel updates must go through `SetContent` / `AppendContent` to keep `_contentLines` in sync; never call `_ctx.UpdatePanel(Panels.Content, ...)` directly while Live is active.
+- `ContentPanelMenu<T>` cancel-sentinel convention: last item with "← Cancel" or "←" label is the cancel option; Escape/Q navigates there automatically.

@@ -628,10 +628,13 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         if (isNewRoom)
             AppendLog($"Entered {GetRoomDisplayName(room)}");
 
-        // Auto-populate map and stats panels on room entry
+        // Auto-populate map, stats, and gear panels on room entry
         RenderMapPanel(room);
         if (_cachedPlayer != null)
+        {
             RenderStatsPanel(_cachedPlayer);
+            RenderGearPanel(_cachedPlayer);
+        }
     }
 
     /// <inheritdoc/>
