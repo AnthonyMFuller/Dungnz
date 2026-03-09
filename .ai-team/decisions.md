@@ -3732,3 +3732,35 @@ Added hook in `CombatEngine.PerformEnemyTurn()` at line 796-810:
 - Player reactions to enemy crits ("You barely survived that!")
 - Crit magnitude tiers if damage multipliers expand
 
+
+---
+
+# Decision: Dependency Bumps 2026-03-09
+
+**Date:** 2026-03-09  
+**Architect/Author:** Romanoff (QA)  
+**Issues:** N/A  
+**PRs:** #1300, #1301, #1302  
+
+---
+
+## Context
+Three automated Dependabot PRs required review targeting test tooling and dev tools only. No production code was changed in any PR.
+
+## Decision
+All three dependency bumps are approved and merged to master.
+
+- **#1300 CsCheck 4.0.0 → 4.6.2** — property-based testing library (major version jump)
+- **#1301 dotnet-stryker 4.12.0 → 4.13.0** — mutation testing tool (minor bump)
+- **#1302 TngTech.ArchUnitNET.xUnit 0.13.2 → 0.13.3** — architecture test library (patch with bugfixes)
+
+## Rationale
+All changes were strictly version number updates in `.csproj` or tool config files. These are test libraries and dev tools — no production code was touched. CI is green for all three, indicating no regressions in the test suite or build process. The ArchUnitNET patch includes upstream bugfixes; CI remaining green confirms these fixes did not expose hidden architectural violations.
+
+## Alternatives Considered
+- **Defer bumps** — rejected; keeping test tooling current reduces accumulated drift and CVE risk.
+- **Manual review of upstream changelogs** — not required for patch/minor tooling bumps with green CI; reserved for major version bumps with breaking-change notices.
+
+## Related Files
+- `Dungnz.Tests/Dungnz.Tests.csproj` (CsCheck, ArchUnitNET.xUnit)
+- `.config/dotnet-tools.json` (dotnet-stryker)

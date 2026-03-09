@@ -1783,3 +1783,13 @@ When queues are configured, `ShowSellMenuAndSelect`, `ShowConfirmMenu`, and `Sho
 **Action:**
 - Both PRs merged.
 - Decision log created: `.ai-team/decisions/inbox/romanoff-pr-review-2026-03-09.md`.
+
+## 2026-03-09 Dependency Review
+Reviewed and merged three dependency updates:
+- **PR #1300**: CsCheck bumped to 4.6.2. Major version jump but CI green.
+- **PR #1301**: dotnet-stryker bumped to 4.13.0. Minor tooling update.
+- **PR #1302**: ArchUnitNET bumped to 0.13.3. Patch with bugfixes.
+
+**Action:**
+- All PRs merged.
+- Decision log created: `.ai-team/decisions/inbox/romanoff-dep-bump-review-2026-03-09.md` (merged into decisions.md by Scribe).
