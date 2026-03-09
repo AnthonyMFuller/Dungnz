@@ -22,9 +22,9 @@ public class GameLoop
     private int? _seed;
     private readonly DifficultySettings _difficulty;
     private Difficulty _difficultyLevel = Difficulty.Normal;
-    private Player _player = null!;
-    private Room _currentRoom = null!;
-    private RunStats _stats = null!;
+    private Player _player = new();
+    private Room _currentRoom = new();
+    private RunStats _stats = new();
     private SessionStats _sessionStats = new();
     private DateTime _runStart;
     private Random _rng = new();
