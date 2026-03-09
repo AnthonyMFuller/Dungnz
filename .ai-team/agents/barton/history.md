@@ -1,4 +1,6 @@
-# Barton — History
+# Barton — History — Recent Activity
+
+*Full archive (pre-2026-02 entries): [history-archive-2026-03-09.md](history-archive-2026-03-09.md)*
 
 ## Project Context
 **Project:** TextGame — C# Text-Based Dungeon Crawler
@@ -1149,31 +1151,6 @@ Adding ASCII art for enemies is **highly feasible**. The project's existing data
 - Damage formula (no negative damage), HP overflow, max level cap, gold underflow, player death priority, stun handling (Fix #167), flee mechanic, inventory null safety, equip validation, XP formula correctness, status effect apply/expiry.
 
 
-## 2025-01-30: Bug Hunt Fixes — PR #625
-
-**Task:** Fix 6 game systems bugs (#611–#616) identified in the deep systems review.
-**Branch:** squad/bug-hunt-systems-fixes
-**PR:** #625 — All 6 bugs fixed in a single commit.
-
-**Fixes Applied:**
-
-| Issue | Fix |
-|-------|-----|
-| #611 | Ability menu Cancel now calls PerformEnemyTurn — exploit closed |
-| #612 | `pool.Count > 0` guard added before `_rng.Next(pool.Count)` in LootTable tiered drop |
-| #613 | All enemy DoT assignments (Poison/Bleed/Burn) now use `Math.Max(0, HP - dmg)` |
-| #614 | CryptPriest cooldown reset changed to `SelfHealEveryTurns - 1` for decrement-first pattern |
-| #615 | `player.Mana -= manaLost` replaced with `player.SpendMana(manaLost)` in ManaShield handler |
-| #616 | `CheckLevelUp` moved before XP progress message so threshold reflects new level |
-
-**Files Changed:**
-- `Engine/CombatEngine.cs` (#611, #614, #615, #616)
-- `Systems/StatusEffectManager.cs` (#613)
-- `Models/LootTable.cs` (#612)
-
-**Test Results:** 684/684 passed ✅
-
-
 ## 2026-03-01: Balance Systems Deep Analysis
 
 **Task:** Comprehensive balance audit for Casual difficulty (playtesting revealed excessive damage, insufficient healing access).
@@ -1958,3 +1935,72 @@ Never call `AnsiConsole.Prompt()` while `Live.Start()` callback is running. The 
 - **`_cachedCooldowns = []`** (C# 12 collection expression) works cleanly for empty list initialization of `IReadOnlyList<T>` fields in .NET 10
 - **Stats panel vs Content panel split:** `ShowCombatStatus` only updates the Content panel (the narrative); `RenderStatsPanel` owns the top-right Stats panel. HUD additions belong in `RenderStatsPanel`, not `ShowCombatStatus`
 - **Pre-tick snapshot pattern for toast detection:** capture `GetCooldown() > 0` state before `TickCooldowns()`, compare after — any that went to 0 fire a toast
+
+### 2026-03-09 — Display Bug Fixes #1246 and #1241
+
+**Context:** Two display bugs in `SpectreLayoutDisplayService` assigned as part of Display Specialist trial.
+
+---
+
+**#1246 — Substring bounds guard in ConvertAnsiInlineToSpectre**
+
+**File:** `Dungnz.Display/Spectre/SpectreLayoutDisplayService.cs`
+**Location:** `ConvertAnsiInlineToSpectre()` method, foreach loop over ANSI matches (~line 1240)
+
+**Bug:** The existing `if (match.Index > lastIndex)` guard prevented the Substring call from being reached when `match.Index < lastIndex`, but the `lastIndex = match.Index + match.Length` assignment at the bottom of the loop body still executed. On malformed/overlapping ANSI input, this would **rewind lastIndex** — causing the next iteration's Substring to receive a negative length and throw `ArgumentOutOfRangeException`.
+
+**Fix:** Added a `continue` guard at the top of the loop body:
+```csharp
+if (match.Index < lastIndex)
+    continue; // overlapping / already-processed region — skip entirely
+```
+This skips BOTH the Substring and the `lastIndex` assignment, keeping `lastIndex` monotonically increasing.
+
+**Key learning:** When guarding a multi-step loop body, ensure the guard covers ALL mutations in that body (including state updates at the bottom), not just the dangerous call.
+
+**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/1286
+**Branch:** squad/1246-substring-bounds
+**Closes:** #1246
+
+---
+
+**#1241 — ContentPanelMenu Escape/Q returns last item instead of cancel**
+
+**File:** `Dungnz.Display/Spectre/SpectreLayoutDisplayService.Input.cs`
+**Location:** `ContentPanelMenu<T>()` (~line 566)
+
+**Bug:** When Escape or Q was pressed in the non-nullable `ContentPanelMenu<T>`, it returned `items[items.Count - 1].Value` — a phantom selection with whatever value happened to be last.
+
+**Root cause / design clarification:**
+- `ContentPanelMenu<T>` returns `T` (non-nullable) — it is a **required-choice** menu. Callers use `SelectionPromptValue<T>()` which also returns `T`. No cancel sentinel exists.
+- The nullable sibling `ContentPanelMenuNullable<T>` already correctly returns `null` on Escape/Q.
+- The non-nullable variant should **ignore** Escape/Q (loop back) — matching Spectre's `SelectionPrompt<T>` behaviour in non-Live path, which also has no cancel.
+
+**Fix:** Changed Escape/Q case to `break` (ignore key, loop again) instead of returning last item.
+
+**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/1288
+**Branch:** squad/1241-contentpanelmenu-cancel
+**Closes:** #1241
+
+---
+
+**Session note:** Git shell-session fragmentation caused commits to land on wrong branches. Recovered using `git cherry-pick`. Lesson: always use a single persistent shellId for all git operations within a task.
+
+---
+
+## 2026-03-09: Issue Blitz — Substring Bounds + ContentPanelMenu Cancel
+
+**Issues resolved:** #1246 (substring bounds, PR #1286), #1241 (ContentPanelMenu cancel, PR #1288)
+
+**PR #1286 — Substring bounds guard (#1246):**
+- Multi-step loop body had substring operations without adequate bounds protection
+- Guard now covers ALL mutations in the loop body including bottom-of-loop state updates
+- Branch: `squad/1246-substring-bounds`
+
+**PR #1288 — ContentPanelMenu Escape/Q semantics (#1241):**
+- Non-nullable `ContentPanelMenu<T>`: Escape/Q now ignored (loop back) — required-choice menu, no valid cancel sentinel
+- Nullable `ContentPanelMenuNullable<T>`: returns `null` on Escape/Q — already correct, no change
+- File: `Dungnz.Display/Spectre/SpectreLayoutDisplayService.Input.cs`
+- Branch: `squad/1241-contentpanelmenu-cancel`
+
+**Decisions merged:** ContentPanelMenu cancel semantics (see decisions.md); Enemy intent telegraph Option A (see decisions.md)

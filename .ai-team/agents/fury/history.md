@@ -183,3 +183,9 @@ public string GetPhaseAwareAttackNarration(int turnNumber, double playerHpPercen
 - Phase determination logic: Desperate checks first (OR condition: any threshold met), then Opening (AND: all conditions met), then default MidFight
 - Private enum + private helper method keep phase logic encapsulated within NarrationService
 - Narration content pools cluster by phase for readability and maintainability
+
+## 2026-03-09: Mid-Combat Banter Content (PR #1285)
+
+**PR #1285** — Adds mid-combat banter content lines for enemy encounters, expanding narrative flavor during combat sequences.
+
+**Pending rebase note:** Earlier PR #1279 (squad/1271-mid-combat-banter) has a `NarrationService.GetEnemyCritReaction` signature conflict (`string?` vs `string`) with PR #1275. Must rebase on main after #1275 merges. The `CombatEngine` null guard (`if (!string.IsNullOrEmpty(critReaction))`) is safe to retain.

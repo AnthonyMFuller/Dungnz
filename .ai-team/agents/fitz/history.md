@@ -283,3 +283,13 @@ Implemented six CI/CD and infrastructure enhancements across multiple PRs:
 - Reviewers now see coverage impact directly in PR without local test run
 - Coverage reports persisted as artifacts for historical reference
 - Supports both opencover (existing) and cobertura (new) formats
+
+---
+
+## 2026-03-09: Coverage Script + CodeQL Workflow + Issue #1230 Closure
+
+**PR #1283 — coverage.sh:** Local developer coverage script for `dotnet test` with coverage collection.
+
+**PR #1284 — CodeQL workflow:** GitHub Actions static analysis workflow for security scanning.
+
+**#1230 closed:** Fitz CI concern resolved by Hill's PR #1291 (EnemyTypeRegistry dedup) which updated the architecture test to reference `Dungnz.Systems.EnemyTypeRegistry` instead of the deleted `Dungnz.Engine.EnemyTypeRegistry`.

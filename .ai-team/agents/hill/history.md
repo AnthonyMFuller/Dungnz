@@ -1,4 +1,6 @@
-# Hill — History
+# Hill — History — Recent Activity
+
+*Full archive (pre-2026-02 entries): [history-archive-2026-03-09.md](history-archive-2026-03-09.md)*
 
 ## Project Context
 **Project:** TextGame — C# Text-Based Dungeon Crawler
@@ -1445,27 +1447,6 @@ System.NotSupportedException: Runtime type 'Dungnz.Systems.Enemies.GoblinWarchie
 - The Chest slot had only 1 space, causing its label to appear shifted relative to other equipment slots
 - All item display contexts (inventory, pickup, shop, examine, equip menu) use `ItemTypeIcon()` in `Display/SpectreDisplayService.cs`. For armor slot-awareness, the pattern is `ItemIcon(Item)` which delegates to `SlotIcon(ArmorSlot)`.
 - `ArmorSlot` enum is in `Models/ArmorSlot.cs` — values: None, Head, Shoulders, Chest, Hands, Legs, Feet, Back, OffHand
-
-### 2025 — Emoji Label Audit (#820, #821, #822)
-
-**Issues Closed:** #820, #821, #822
-**File Modified:** `Display/SpectreDisplayService.cs`
-
-## Learnings
-
-**What was found:**
-- Line 233: `table.AddRow("⚡ Combo", ...)` — ⚡ is in `NarrowEmoji` but was using raw string (1 space instead of 2)
-- Line 766: `table.AddRow("⭐ Level", ...)` — ⭐ is NOT in `NarrowEmoji` (wide emoji, 1 space is correct), but was using raw string instead of `EL()`
-- All other emoji+text labels in table rows and menus were already using `EL()` (equipment slots, combat actions)
-
-**What was fixed:**
-- Line 233: Updated to `EL("⚡", "Combo")` — now correctly gets 2 spaces (narrow emoji)
-- Line 766: Updated to `EL("⭐", "Level")` — gets 1 space (wide emoji, correct behavior)
-
-**Key decision:** ⭐ (U+2B50) is a wide emoji and was NOT added to `NarrowEmoji`. EL() gives it 1 space, which is correct for terminal rendering.
-
-**Build:** `dotnet build` passes with 0 errors (3 pre-existing XML doc warnings, unrelated).
-
 ## Learnings — Mini-Map Phase 1
 
 **What I implemented:**
@@ -2807,3 +2788,54 @@ Every handler that sets content panel content MUST call `ShowRoom()` before retu
 **Testing:** All 1695 tests pass.
 **Commit:** c72dbe8 on branch `scribe/log-merchant-menu-2026-03-06`
 **Issues closed:** #1168, #1169, #1170, #1171, #1172, #1175
+
+## 2026-03-09: P1 Gameplay Bug Batch — null-safety, constant dedup, registry dedup
+
+**Issues closed (audit-verified, no code change):**
+- #1238: SetBonusManager.ApplySetBonuses correctly applies 2-piece bonuses — verified, closed
+- #1237: CombatEngine.HandleLootAndXP correctly passes dungeonFloor to RollDrop — verified, closed
+- #1232: Enemy HP clamped to 0 via Math.Max(0, ...) in CombatEngine — verified, closed
+
+**Issue #1235 — GameLoop null-safety (PR #1287):**
+- `_player = null!`, `_currentRoom = null!`, `_stats = null!` changed to `= new()`
+- Compiler-suppressed nullability risks removed without changing any method signatures
+- `_context = null!` kept — always initialized in InitContext() before RunLoop(), no accessible pre-Run path
+- File: `Dungnz.Engine/GameLoop.cs`
+
+**Issue #1234 — FinalFloor constant dedup (PR #1289):**
+- `private const int FinalFloor = DungeonGenerator.FinalFloor` was redeclared in 5 places
+- GoCommandHandler, DescendCommandHandler, AscendCommandHandler, StatsCommandHandler, GameLoop — all now reference `DungeonGenerator.FinalFloor` directly
+- FinalFloor was unused in GameLoop.cs (just a stale declaration)
+- Files: `Dungnz.Engine/Commands/*.cs`, `Dungnz.Engine/GameLoop.cs`
+
+**Issue #1224 — Duplicate EnemyTypeRegistry (PR #1291):**
+- Two identical 95-line EnemyTypeRegistry classes existed in Dungnz.Engine and Dungnz.Systems
+- Kept Dungnz.Systems version — Systems is the only valid location (Engine references Systems, not reverse; SaveSystem is in Systems and cannot use an internal Engine class)
+- Deleted `Dungnz.Engine/EnemyTypeRegistry.cs`
+- Updated `Dungnz.Tests/ArchitectureTests.cs` line 68: `Dungnz.Engine.EnemyTypeRegistry` → `Dungnz.Systems.EnemyTypeRegistry` (mechanical rename, no logic change)
+- Also resolves Fitz's CI concern in #1230
+- Key constraint: `Dungnz.Systems.csproj` has NO reference to Dungnz.Engine — making the Engine version the canonical one was architecturally impossible without introducing a circular dep
+
+---
+
+## 2026-03-09: Issue Blitz — Null-Safety, FinalFloor Dedup, EnemyTypeRegistry Dedup
+
+**Issues closed (audit-verified, no code change):** #1238, #1237, #1232
+
+**PR #1287 — GameLoop null-safety (#1235):**
+- `_player = null!`, `_currentRoom = null!`, `_stats = null!` changed to `= new()`
+- `_context = null!` retained — always initialized in `InitContext()` before `RunLoop()`
+- File: `Dungnz.Engine/GameLoop.cs`
+
+**PR #1289 — FinalFloor constant dedup (#1234):**
+- `private const int FinalFloor = DungeonGenerator.FinalFloor` removed from 5 files
+- All callers now reference `DungeonGenerator.FinalFloor` directly
+- Files: `Dungnz.Engine/Commands/GoCommandHandler.cs`, `DescendCommandHandler.cs`, `AscendCommandHandler.cs`, `StatsCommandHandler.cs`, `GameLoop.cs`
+
+**PR #1291 — EnemyTypeRegistry dedup (#1224):**
+- Deleted `Dungnz.Engine/EnemyTypeRegistry.cs` (duplicate)
+- Canonical copy: `Dungnz.Systems/EnemyTypeRegistry.cs`
+- Updated `Dungnz.Tests/ArchitectureTests.cs` line 68 namespace reference
+- Also closes Fitz's CI concern (#1230)
+
+**Decision merged:** EnemyTypeRegistry canonical location is Dungnz.Systems (see decisions.md)

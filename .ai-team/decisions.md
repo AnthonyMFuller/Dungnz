@@ -3732,3 +3732,116 @@ Added hook in `CombatEngine.PerformEnemyTurn()` at line 796-810:
 - Player reactions to enemy crits ("You barely survived that!")
 - Crit magnitude tiers if damage multipliers expand
 
+
+---
+
+# Decision: ContentPanelMenu Cancel Semantics
+
+**Date:** 2026-03-09  
+**Architect/Author:** Barton  
+**Issues:** #1241  
+**PRs:** #1288  
+
+---
+
+## Context
+`ContentPanelMenu<T>` (non-nullable) was returning `items[items.Count - 1].Value` on Escape/Q — a phantom selection that confused callers. `ContentPanelMenuNullable<T>` already correctly returned `null` on Escape/Q. The question was: what should the non-nullable variant do on cancel input?
+
+## Decision
+`ContentPanelMenu<T>` (non-nullable) **ignores** Escape/Q — the user must make an explicit Enter selection. `ContentPanelMenuNullable<T>` (nullable) returns `null` on Escape/Q — this IS the cancel path.
+
+## Rationale
+`ContentPanelMenu<T>` is used by `SelectionPromptValue<T>()` which returns `T` (non-nullable). Callers expect a definite value; there is no valid cancel sentinel in the type system. This matches Spectre's `SelectionPrompt<T>` in non-Live mode (no Escape support). Menus where cancel IS valid should use `NullableSelectionPrompt<T>` → `ContentPanelMenuNullable<T>`.
+
+## Alternatives Considered
+- Return a default value on Escape — rejected; default(`T`) is semantically indistinguishable from a real selection for value types
+- Throw an exception on Escape — rejected; would crash the game on misclick
+
+## Related Files
+- `Dungnz.Display/Spectre/SpectreLayoutDisplayService.Input.cs`
+
+---
+
+# Decision: EnemyTypeRegistry Canonical Location Is Dungnz.Systems
+
+**Date:** 2026-03-09  
+**Architect/Author:** Hill  
+**Issues:** #1224, #1230  
+**PRs:** #1291  
+
+---
+
+## Context
+Two identical 95-line `EnemyTypeRegistry` classes existed in `Dungnz.Engine` and `Dungnz.Systems`. The duplicate needed to be resolved to a single canonical location.
+
+## Decision
+`EnemyTypeRegistry` lives in `Dungnz.Systems`, not `Dungnz.Engine`. This is the canonical, single copy. `Dungnz.Engine/EnemyTypeRegistry.cs` was deleted.
+
+## Rationale
+`Dungnz.Systems.csproj` does NOT reference `Dungnz.Engine`. `SaveSystem` (in Systems) uses `EnemyTypeRegistry.CreateOptions()`. An `internal` class in `Dungnz.Engine` is inaccessible to `Dungnz.Systems` assemblies — making the Engine the canonical location would require either a circular project reference (forbidden) or a public class with a new cross-project reference. Systems is the only valid location.
+
+## Alternatives Considered
+- Move to Dungnz.Engine and add a reference from Systems to Engine — rejected; creates circular dependency (Engine already references Systems)
+- Move to Dungnz.Models — not evaluated; Systems is already the correct architectural layer for registry logic
+
+## Related Files
+- `Dungnz.Systems/EnemyTypeRegistry.cs` (canonical)
+- `Dungnz.Engine/EnemyTypeRegistry.cs` (deleted)
+- `Dungnz.Tests/ArchitectureTests.cs` (updated namespace reference)
+
+---
+
+# Decision: Enemy Intent Telegraph — Option A (Same-Turn Warning)
+
+**Date:** 2026-03-05  
+**Architect/Author:** Barton  
+**Issues:** #1270  
+**PRs:** #1280  
+
+---
+
+## Context
+Special enemy attacks (FrostBreath, FlameBreath, TidalSlam, and others) were firing without any player warning, making them feel unfair and opaque. Two options existed: Option A (warn on the same turn the attack resolves) and Option B (warn one turn early, skip damage on the warn turn).
+
+## Decision
+Telegraph special enemy attacks using **Option A** (same-turn warning before the attack resolves) for all non-boss enemies. `ShowIntentTelegraph()` fires immediately before the ability resolves in `PerformEnemyTurn`.
+
+## Rationale
+Option B is already implemented for `DungeonBoss` via the `IsCharging` / `ChargeActive` flag pair. Extending Option B to non-boss enemies would require new boolean state flags on `Enemy.cs`, adding model complexity for a cosmetic UX improvement. Option A adds the warning message at the top of the special-attack turn itself. The player can't dodge the current hit, but they learn the ability exists and its cycle pattern — enabling counter-play for subsequent occurrences.
+
+## Alternatives Considered
+- Option B (prior-turn warning) for non-boss enemies — rejected; requires new boolean state fields on Enemy model, excessive complexity for UX gain
+- No telegraph — rejected; special attacks felt opaque and unfair
+
+## Related Files
+- `Dungnz.Engine/CombatEngine.cs` (PerformEnemyTurn — ShowIntentTelegraph call site)
+- `Dungnz.Engine/Combat/ShowIntentTelegraph.cs` (or inline method)
+
+---
+
+# Decision: FakeInputReader Pattern for ConsoleDisplayService Tests
+
+**Date:** 2026-03-08  
+**Architect/Author:** Romanoff  
+**Issues:** #1277 (coverage gate)  
+**PRs:** #1292  
+
+---
+
+## Context
+`ConsoleDisplayService` (and `SpectreLayoutDisplayService`) interactive methods use `_input.ReadLine()`. Previously, testing these methods was considered impractical. The coverage gate for `Dungnz.Display` was failing at 50.57% vs. the 70% threshold. `SelectClass` alone had 78 sequence points at 0% coverage.
+
+## Decision
+All interactive `ConsoleDisplayService` methods that use `_input.ReadLine()` are tested by injecting `new FakeInputReader("1")` at construction time. Methods using `Console.ReadLine()` directly (e.g., `ShowInventoryAndSelect` empty path) use `Console.SetIn(new StringReader("x"))` or are tested via empty-input paths.
+
+## Rationale
+`FakeInputReader` injection is already the project's standard pattern for input mocking. Applying it consistently to `ConsoleDisplayService` construction unlocks full branch coverage for all selection menus. `SelectClass` (the highest-value single uncovered method) was covered by one test that also covered `StatBar`. When hunting coverage gaps, targeting the largest uncovered methods first is the most efficient strategy.
+
+## Alternatives Considered
+- Skip ConsoleDisplayService coverage — rejected; gate was blocking CI
+- Refactor all Console.ReadLine() calls to IInputReader — deferred; not required to clear current gate
+
+## Related Files
+- `Dungnz.Tests/ConsoleDisplayServiceCoverageTests.cs`
+- `Dungnz.Tests/Helpers/FakeInputReader.cs`
+- `Dungnz.Display/ConsoleDisplayService.cs`

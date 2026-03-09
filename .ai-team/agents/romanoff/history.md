@@ -1692,3 +1692,20 @@ When queues are configured, `ShowSellMenuAndSelect`, `ShowConfirmMenu`, and `Sho
 - `TestDisplayService` for status effect manager tests (no-op display)
 - `FakeDisplayService` + `FakeInputReader` + `ControlledRandom(0.9)` for combat tests
 - `EnemyStub(hp, atk, def, xp) { HP = 0 }` to simulate dead enemy at combat start
+
+---
+
+### 2026-03-09 — Edge Case Coverage Batch Part 2 + PR #1292
+
+**PR #1292** — 43 new tests across 6 test classes.
+
+1. **#1249 — PrestigeFlowTests (11 tests):** Full prestige navigation via `GameLoop`; unknown direction fires invalid-direction error; `[Collection("PrestigeTests")]`
+2. **#1248 — LootTableFloorEdgeCaseTests (6 tests):** `RollDrop` at floor 0/negative; epic (floor ≥ 5) and legendary (floor ≥ 6) paths not triggered at floor 0; `IDisposable` tier pool restore
+3. **#1243 — CombatDeadEnemyTests (5 tests):** Enemy HP=0 on entry to `RunCombat`; loop detects `IsDead` after status tick, returns `Won` before any player input
+4. **#1239 — SetBonusThresholdTests (8 tests):** 1-piece: no bonuses; 2-piece: activates after `ApplySetBonuses()`; `SetBonusCritChance` does not exist as a Player field
+5. **#1233 — PlayerSettingsRoundTripTests (13 tests):** All 6 `PlayerClass` + all 3 `Difficulty` values survive `SaveGame/LoadGame`; `[Collection("save-system")]` + temp dir
+6. **Additional coverage:** Edge-case batch
+
+**Running total:** All 1858+ tests pass.
+
+**Decision merged:** FakeInputReader pattern for ConsoleDisplayService tests (see decisions.md)
