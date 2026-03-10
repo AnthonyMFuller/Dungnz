@@ -1,6 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using System.Text.RegularExpressions;
 using Dungnz.Models;
 using Dungnz.Systems;
 using Spectre.Console;
@@ -50,7 +49,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     // Cached ability cooldown state for combat HUD (Issue #1268)
     private IReadOnlyList<(string name, int turnsRemaining)> _cachedCooldowns = [];
 
-    private static readonly Regex AnsiEscapePattern = new(@"\x1B\[[0-9;]*m", RegexOptions.Compiled);
+
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SpectreLayoutDisplayService"/> class.
@@ -1241,99 +1240,10 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     };
 
     private static string StripAnsiCodes(string input) =>
-        AnsiEscapePattern.Replace(input, string.Empty);
+        AnsiMarkupConverter.StripAnsiCodes(input);
 
-    private static string ConvertAnsiInlineToSpectre(string input)
-    {
-        var matches = AnsiEscapePattern.Matches(input);
-        if (matches.Count == 0)
-            return Markup.Escape(input);
-
-        var result = new StringBuilder();
-        var lastIndex = 0;
-        var isBold = false;
-        var currentColor = "";
-        var isTagOpen = false;
-
-        foreach (Match match in matches)
-        {
-            // Append text before this match (escaped)
-            if (match.Index > lastIndex)
-            {
-                var plainText = input.Substring(lastIndex, match.Index - lastIndex);
-                
-                // If we have bold or color accumulated, open tag before text
-                if ((isBold || !string.IsNullOrEmpty(currentColor)) && !string.IsNullOrEmpty(plainText))
-                {
-                    result.Append('[');
-                    if (isBold)
-                        result.Append("bold ");
-                    if (!string.IsNullOrEmpty(currentColor))
-                        result.Append(currentColor);
-                    result.Append(']');
-                    isTagOpen = true;
-                }
-                
-                result.Append(Markup.Escape(plainText));
-            }
-
-            // Process ANSI code
-            var code = match.Value;
-            if (code == "\u001b[0m") // Reset
-            {
-                if (isTagOpen)
-                {
-                    result.Append("[/]");
-                    isTagOpen = false;
-                }
-                isBold = false;
-                currentColor = "";
-            }
-            else if (code == "\u001b[1m") // Bold
-            {
-                isBold = true;
-            }
-            else // Color code
-            {
-                currentColor = code switch
-                {
-                    "\u001b[91m" => "red",
-                    "\u001b[32m" => "green",
-                    "\u001b[33m" => "yellow",
-                    "\u001b[36m" => "cyan",
-                    "\u001b[37m" => "grey",
-                    "\u001b[34m" => "blue",
-                    "\u001b[97m" => "white",
-                    _ => ""
-                };
-            }
-
-            lastIndex = match.Index + match.Length;
-        }
-
-        // Append remaining text
-        if (lastIndex < input.Length)
-        {
-            var plainText = input.Substring(lastIndex);
-            if ((isBold || !string.IsNullOrEmpty(currentColor)) && !string.IsNullOrEmpty(plainText))
-            {
-                result.Append('[');
-                if (isBold)
-                    result.Append("bold ");
-                if (!string.IsNullOrEmpty(currentColor))
-                    result.Append(currentColor);
-                result.Append(']');
-                isTagOpen = true;
-            }
-            result.Append(Markup.Escape(plainText));
-        }
-
-        // Close tag if still open
-        if (isTagOpen)
-            result.Append("[/]");
-
-        return result.ToString();
-    }
+    private static string ConvertAnsiInlineToSpectre(string input) =>
+        AnsiMarkupConverter.ConvertAnsiInlineToSpectre(input);
 }
 
 
