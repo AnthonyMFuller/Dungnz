@@ -673,9 +673,49 @@ public partial class SpectreLayoutDisplayService : IDisplayService
 
         // Enemy status
         sb.AppendLine($"🐉 [bold]{Markup.Escape(enemy.Name)}[/]");
+
+        // Issue #1308 — Boss phase / enrage (after name, before HP bar)
+        if (enemy is Dungnz.Systems.Enemies.DungeonBoss boss)
+        {
+            var phaseNum = boss.FiredPhases.Count + 1;
+            sb.Append($"[grey]Phase {phaseNum}[/]");
+            if (boss.IsEnraged)
+                sb.Append($"  [bold red]⚡ ENRAGED[/]");
+            sb.AppendLine();
+        }
+
         sb.Append($"HP {BuildHpBar(enemy.HP, enemy.MaxHP)} {enemy.HP}/{enemy.MaxHP}");
         sb.Append($"  [red]ATK {enemy.Attack}[/]  [cyan]DEF {enemy.Defense}[/]");
         sb.AppendLine();
+
+        // Issue #1309 — Regen / self-heal indicators (after HP+ATK+DEF, before trait badges)
+        var regenParts = new System.Collections.Generic.List<string>();
+        if (enemy.RegenPerTurn > 0)
+            regenParts.Add($"[green]Regen +{enemy.RegenPerTurn}/turn[/]");
+        if (enemy.SelfHealAmount > 0 && enemy.SelfHealEveryTurns > 0)
+            regenParts.Add($"[green]Heals +{enemy.SelfHealAmount} every {enemy.SelfHealEveryTurns}t[/]");
+        if (regenParts.Count > 0)
+        {
+            sb.Append(string.Join("  ", regenParts));
+            sb.AppendLine();
+        }
+
+        // Issue #1307 — Trait badges (after regen indicators)
+        var badges = new System.Collections.Generic.List<string>();
+        if (enemy.IsElite)                  badges.Add("[yellow]⭐ Elite[/]");
+        if (enemy.IsUndead)                 badges.Add("[grey]💀 Undead[/]");
+        if (enemy.IsStunImmune)             badges.Add("[purple]🛡 StunImm[/]");
+        if (enemy.IsImmuneToEffects)        badges.Add("[purple]🔒 EffectImm[/]");
+        if (enemy.LifestealPercent > 0)     badges.Add("[red]🩸 Lifesteal[/]");
+        if (enemy.AppliesPoisonOnHit)       badges.Add("[green]☠ Poison[/]");
+        if (enemy.CounterStrikeChance > 0)  badges.Add("[red]↩ Counter[/]");
+        if (enemy.PackCount > 1)            badges.Add($"[grey]🐾 Pack×{enemy.PackCount}[/]");
+        if (badges.Count > 0)
+        {
+            sb.Append(string.Join(" ", badges));
+            sb.AppendLine();
+        }
+
         if (enemyEffects.Count > 0)
         {
             foreach (var e in enemyEffects)
