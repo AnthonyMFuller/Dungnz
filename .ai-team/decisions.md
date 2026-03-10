@@ -1,3 +1,463 @@
+---
+
+### 2026-03-09: Gear equip, panel refresh, and input escape fixes
+
+**By:** Barton
+
+**What:**
+
+**Bug 1 — ShowEquipmentComparison overwrote itself immediately**
+When the player equipped an item while Live was active, `ShowEquipmentComparison` cleared `_contentLines` then pushed a Spectre `Table` widget directly via `_ctx.UpdatePanel`. The very next `ShowMessage` call from `DoEquip` invoked `RefreshContentPanel()`, which rebuilt the Content panel from the now-empty `_contentLines`, instantly replacing the comparison table with a bare text panel. The comparison was shown for ~0 ms and never readable. Fixed by replacing the direct `_ctx.UpdatePanel` call with `SetContent(markupText, "⚔  ITEM COMPARISON", Color.Yellow)` using two new markup helpers (`AppendIntCompareLine`, `AppendPctCompareLine`). The comparison now lives in `_contentLines` and subsequent `ShowMessage` calls append below it.
+
+**Bug 2 — Gear panel not updated when ShowRoom ran**
+`ShowRoom` refreshed the Stats panel via `RenderStatsPanel(_cachedPlayer)` but never called `RenderGearPanel`. While `DoEquip` called `ShowPlayerStats` (which does call `RenderGearPanel`) just before `EquipCommandHandler` triggered `ShowRoom`, the pattern was fragile: any other `ShowRoom` path (e.g. moving rooms, shop, shrine) would leave the Gear panel potentially stale. Fixed by adding `RenderGearPanel(_cachedPlayer)` alongside `RenderStatsPanel(_cachedPlayer)` in `ShowRoom`, making all three persistent panels (Map, Stats, Gear) authoritative after every room render.
+
+**Bug 3 — ContentPanelMenu Escape/Q trapped players**
+Commit #1288 removed the "auto-select last item on Escape" behaviour from `ContentPanelMenu<T>` (non-nullable, used when Live is active). The intent was correct for pre-game menus (SelectDifficulty, SelectClass) where selecting the last option accidentally would be wrong. However, it also broke all in-game menus that carry an explicit `("← Cancel", 0)` last item — shop, sell, crafting, shrine, armory. Players pressing Escape in those menus were stuck in a loop. Fixed by adding a cancel-sentinel check: if the last item's label contains "Cancel" (case-insensitive) or starts with "←", Escape/Q returns that item's value. Pre-game menus are unaffected because they only reach `ContentPanelMenu` via `SelectionPromptValue` when Live is active — and they are always invoked pre-`StartAsync`.
+
+**Why:**
+
+- **Bug 1 root cause:** `ShowEquipmentComparison` used `_ctx.UpdatePanel` directly instead of routing through `SetContent`/`AppendContent`, breaking the `_contentLines` contract that the rest of the content-panel system relies on.
+- **Bug 2 root cause:** `ShowRoom`'s panel refresh was incomplete — it was written before the Gear panel existed as a separate panel or before the convention of "ShowRoom refreshes all persistent panels" was established.
+- **Bug 3 root cause:** The fix in #1288 was correct in its diagnosis (accidental last-item selection) but too broad — it disabled all Escape/Q cancel behaviour without distinguishing menus that carry an explicit cancel sentinel from those that don't.
+
+---
+
+# Decision: Enemy Intent Telegraph Implementation (#1270)
+
+**Author:** Barton  
+**Date:** 2026-03-05  
+**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/1280
+
+## Decision
+
+Telegraph special enemy attacks using **Option A** (same-turn warning before the attack resolves), not Option B (prior-turn warning), for all non-boss enemies.
+
+## Rationale
+
+Option B is already implemented for `DungeonBoss` via the `IsCharging` / `ChargeActive` flag pair — it telegraphs one turn early and skips damage on the warn turn. Extending Option B to non-boss enemies (FrostBreath, FlameBreath, TidalSlam) would require new boolean state flags on `Enemy.cs`, which adds model complexity for a cosmetic UX improvement.
+
+Option A adds the warning message at the top of the special-attack turn itself. The player can't dodge the current hit, but they learn the ability exists and its cycle pattern — enabling counter-play for subsequent occurrences.
+
+## Scope of This Decision
+
+`ShowIntentTelegraph()` is intentionally narrow: it only fires for named special attacks (5 currently). Normal melee hits, passive regen, and boss phase triggers are **not** telegraphed — those already have descriptive inline messages.
+
+## Extensibility Note
+
+To add a telegraph for a new special attack, call `ShowIntentTelegraph(enemy, "Ability Name")` immediately before the ability resolves in `PerformEnemyTurn`. Add a matching verb string to the switch expression in `ShowIntentTelegraph` if a custom verb is desired; the generic fallback handles unknown abilities automatically.
+
+---
+
+# Decision: Momentum WI-C + WI-D implementation approach
+
+**By:** Barton  
+**Date:** 2026-03-10  
+**PR:** #1295  
+**Issue:** #1274
+
+---
+
+## 1. Consume() added to MomentumResource
+
+**Decision:** Added `bool Consume()` to `MomentumResource` — atomically checks `IsCharged` and resets if true, returns the result.
+
+**Rationale:** Romanoff's skipped unit tests (`squad/1274-momentum-tests`) explicitly test `Consume()`. It also provides a cleaner API for WI-D code: `if (player.Momentum?.Consume() ?? false)` is one expression vs two (`IsCharged` check + `Reset()`).
+
+---
+
+## 2. Momentum initialized at combat start (CombatEngine), not at class-select
+
+**Decision:** `InitPlayerMomentum(Player)` is called in `CombatEngine.RunCombat()` at combat start, creating a fresh `MomentumResource` per class each combat. Not wired into `PlayerClassDefinition`.
+
+**Rationale:** Hill's model comment said "Initialized by CombatEngine on first combat start". The `Player.Momentum` property has a public setter for this purpose. Romanoff's `MomentumResourcePlayerInitTests` are still skipped — they test "wired to PlayerClassDefinition" (WI-B path) and do not block this approach.
+
+**Consequence:** `player.Momentum` is `null` before the first combat. Any code testing Momentum state before a combat begins should call `InitPlayerMomentum()` or set `player.Momentum` directly (as Romanoff's integration tests do via `player.Momentum!.Add(5)`).
+
+---
+
+## 3. Ranger Focus: HP-before/after tracking at call sites
+
+**Decision:** Ranger Focus Add(1) is implemented via `AddRangerFocusIfNoDamage(player, hpBefore)` helper at all 5 main-loop `PerformEnemyTurn` call sites. `hpBefore` is captured before each call, compared after.
+
+**Rationale:** `PerformEnemyTurn` has 15+ early-return paths. Changing its return type from `void` to `bool` (to carry "did damage" info) would be a larger refactor. The HP comparison is semantically correct: any path that deals HP damage (via `TakeDamage`) will reduce HP; any 0-damage path (dodge, DivineShield absorb, ManaShield full absorb, stun skip, block) leaves HP unchanged.
+
+**Edge case:** ManaShield PARTIAL absorb still reaches `TakeDamage` with the remainder — correctly triggers Ranger Reset and does NOT add Focus.
+
+---
+
+## 4. Paladin "Holy Smite" = HolyStrike; LayOnHands = heal component
+
+**Decision:** The spec's "Holy Smite's heal component" (WI-C) was interpreted as `AbilityType.LayOnHands`. The spec's "next Smite cast" (WI-D) was interpreted as `AbilityType.HolyStrike`.
+
+**Rationale:** No `HolySmite` ability exists in the codebase. `HolyStrike` is the Paladin offensive smite. `LayOnHands` is the Paladin heal. DivineShield absorb in `PerformEnemyTurn` is also a WI-C trigger (explicit in spec). DivineShield CAST in `AbilityManager` was added as an additional WI-C trigger (proactive momentum building).
+
+---
+
+## 5. Mage 1.25× damage: HP-delta approach after switch
+
+**Decision:** For Mage Arcane Charge WI-D, captured `enemyHpBeforeAbility` before the `switch (type)` block. After the switch, computed `delta = before - current` and applied `(int)(delta * 0.25f)` extra damage. This adds 25% of what was dealt (total = 1.25×).
+
+**Rationale:** Ability cases each deal damage differently (some use `player.Attack * N - enemy.Defense`, others flat values). Adding individual multiplier checks to every Mage ability case would be ~20 edits and high maintenance. The HP-delta approach is generic and applies correctly regardless of how damage was calculated.
+
+**Caveat:** If a case modifies enemy HP multiple times (e.g., heal enemy then damage), the delta captures the net change. Currently no such Mage ability exists.
+
+---
+
+# Triage: Per-Class Momentum Resource System (Issue #1274)
+
+**Date:** 2026-03-05  
+**By:** Coulson  
+**Issue:** #1274 — Implement per-class momentum resource system  
+**Status:** READY — blocked only on spec clarification (see WI-A)
+
+---
+
+## Complexity Assessment: MEDIUM-HIGH
+
+This is a multi-layer feature touching Models, Engine, and Display. The Rogue
+combo point proof-of-concept is already shipping and provides the pattern. The
+main risk is CombatEngine state expansion in an already 1,329-line file and
+three under-specified triggered effects that need design decisions before
+Barton can code.
+
+---
+
+## What Already Exists
+
+| Class     | Existing mechanism                                              | Type        |
+|-----------|------------------------------------------------------------------|-------------|
+| Rogue     | `ComboPoints` (0–5), `AddComboPoints`/`SpendComboPoints`         | ✅ Complete  |
+| Warrior   | `BattleHardenedStacks` (0–4) — ATK bonus based on % HP lost     | ❌ Different |
+| Mage      | `ArcaneSurgeReady` (bool) — next ability –1 mana                 | ❌ Different |
+| Paladin   | `DivineBulwarkFired` (bool) — once-per-combat Fortified at <25% HP | ❌ Different |
+| Ranger    | None                                                             | ❌ Missing   |
+
+The Warrior/Mage/Paladin existing mechanics are **not** the momentum system —
+they are threshold-based passives. The issue proposes a separate per-action
+counter that coexists with these. Do not remove the existing passives.
+
+---
+
+## Architecture Decision
+
+**Use a shared `MomentumResource` type on Player, not 4 new ad-hoc fields.**
+
+The issue author proposed `MomentumCharge`/`MomentumThreshold` as two bare
+ints. Recommend instead a small value type:
+
+```csharp
+// Dungnz.Models/MomentumResource.cs
+public sealed class MomentumResource
+{
+    public int Current { get; private set; }
+    public int Maximum { get; }
+    public bool IsCharged => Current >= Maximum;
+    public MomentumResource(int maximum) { Maximum = maximum; }
+    public void Add(int amount = 1) => Current = Math.Clamp(Current + amount, 0, Maximum);
+    public bool Consume() { if (!IsCharged) return false; Current = 0; return true; }
+    public void Reset() => Current = 0;
+}
+```
+
+**Rogue keeps `ComboPoints`** — it has ability-spending semantics (partial
+spend via Flurry/Assassinate) that differ from the threshold-pop model. The
+other 4 classes use `Momentum`. This avoids a risky migration of working Rogue
+combat in the same PR.
+
+`Player` gains:
+```csharp
+public MomentumResource Momentum { get; private set; } = new(1); // overwritten at class init
+```
+
+Class maximum wired in `PlayerClassDefinition`:
+- Warrior Fury: max 5
+- Mage Arcane Charge: max 3
+- Paladin Devotion: max 4
+- Ranger Focus: max 3
+- Necromancer: no momentum (keep as max=0 no-op or omit)
+
+`ResetCombatPassives()` calls `Momentum.Reset()`.
+
+Save/load: `MomentumResource.Current` serialised as a single `int` on Player.
+
+---
+
+## Work Items (Ordered)
+
+### WI-A — Design spec sign-off (Coulson + Anthony) — BLOCKS ALL
+Three effects are ambiguous and need exact numbers before implementation:
+
+| Class   | Trigger              | Effect (proposed — needs sign-off)                         |
+|---------|----------------------|------------------------------------------------------------|
+| Warrior | Fury = 5             | Next attack: +100% damage (consume Fury on use)            |
+| Mage    | Arcane Charge = 3    | Next ability: 0 mana cost + 25% extra damage (consume)     |
+| Paladin | Devotion = 4         | Next Smite: applies Stun 1 turn (consume)                  |
+| Ranger  | Focus = 3            | Next attack: ignores enemy DEF entirely (consume; reset on taking damage) |
+
+Also: rename the `"[Battle Hardened] Fury builds"` display string to avoid
+confusion with the new Warrior Fury resource UI.
+
+### WI-B — Model layer: `MomentumResource` + Player wiring (→ Hill)
+- New `Dungnz.Models/MomentumResource.cs`
+- `Player.Momentum` property, initialised per class in `PlayerClassDefinition`
+- Helper `InitMomentumForClass(PlayerClass cls)` on Player or ClassManager
+- Include `Momentum.Reset()` in `ResetCombatPassives()`
+- JSON-serialisable (`Current` as int; reconstruct max from class at load)
+- PR must not touch `ComboPoints` — Rogue unchanged
+- Acceptance: builds clean, `Momentum.IsCharged` correct, reset fires on combat start
+
+### WI-C — CombatEngine: increment logic per class (→ Barton)
+- Depends on WI-B
+- Warrior Fury: `Momentum.Add()` in `PerformPlayerAttack` (on hit) + `PerformEnemyTurn` (on damage taken)
+- Mage Arcane Charge: `Momentum.Add()` after any ability resolved in `AbilityProcessor`
+- Paladin Devotion: `Momentum.Add()` when Divine Shield ability used or Holy Smite heals
+- Ranger Focus: `Momentum.Add()` in `PerformEnemyTurn` when enemy deals 0 damage (dodge/miss); `Momentum.Reset()` on damage taken
+- Acceptance: each class accumulates correctly; Necromancer unaffected
+
+### WI-D — CombatEngine: threshold effect application (→ Barton)
+- Depends on WI-B, WI-C, and WI-A (needs confirmed effect specs)
+- Each class checks `Momentum.IsCharged` at the appropriate point and calls `Momentum.Consume()`
+- Warrior: crit modifier flag set before `PerformPlayerAttack` resolves
+- Mage: mana cost override + damage multiplier in ability resolve path
+- Paladin: Stun applied post-Smite resolve
+- Ranger: `bypassDefense = true` flag in attack resolver
+- Acceptance: threshold fires once then resets; re-charges correctly
+
+### WI-E — Display: momentum bar in ShowCombatMenu (→ Hill)
+- Depends on WI-B
+- Extend existing Rogue dot display to all classes in `ShowCombatMenu`
+- Label per class: "Fury", "Charge", "Devotion", "Focus"
+- Dot format: `●●●○○` (current) up to class max
+- "CHARGED" suffix when `Momentum.IsCharged`
+- Acceptance: displays for correct class only; Rogue still shows Combo bar (unchanged)
+
+### WI-F — Test coverage (→ Romanoff)
+- Depends on WI-B through WI-D
+- `MomentumResource` unit tests: Add, Consume, Reset, clamping, IsCharged boundary
+- Per-class mechanic tests: 5 classes × charge accumulation + threshold trigger
+- Edge cases: Ranger reset on damage, Warrior dual-increment (hit dealt AND taken), Mage multi-ability charge
+- Integration: full combat with momentum threshold firing and effect applying
+- Acceptance: ≥80% coverage gate maintained
+
+---
+
+## Risks
+
+| Risk | Severity | Mitigation |
+|------|----------|------------|
+| CombatEngine bloat (WI-C + WI-D adds ~100 lines inline) | Medium | Extract `ClassMomentumService` if it grows past 60 lines in WI-D |
+| Warrior Fury vs BattleHardened naming confusion | Medium | Rename BattleHardened display string in WI-A |
+| "Free enhanced cast" undefined for Mage | High | WI-A blocks WI-D; do not let Barton guess |
+| Ranger Focus resets on damage — interacts with Dodge/Evade | Low | Specify: Focus resets only on HP damage (not dodge) |
+| Save format: new `Momentum.Current` field | Low | JSON default 0 on load = backward compatible |
+
+---
+
+## Assignment
+
+| Item | Owner | Depends on |
+|------|-------|------------|
+| WI-A | Coulson + Anthony | — |
+| WI-B | Hill | WI-A |
+| WI-C | Barton | WI-B |
+| WI-D | Barton | WI-B, WI-C, WI-A |
+| WI-E | Hill | WI-B |
+| WI-F | Romanoff | WI-B through WI-D |
+
+**Primary label:** `agent:Barton` (combat engine owns the bulk of work)  
+**Secondary label:** `agent:Hill` (model layer prerequisite)  
+**Wave:** `wave:advanced` (Wave 3 feature)  
+**Phase:** `phase-3: gameplay`
+
+---
+
+## Priority Note
+
+Issue is marked P2 stretch goal. P1 gameplay bugs (boss loot, HP clamping,
+SetBonusManager discard, SoulHarvest dual-impl) should be fixed first. If
+Anthony has authorised parallel work, proceed. If not, park this until P1s
+are cleared.
+
+---
+
+# Decision: All workflows must follow restore → build (--no-restore) → test (--no-build) pattern
+
+**Raised by:** Fitz  
+**Date:** 2026-03  
+**Context:** Issue #1231 — CodeQL workflow was missing explicit restore step
+
+## Decision
+All GitHub Actions workflows that build .NET code must follow this explicit step order:
+1. Cache NuGet packages (`actions/cache@v4`, key on `hashFiles('**/*.csproj')`)
+2. Restore dependencies (`dotnet restore <solution>`)
+3. Build with `--no-restore`
+4. Test with `--no-build` (where applicable)
+
+## Rationale
+Relying on `dotnet build`'s implicit restore is brittle. If `--no-restore` is ever added (common performance optimisation), the build fails silently. Explicit restore also makes caching effective — the restore step benefits from the NuGet cache, whereas implicit restore inside build may not.
+
+## Affected workflows (all now compliant)
+- squad-ci.yml ✅
+- squad-release.yml ✅  
+- codeql.yml ✅ (fixed #1231)
+
+## Note on local scripts
+Local scripts (e.g., `scripts/coverage.sh`) must stay in sync with CI thresholds. CI is authoritative; scripts mirror it (#1228).
+
+---
+
+# Decision: MomentumResource Initialization Deferred to CombatEngine
+
+**Date:** 2026-03-10  
+**Author:** Hill  
+**Issue:** #1274 (WI-B)
+
+## Context
+
+`MomentumResource` is a per-class resource (Warrior=5, Mage=3, Paladin=4, Ranger=3, Rogue=null).
+It needs initialization with the correct `maximum` value for each class.
+
+## Options Considered
+
+1. **Initialize in Player constructor** — Player is a `partial class` with no explicit constructor;
+   adding one creates risk of partial-file ordering issues and `Class` is set externally anyway.
+
+2. **Initialize in Player property setter** — Would require changing `Class` to a non-auto property,
+   adding setter logic, and creating coupling between Class assignment and Momentum lifecycle.
+
+3. **Defer to CombatEngine (chosen)** — Consistent with how `BattleHardenedStacks` works: the model
+   property starts at its default (null), and CombatEngine sets `player.Momentum = new MomentumResource(max)`
+   at combat start for the applicable classes. Rogue stays null.
+
+## Decision
+
+`Momentum` starts as null in `Player`. CombatEngine (Barton) initializes it with `new MomentumResource(max)`
+per class at combat start, alongside existing class-passive initialization logic.
+
+`ResetCombatPassives()` calls `Momentum?.Reset()` — safe because null-conditional handles the Rogue/null case.
+
+## Per-Class Max Values
+
+| Class   | Max | Label    |
+|---------|-----|----------|
+| Warrior | 5   | Fury     |
+| Mage    | 3   | Charge   |
+| Paladin | 4   | Devotion |
+| Ranger  | 3   | Focus    |
+| Rogue   | null| (ComboPoints used instead) |
+
+---
+
+# Decision: Momentum Test Strategy — Post-Combat State Limitations
+
+**By:** Romanoff  
+**Date:** 2026-03-10  
+**Context:** PR #1294 review — activating momentum tests after #1293 and #1295 merged  
+**Issue:** #1274
+
+---
+
+## 1. Post-Won Momentum is Always Zero
+
+**Finding:** `CombatEngine.HandleLootAndXP()` calls `_statusEffectApplicator.ResetCombatEffects(player, enemy)`, which calls `player.ResetCombatPassives()`, which calls `Momentum?.Reset()`. After any Won combat, `player.Momentum.Current == 0`.
+
+**Decision:** Never assert `Momentum.Current > 0` on a `CombatResult.Won` result in tests. Use one of:
+1. `CombatResult.PlayerDied` path — no cleanup, momentum preserved
+2. `display.CombatMessages` inspection for threshold messages ("Momentum unleashed", "Momentum charged")
+3. `player.Momentum.Maximum` assertion — immutable after initialization, survives Won
+
+---
+
+## 2. Cannot Pre-Charge Momentum Before RunCombat
+
+**Finding:** `CombatEngine.InitPlayerMomentum(player)` is called at the START of every `RunCombat()`, creating a fresh `MomentumResource` for the player's class. Any `player.Momentum.Add()` calls before `RunCombat()` are immediately overwritten.
+
+**Decision:** WI-D tests that need pre-charged momentum must either:
+- Run enough combat turns to charge naturally (Warrior: 3 rounds min at 2 WI-C per round)
+- Assert on display messages instead of calling Consume() directly
+
+Affects: Mage_ArcaneCharged_ZeroManaCost, Ranger_TakingDamage_ResetsFocus (both deferred).
+
+---
+
+## 3. Ranger Focus 0-Damage Tests: Blocked by Min-Damage-1
+
+**Finding:** The minimum damage rule (`Math.Max(1, attack - defense)`) means there is no defense value that makes enemy regular attacks deal 0 HP damage. Ranger Focus increments only on TRULY 0-HP-damage enemy turns (stun skip, DivineShield, ManaShield full absorb). Ranger has none of these.
+
+**Decision:** Ranger_TakingNoDamage and Ranger_TakingDamage_ResetsFocus are skipped until a Ranger-compatible 0-damage scenario exists (e.g., a Freeze mechanic that Ranger can apply).
+
+---
+
+## 4. Mage Ability Tests: Menu Navigation Complexity
+
+**Finding:** Mage ability use requires navigating the CombatEngine input menu to slot 2 (Use Ability), then navigating an ability submenu. `FakeInputReader` raw tokens ("A", "F", "2") work for top-level choices only; ability submenu selection requires additional tokens that vary by class loadout and are undocumented.
+
+**Decision:** Mage_CastingAbility and Mage_ArcaneCharged deferred until FakeMenuNavigator supports the ability submenu flow or until the input sequence is documented in test helpers.
+
+---
+
+# Romanoff PR Review Round 2 — Blocking Issues
+
+**Date:** 2026-03-08
+**Author:** Romanoff
+**Status:** For team awareness
+
+---
+
+## PR #1279 — Fury: Mid-Combat Banter (squad/1271-mid-combat-banter)
+
+### ❌ Blocking: NarrationService.GetEnemyCritReaction signature conflict
+
+**Problem:** PR #1279 has `GetEnemyCritReaction` returning `string?` (nullable). PR #1275 (now approved, merging to main) changes the method to return `string` (non-null, with `_defaultCritReaction` fallback in `EnemyNarration.GetCritReactions()`).
+
+**Impact:** When #1279 tries to merge after #1275 lands, there will be a merge conflict in `NarrationService.cs`.
+
+**Resolution:** Fury must rebase `squad/1271-mid-combat-banter` on main after #1275 merges. The CombatEngine null guard (`if (!string.IsNullOrEmpty(critReaction))`) is harmless to keep even after the signature change.
+
+**Owner:** Fury
+**Depends on:** #1275 merge
+
+---
+
+## PR #1280 — Barton: Enemy Intent Telegraph (squad/1270-enemy-intent-telegraph)
+
+### ✅ No blocking issues
+
+All checks pass. Same rebase dependency as #1279 (same base branches, same files modified). Barton should rebase after #1275 merges before CI can run cleanly.
+
+**Owner:** Barton
+**Depends on:** #1275 merge
+
+---
+
+## Coverage Gate — Dungnz.Display
+
+### Context (resolved in PR #1277)
+
+`Dungnz.Display` was at 50.57% line coverage vs. the 70% threshold. The Spectre TUI classes are not measured by coverlet (they require live terminal infrastructure). The actual gap was in `ConsoleDisplayService` at 50% — the class IS exercised in tests but many methods were untested.
+
+### Resolution
+
+Added 38 targeted tests to `ConsoleDisplayServiceCoverageTests.cs`:
+- `ShowTitle`, `ShowEnhancedTitle` (title rendering paths)
+- `ShowMap` with 6 scenarios (BFS renderer, room symbols, connectors)
+- `ShowRoom` with environmental hazards and special room types
+- `SelectDifficulty`, `SelectClass` (with and without prestige) — `SelectClass` alone was 0/78 coverage
+- Interactive methods via `FakeInputReader` injection: `ShowConfirmMenu`, `ShowShopAndSelect`, `ShowSellMenuAndSelect`, `ShowShrineMenuAndSelect`
+- `ShowInventoryAndSelect` (empty inventory path)
+
+**Result:** `Dungnz.Display` 50.57% → 74.09%. All 1815 tests pass. Gate cleared.
+
+### Key Learning
+
+`SelectClass` (78 sequence points, 0% covered) was the highest-value single target. It calls `StatBar` (which was also 0% covered) — one test covered both. When hunting coverage gaps, look for large uncovered methods first.
+
+---
+
+## Standard: FakeInputReader injection pattern for ConsoleDisplayService
+
+All interactive `ConsoleDisplayService` methods that use `_input.ReadLine()` can be tested by injecting `new FakeInputReader("1")` at construction time. Methods that use `Console.ReadLine()` directly (e.g., `ShowInventoryAndSelect`) need `Console.SetIn(new StringReader("x"))` or must be tested via empty-input paths.
 ### 2026-02-20: Design Review decisions
 ### 2026-02-20: Pre-v3 Bug Hunt — Integration and State Integrity Issues
 ### 2026-02-20: Encapsulation Audit Findings — Player vs Enemy/Room Patterns
