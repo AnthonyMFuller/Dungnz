@@ -3543,3 +3543,5 @@ Critical path: #1187 → #1188 → #1189 → #1190 → #1191 → #1192 → #1193
 **Clean handlers:** 18 handlers confirmed clean. The handlers that are already correct use the pattern of returning early without ShowRoom on error paths.
 
 **Recommended fix:** Error paths should `return` without calling `ShowRoom`. The content panel retains the last room view. Only success/completion paths need to refresh via ShowRoom. This matches the already-correct pattern in GoCommandHandler error paths and AscendCommandHandler.
+
+- 2026-03-11: Reviewed and merged PR #1329 — enemy stats gear panel root cause fix (see log/2026-03-11-enemy-stats-gear-panel-root-cause.md)

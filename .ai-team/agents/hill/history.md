@@ -2842,3 +2842,5 @@ Every handler that sets content panel content MUST call `ShowRoom()` before retu
 - `Dungnz.Models/MomentumResource.cs` — new sealed class
 - `Dungnz.Models/Player.cs` — Momentum property + ResetCombatPassives()
 - `Dungnz.Display/Spectre/SpectreLayoutDisplayService.cs` — RenderStatsPanel() momentum display block
+
+- 2026-03-11: Enemy stats gear panel root cause fix — RenderEnemyStatsPanel in Gear panel, ShowPlayerStats combat guard (PR #1329, Issue #1328, see log/2026-03-11-enemy-stats-gear-panel-root-cause.md)
