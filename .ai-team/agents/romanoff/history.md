@@ -1840,3 +1840,47 @@ Already on master (no action needed):
 - **`git diff origin/master origin/branch` (two-dot) vs `gh pr diff` (three-dot) tell different stories.** The PR diff shows what the branch adds vs merge base; the two-dot diff shows what's actually different between the tips. When a branch is contaminated and master moved forward, always check both to understand the full picture.
 - **Extracting unique content from a contaminated branch:** Use `git diff origin/master origin/branch -- <file>` to identify which files are genuinely different and what changed. Then manually cherry-pick or append just the unique additions to a clean branch.
 - **`gh pr view --json mergeable` returns UNKNOWN initially** — always sleep a few seconds and re-poll after first check. DIRTY = conflicts.
+
+### 2026-03-11 — PR #1344 — PanelHeightRegressionTests Review and Merge (Issue #1333)
+
+**PR:** #1344 — `test(display): panel height regression tests (#1333)`
+**Branch:** `squad/1333-panel-height-regression-tests`
+**Author:** Barton
+**Status:** ✅ Approved and merged
+
+**What was reviewed:**
+
+`Dungnz.Tests/Display/PanelHeightRegressionTests.cs` — 151 lines, 4 tests + 1 deferred TODO block.
+
+**Test coverage in the PR:**
+
+1. `PlayerStatsPanelLineCount_WithBasicPlayer_IsWithinStatsPanelHeight` — Level 1 Warrior, no momentum, no cooldowns. Core regression guard.
+2. `PlayerStatsPanelLineCount_WithMaxLevelPlayer_IsWithinStatsPanelHeight` — Level 20 Warrior, Momentum at CHARGED state, no cooldowns. Tests worst-case content path.
+3. `PlayerStatsPanelLineCount_WithLongPlayerName_IsWithinStatsPanelHeight` — 34-char player name. Guards against name wrapping adding extra lines.
+4. `LayoutConstants_HasCorrectValues` — Snapshot-style constants assertion: StatsPanelHeight=8, GearPanelHeight=20, BaselineTerminalHeight=40. Fails loudly if constants are accidentally changed.
+
+**Deferred GearPanel test:**
+
+A `// TODO:` comment in section 4 defers `GearPanelLineCount_IsWithinGearPanelHeight`. The comment is thorough — it specifies exactly what Hill needs to do: extract `BuildGearPanelMarkup(Player player)` as `internal static` in `SpectreLayoutDisplayService.cs`, following the same seam pattern as `BuildPlayerStatsPanelMarkup`. No failing test is present — it is a comment only.
+
+**QA checklist results:**
+
+- ✅ `[Collection("console-output")]` present — correct, prevents parallel interference
+- ✅ All height assertions reference `LayoutConstants.StatsPanelHeight` — no magic numbers
+- ✅ Empty cooldowns (`Array.Empty<(string, int)>()`) used — matches known decision about cooldown overflow being a separate concern
+- ✅ AAA structure throughout
+- ✅ Test names follow `Scenario_Condition_ExpectedResult` convention
+- ✅ XML doc comments on all test methods and class
+- ✅ `InternalsVisibleTo` path used correctly (calls `SpectreLayoutDisplayService.BuildPlayerStatsPanelMarkup` directly)
+- ✅ Deferred test is a comment, NOT a skipped/failing test
+
+**Test run results:**
+
+- Targeted filter run: 4/4 passed
+- Full suite: 1913 passed, 0 failed, 4 skipped — no regressions
+
+**What Hill needs to unblock the GearPanel TODO:**
+
+Extract `BuildGearPanelMarkup(Player player)` as `internal static` in `SpectreLayoutDisplayService.cs`, mirroring the `BuildPlayerStatsPanelMarkup` seam. Once extracted, Romanoff or Barton can write the concrete test in a follow-up PR against `Dungnz.Tests/Display/PanelHeightRegressionTests.cs`.
+
+**Issue #1333:** Auto-closed on merge. All 9 retro action items are now complete.
