@@ -21,11 +21,11 @@ internal sealed class SkillsCommandHandler : ICommandHandler
     internal void HandleLearnSpecificSkill(Skill skill, CommandContext context)
     {
         var success = context.Player.Skills.TryUnlock(context.Player, skill);
+        context.Display.ShowRoom(context.CurrentRoom);
         if (success)
             context.Display.ShowMessage($"You learned {skill}!");
         else
             context.Display.ShowMessage($"Cannot learn {skill} right now.");
-        context.Display.ShowRoom(context.CurrentRoom);
         context.TurnConsumed = false;
     }
 }
@@ -37,8 +37,8 @@ internal sealed class LearnCommandHandler : ICommandHandler
         if (!Enum.TryParse<Skill>(argument, ignoreCase: true, out var skill))
         {
             context.TurnConsumed = false;
-            context.Display.ShowError($"Unknown skill: {argument}");
             context.Display.ShowRoom(context.CurrentRoom);
+            context.Display.ShowError($"Unknown skill: {argument}");
             return;
         }
         new SkillsCommandHandler().HandleLearnSpecificSkill(skill, context);

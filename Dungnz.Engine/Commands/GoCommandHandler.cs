@@ -160,11 +160,11 @@ internal sealed class GoCommandHandler : ICommandHandler
                     context.SessionStats.BossKills++;
                 var enemyName = context.CurrentRoom.Enemy!.Name;
                 context.CurrentRoom.Enemy = null;
-                context.Display.ShowMessage(context.Narration.Pick(_postCombatLines, enemyName));
                 context.CurrentRoom.State = RoomState.Cleared;
+                context.Display.ShowRoom(context.CurrentRoom);
+                context.Display.ShowMessage(context.Narration.Pick(_postCombatLines, enemyName));
                 context.Display.ShowMessage(context.Narration.Pick(RoomStateNarration.ClearedRoom));
                 context.Display.ShowPlayerStats(context.Player);
-                context.Display.ShowRoom(context.CurrentRoom);
             }
 
             if (result == CombatResult.Fled)
