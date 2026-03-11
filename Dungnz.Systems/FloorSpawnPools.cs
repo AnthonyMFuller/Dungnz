@@ -86,5 +86,5 @@ public static class FloorSpawnPools
     /// Returns the elite spawn chance (0–100) for the given floor.
     /// </summary>
     public static int GetEliteChanceForFloor(int floor) =>
-        floor >= 8 ? 10 : floor >= 4 ? 5 : 0;
+        floor >= GameConstants.FinalFloor ? 10 : floor >= 4 ? 5 : 0;
 }

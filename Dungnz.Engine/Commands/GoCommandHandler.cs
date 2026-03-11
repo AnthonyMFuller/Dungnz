@@ -181,7 +181,7 @@ internal sealed class GoCommandHandler : ICommandHandler
         // Check win/floor condition
         if (context.CurrentRoom.IsExit && context.CurrentRoom.Enemy == null)
         {
-            if (context.CurrentFloor >= DungeonGenerator.FinalFloor)
+            if (context.CurrentFloor >= GameConstants.FinalFloor)
             {
                 context.Stats.FinalLevel = context.Player.Level;
                 context.Stats.TimeElapsed = DateTime.UtcNow - context.RunStart;

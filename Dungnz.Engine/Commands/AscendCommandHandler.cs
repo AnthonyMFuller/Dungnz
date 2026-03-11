@@ -42,7 +42,7 @@ internal sealed class AscendCommandHandler : ICommandHandler
         context.Display.ShowMessage($"You ascend back to floor {context.CurrentFloor}.");
 
         var ascendVariant = DungeonVariant.ForFloor(context.CurrentFloor);
-        context.Display.ShowFloorBanner(context.CurrentFloor, DungeonGenerator.FinalFloor, ascendVariant);
+        context.Display.ShowFloorBanner(context.CurrentFloor, GameConstants.FinalFloor, ascendVariant);
         context.Display.ShowRoom(context.CurrentRoom);
         context.Display.ShowMap(context.CurrentRoom, context.CurrentFloor);
     }
