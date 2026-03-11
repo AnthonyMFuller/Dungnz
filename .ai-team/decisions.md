@@ -4218,3 +4218,80 @@ Single-file change; no architectural violations; correct Spectre escape conventi
 ---
 
 *End decisions.*
+
+---
+
+### 2026-03-11: GameConstants.cs is source of truth for game-wide constants
+
+**By:** Hill  
+**What:** Created `Dungnz.Models/GameConstants.cs`. `FinalFloor` and related constants defined here.  
+**Why:** Retro P1 — magic number drift prevention. Placed in `Dungnz.Models` (not `Dungnz.Engine`) so that `Dungnz.Systems` can also reference it without creating a circular dependency.  
+**PRs:** #1341  
+**Issues:** #1330  
+**Related Files:**
+- `Dungnz.Models/GameConstants.cs`
+
+---
+
+### 2026-03-11: Combat smoke test added to CI
+
+**By:** Fitz  
+**What:** Added scripted combat scenario to CI smoke test (`smoke-test.yml`). Drives the game through startup → new game → class/difficulty selection → game loop via piped stdin. Fails if output contains stack traces or unhandled exceptions.  
+**Why:** Retro P1 — `dotnet test` was green while the game crashed during actual gameplay (`System.InvalidOperationException` in rendering). Unit tests don't exercise the actual game execution path through combat. This smoke test catches that crash class.  
+**Also changed:** `Program.cs` — when stdin is not a TTY (`Console.IsInputRedirected`), uses `ConsoleDisplayService` instead of `SpectreLayoutDisplayService`. Spectre throws `NotSupportedException` on `SelectionPrompt` without a live terminal.  
+**PRs:** #1343  
+**Issues:** #1331, #1332, #1338  
+**Related Files:**
+- `.github/workflows/smoke-test.yml`
+- `Program.cs`
+
+---
+
+### 2026-03-11: Gate — no Display PR merges without _DoesNotThrow test
+
+**By:** Romanoff  
+**What:** Every PR that touches Display/ rendering paths must include a `_DoesNotThrow` test covering the changed path. This is now a Romanoff review gate.  
+**Why:** [CHARGED] crash recurred multiple times due to missing markup safety tests.  
+**Related Files:**
+- `Dungnz.Display/`
+
+---
+
+### 2026-03-11: Romanoff Review Verdict — PR #1339 (REQUEST CHANGES)
+
+**By:** Romanoff  
+**PR:** #1339 — `LayoutConstants.cs` + PR template + `dev-process.md`  
+**Branch:** `squad/1334-1335-layout-constants-pr-template`  
+**Closes:** #1334, #1335  
+
+**Verdict:** REQUEST CHANGES — one value incorrect, all other deliverables pass.
+
+- **PR Template:** PASS — all required gates present (CI green, `_DoesNotThrow`, display attestation, Fury loop-in).
+- **dev-process.md:** PASS — three-criteria "done" definition matches Romanoff's enforcement policy.
+- **LayoutConstants.cs:** FAIL on `MapPanelHeight` — value is `5` but should be `8` (or `6` usable). The docstring formula multiplied a height fraction (20%) by a width fraction (60%); the 60% is a `SplitColumns` ratio controlling width, not height. Map and Stats share the same TopRow height (8 rows).
+
+**Required fix:** Set `MapPanelHeight` to `8` (total) or `6` (usable) with corrected docstring, then PR can be approved immediately.  
+**Related Files:**
+- `Dungnz.Display/LayoutConstants.cs`
+- `docs/dev-process.md`
+
+---
+
+### 2026-03-11: Content Authoring Spec created
+
+**By:** Fury  
+**What:** Created `docs/content-authoring-spec.md` — 416-line comprehensive authoring guide.  
+**PR:** #1340  
+**Issue:** #1337  
+
+**Covers:**
+1. Visual diagram of 6-panel UI layout + table mapping 18 content surfaces to specific panels
+2. Hard line/width limits per panel (content panel ~70×20, gear panel ~25–30×20, stats ~25–30×8, log ~70×8, map ~70×5, input ~25–30×4)
+3. Unsafe characters and escaping rules — `[ALL_CAPS]`/`[PascalCase]` inside brackets crash Spectre; must use `[[DOUBLE_BRACKETS]]`; only whitelisted Spectre colors are safe
+4. 9-point self-validation checklist for authors
+5. Correct/incorrect examples, 9 common pitfalls, integration reference table
+
+**Why:** Eliminates blind authoring, reduces rework from bracket crashes and line overflows, centralizes knowledge, supports scaling.  
+**Consequence:** Future content PRs should reference the spec's self-validation checklist. Spec is a living document — must be updated when panel layout or Spectre markup rules change.  
+**Related Files:**
+- `docs/content-authoring-spec.md`
