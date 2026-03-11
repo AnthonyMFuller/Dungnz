@@ -3764,3 +3764,352 @@ All changes were strictly version number updates in `.csproj` or tool config fil
 ## Related Files
 - `Dungnz.Tests/Dungnz.Tests.csproj` (CsCheck, ArchUnitNET.xUnit)
 - `.config/dotnet-tools.json` (dotnet-stryker)
+
+---
+
+# Display Overwrite Audit Findings
+
+**Date:** 2026-03-04  
+**Architect/Author:** Coulson  
+**Issues:** #1313, #1315, #1316, #1317, #1318, #1319, #1320, #1321  
+**PRs:** #1322, #1323  
+
+---
+
+## Context
+
+Full audit of all 26 `Dungnz.Engine/Commands/` handlers, `GameLoop.cs` (HandleShrine, HandleContestedArmory), and `EquipmentManager.cs` for display overwrite bugs.
+
+The root cause: `ShowError`/`ShowMessage` use `AppendContent` (adds to `_contentLines`), while `ShowRoom` uses `SetContent` (clears `_contentLines` entirely). Any handler calling one of the message methods then unconditionally calling `ShowRoom` silently wipes the message.
+
+| Method | Mechanism | Effect |
+|--------|-----------|--------|
+| `ShowError(msg)` | `AppendContent` | Adds to `_contentLines` |
+| `ShowMessage(msg)` | `AppendContent` | Adds to `_contentLines` |
+| `ShowRoom(room)` | `SetContent` | **Clears** `_contentLines` |
+| `ShowItemDetail(item)` | `SetContent` | **Clears** `_contentLines` |
+| `ShowEquipmentComparison(...)` | `SetContent` | **Clears** `_contentLines` |
+| `ShowCraftRecipe(...)` | `SetContent` | **Clears** `_contentLines` |
+| `ShowPlayerStats(player)` | Side panel only | Does NOT touch content panel ✓ |
+
+Previously known bugs: #1311 (EquipCommandHandler), #1312 (GoCommandHandler), #1314 (CompareCommandHandler). Audit found 7 new issues: #1315–#1321.
+
+## Decision
+
+**Option 2 — Per-handler surgical fix:** Error paths `return` without calling `ShowRoom`. Only success paths transition back to room view. Where both room context and a message are needed, call `ShowRoom` first then append the message.
+
+Long-term Option 3 (route `ShowError` to a persistent non-clearable status bar) remains open as a follow-up architectural improvement.
+
+## Rationale
+
+The surgical fix matches patterns already correct in `GoCommandHandler` error paths and `AscendCommandHandler`. It is low-risk, reviewable handler-by-handler, and requires no display architecture changes.
+
+## Alternatives Considered
+
+- **Option 3 (architectural):** Route `ShowError` to a persistent status bar never cleared by `SetContent`. Eliminates the entire bug class. Deferred — requires display architecture changes and is a larger PR.
+
+## Related Files
+
+- `Dungnz.Engine/Commands/UseCommandHandler.cs`
+- `Dungnz.Engine/Commands/ExamineCommandHandler.cs`
+- `Dungnz.Engine/Commands/CraftCommandHandler.cs`
+- `Dungnz.Engine/Commands/SkillsCommandHandler.cs`
+- `Dungnz.Engine/Commands/LearnCommandHandler.cs`
+- `Dungnz.Engine/Commands/EquipCommandHandler.cs`
+- `Dungnz.Engine/Commands/GoCommandHandler.cs`
+- `Dungnz.Engine/Commands/CompareCommandHandler.cs`
+- `Dungnz.Engine/GameLoop.cs`
+- `Dungnz.Systems/EquipmentManager.cs`
+
+---
+
+# EquipmentManager.HandleEquip Return Tuple Refactor
+
+**Date:** 2026-03-11  
+**Architect/Author:** Barton  
+**Issues:** #1311  
+**PRs:** #1322  
+
+---
+
+## Context
+
+`EquipmentManager.HandleEquip` previously called display methods directly from within the Systems layer, mixing display concerns into business logic. Class restriction error messages were silently wiped by the subsequent `ShowRoom` call in `EquipCommandHandler`.
+
+## Decision
+
+`EquipmentManager.HandleEquip` now returns `(bool success, string? errorMessage)`. All display calls removed from `EquipmentManager`. `EquipCommandHandler` owns all display: checks the returned tuple, calls `ShowError` with the message if `!success`, then calls `ShowRoom` → appends result message on success.
+
+## Rationale
+
+Display responsibility belongs to the command handler layer. Systems layer should be display-agnostic, making it independently testable and removing accidental display side effects.
+
+## Alternatives Considered
+
+- Keep display calls in `EquipmentManager` and reorder `ShowRoom` call — rejected; violates layer separation.
+
+## Related Files
+
+- `Dungnz.Systems/EquipmentManager.cs`
+- `Dungnz.Engine/Commands/EquipCommandHandler.cs`
+
+---
+
+# Gear Equip, Panel Refresh, and Input Escape Fixes
+
+**Date:** 2026-03-09  
+**Architect/Author:** Barton  
+**Issues:** #1288 (regression), gear panel stale  
+**PRs:** #1322  
+
+---
+
+## Context
+
+Three related display bugs in the gear equip flow:
+1. `ShowEquipmentComparison` wrote directly via `_ctx.UpdatePanel`, bypassing `_contentLines`. Subsequent `ShowMessage` from `DoEquip` rebuilt the content panel from empty `_contentLines`, showing the comparison for ~0 ms.
+2. `ShowRoom` refreshed Stats panel but not Gear panel — leaving Gear panel stale on any room transition other than explicit equip flow.
+3. Commit #1288 disabled Escape/Q cancel behaviour in `ContentPanelMenu<T>` too broadly, trapping players in in-game menus with an explicit `("← Cancel", 0)` sentinel.
+
+## Decision
+
+- **Bug 1:** Replace direct `_ctx.UpdatePanel` call in `ShowEquipmentComparison` with `SetContent(markupText, ...)` using new markup helpers (`AppendIntCompareLine`, `AppendPctCompareLine`). Comparison now lives in `_contentLines`.
+- **Bug 2:** Add `RenderGearPanel(_cachedPlayer)` alongside `RenderStatsPanel(_cachedPlayer)` in `ShowRoom`. All three persistent panels (Map, Stats, Gear) are now authoritative after every room render.
+- **Bug 3:** Add cancel-sentinel check in `ContentPanelMenu<T>`: if the last item's label contains "Cancel" (case-insensitive) or starts with "←", Escape/Q returns that item's value.
+
+## Rationale
+
+Bugs 1 and 2 stem from the `_contentLines` contract not being followed consistently. Bug 3 was an overly broad fix — the correct scope is "menus with an explicit cancel item", not "all menus".
+
+## Alternatives Considered
+
+- Bug 3: Separate pre-game vs in-game menu types — rejected as unnecessary structural complexity.
+
+## Related Files
+
+- `Dungnz.Display/ConsoleDisplayService.cs`
+- `Dungnz.Display/ContentPanelMenu.cs`
+
+---
+
+# Enemy Intent Telegraph — Option A Implementation
+
+**Date:** 2026-03-05  
+**Architect/Author:** Barton  
+**Issues:** #1270  
+**PRs:** #1280  
+
+---
+
+## Context
+
+Enemy special attacks (FrostBreath, FlameBreath, TidalSlam, etc.) fired without warning, leaving players no counter-play information. Two options considered: Option A (same-turn warning before resolve) and Option B (prior-turn warning with no damage on warn turn, as used by `DungeonBoss`).
+
+## Decision
+
+Use **Option A** (same-turn warning) for all non-boss enemies. `ShowIntentTelegraph()` fires at the top of the special-attack turn before the ability resolves.
+
+## Rationale
+
+Option B requires new boolean state flags on `Enemy.cs` per ability type — model complexity for a cosmetic UX improvement. Option A teaches players the ability pattern and cycle, enabling counter-play on subsequent occurrences, without touching the model layer. Option B already exists for `DungeonBoss` via `IsCharging`/`ChargeActive`.
+
+## Alternatives Considered
+
+- **Option B (prior-turn):** Rejected for non-boss enemies due to model complexity. Reserved for bosses only.
+
+## Related Files
+
+- `Dungnz.Engine/CombatEngine.cs` (lines 796–810, `PerformEnemyTurn`)
+- `Dungnz.Display/ConsoleDisplayService.cs` (`ShowIntentTelegraph`)
+
+---
+
+# Momentum System Architecture — MomentumResource + CombatEngine Integration
+
+**Date:** 2026-03-05 (triage) / 2026-03-10 (implementation)  
+**Architect/Author:** Coulson (triage), Hill (model), Barton (engine)  
+**Issues:** #1274  
+**PRs:** #1293 (model), #1295 (engine WI-C + WI-D)  
+
+---
+
+## Context
+
+Issue #1274 proposed per-class momentum resources (Warrior Fury, Mage Arcane Charge, Paladin Devotion, Ranger Focus) using bare `MomentumCharge`/`MomentumThreshold` int fields. Rogue `ComboPoints` already shipping as a working proof-of-concept. Warrior/Mage/Paladin existing threshold passives (`BattleHardenedStacks`, `ArcaneSurgeReady`, `DivineBulwarkFired`) are separate and must not be removed.
+
+## Decision
+
+**Shared `MomentumResource` class on `Player`** (not 4 ad-hoc fields). Rogue keeps `ComboPoints` unchanged.
+
+```csharp
+// Dungnz.Models/MomentumResource.cs
+public sealed class MomentumResource {
+    public int Current { get; private set; }
+    public int Maximum { get; }
+    public bool IsCharged => Current >= Maximum;
+    public MomentumResource(int maximum) { Maximum = maximum; }
+    public void Add(int amount = 1) => Current = Math.Clamp(Current + amount, 0, Maximum);
+    public bool Consume() { if (!IsCharged) return false; Current = 0; return true; }
+    public void Reset() => Current = 0;
+}
+```
+
+**Initialization:** `CombatEngine.InitPlayerMomentum(player)` called at start of every `RunCombat()` — not in `PlayerClassDefinition`. `player.Momentum` is `null` before first combat.
+
+**Per-class max values:** Warrior Fury = 5, Mage Charge = 3, Paladin Devotion = 4, Ranger Focus = 3, Rogue = null.
+
+**Increment logic (Barton WI-C):**
+- Warrior Fury: `Add()` on player hit dealt AND on player damage taken
+- Mage Arcane Charge: `Add()` after any ability resolved
+- Paladin Devotion: `Add()` on DivineShield ability use or LayOnHands heal; consumed on next HolyStrike
+- Ranger Focus: `Add()` on 0-HP-damage enemy turn (stun/dodge/shield absorb); `Reset()` on damage taken
+
+**Threshold effects (Barton WI-D):**
+- Warrior: next attack +100% damage
+- Mage: next ability 0 mana cost + 25% extra damage (HP-delta method: capture `enemyHpBeforeAbility`, apply `(int)(delta * 0.25f)` after switch)
+- Paladin: next HolyStrike applies Stun 1 turn
+- Ranger: next attack bypasses enemy DEF entirely
+
+**Ranger Focus 0-damage note:** `Math.Max(1, attack - defense)` ensures no enemy regular attack deals 0 HP damage. Ranger Focus increments only on truly 0-HP-damage turns. Tests for Ranger 0-damage scenarios deferred until a Ranger-compatible mechanic (e.g., Freeze) exists.
+
+## Rationale
+
+Shared type provides clean API (`Consume()` atomically checks + resets), avoids 4 ad-hoc pairs of ints, and aligns with the Rogue `ComboPoints` pattern. Deferred initialization to `CombatEngine` is consistent with how `BattleHardenedStacks` works and avoids `Player` constructor ordering issues.
+
+## Alternatives Considered
+
+- **Bare int fields per class:** Rejected — redundant logic, no shared API.
+- **Extend ComboPoints to all classes:** Rejected — ComboPoints has partial-spend semantics (Flurry/Assassinate) incompatible with the threshold-pop model.
+- **Initialize in `PlayerClassDefinition`:** Rejected (Hill) — `Player` is a partial class with no explicit constructor; `Class` is set externally, creating ordering risk.
+
+## Related Files
+
+- `Dungnz.Models/MomentumResource.cs`
+- `Dungnz.Models/Player.cs`
+- `Dungnz.Engine/CombatEngine.cs`
+- `Dungnz.Engine/AbilityManager.cs`
+- `Dungnz.Display/ConsoleDisplayService.cs` (momentum bar in `ShowCombatMenu`)
+
+---
+
+# Momentum Test Strategy — Post-Combat State Limitations
+
+**Date:** 2026-03-10  
+**Architect/Author:** Romanoff  
+**Issues:** #1274  
+**PRs:** #1294  
+
+---
+
+## Context
+
+PR #1294 activated momentum tests after #1293 and #1295 merged. Several test patterns were blocked by engine behaviour.
+
+## Decision
+
+Four test constraints established:
+
+1. **Never assert `Momentum.Current > 0` on `CombatResult.Won`** — `HandleLootAndXP` triggers `ResetCombatPassives()` which calls `Momentum.Reset()`. Use `PlayerDied` path, display message inspection, or `Momentum.Maximum` assertion instead.
+
+2. **Cannot pre-charge Momentum before `RunCombat()`** — `InitPlayerMomentum` runs at the START of every `RunCombat()`, overwriting any pre-set value. WI-D tests needing pre-charged state must run enough combat turns naturally or assert on display messages.
+
+3. **Ranger Focus 0-damage tests deferred** — `Math.Max(1, ...)` minimum damage rule prevents any defense value from producing 0 HP damage on regular enemy attacks. Ranger_TakingNoDamage and Ranger_TakingDamage_ResetsFocus skipped until a Ranger-compatible 0-damage scenario exists.
+
+4. **Mage ability tests deferred** — Mage ability submenu requires undocumented `FakeInputReader` token sequences beyond top-level menu choices. Mage_CastingAbility and Mage_ArcaneCharged deferred until `FakeMenuNavigator` supports ability submenu flow.
+
+## Rationale
+
+These are structural engine constraints, not implementation bugs. Documenting them prevents future test authors from writing flaky assertions against the reset-on-win behaviour or attempting to pre-seed momentum state.
+
+## Alternatives Considered
+
+- Refactor `InitPlayerMomentum` to not overwrite non-null momentum — rejected; would break the "fresh state each combat" invariant.
+
+## Related Files
+
+- `Dungnz.Tests/MomentumResourceTests.cs`
+- `Dungnz.Tests/CombatEngine/MomentumIntegrationTests.cs`
+- `Dungnz.Engine/CombatEngine.cs`
+
+---
+
+# PR Review Round 2 — Blocking Issues and Coverage Fix
+
+**Date:** 2026-03-08  
+**Architect/Author:** Romanoff  
+**Issues:** #1271 (banter), #1270 (telegraph), #1277 (coverage)  
+**PRs:** #1279, #1280, #1277  
+
+---
+
+## Context
+
+Review of PRs #1279 (Fury mid-combat banter) and #1280 (Barton enemy intent telegraph) after PR #1275 (enemy crit reactions) approved. `Dungnz.Display` coverage was at 50.57% vs 70% threshold.
+
+## Decision
+
+**PR #1279 (Fury):** Blocking issue — `GetEnemyCritReaction` signature conflict (`string?` in #1279 vs `string` non-null in #1275 after merge). Fury must rebase `squad/1271-mid-combat-banter` on main after #1275 merges.
+
+**PR #1280 (Barton):** No blocking issues. Same rebase dependency on #1275 for clean CI.
+
+**Coverage fix (PR #1277):** Added 38 targeted tests to `ConsoleDisplayServiceCoverageTests.cs`. Result: `Dungnz.Display` 50.57% → 74.09%. Gate cleared. All 1,815 tests pass.
+
+**Standard established:** All interactive `ConsoleDisplayService` methods using `_input.ReadLine()` can be tested by injecting `new FakeInputReader("1")` at construction time. Methods using `Console.ReadLine()` directly need `Console.SetIn(new StringReader("x"))` or empty-input paths.
+
+**Key learning:** `SelectClass` (78 sequence points, 0% covered) was the highest-value single target. When hunting coverage gaps, find large uncovered methods first.
+
+## Rationale
+
+The signature conflict is a merge-order issue that must be resolved via rebase, not code change. The coverage fix targeted the highest-value uncovered methods first for maximum efficiency.
+
+## Alternatives Considered
+
+- Merge #1279 with conflict resolution inline — rejected; rebase is cleaner and preserves history.
+
+## Related Files
+
+- `Dungnz.Display/ConsoleDisplayService.cs`
+- `Dungnz.Tests/Display/ConsoleDisplayServiceCoverageTests.cs`
+- `Dungnz.Engine/NarrationService.cs`
+
+---
+
+# GitHub Actions Workflow Consistency — Restore → Build → Test Pattern
+
+**Date:** 2026-03  
+**Architect/Author:** Fitz  
+**Issues:** #1231  
+**PRs:** N/A (workflow fix)  
+
+---
+
+## Context
+
+CodeQL workflow (#1231) was missing an explicit `dotnet restore` step, relying on `dotnet build`'s implicit restore. If `--no-restore` is ever added as a performance optimization, the build would fail silently.
+
+## Decision
+
+All GitHub Actions workflows building .NET code must follow this explicit step order:
+1. Cache NuGet packages (`actions/cache@v4`, key on `hashFiles('**/*.csproj')`)
+2. `dotnet restore <solution>`
+3. `dotnet build --no-restore`
+4. `dotnet test --no-build` (where applicable)
+
+All three affected workflows now compliant: `squad-ci.yml`, `squad-release.yml`, `codeql.yml`.
+
+Local scripts (e.g., `scripts/coverage.sh`) must stay in sync with CI thresholds. CI is authoritative; scripts mirror it (#1228).
+
+## Rationale
+
+Explicit restore makes NuGet caching effective. Implicit restore inside build may not benefit from the cache. Separating the steps also makes build failure diagnostics clearer.
+
+## Alternatives Considered
+
+- Rely on implicit restore — rejected; brittle if `--no-restore` flag is later added.
+
+## Related Files
+
+- `.github/workflows/squad-ci.yml`
+- `.github/workflows/squad-release.yml`
+- `.github/workflows/codeql.yml`
+- `scripts/coverage.sh`
