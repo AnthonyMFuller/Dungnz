@@ -446,7 +446,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
                 _                   => "Momentum"
             };
             var dots = new string('●', momentum.Current) + new string('○', momentum.Maximum - momentum.Current);
-            var chargedSuffix = momentum.IsCharged ? " [bold cyan][CHARGED][/]" : string.Empty;
+            var chargedSuffix = momentum.IsCharged ? " [bold cyan][[CHARGED]][/]" : string.Empty;
             sb.AppendLine($"[yellow]✦ {label}[/] {dots}{chargedSuffix}");
         }
 
@@ -502,7 +502,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
                 _                   => "Momentum"
             };
             var dots = new string('●', momentum.Current) + new string('○', momentum.Maximum - momentum.Current);
-            var chargedSuffix = momentum.IsCharged ? " [bold cyan][CHARGED][/]" : string.Empty;
+            var chargedSuffix = momentum.IsCharged ? " [bold cyan][[CHARGED]][/]" : string.Empty;
             sb.AppendLine($"[yellow]✦ {label}[/] {dots}{chargedSuffix}");
         }
 
@@ -768,6 +768,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         IReadOnlyList<ActiveEffect> playerEffects,
         IReadOnlyList<ActiveEffect> enemyEffects)
     {
+        _cachedPlayer = player;              // FIX: cache player so RenderCombatStatsPanel fires
         // Cache enemy state for Stats panel persistence (Issue #1312)
         _cachedCombatEnemy = enemy;
         _cachedEnemyEffects = enemyEffects;
