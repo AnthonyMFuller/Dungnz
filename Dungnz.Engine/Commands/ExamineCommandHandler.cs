@@ -7,8 +7,8 @@ internal sealed class ExamineCommandHandler : ICommandHandler
         if (string.IsNullOrWhiteSpace(argument))
         {
             context.TurnConsumed = false;
-            context.Display.ShowError("Examine what?");
             context.Display.ShowRoom(context.CurrentRoom);
+            context.Display.ShowError("Examine what?");
             return;
         }
 
@@ -18,8 +18,8 @@ internal sealed class ExamineCommandHandler : ICommandHandler
         if (context.CurrentRoom.Enemy != null && !context.CurrentRoom.Enemy.IsDead &&
             context.CurrentRoom.Enemy.Name.ToLowerInvariant().Contains(targetLower))
         {
-            context.Display.ShowMessage($"{context.CurrentRoom.Enemy.Name} - HP: {context.CurrentRoom.Enemy.HP}/{context.CurrentRoom.Enemy.MaxHP}, Attack: {context.CurrentRoom.Enemy.Attack}, Defense: {context.CurrentRoom.Enemy.Defense}");
             context.Display.ShowRoom(context.CurrentRoom);
+            context.Display.ShowMessage($"{context.CurrentRoom.Enemy.Name} - HP: {context.CurrentRoom.Enemy.HP}/{context.CurrentRoom.Enemy.MaxHP}, Attack: {context.CurrentRoom.Enemy.Attack}, Defense: {context.CurrentRoom.Enemy.Defense}");
             return;
         }
 
@@ -27,8 +27,8 @@ internal sealed class ExamineCommandHandler : ICommandHandler
         var roomItem = context.CurrentRoom.Items.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(targetLower));
         if (roomItem != null)
         {
-            context.Display.ShowItemDetail(roomItem);
             context.Display.ShowRoom(context.CurrentRoom);
+            context.Display.ShowItemDetail(roomItem);
             return;
         }
 
@@ -36,6 +36,7 @@ internal sealed class ExamineCommandHandler : ICommandHandler
         var invItem = context.Player.Inventory.FirstOrDefault(i => i.Name.ToLowerInvariant().Contains(targetLower));
         if (invItem != null)
         {
+            context.Display.ShowRoom(context.CurrentRoom);
             context.Display.ShowItemDetail(invItem);
 
             // If equippable, show comparison vs. currently equipped
@@ -45,12 +46,11 @@ internal sealed class ExamineCommandHandler : ICommandHandler
                 context.Display.ShowEquipmentComparison(context.Player, currentlyEquipped, invItem);
             }
 
-            context.Display.ShowRoom(context.CurrentRoom);
             return;
         }
 
         context.TurnConsumed = false;
-        context.Display.ShowError($"You don't see any '{argument}' here.");
         context.Display.ShowRoom(context.CurrentRoom);
+        context.Display.ShowError($"You don't see any '{argument}' here.");
     }
 }

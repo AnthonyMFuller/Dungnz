@@ -33,16 +33,16 @@ internal sealed class CraftCommandHandler : ICommandHandler
                     context.Player.Inventory.Count(i => i.Name.Equals(ing.DisplayName, StringComparison.OrdinalIgnoreCase)) >= ing.Count
                 ))
                 .ToList();
-            context.Display.ShowCraftRecipe(chosen.Name, chosen.Result.ToItem(), ingredientsWithAvailability);
 
             var (success, msg) = CraftingSystem.TryCraft(context.Player, chosen);
+            context.Display.ShowRoom(context.CurrentRoom);
+            context.Display.ShowCraftRecipe(chosen.Name, chosen.Result.ToItem(), ingredientsWithAvailability);
             if (success)
             {
                 context.Display.ShowMessage(msg);
                 context.Display.ShowPlayerStats(context.Player);
             }
             else context.Display.ShowError(msg);
-            context.Display.ShowRoom(context.CurrentRoom);
             return;
         }
 
@@ -51,18 +51,18 @@ internal sealed class CraftCommandHandler : ICommandHandler
         if (recipe == null)
         {
             context.TurnConsumed = false;
-            context.Display.ShowError($"Unknown recipe: {argument}");
             context.Display.ShowRoom(context.CurrentRoom);
+            context.Display.ShowError($"Unknown recipe: {argument}");
             return;
         }
 
         var (success2, msg2) = CraftingSystem.TryCraft(context.Player, recipe);
+        context.Display.ShowRoom(context.CurrentRoom);
         if (success2)
         {
             context.Display.ShowMessage(msg2);
             context.Display.ShowPlayerStats(context.Player);
         }
         else context.Display.ShowError(msg2);
-        context.Display.ShowRoom(context.CurrentRoom);
     }
 }

@@ -365,14 +365,14 @@ public class GameLoop
 
         if (!_currentRoom.HasShrine)
         {
-            _display.ShowError("There is no shrine here.");
             _display.ShowRoom(_currentRoom);
+            _display.ShowError("There is no shrine here.");
             return;
         }
         if (_currentRoom.ShrineUsed)
         {
-            _display.ShowMessage("The shrine has already been used.");
             _display.ShowRoom(_currentRoom);
+            _display.ShowMessage("The shrine has already been used.");
             return;
         }
 
@@ -399,50 +399,50 @@ public class GameLoop
         switch (choice)
         {
             case 1: // Heal fully
-                if (_player.Gold < shrineHealCost) { _display.ShowError($"Not enough gold (need {shrineHealCost}g)."); _display.ShowRoom(_currentRoom); return; }
+                if (_player.Gold < shrineHealCost) { _display.ShowRoom(_currentRoom); _display.ShowError($"Not enough gold (need {shrineHealCost}g)."); return; }
                 _player.SpendGold(shrineHealCost);
                 _player.Heal(_player.MaxHP);
-                _display.ShowMessage($"The shrine heals you fully! HP: {_player.HP}/{_player.MaxHP}");
                 _currentRoom.ShrineUsed = true;
-                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantHeal));
                 _display.RefreshDisplay(_player, _currentRoom, _currentFloor);
                 _display.ShowRoom(_currentRoom);
+                _display.ShowMessage($"The shrine heals you fully! HP: {_player.HP}/{_player.MaxHP}");
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantHeal));
                 break;
             case 2: // Bless
-                if (_player.Gold < shrineBlessCost) { _display.ShowError($"Not enough gold (need {shrineBlessCost}g)."); _display.ShowRoom(_currentRoom); return; }
+                if (_player.Gold < shrineBlessCost) { _display.ShowRoom(_currentRoom); _display.ShowError($"Not enough gold (need {shrineBlessCost}g)."); return; }
                 _player.SpendGold(shrineBlessCost);
                 _player.ModifyAttack(2);
                 _player.ModifyDefense(2);
-                _display.ShowMessage("The shrine blesses you! +2 ATK/DEF.");
                 _currentRoom.ShrineUsed = true;
-                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantPower));
                 _display.RefreshDisplay(_player, _currentRoom, _currentFloor);
                 _display.ShowRoom(_currentRoom);
+                _display.ShowMessage("The shrine blesses you! +2 ATK/DEF.");
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantPower));
                 break;
             case 3: // Fortify
-                if (_player.Gold < shrineMaxHPCost) { _display.ShowError($"Not enough gold (need {shrineMaxHPCost}g)."); _display.ShowRoom(_currentRoom); return; }
+                if (_player.Gold < shrineMaxHPCost) { _display.ShowRoom(_currentRoom); _display.ShowError($"Not enough gold (need {shrineMaxHPCost}g)."); return; }
                 _player.SpendGold(shrineMaxHPCost);
                 _player.FortifyMaxHP(10);
-                _display.ShowMessage($"The shrine fortifies you! MaxHP permanently +10. ({_player.MaxHP} MaxHP)");
                 _currentRoom.ShrineUsed = true;
-                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantProtection));
                 _display.RefreshDisplay(_player, _currentRoom, _currentFloor);
                 _display.ShowRoom(_currentRoom);
+                _display.ShowMessage($"The shrine fortifies you! MaxHP permanently +10. ({_player.MaxHP} MaxHP)");
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantProtection));
                 break;
             case 4: // Meditate
-                if (_player.Gold < shrineMeditateCost) { _display.ShowError($"Not enough gold (need {shrineMeditateCost}g)."); _display.ShowRoom(_currentRoom); return; }
+                if (_player.Gold < shrineMeditateCost) { _display.ShowRoom(_currentRoom); _display.ShowError($"Not enough gold (need {shrineMeditateCost}g)."); return; }
                 _player.SpendGold(shrineMeditateCost);
                 _player.FortifyMaxMana(10);
-                _display.ShowMessage($"The shrine expands your mind! MaxMana permanently +10. ({_player.MaxMana} MaxMana)");
                 _currentRoom.ShrineUsed = true;
-                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantWisdom));
                 _display.RefreshDisplay(_player, _currentRoom, _currentFloor);
                 _display.ShowRoom(_currentRoom);
+                _display.ShowMessage($"The shrine expands your mind! MaxMana permanently +10. ({_player.MaxMana} MaxMana)");
+                _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantWisdom));
                 break;
             case 0: // Leave
+                _display.ShowRoom(_currentRoom);
                 _display.ShowMessage("You leave the shrine.");
                 _display.ShowMessage(_narration.Pick(Systems.ShrineNarration.GrantNothing));
-                _display.ShowRoom(_currentRoom);
                 break;
         }
     }
@@ -455,26 +455,26 @@ public class GameLoop
             case 1: // Prayer of Restoration — full heal + cure all ailments
                 _player.Heal(_player.MaxHP);
                 _player.ActiveEffects.RemoveAll(e => e.IsDebuff);
-                _display.ShowMessage($"Divine light washes over you. Fully restored! HP: {_player.HP}/{_player.MaxHP}. All ailments cured.");
                 _currentRoom.SpecialRoomUsed = true;
                 _display.RefreshDisplay(_player, _currentRoom, _currentFloor);
                 _display.ShowRoom(_currentRoom);
+                _display.ShowMessage($"Divine light washes over you. Fully restored! HP: {_player.HP}/{_player.MaxHP}. All ailments cured.");
                 break;
             case 2: // Prayer of Might — permanent +3 ATK
                 _player.ModifyAttack(3);
-                _display.ShowMessage("The shrine imbues your strikes with holy fury. Attack +3 (permanent).");
                 _currentRoom.SpecialRoomUsed = true;
                 _display.ShowRoom(_currentRoom);
+                _display.ShowMessage("The shrine imbues your strikes with holy fury. Attack +3 (permanent).");
                 break;
             case 3: // Prayer of Resilience — permanent +3 DEF
                 _player.ModifyDefense(3);
-                _display.ShowMessage("Sacred stone hardens your body. Defense +3 (permanent).");
                 _currentRoom.SpecialRoomUsed = true;
                 _display.ShowRoom(_currentRoom);
+                _display.ShowMessage("Sacred stone hardens your body. Defense +3 (permanent).");
                 break;
             case 0:
-                _display.ShowMessage("You leave the forgotten shrine.");
                 _display.ShowRoom(_currentRoom);
+                _display.ShowMessage("You leave the forgotten shrine.");
                 break;
         }
     }
@@ -516,14 +516,14 @@ public class GameLoop
     {
         if (_currentRoom.Type != RoomType.ContestedArmory)
         {
-            _display.ShowError("There is no armory here.");
             _display.ShowRoom(_currentRoom);
+            _display.ShowError("There is no armory here.");
             return;
         }
         if (_currentRoom.SpecialRoomUsed)
         {
-            _display.ShowMessage("The armory has already been looted.");
             _display.ShowRoom(_currentRoom);
+            _display.ShowMessage("The armory has already been looted.");
             return;
         }
 
@@ -533,32 +533,34 @@ public class GameLoop
             case 1:
                 if (_player.Defense > 12)
                 {
-                    _display.ShowMessage("You carefully disarm the traps and claim a fine weapon.");
                     GiveArmoryLoot(uncommon: false);
                     _currentRoom.SpecialRoomUsed = true;
                     _display.ShowRoom(_currentRoom);
+                    _display.ShowMessage("You carefully disarm the traps and claim a fine weapon.");
                 }
                 else
                 {
-                    _display.ShowMessage("You lack the fortitude to safely disarm the traps. Try a reckless grab or leave.");
                     _display.ShowRoom(_currentRoom);
+                    _display.ShowMessage("You lack the fortitude to safely disarm the traps. Try a reckless grab or leave.");
                 }
                 break;
             case 2:
                 var dmg = _rng.Next(15, 31);
                 _player.TakeDamage(dmg);
                 _stats.DamageTaken += dmg;
-                _display.ShowMessage($"Blades nick you as you grab the weapon! -{dmg} HP. HP: {_player.HP}/{_player.MaxHP}");
                 GiveArmoryLoot(uncommon: true);
                 _currentRoom.SpecialRoomUsed = true;
                 if (_player.HP <= 0)
                     ExitRun("an armory trap");
                 else
+                {
                     _display.ShowRoom(_currentRoom);
+                    _display.ShowMessage($"Blades nick you as you grab the weapon! -{dmg} HP. HP: {_player.HP}/{_player.MaxHP}");
+                }
                 break;
             case 0:
-                _display.ShowMessage("You leave the armory untouched.");
                 _display.ShowRoom(_currentRoom);
+                _display.ShowMessage("You leave the armory untouched.");
                 break;
         }
     }

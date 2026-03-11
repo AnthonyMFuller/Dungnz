@@ -13,8 +13,8 @@ internal sealed class UseCommandHandler : ICommandHandler
             var usable = context.Player.Inventory.Where(i => i.Type == ItemType.Consumable).ToList();
             if (usable.Count == 0)
             {
-                context.Display.ShowError("You have no usable items in your inventory.");
                 context.Display.ShowRoom(context.CurrentRoom);
+                context.Display.ShowError("You have no usable items in your inventory.");
                 return;
             }
             var selected = context.Display.ShowUseMenuAndSelect(usable.AsReadOnly());
@@ -51,8 +51,8 @@ internal sealed class UseCommandHandler : ICommandHandler
             if (candidates.Count == 0)
             {
                 context.TurnConsumed = false;
-                context.Display.ShowError($"You don't have '{argument}'.");
                 context.Display.ShowRoom(context.CurrentRoom);
+                context.Display.ShowError($"You don't have '{argument}'.");
                 return;
             }
 
@@ -63,8 +63,8 @@ internal sealed class UseCommandHandler : ICommandHandler
             {
                 context.TurnConsumed = false;
                 var names = string.Join(", ", bestCandidates.Select(x => x.Item.Name));
-                context.Display.ShowError($"Did you mean one of: {names}? Please be more specific.");
                 context.Display.ShowRoom(context.CurrentRoom);
+                context.Display.ShowError($"Did you mean one of: {names}? Please be more specific.");
                 return;
             }
 
@@ -75,8 +75,6 @@ internal sealed class UseCommandHandler : ICommandHandler
         switch (item.Type)
         {
             case ItemType.Consumable:
-                if (!string.IsNullOrEmpty(item.Description))
-                    context.Display.ShowMessage(item.Description);
                 if (item.HealAmount > 0)
                 {
                     var healAmt = Math.Max(1, (int)(item.HealAmount * context.Difficulty.HealingMultiplier));
@@ -84,6 +82,9 @@ internal sealed class UseCommandHandler : ICommandHandler
                     context.Player.Heal(healAmt);
                     var healedAmount = context.Player.HP - oldHP;
                     context.Player.Inventory.Remove(item);
+                    context.Display.ShowRoom(context.CurrentRoom);
+                    if (!string.IsNullOrEmpty(item.Description))
+                        context.Display.ShowMessage(item.Description);
                     context.Display.ShowMessage($"You use {item.Name} and restore {healedAmount} HP. Current HP: {context.Player.HP}/{context.Player.MaxHP}");
                     context.Display.ShowMessage(ItemInteractionNarration.UseConsumable(item, healedAmount));
                 }
@@ -93,6 +94,9 @@ internal sealed class UseCommandHandler : ICommandHandler
                     context.Player.RestoreMana(item.ManaRestore);
                     var restoredMana = context.Player.Mana - oldMana;
                     context.Player.Inventory.Remove(item);
+                    context.Display.ShowRoom(context.CurrentRoom);
+                    if (!string.IsNullOrEmpty(item.Description))
+                        context.Display.ShowMessage(item.Description);
                     context.Display.ShowMessage($"You use {item.Name} and restore {restoredMana} mana. Mana: {context.Player.Mana}/{context.Player.MaxMana}");
                     context.Display.ShowMessage(ItemInteractionNarration.UseConsumable(item, 0));
                 }
@@ -100,6 +104,9 @@ internal sealed class UseCommandHandler : ICommandHandler
                 {
                     context.Player.ModifyAttack(item.AttackBonus);
                     context.Player.Inventory.Remove(item);
+                    context.Display.ShowRoom(context.CurrentRoom);
+                    if (!string.IsNullOrEmpty(item.Description))
+                        context.Display.ShowMessage(item.Description);
                     context.Display.ShowMessage($"You use {item.Name}. Attack permanently +{item.AttackBonus}. Attack: {context.Player.Attack}");
                     context.Display.ShowMessage(ItemInteractionNarration.UseConsumable(item, 0));
                 }
@@ -107,6 +114,9 @@ internal sealed class UseCommandHandler : ICommandHandler
                 {
                     context.Player.ModifyDefense(item.DefenseBonus);
                     context.Player.Inventory.Remove(item);
+                    context.Display.ShowRoom(context.CurrentRoom);
+                    if (!string.IsNullOrEmpty(item.Description))
+                        context.Display.ShowMessage(item.Description);
                     context.Display.ShowMessage($"You use {item.Name}. Defense permanently +{item.DefenseBonus}. Defense: {context.Player.Defense}");
                     context.Display.ShowMessage(ItemInteractionNarration.UseConsumable(item, 0));
                 }
@@ -114,6 +124,9 @@ internal sealed class UseCommandHandler : ICommandHandler
                 {
                     context.Player.ActiveMinions.Add(new Models.Minion { Name = "Skeletal Ally", HP = 60, MaxHP = 60, ATK = 15, AttackFlavorText = "The Skeletal Ally rattles forward and strikes!" });
                     context.Player.Inventory.Remove(item);
+                    context.Display.ShowRoom(context.CurrentRoom);
+                    if (!string.IsNullOrEmpty(item.Description))
+                        context.Display.ShowMessage(item.Description);
                     context.Display.ShowMessage("The flute's hollow note summons a Skeletal Ally to fight alongside you!");
                     context.Display.ShowMessage(ItemInteractionNarration.UseConsumable(item, 0));
                 }
@@ -121,6 +134,9 @@ internal sealed class UseCommandHandler : ICommandHandler
                 {
                     context.Player.FortifyMaxHP(100);
                     context.Player.Inventory.Remove(item);
+                    context.Display.ShowRoom(context.CurrentRoom);
+                    if (!string.IsNullOrEmpty(item.Description))
+                        context.Display.ShowMessage(item.Description);
                     context.Display.ShowMessage($"Dragonheart warmth spreads through you. MaxHP +100! ({context.Player.MaxHP} MaxHP)");
                     context.Display.ShowMessage(ItemInteractionNarration.UseConsumable(item, 0));
                 }
@@ -129,6 +145,9 @@ internal sealed class UseCommandHandler : ICommandHandler
                     context.Player.ActiveEffects.RemoveAll(e => e.IsDebuff);
                     context.Player.Heal(context.Player.MaxHP);
                     context.Player.Inventory.Remove(item);
+                    context.Display.ShowRoom(context.CurrentRoom);
+                    if (!string.IsNullOrEmpty(item.Description))
+                        context.Display.ShowMessage(item.Description);
                     context.Display.ShowMessage($"The Panacea purges all ailments and restores you to full health. HP: {context.Player.HP}/{context.Player.MaxHP}");
                     context.Display.ShowMessage(ItemInteractionNarration.UseConsumable(item, 0));
                 }
@@ -141,6 +160,9 @@ internal sealed class UseCommandHandler : ICommandHandler
                     context.Player.ModifyDefense(-defLoss);
                     context.Player.TempDefenseBonus -= defLoss;
                     context.Player.Inventory.Remove(item);
+                    context.Display.ShowRoom(context.CurrentRoom);
+                    if (!string.IsNullOrEmpty(item.Description))
+                        context.Display.ShowMessage(item.Description);
                     context.Display.ShowMessage($"Rage floods your veins. ATK +{atkGain}, DEF -{defLoss} until next floor. ATK: {context.Player.Attack}, DEF: {context.Player.Defense}");
                     context.Display.ShowMessage(ItemInteractionNarration.UseConsumable(item, 0));
                 }
@@ -150,6 +172,9 @@ internal sealed class UseCommandHandler : ICommandHandler
                     context.Player.ModifyDefense(defGain);
                     context.Player.TempDefenseBonus += defGain;
                     context.Player.Inventory.Remove(item);
+                    context.Display.ShowRoom(context.CurrentRoom);
+                    if (!string.IsNullOrEmpty(item.Description))
+                        context.Display.ShowMessage(item.Description);
                     context.Display.ShowMessage($"Your skin hardens to granite. DEF +{defGain} until next floor. DEF: {context.Player.Defense}");
                     context.Display.ShowMessage(ItemInteractionNarration.UseConsumable(item, 0));
                 }
@@ -159,12 +184,16 @@ internal sealed class UseCommandHandler : ICommandHandler
                     context.Player.ModifyAttack(atkGain);
                     context.Player.TempAttackBonus += atkGain;
                     context.Player.Inventory.Remove(item);
+                    context.Display.ShowRoom(context.CurrentRoom);
+                    if (!string.IsNullOrEmpty(item.Description))
+                        context.Display.ShowMessage(item.Description);
                     context.Display.ShowMessage($"The world slows; you do not. ATK +{atkGain} until next floor. ATK: {context.Player.Attack}");
                     context.Display.ShowMessage(ItemInteractionNarration.UseConsumable(item, 0));
                 }
                 else
                 {
                     context.TurnConsumed = false;
+                    context.Display.ShowRoom(context.CurrentRoom);
                     context.Display.ShowMessage("Nothing happened.");
                     context.Display.ShowError($"You can't use {item.Name} right now.");
                 }
@@ -174,20 +203,21 @@ internal sealed class UseCommandHandler : ICommandHandler
             case ItemType.Armor:
             case ItemType.Accessory:
                 context.TurnConsumed = false;
+                context.Display.ShowRoom(context.CurrentRoom);
                 context.Display.ShowError($"Use 'EQUIP {item.Name}' to equip this item.");
                 break;
 
             case ItemType.CraftingMaterial:
                 context.TurnConsumed = false;
+                context.Display.ShowRoom(context.CurrentRoom);
                 context.Display.ShowError($"{item.Name} is a crafting material and cannot be used directly. Use it at a crafting station.");
                 break;
 
             default:
                 context.TurnConsumed = false;
+                context.Display.ShowRoom(context.CurrentRoom);
                 context.Display.ShowError($"You can't use {item.Name}.");
                 break;
         }
-        
-        context.Display.ShowRoom(context.CurrentRoom);
     }
 }
