@@ -453,6 +453,8 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         UpdateStatsPanel(sb.ToString().TrimEnd());
     }
 
+    // Renders player-only stats into the Stats panel during combat.
+    // Enemy stats are rendered separately into the Gear panel by RenderEnemyStatsPanel.
     private void RenderCombatStatsPanel(Player player, Enemy enemy, IReadOnlyList<ActiveEffect> enemyEffects)
     {
         var sb = new StringBuilder();
@@ -506,12 +508,17 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             sb.AppendLine($"[yellow]✦ {label}[/] {dots}{chargedSuffix}");
         }
 
-        // Separator
-        sb.AppendLine();
-        sb.AppendLine("[grey]──────────────────[/]");
-        sb.AppendLine();
+        UpdateStatsPanel(sb.ToString().TrimEnd());
+        RenderEnemyStatsPanel(enemy, enemyEffects);
+    }
 
-        // Enemy section (Issue #1312)
+    // Renders enemy stats into the Gear panel during combat.
+    // The Gear panel (50% screen height) has enough vertical space to show full enemy details.
+    // ShowRoom restores the Gear panel to player gear display after combat ends.
+    private void RenderEnemyStatsPanel(Enemy enemy, IReadOnlyList<ActiveEffect> enemyEffects)
+    {
+        var sb = new StringBuilder();
+
         sb.AppendLine($"🐉 [bold]{Markup.Escape(enemy.Name)}[/]");
 
         if (enemy is Dungnz.Systems.Enemies.DungeonBoss boss)
@@ -563,8 +570,13 @@ public partial class SpectreLayoutDisplayService : IDisplayService
             sb.AppendLine();
         }
 
-        UpdateStatsPanel(sb.ToString().TrimEnd());
+        var panel = new Panel(new Markup(sb.ToString().TrimEnd()))
+            .Header("[bold red]🐉 Enemy[/]")
+            .Border(BoxBorder.Rounded)
+            .BorderColor(Color.Red);
+        _ctx.UpdatePanel(SpectreLayout.Panels.Gear, panel);
     }
+
 
     private void RenderGearPanel(Player player)
     {
@@ -790,10 +802,15 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     {
         _cachedPlayer = player;
         if (_cachedCombatEnemy != null)
+        {
+            // In combat: update player stats panel and refresh enemy panel; do not overwrite Gear
             RenderCombatStatsPanel(player, _cachedCombatEnemy, _cachedEnemyEffects);
+        }
         else
+        {
             RenderStatsPanel(player);
-        RenderGearPanel(player);
+            RenderGearPanel(player);
+        }
     }
 
     /// <inheritdoc/>
