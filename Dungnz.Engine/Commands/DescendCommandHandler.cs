@@ -15,7 +15,7 @@ internal sealed class DescendCommandHandler : ICommandHandler
             return;
         }
 
-        if (context.CurrentFloor >= DungeonGenerator.FinalFloor)
+        if (context.CurrentFloor >= GameConstants.FinalFloor)
         {
             context.Stats.FinalLevel = context.Player.Level;
             context.Stats.TimeElapsed = DateTime.UtcNow - context.RunStart;
@@ -50,7 +50,7 @@ internal sealed class DescendCommandHandler : ICommandHandler
         context.FloorEntranceRoom = newStart;
         context.CurrentRoom.Visited = true;
         var descendVariant = DungeonVariant.ForFloor(context.CurrentFloor);
-        context.Display.ShowFloorBanner(context.CurrentFloor, DungeonGenerator.FinalFloor, descendVariant);
+        context.Display.ShowFloorBanner(context.CurrentFloor, GameConstants.FinalFloor, descendVariant);
         context.Display.ShowMessage(descendVariant.EntryMessage);
         context.Display.ShowRoom(context.CurrentRoom);
         context.Display.ShowMap(context.CurrentRoom, context.CurrentFloor);
