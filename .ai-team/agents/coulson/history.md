@@ -3583,3 +3583,50 @@ Critical path: #1187 → #1188 → #1189 → #1190 → #1191 → #1192 → #1193
 - Romanoff will reject display bug PRs without new tests
 
 **Decisions written to:** `.ai-team/decisions/inbox/coulson-retro-2026-03-11.md`
+
+---
+
+## 2026-03-11: Retrospective Ceremony (Post-Action-Cycle)
+
+**Ceremony:** Retrospective — all 9 retro action items from previous cycle merged to master. 1,913 passing tests at time of ceremony.
+
+**Participants:** Hill, Barton, Romanoff, Fury, Fitz
+
+### Learnings
+
+**Top Recommendations (one per member):**
+- **Hill**: Extract `BuildGearPanelMarkup` as `internal static` + per-panel line-count CI assertions for ALL panels in `PanelHeightRegressionTests` across all class/state combinations
+- **Barton**: Extract `BuildGearPanelMarkup`, mirror `BuildPlayerStatsPanelMarkup` pattern exactly; fix stats panel line budget for worst-case (Warrior + CHARGED + cooldowns)
+- **Romanoff**: Adopt Verify.Xunit snapshot baselines for every `BuildXxxPanelMarkup` method — any rendering change produces a reviewable diff; enforcement mechanism forces extraction of untestable methods
+- **Fury**: `NarrationMarkupSafetyTests` — reflection over all narration static classes, parse each string through `new Markup(s)`, fail test if any throw; turns Content Authoring Spec from advice into a gate
+- **Fitz**: Raise coverage floor 70% → 80% in `squad-ci.yml` (one-character change); eliminates 15-point buffer that lets large untested features ship without CI objection
+
+**Key Themes — What Went Well:**
+- CHARGED crash fix handled with correct scope (root cause → sweep → adversarial tests)
+- `internal static` extraction pattern proven and reusable (Stats panel)
+- `PanelHeightRegressionTests` established as the model for panel gating
+- `LayoutConstants.cs` centralization broke the magic-number drift problem
+- Content Authoring Spec substantive (Fury, 416 lines, 9 sections)
+- CI pipeline held; no regressions leaked to master
+
+**Key Themes — What Could Be Improved:**
+- GearPanel testability gap: most complex panel, zero unit coverage, deferred two cycles
+- Cooldown overflow (9 lines vs 8) is a documented bug, not a deferred feature
+- Narration content has no markup safety gate (spec is documentation, not a test)
+- Architecture enforcement has a disabled rule (NotCallMethod commented out)
+- Coverage floor stale at 70% (actual 85.57%)
+- CI double-run: smoke-test fires twice per PR merge
+- Open bug lives in a test comment (`SoulHarvestIntegrationTests`)
+
+**Decisions Filed:**
+- D-RETRO-01: GearPanel extraction is prerequisite for next feature cycle
+- D-RETRO-02: Cooldown overflow is a defect, must be fixed
+- D-RETRO-03: Coverage floor raised to 80%
+- D-RETRO-04: Verify.Xunit snapshots adopted for panel markup methods
+- D-RETRO-05: NarrationMarkupSafetyTests is P1
+- D-RETRO-06: SoulHarvestIntegrationTests double-heal comment must be triaged
+- D-RETRO-07: closes-issue check upgraded to hard gate
+
+**Ceremony artifacts:**
+- Summary: `.ai-team/log/2026-03-11-retrospective.md`
+- Decisions: `.ai-team/decisions/inbox/coulson-retro-2026-03-11.md`
