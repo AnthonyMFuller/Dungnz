@@ -4126,3 +4126,95 @@ Single-file change; no architectural violations; correct Spectre escape conventi
 ## Related Files
 - `Dungnz.Display/SpectreLayoutDisplayService.cs`
 
+# Retrospective Decisions — 2026-03-11
+
+**Source:** Retrospective ceremony  
+**Proposed by:** Coulson (from team consensus)  
+**Status:** Pending ratification
+
+---
+
+## Decision 1: Mandatory Display Crash Smoke Tests
+
+**Context:** The `[CHARGED]` markup crash recurred multiple times across sessions because no test existed that would catch unescaped Spectre markup. Unit tests passed while the game crashed at runtime.
+
+**Decision:** All `ShowXxx` display methods that render dynamic content must have adversarial smoke tests feeding content with brackets and special characters, asserting no exception.
+
+**Owner:** Romanoff  
+**Gate:** No display PR merges without a corresponding `_DoesNotThrow` test covering the changed rendering path.
+
+---
+
+## Decision 2: Panel Height Regression Tests
+
+**Context:** The Stats panel renders ~8 visible rows, but `RenderCombatStatsPanel` generated 14-19 lines. Enemy stats were always below the fold. No test caught this.
+
+**Decision:** Panel rendering functions must assert their output line count is within the configured panel height. Tests fail if content overflows.
+
+**Owner:** Barton (tests), Coulson (centralize height constants into `LayoutConstants.cs`)
+
+---
+
+## Decision 3: Content Authoring Spec
+
+**Context:** Content authors (Fury) have no authoritative reference for panel line limits, character widths, or unsafe characters. Display constraints are discovered by crash.
+
+**Decision:** Create and maintain a Content Authoring Spec in `docs/content-authoring-spec.md` documenting:
+- Display surface → panel mapping
+- Hard line limits per surface
+- Character width limits
+- Unsafe characters (with escaping rules)
+
+**Owner:** Barton + Fury  
+**Maintenance:** Barton updates on any display change, Fury validates before content PRs.
+
+---
+
+## Decision 4: Integration Smoke Test in CI
+
+**Context:** `dotnet test` runs unit tests. `smoke-test.yml` confirms the binary starts. Neither exercises the actual rendering pipeline under realistic conditions.
+
+**Decision:** Extend CI smoke test to:
+1. Pipe scripted input through game (start → combat → ability → exit)
+2. Fail if process exits non-zero
+3. Fail if stdout contains stack traces or `Unhandled exception`
+
+**Owner:** Fitz  
+**Blocked by:** None — can be implemented immediately.
+
+---
+
+## Decision 5: "Fixed" Definition
+
+**Context:** Bugs were claimed "fixed" with code changes but no runtime verification or regression test. Same bugs recurred across sessions.
+
+**Decision:** A bug is not "fixed" until:
+1. CI is green
+2. A regression test exists that would fail if the bug recurred
+3. For Display/ bugs: PR description includes "verified in terminal" attestation
+
+**Enforcement:** Romanoff will reject PRs that close display bugs without new tests.
+
+---
+
+## Decision 6: Centralize Panel Height Constants
+
+**Context:** Barton asked whether panel height constants should live in `LayoutConstants.cs` so regression tests and the renderer share a single source of truth. Currently they're magic numbers in two places.
+
+**Decision:** Yes. Centralize into `Dungnz.Display/LayoutConstants.cs`. Both `SpectreLayoutDisplayService` and `PanelHeightRegressionTests` reference this file.
+
+**Owner:** Coulson (scaffold), Barton (migrate)
+
+---
+
+## Decision 7: Loop Fury Into Display Changes
+
+**Context:** Fury discovered the Stats → Gear panel reroute secondhand, after it was fixed. Content authors need to know when panel constraints change.
+
+**Decision:** Any PR that changes panel dimensions, routing, or character-safety rules must tag Fury for notification (not blocking review — notification).
+
+**Owner:** Process (Romanoff enforces at review)
+
+---
+
+*End decisions.*

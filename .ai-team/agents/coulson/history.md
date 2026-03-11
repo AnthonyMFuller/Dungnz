@@ -3543,3 +3543,43 @@ Critical path: #1187 → #1188 → #1189 → #1190 → #1191 → #1192 → #1193
 **Clean handlers:** 18 handlers confirmed clean. The handlers that are already correct use the pattern of returning early without ShowRoom on error paths.
 
 **Recommended fix:** Error paths should `return` without calling `ShowRoom`. The content panel retains the last room view. Only success/completion paths need to refresh via ShowRoom. This matches the already-correct pattern in GoCommandHandler error paths and AscendCommandHandler.
+
+
+---
+
+### 2026-03-11: Retrospective Ceremony — Verification Gap Analysis
+
+**Context:** Facilitated team retrospective following multiple rounds of display bug recurrence (CHARGED markup crash, enemy stats below fold). Anthony expressed significant frustration at bug recurrence rate.
+
+**Key Patterns Identified:**
+
+1. **Verification Gap** — All 5 participants independently identified the same root cause: bugs were claimed "fixed" without runtime verification. Code changes made, tests passed, but no one ran the game to visually confirm the fix worked.
+
+2. **Spectre Markup as Bug Class** — The `[CHARGED]` crash recurred because it was treated as a point fix, not a category. Any unescaped bracket hitting Spectre's parser will crash. Grep-and-sweep should have happened after first recurrence.
+
+3. **Panel Constraints Undocumented** — Stats panel holds ~8 rows, render function generated 14-19 lines. No constant, no assertion, no documentation.
+
+4. **Content Authors Operating Blind** — Fury has no authoritative list of panel limits, character widths, or unsafe characters.
+
+**Unanimous Consensus:** 4/5 participants independently recommended integration smoke tests exercising the actual rendering pipeline, not just unit tests of logic.
+
+**Action Items Assigned:**
+
+| Owner | Action | Priority |
+|-------|--------|----------|
+| Romanoff | Adversarial markup smoke tests for all `ShowXxx` methods | P0 |
+| Romanoff | Gate: No display PR without `_DoesNotThrow` test | P0 |
+| Barton | Grep Display/ for unescaped `[` patterns, fix list | P0 |
+| Barton | `PanelHeightRegressionTests` class | P1 |
+| Barton + Fury | Content Authoring Spec in `docs/` | P1 |
+| Fitz | Extend `smoke-test.yml` with scripted combat sequence | P1 |
+| Coulson | Centralize panel heights into `LayoutConstants.cs` | P1 |
+| Hill | Centralize `FinalFloor` into `GameConstants.cs` | P1 |
+
+**Process Decisions:**
+
+- "Fixed" requires CI green + regression test + "verified in terminal" for Display/ PRs
+- Display constraint changes must notify Fury
+- Romanoff will reject display bug PRs without new tests
+
+**Decisions written to:** `.ai-team/decisions/inbox/coulson-retro-2026-03-11.md`
