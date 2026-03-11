@@ -1793,3 +1793,50 @@ Reviewed and merged three dependency updates:
 **Action:**
 - All PRs merged.
 - Decision log created: `.ai-team/decisions/inbox/romanoff-dep-bump-review-2026-03-09.md` (merged into decisions.md by Scribe).
+
+---
+
+### 2026-03-11 — PR #1340 Review / #1345 Merge (Issues #1336, #1337)
+
+**PR reviewed:** #1340 — `docs: Content Authoring Spec — panel constraints and markup safety`
+**Branch:** `squad/1336-bracket-markup-sweep`
+**Issues:** #1336 (bracket sweep), #1337 (content authoring spec)
+
+**Branch contamination assessment:**
+
+Anthony's pre-brief said the squash would self-heal the contamination. Investigation showed this was partially correct but GitHub reported `mergeable: CONFLICTING` — the PR could NOT be squash-merged as-is.
+
+Root cause: The contamination commit (`9c9ddce` — Hill's FinalFloor refactor) on the branch was an OLDER version of that change. Master had since merged the same work (via PR #1341) in a slightly different form. The result: multiple files in the branch diverged from master in ways that created actual conflicts (not just no-ops).
+
+Genuinely unique content in the branch (not yet on master):
+- `.ai-team/agents/barton/history.md` — markup sweep session entry
+- `.ai-team/decisions/inbox/barton-markup-escape-complete.md` — new file
+
+Already on master (no action needed):
+- `docs/content-authoring-spec.md` — merged previously
+- `.ai-team/decisions.md` additions — identical on both sides
+- Retrospective entries — identical on both sides
+
+**Action taken:**
+1. Closed PR #1340 with explanation of conflicts
+2. Created clean branch `squad/1340-clean-docs-sweep` from master HEAD
+3. Manually added the two unique files (barton history + decision inbox)
+4. Also fixed a spec inaccuracy found during review: Map panel height was listed as ~5 lines; correct value is `MapPanelHeight = 8` (from LayoutConstants.cs)
+5. Created PR #1345, merged with `--admin` after confirming clean build
+6. Ran tests: 1909 passing, 0 failed
+
+**Content review findings:**
+
+`docs/content-authoring-spec.md` was reviewed against `LayoutConstants.cs`:
+- Stats=8 ✅, Gear=20 ✅, Content=20 ✅, Log=8 ✅ — all correct
+- Map panel: was ~5 lines (incorrect), fixed to ~8 lines ✅
+- Markup safety section (Markup.Escape, [[CHARGED]] double-bracket) — accurate ✅
+
+**Bracket sweep result:** CLEAN — no code fixes required. Issue #1336 confirmed closed.
+
+## Learnings
+
+- **"Squash self-healing" assumption can be wrong.** If a contamination commit is an OLDER version of a change that master has in a NEWER form, GitHub's three-way merge CAN produce conflicts rather than silently discarding the duplicate. Always verify with `gh pr view --json mergeable,mergeStateStatus` before attempting to merge.
+- **`git diff origin/master origin/branch` (two-dot) vs `gh pr diff` (three-dot) tell different stories.** The PR diff shows what the branch adds vs merge base; the two-dot diff shows what's actually different between the tips. When a branch is contaminated and master moved forward, always check both to understand the full picture.
+- **Extracting unique content from a contaminated branch:** Use `git diff origin/master origin/branch -- <file>` to identify which files are genuinely different and what changed. Then manually cherry-pick or append just the unique additions to a clean branch.
+- **`gh pr view --json mergeable` returns UNKNOWN initially** — always sleep a few seconds and re-poll after first check. DIRTY = conflicts.

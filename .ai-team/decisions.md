@@ -4217,4 +4217,92 @@ Single-file change; no architectural violations; correct Spectre escape conventi
 
 ---
 
+## Decision 8: Spectre Markup Bracket Sweep — Codebase Is Clean
+
+**Date:** 2026-03-11  
+**Architect/Author:** Barton  
+**Issues:** #1336  
+**PRs:** #1344  
+
+---
+
+### Context
+Retro item from the [CHARGED] crash: all unescaped `[WORD]` patterns in Display/, Engine/, and Systems/ needed auditing to confirm no similar crash vectors remain.
+
+### Decision
+No code changes required. The codebase is clean. All dangerous `[WORD]` patterns are already properly escaped via `Markup.Escape()`, `[[X]]` double-bracket notation, or routed through display methods that apply escaping before rendering.
+
+### Rationale
+Every method that accepts game-state strings (`ShowMessage`, `ShowError`, `ShowCombatMessage`, `ShowColoredCombatMessage`) was previously hardened to call `Markup.Escape` or `StripAnsiCodes` + `Markup.Escape` before rendering. `ConvertAnsiInlineToSpectre` always escapes plain-text segments. Direct markup builders in Display/ use `Markup.Escape(dynamicValue)` for every game-state string. Map symbols use `[[X]]` double-bracket notation throughout.
+
+### Alternatives Considered
+- Systematic find-and-fix pass: not needed — all patterns were already safe.
+
+### Related Files
+- `Dungnz.Display/SpectreLayoutDisplayService.cs`
+- `Dungnz.Display/SpectreDisplayService.cs`
+- `Dungnz.Display/DisplayService.cs`
+- `Dungnz.Engine/CombatEngine.cs`
+- `Dungnz.Engine/AttackResolver.cs`
+- `Dungnz.Systems/StatusEffectManager.cs`
+- `Dungnz.Systems/AbilityManager.cs`
+
+---
+
+## Decision 9: Cooldown Row Excluded From Panel Height Regression Tests
+
+**Date:** 2026-03-12  
+**Architect/Author:** Barton  
+**Issues:** #1333  
+**PRs:** #1344  
+
+---
+
+### Context
+`BuildPlayerStatsPanelMarkup` with active cooldowns produces 9 newlines (10 content lines). `LayoutConstants.StatsPanelHeight = 8`. Including cooldowns in the max-level player regression test would cause it to fail. The regression being guarded is enemy stats appearing in the Stats panel — not cooldown overflow.
+
+### Decision
+Panel height regression tests do NOT exercise the cooldown rendering path. Tests pass empty cooldowns (`Array.Empty<(string, int)>()`). A future decision should address whether cooldown overflow is permitted or whether `StatsPanelHeight` should be raised to 9/10.
+
+### Rationale
+The cooldown overflow is a separate, known layout constraint. Bundling it into this regression would confound the signal the test is meant to provide.
+
+### Alternatives Considered
+- Raise `StatsPanelHeight` now: deferred — requires product/design input on acceptable panel size.
+- Compress cooldown row display: deferred — separate PR scope.
+
+### Related Files
+- `Dungnz.Tests/Display/PanelHeightRegressionTests.cs`
+- `Dungnz.Display/LayoutConstants.cs`
+
+---
+
+## Decision 10: GearPanel Seam Deferred to Hill
+
+**Date:** 2026-03-12  
+**Architect/Author:** Barton  
+**Issues:** #1333  
+**PRs:** #1344  
+
+---
+
+### Context
+`SpectreLayoutDisplayService.RenderGearPanel` is `private`, making it untestable from outside the class. `BuildPlayerStatsPanelMarkup` was previously extracted as `internal static` for this exact reason. A parallel extraction is needed for gear panel height testing.
+
+### Decision
+The `GearPanelLineCount_IsWithinGearPanelHeight` test is deferred with a `// TODO:` comment in the test file. No gear panel height test is written in this PR. Hill to extract `BuildGearPanelMarkup(Player player)` as `internal static` in `SpectreLayoutDisplayService.cs`; once done, Romanoff/Barton to close the TODO with a concrete test.
+
+### Rationale
+Extracting `BuildGearPanelMarkup` requires changes to a display plumbing file owned by Hill. That work belongs in a separate, targeted PR rather than bundled into a test-only PR.
+
+### Alternatives Considered
+- Use reflection to call `RenderGearPanel`: rejected — brittle, not a test pattern we want to establish.
+- Extract in this PR: out of scope for a test-only PR; Hill owns that file.
+
+### Related Files
+- `Dungnz.Display/SpectreLayoutDisplayService.cs`
+- `Dungnz.Tests/Display/PanelHeightRegressionTests.cs`
+
+---
+
 *End decisions.*
