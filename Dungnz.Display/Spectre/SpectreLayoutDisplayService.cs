@@ -396,27 +396,36 @@ public partial class SpectreLayoutDisplayService : IDisplayService
 
     // ── Stats panel rendering ─────────────────────────────────────────────────
 
-    private void RenderStatsPanel(Player player)
+    /// <summary>
+    /// Builds the Spectre markup string for the Stats panel player section.
+    /// Extracted as an internal static method so that tests can validate markup
+    /// correctness (no unescaped brackets) and rendered line count without requiring
+    /// a live terminal. Both <see cref="RenderStatsPanel"/> and
+    /// <see cref="RenderCombatStatsPanel"/> delegate to this method.
+    /// </summary>
+    /// <param name="player">The player whose stats to render.</param>
+    /// <param name="cooldowns">Active ability cooldowns; pass an empty collection when none.</param>
+    /// <returns>A trimmed Spectre markup string ready for use in a panel.</returns>
+    internal static string BuildPlayerStatsPanelMarkup(
+        Player player,
+        IReadOnlyList<(string name, int turnsRemaining)> cooldowns)
     {
         var sb = new StringBuilder();
         sb.AppendLine($"[bold]{Markup.Escape(player.Name)}[/]  [grey]Lv {player.Level}[/]  [dim]{Markup.Escape(player.Class.ToString())}[/]");
         sb.AppendLine();
 
-        // HP bar with urgency coloring (Issue #1066)
         var hpBar = BuildHpBar(player.HP, player.MaxHP);
         sb.AppendLine($"HP {hpBar} [bold]{player.HP}/{player.MaxHP}[/]");
 
-        // MP bar with urgency coloring (Issue #1066)
         if (player.MaxMana > 0)
         {
             var mpBar = BuildMpBar(player.Mana, player.MaxMana);
             sb.AppendLine($"MP {mpBar} [bold]{player.Mana}/{player.MaxMana}[/]");
         }
 
-        // Cooldown state display (Issue #1268) — only shown during combat when abilities are tracked
-        if (_cachedCooldowns.Count > 0)
+        if (cooldowns.Count > 0)
         {
-            var cdParts = _cachedCooldowns.Select(c =>
+            var cdParts = cooldowns.Select(c =>
                 c.turnsRemaining == 0
                     ? $"[green]{Markup.Escape(c.name)}:✅[/]"
                     : $"[grey]{Markup.Escape(c.name)}:[/][yellow]{c.turnsRemaining}t[/]");
@@ -432,7 +441,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         if (player.Class == PlayerClass.Rogue && player.ComboPoints > 0)
         {
             var dots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
-            sb.AppendLine($"[yellow]✦ Combo[/] {dots}");
+            sb.AppendLine($"[yellow]❖ Combo[/] {dots}");
         }
 
         if (player.Momentum is { } momentum)
@@ -446,69 +455,23 @@ public partial class SpectreLayoutDisplayService : IDisplayService
                 _                   => "Momentum"
             };
             var dots = new string('●', momentum.Current) + new string('○', momentum.Maximum - momentum.Current);
+            // NOTE: [[CHARGED]] is the Spectre-escaped form of the literal text [CHARGED].
+            // Writing [CHARGED] without escaping would throw InvalidOperationException at Markup construction.
             var chargedSuffix = momentum.IsCharged ? " [bold cyan][[CHARGED]][/]" : string.Empty;
-            sb.AppendLine($"[yellow]✦ {label}[/] {dots}{chargedSuffix}");
+            sb.AppendLine($"[yellow]❖ {label}[/] {dots}{chargedSuffix}");
         }
 
-        UpdateStatsPanel(sb.ToString().TrimEnd());
+        return sb.ToString().TrimEnd();
     }
+
+    private void RenderStatsPanel(Player player) =>
+        UpdateStatsPanel(BuildPlayerStatsPanelMarkup(player, _cachedCooldowns));
 
     // Renders player-only stats into the Stats panel during combat.
     // Enemy stats are rendered separately into the Gear panel by RenderEnemyStatsPanel.
     private void RenderCombatStatsPanel(Player player, Enemy enemy, IReadOnlyList<ActiveEffect> enemyEffects)
     {
-        var sb = new StringBuilder();
-
-        // Player section (same as RenderStatsPanel)
-        sb.AppendLine($"[bold]{Markup.Escape(player.Name)}[/]  [grey]Lv {player.Level}[/]  [dim]{Markup.Escape(player.Class.ToString())}[/]");
-        sb.AppendLine();
-
-        var hpBar = BuildHpBar(player.HP, player.MaxHP);
-        sb.AppendLine($"HP {hpBar} [bold]{player.HP}/{player.MaxHP}[/]");
-
-        if (player.MaxMana > 0)
-        {
-            var mpBar = BuildMpBar(player.Mana, player.MaxMana);
-            sb.AppendLine($"MP {mpBar} [bold]{player.Mana}/{player.MaxMana}[/]");
-        }
-
-        if (_cachedCooldowns.Count > 0)
-        {
-            var cdParts = _cachedCooldowns.Select(c =>
-                c.turnsRemaining == 0
-                    ? $"[green]{Markup.Escape(c.name)}:✅[/]"
-                    : $"[grey]{Markup.Escape(c.name)}:[/][yellow]{c.turnsRemaining}t[/]");
-            sb.AppendLine($"[dim]CD:[/] {string.Join("  ", cdParts)}");
-        }
-
-        sb.AppendLine();
-        sb.AppendLine($"[red]ATK[/] [bold]{player.Attack}[/]   [cyan]DEF[/] [bold]{player.Defense}[/]");
-        sb.AppendLine($"[yellow]Gold[/] {player.Gold}g");
-        var xpToNext = 100 * player.Level;
-        sb.AppendLine($"[green]XP[/] {player.XP}/{xpToNext}");
-
-        if (player.Class == PlayerClass.Rogue && player.ComboPoints > 0)
-        {
-            var dots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
-            sb.AppendLine($"[yellow]✦ Combo[/] {dots}");
-        }
-
-        if (player.Momentum is { } momentum)
-        {
-            var label = player.Class switch
-            {
-                PlayerClass.Warrior => "Fury",
-                PlayerClass.Mage    => "Charge",
-                PlayerClass.Paladin => "Devotion",
-                PlayerClass.Ranger  => "Focus",
-                _                   => "Momentum"
-            };
-            var dots = new string('●', momentum.Current) + new string('○', momentum.Maximum - momentum.Current);
-            var chargedSuffix = momentum.IsCharged ? " [bold cyan][[CHARGED]][/]" : string.Empty;
-            sb.AppendLine($"[yellow]✦ {label}[/] {dots}{chargedSuffix}");
-        }
-
-        UpdateStatsPanel(sb.ToString().TrimEnd());
+        UpdateStatsPanel(BuildPlayerStatsPanelMarkup(player, _cachedCooldowns));
         RenderEnemyStatsPanel(enemy, enemyEffects);
     }
 
