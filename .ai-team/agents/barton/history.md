@@ -2041,3 +2041,41 @@ Hill had already pushed `MomentumResource` model + `Player.Momentum` on `squad/1
 - `ShowRoom` should always refresh all three persistent panels: Map, Stats, AND Gear.
 - Content panel updates must go through `SetContent` / `AppendContent` to keep `_contentLines` in sync; never call `_ctx.UpdatePanel(Panels.Content, ...)` directly while Live is active.
 - `ContentPanelMenu<T>` cancel-sentinel convention: last item with "← Cancel" or "←" label is the cancel option; Escape/Q navigates there automatically.
+
+### 2025-06-XX — Display Trial Sprint: Issues #1311, #1312, #1314
+
+**Context:** Display Specialist trial sprint — owned SpectreLayoutDisplayService bug fixes.
+
+#### #1312 — ShowCombatStatus Restructure (Stats panel)
+
+The old `ShowCombatStatus` built a combined player+enemy status string and appended it to the scrolling Content panel on every combat turn. This meant stats got buried under combat messages. The fix:
+
+- Added `_cachedCombatEnemy` and `_cachedEnemyEffects` fields to hold current combat state
+- Extracted `RenderCombatStatsPanel(player, enemy, enemyEffects)` which builds the full player section (same as `RenderStatsPanel`) plus a `──────────────────` separator and the enemy section, then calls `UpdateStatsPanel`
+- `ShowCombatStatus` now just caches the enemy and calls `RenderCombatStatsPanel` — no Content panel writes
+- `ShowPlayerStats` checks `_cachedCombatEnemy != null` and dispatches to `RenderCombatStatsPanel` or `RenderStatsPanel` accordingly, so stat updates mid-combat keep enemy visible
+- `UpdateCooldownDisplay` follows the same pattern
+- `ShowRoom` clears `_cachedCombatEnemy = null` (alongside existing `_cachedCooldowns` clear) to restore the normal player-only Stats panel when leaving combat
+
+Key learning: the Stats panel is always visible, so routing combat state there instead of the scrolling Content panel is the right architectural choice for persistent display.
+
+#### #1314 — COMPARE ShowRoom Overwrite
+
+Classic overwrite pattern: `CompareCommandHandler` called `ShowEquipmentComparison` (SetContent) immediately followed by `ShowRoom` (also SetContent), wiping the comparison in the same turn.
+
+Fix: removed `ShowRoom` from the success path only. Error paths (no equippable items, item not found, not equippable, user cancelled) still call `ShowRoom` to restore the view after the error. Updated tests that asserted `ShowRoom` was called in the success path.
+
+#### #1311 — Equip Error Overwrite
+
+`EquipmentManager.DoEquip` called `_display.ShowError(...)` on class restriction / weight / not-found failures. Then `EquipCommandHandler` called `context.Display.ShowRoom(...)` which reset the Content panel and wiped the error.
+
+Fix approach — return errors instead of displaying them:
+1. Changed `HandleEquip` return type from `bool` to `(bool success, string? errorMessage)` tuple
+2. All `_display.ShowError(...)` calls in `HandleEquip`/`DoEquip` replaced with `return (false, "message")`
+3. `EquipCommandHandler.Handle` now: calls `HandleEquip`, then `ShowRoom`, then `ShowError(errorMessage)` if failed
+
+This ensures errors appear AFTER the room view is set, so they're visible as appended content.
+
+**Test updates required:** Many tests checked `display.Errors` directly because they tested `EquipmentManager` in isolation expecting it to call `ShowError`. All those tests were updated to capture the returned tuple and assert on `errorMessage` instead. Tests that relied on `ShowRoom` being called in COMPARE success path were updated to assert `ShowRoom` is NOT called.
+
+**Surprise:** A few tests in `ItemsExpansionTests` and `Phase6IntegrationTests` weren't using the return value at all (just calling `HandleEquip(...)` fire-and-forget). Those compiled fine after signature change (C# allows discarding tuples), but the assertions still needed updating from `display.Errors` to the tuple approach.
