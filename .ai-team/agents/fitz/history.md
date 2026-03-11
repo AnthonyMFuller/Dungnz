@@ -283,3 +283,46 @@ Implemented six CI/CD and infrastructure enhancements across multiple PRs:
 - Reviewers now see coverage impact directly in PR without local test run
 - Coverage reports persisted as artifacts for historical reference
 - Supports both opencover (existing) and cobertura (new) formats
+
+---
+
+### 2026-03-11 — Combat Smoke Test Extended (#1338)
+
+**PR:** (pending) — `ci: extend smoke test with scripted combat scenario`
+**Branch:** `squad/1338-smoke-test-combat-scenario`
+**Files Modified:**
+- `.github/workflows/smoke-test.yml` — added "Publish Release Binary" step + "Smoke Test - Scripted Combat Scenario" step
+- `Program.cs` — added non-TTY mode: uses `ConsoleDisplayService` when `Console.IsInputRedirected`
+
+**How the game accepts stdin input:**
+- `ConsoleInputReader.IsInteractive` returns `!Console.IsInputRedirected`
+- When `IsInteractive == false`, `ConsoleDisplayService.SelectFromMenu()` prints numbered options and reads plain `Console.ReadLine()` — works perfectly with piped input
+- `GameLoop` reads commands via `_display.ReadCommandInput()` → `_input.ReadLine()` — also works with piped input
+
+**Whether it has a headless/non-TTY mode:**
+- Before this PR: NO. `Program.cs` hardcoded `SpectreLayoutDisplayService`, which throws `System.NotSupportedException: Cannot show selection prompt since the current terminal isn't interactive.`
+- After this PR: YES. `Program.cs` now checks `inputReader.IsInteractive`. When false (piped/redirected stdin), it uses `ConsoleDisplayService` and skips Spectre Live rendering entirely.
+
+**The smoke test workflow path:**
+- `.github/workflows/smoke-test.yml`
+
+**Input sequence for smoke test:**
+```
+1         → New Game (startup menu)
+(blank)   → skip intro narrative (Press Enter to begin...)
+Hero      → player name
+1         → Warrior class
+1         → Casual difficulty
+go south  → navigate (direction varies by seed; errors are non-fatal)
+go east   → try alternate direction
+attack    → attempt attack
+attack    → second attack attempt
+go south  → continue navigation
+attack    → third attack attempt
+quit      → exit the game
+```
+
+**Testing:**
+- ✅ Verified locally: game runs clean, no crash, exits with "Thanks for playing!"
+- ✅ Crash detection grep (`Unhandled exception|System\.InvalidOperationException|...`) correctly returns no match
+- ✅ Build succeeds with updated Program.cs (0 errors, 0 warnings)
