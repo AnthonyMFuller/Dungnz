@@ -38,13 +38,13 @@ jobs:
         run: dotnet build --no-restore
 
       - name: Run tests with coverage
-        # COVERAGE FLOOR: 70% line coverage required.
+        # COVERAGE FLOOR: 80% line coverage required.
         # Baseline at gate introduction: ~61.75%. Audit at #878: ~80.0%.
         # Lowered from 80% → 70% after P0/P1 code additions (boss AI, passive system,
         # command handlers) outpaced test additions; actual coverage ~73.65%.
         # Tracking issue filed to restore to 80%+ (#906).
         # Outputs: opencover to coverage/coverage.opencover.xml, cobertura to coverage/coverage.cobertura.xml
-        run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover%2ccobertura /p:CoverletOutput=./coverage/ /p:Threshold=70 /p:ThresholdType=line
+        run: dotnet test --no-build --verbosity normal /p:CollectCoverage=true /p:CoverletOutputFormat=opencover%2ccobertura /p:CoverletOutput=./coverage/ /p:Threshold=80 /p:ThresholdType=line
 
       - name: Upload coverage artifacts
         if: always()
@@ -60,7 +60,7 @@ jobs:
         uses: 5monkeys/cobertura-action@master
         with:
           path: Dungnz.Tests/coverage/coverage.cobertura.xml
-          minimum_coverage: 70
+          minimum_coverage: 80
           show_line: true
           show_branch: true
 
@@ -72,7 +72,8 @@ jobs:
           if echo "$PR_BODY" | grep -qiE '(closes|fixes|resolves) #[0-9]+'; then
             echo "✅ PR body contains a closes/fixes/resolves issue reference."
           else
-            echo "::warning::⚠️ PR body is missing a 'Closes #N' / 'Fixes #N' issue reference. Squash merges do not auto-close issues from PR body — the commit message must contain the reference. Please add 'Closes #N' to the PR body (and the squash commit subject)."
+            echo "::error::❌ PR body is missing a 'Closes #N' / 'Fixes #N' issue reference. Squash merges do not auto-close issues from PR body — the commit message must contain the reference. Please add 'Closes #N' to the PR body (and the squash commit subject)."
+            exit 1
           fi
 
       - name: Check no .ai-team/ files are tracked (preview only)
@@ -135,3 +136,21 @@ jobs:
               print(f"\n::error::JSON schema validation failed for {len(errors)} file(s).")
               sys.exit(1)
           PYEOF
+
+
+       - name: Publish job summary
+         if: always()
+         run: |
+           echo "## CI Results" >> $GITHUB_STEP_SUMMARY
+           echo "" >> $GITHUB_STEP_SUMMARY
+           echo "- **Build**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+           echo "- **Tests**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+           
+           # Extract coverage percentage from cobertura XML
+           if [ -f "Dungnz.Tests/coverage/coverage.cobertura.xml" ]; then
+             COVERAGE=$(grep -oP 'line-rate="\K[^"]+' Dungnz.Tests/coverage/coverage.cobertura.xml | head -1)
+             COVERAGE_PCT=$(printf "%.2f" $(echo "$COVERAGE * 100" | bc))%
+             echo "- **Coverage**: $COVERAGE_PCT (threshold: 80%)" >> $GITHUB_STEP_SUMMARY
+           else
+             echo "- **Coverage**: Unknown" >> $GITHUB_STEP_SUMMARY
+           fi

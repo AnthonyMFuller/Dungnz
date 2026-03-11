@@ -21,8 +21,8 @@ public static class LayoutConstants
     /// <summary>Baseline terminal height in rows used to derive panel height constants.</summary>
     public const int BaselineTerminalHeight = 40;
 
-    /// <summary>Stats panel total height (TopRow = 20% of 40 = 8 rows).</summary>
-    public const int StatsPanelHeight = 8;
+    /// <summary>Stats panel total height (TopRow = 20% of 40 = 8 rows baseline; +1 for cooldown line).</summary>
+    public const int StatsPanelHeight = 9;
 
     /// <summary>Gear panel total height (MiddleRow = 50% of 40 = 20 rows).</summary>
     public const int GearPanelHeight = 20;
