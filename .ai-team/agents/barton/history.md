@@ -2126,3 +2126,35 @@ grep -rn '".*\[.*{' Dungnz.Display/ --include="*.cs"
 5. Map symbols in markup strings → `[[X]]` double-bracket notation
 
 **Future risk surface:** Any new `AppendContent(...)` or `SetContent(...)` call that interpolates game state (enemy names, status effects, skill names, ability names) without `Markup.Escape()` would reintroduce the crash class.
+
+### 2026-03-11 — Issues #1349 & #1350: BuildGearPanelMarkup Extraction + StatsPanel Cooldown Overflow
+
+**Context:** Both issues identified in Phase 3 retro. #1349 unblocks gear panel unit tests (zero test surface currently). #1350 fixes known layout overflow (9 lines generated vs StatsPanelHeight=8).
+
+**Changes applied (PR #1364):**
+
+1. **Extracted `BuildGearPanelMarkup(Player player)` as `internal static`**  
+   - Mirrors the existing `BuildPlayerStatsPanelMarkup` pattern
+   - Contains all gear slot rendering logic + set bonus display
+   - `RenderGearPanel` now delegates to it (6 lines vs 60)
+   - Provides unit test surface for the most complex panel (was completely untestable)
+
+2. **Fixed cooldown overflow in StatsPanel**  
+   - Line count analysis: name + blank + HP + MP + **cooldown line** + blank + ATK/DEF + Gold + XP = 9 lines
+   - Original `StatsPanelHeight = 8` caused overflow when active cooldowns present
+   - Solution: `StatsPanelHeight = 9` (20% of baseline 40 rows + 1 for cooldown line)
+   - Updated `PanelHeightRegressionTests` assertion to match
+
+3. **All tests pass (1913/1913)**  
+   - No layout regressions
+   - Build clean
+
+**Learnings:**
+
+- **Cooldown overflow root cause:** The cooldown line (line 432 in BuildPlayerStatsPanelMarkup) was added for combat HUD (Issue #1268) but the panel height constant wasn't updated at that time. This was a regression deferred from two cycles ago.
+
+- **Why extraction is high-leverage:** GearPanel is the most complex panel (10 slots, accessory/weapon stat logic, set bonus conditional) and was completely untestable. Every refactor that touched gear rendering required full manual integration testing. Now Hill/Romanoff can write unit tests for gear display edge cases (empty slots, set bonus rendering, accessory vs armor stat display).
+
+- **Layout constants as source of truth:** `LayoutConstants.cs` is the single source for panel heights. When content logic adds lines (like cooldowns), the constant must be updated and tests must enforce it. The `PanelHeightRegressionTests` suite is the enforcement mechanism.
+
+PR #1364 created on branch `squad/1349-gear-panel-extraction`.
