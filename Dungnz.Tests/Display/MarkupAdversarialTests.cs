@@ -230,14 +230,13 @@ public sealed class MarkupAdversarialTests : IDisposable
 
     /// <summary>
     /// The Stats panel is 20% of the terminal height (~8 visible rows).
-    /// BuildPlayerStatsPanelMarkup must not produce more than 8 newlines for the
-    /// typical warrior-in-combat state (HP+MP bars, ATK/DEF, Gold, XP, Momentum).
-    /// Hardcoded to 8 — Issue #1334 will move this to LayoutConstants.cs.
+    /// BuildPlayerStatsPanelMarkup must not produce more than <see cref="LayoutConstants.StatsPanelHeight"/> newlines
+    /// for the typical warrior-in-combat state (HP+MP bars, ATK/DEF, Gold, XP, Momentum).
     /// </summary>
     [Fact]
     public void BuildPlayerStatsPanelMarkup_TypicalCombatState_RendersWithinStatsPanelBounds()
     {
-        const int maxLines = 8;
+        const int maxLines = LayoutConstants.StatsPanelHeight;
 
         var player = new PlayerBuilder()
             .Named("Warrior")
@@ -257,13 +256,13 @@ public sealed class MarkupAdversarialTests : IDisposable
     }
 
     /// <summary>
-    /// Even with CHARGED momentum, the panel must stay within 8 lines.
+    /// Even with CHARGED momentum, the panel must stay within <see cref="LayoutConstants.StatsPanelHeight"/> lines.
     /// This is the worst-case for a momentum-bearing class with mana.
     /// </summary>
     [Fact]
     public void BuildPlayerStatsPanelMarkup_ChargedMomentumWithMana_RendersWithinStatsPanelBounds()
     {
-        const int maxLines = 8;
+        const int maxLines = LayoutConstants.StatsPanelHeight;
 
         var player = new PlayerBuilder()
             .Named("Mage")

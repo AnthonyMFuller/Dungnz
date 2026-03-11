@@ -469,8 +469,6 @@ public partial class SpectreLayoutDisplayService : IDisplayService
 
     // Renders player-only stats into the Stats panel during combat.
     // Enemy stats are rendered separately into the Gear panel by RenderEnemyStatsPanel.
-    // Renders player-only stats into the Stats panel during combat.
-    // Enemy stats are rendered separately into the Gear panel by RenderEnemyStatsPanel.
     private void RenderCombatStatsPanel(Player player, Enemy enemy, IReadOnlyList<ActiveEffect> enemyEffects)
     {
         UpdateStatsPanel(BuildPlayerStatsPanelMarkup(player, _cachedCooldowns));
