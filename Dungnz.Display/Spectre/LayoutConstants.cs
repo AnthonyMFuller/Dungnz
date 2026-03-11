@@ -33,6 +33,6 @@ public static class LayoutConstants
     /// <summary>Log panel total height (BottomRow 30% × Log 70% of 40 ≈ 8 rows).</summary>
     public const int LogPanelHeight = 8;
 
-    /// <summary>Map panel usable content height (TopRow 20% × Map 60% of 40 ≈ 5 rows).</summary>
-    public const int MapPanelHeight = 5;
+    /// <summary>Map panel total height (TopRow = 20% of 40 = 8 rows; 60%/40% is column width, not height).</summary>
+    public const int MapPanelHeight = 8;
 }
