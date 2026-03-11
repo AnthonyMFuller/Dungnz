@@ -80,7 +80,7 @@ The game UI consists of 6 panels arranged in a 3-row layout:
 
 ### Map Panel (Top-Left)
 - **Width:** ~70 characters  
-- **Height:** ~5 lines  
+- **Height:** ~8 lines (MapPanelHeight = 8 in LayoutConstants.cs)  
 - **Behavior:** ASCII dungeon map
 - **Use for:** Procedurally generated dungeon layout (not for written content)
 
