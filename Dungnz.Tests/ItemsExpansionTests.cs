@@ -321,10 +321,11 @@ public class ItemsExpansionTests
 
         var display = new FakeDisplayService();
         var equipment = new EquipmentManager(display);
-        equipment.HandleEquip(player, "Battlemaster's Cleaver");
+        var (success, errorMessage) = equipment.HandleEquip(player, "Battlemaster's Cleaver");
 
         player.EquippedWeapon.Should().BeNull("Mage should not be able to equip Warrior-only item");
-        display.Errors.Should().ContainMatch("*Only*Warrior*");
+        success.Should().BeFalse();
+        errorMessage.Should().Match("*Only*Warrior*");
     }
 
     [Fact]

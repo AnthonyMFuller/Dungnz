@@ -24,9 +24,9 @@ public class EquipmentManagerAdditionalTests
         var manager = MakeManager(display);
         var player = MakePlayer();
 
-        manager.HandleEquip(player, "");
+        var (_, errorMessage) = manager.HandleEquip(player, "");
 
-        display.Errors.Should().ContainSingle().Which.Should().Contain("no equippable items");
+        errorMessage.Should().NotBeNull().And.Contain("no equippable items");
     }
 
     [Fact]
@@ -36,9 +36,9 @@ public class EquipmentManagerAdditionalTests
         var manager = MakeManager(display);
         var player = MakePlayer();
 
-        manager.HandleEquip(player, "   ");
+        var (_, errorMessage) = manager.HandleEquip(player, "   ");
 
-        display.Errors.Should().ContainSingle().Which.Should().Contain("no equippable items");
+        errorMessage.Should().NotBeNull().And.Contain("no equippable items");
     }
 
     [Fact]
@@ -48,9 +48,9 @@ public class EquipmentManagerAdditionalTests
         var manager = MakeManager(display);
         var player = MakePlayer();
 
-        manager.HandleEquip(player, "nonexistent item");
+        var (_, errorMessage) = manager.HandleEquip(player, "nonexistent item");
 
-        display.Errors.Should().ContainSingle().Which.Should().Contain("don't have");
+        errorMessage.Should().NotBeNull().And.Contain("don't have");
     }
 
     [Fact]
@@ -62,9 +62,9 @@ public class EquipmentManagerAdditionalTests
         var potion = new Item { Name = "Health Potion", Type = ItemType.Consumable, IsEquippable = false };
         player.Inventory.Add(potion);
 
-        manager.HandleEquip(player, "health potion");
+        var (_, errorMessage) = manager.HandleEquip(player, "health potion");
 
-        display.Errors.Should().ContainSingle().Which.Should().Contain("cannot be equipped");
+        errorMessage.Should().NotBeNull().And.Contain("cannot be equipped");
     }
 
     [Fact]
@@ -84,9 +84,9 @@ public class EquipmentManagerAdditionalTests
         };
         player.Inventory.Add(sword);
 
-        manager.HandleEquip(player, "warrior blade");
+        var (_, errorMessage) = manager.HandleEquip(player, "warrior blade");
 
-        display.Errors.Should().ContainSingle().Which.Should().Contain("Only");
+        errorMessage.Should().NotBeNull().And.Contain("Only");
     }
 
     [Fact]

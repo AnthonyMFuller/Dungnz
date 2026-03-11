@@ -89,8 +89,8 @@ public class EquipmentSystemTests
         var manager = new EquipmentManager(display);
         var player = new Player { Name = "Tester" };
 
-        manager.HandleEquip(player, "sword");
+        var (_, errorMessage) = manager.HandleEquip(player, "sword");
 
-        display.Errors.Should().Contain(e => e.Contains("sword"));
+        errorMessage.Should().NotBeNull().And.Contain("sword");
     }
 }
