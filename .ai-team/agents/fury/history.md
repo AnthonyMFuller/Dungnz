@@ -235,3 +235,78 @@ Enemy archetype notes for future consistency:
 - **Infernal Dragon**: heat and light arrive before it does; death = furnace dying
 
 **Build:** ✅ 0 warnings, 0 errors
+
+---
+
+### 2026-03-11 — Floor-Tiered Room Narration & Legendary/Epic Item Pickup Lines (#1358, #1359)
+
+**PR:** #1362 — `content: add floor-themed room narration + Legendary/Epic pickup lines`  
+**Branch:** `squad/1358-floor-item-narration`  
+**Files Modified:** `Dungnz.Systems/NarrationService.cs`
+
+**Requirement #1358 — Floor-Themed Room Narration:**
+- Current behavior: all rooms share generic narration regardless of dungeon depth/theme
+- Goal: Add 5+ narration variants per floor tier, with distinct atmospheric tone per depth
+- Floor structure: 8 floors total (GameConstants.FinalFloor = 8)
+  - Tier 1 (Floors 1-3): Surface-level, lighter tone
+  - Tier 2 (Floors 4-6): Mid-dungeon, darker atmosphere
+  - Tier 3 (Floors 7+): Deep dungeon, oppressive ancient tone
+
+**Requirement #1359 — Legendary/Epic Item Pickup Lines:**
+- Current behavior: all item pickups share generic narration regardless of rarity
+- Goal: Add unique pickup lines for Legendary and Epic tier items
+- ItemTier enum: Common, Uncommon, Rare, Epic, Legendary (defined in Dungnz.Models/ItemTier.cs)
+- Scope: Legendary and Epic tiers only (Common-Rare use generic fallback)
+
+**Solution:**
+- Added `GetFloorTieredRoomNarration(RoomNarrationState state, int currentFloor)` method
+- Added `GetItemPickupNarration(ItemTier tier)` method
+- Added `GetFloorTier(int currentFloor)` private helper for tier classification
+- 15 narration pools (5 variants each):
+  - Tier 1: `_firstVisitTier1Pool`, `_activeEnemiesTier1Pool`, `_clearedTier1Pool`
+  - Tier 2: `_firstVisitTier2Pool`, `_activeEnemiesTier2Pool`, `_clearedTier2Pool`
+  - Tier 3: `_firstVisitTier3Pool`, `_activeEnemiesTier3Pool`, `_clearedTier3Pool`
+  - Items: `_legendaryPickupPool` (6 lines), `_epicPickupPool` (6 lines)
+
+**Content Quality:**
+- Tier 1 tone: cautious, light-filled, "just begun" atmosphere
+  - Example: "You step into pale torchlight. The dungeon's entrance looms behind you."
+  - Example: "Worn walls bear ancient chisel marks. This level is old, but not yet cursed."
+- Tier 2 tone: oppressive, dangerous, threshold-crossing
+  - Example: "You've gone deep enough that surface light no longer reaches here. Stone and shadow rule now."
+  - Example: "Something far more dangerous than dungeon vermin awakens. This is where the real monsters live."
+- Tier 3 tone: cosmic horror, barely-human, ancient wrongness
+  - Example: "You've reached the truly ancient levels. The stone itself groans with age and wrongness."
+  - Example: "The darkness coalesces into something that should not exist. Combat becomes prayer."
+- Legendary pickup: awe, destiny, transcendence (6 lines)
+  - Example: "The artifact pulses with power that transcends any mortal understanding. This changes everything."
+  - Example: "This isn't treasure. This is destiny. The dungeon just handed you the key to everything."
+- Epic pickup: excitement, power, champion-tier (6 lines)
+  - Example: "You pull an epic-tier artifact from the wreckage. This is serious power."
+  - Example: "An epic find—gear that separates survivors from legends."
+
+**Method Signatures:**
+```csharp
+public string GetFloorTieredRoomNarration(RoomNarrationState state, int currentFloor)
+public string GetItemPickupNarration(ItemTier tier)
+private static int GetFloorTier(int currentFloor)
+```
+
+**Integration Notes:**
+- GetFloorTieredRoomNarration() falls back to generic GetRoomEntryNarration() for Merchant/Shrine/Boss states (not tier-differentiated)
+- GetItemPickupNarration() returns empty string for non-Legendary/non-Epic tiers (displays no extra flavor)
+- Both methods use existing NarrationService.Pick() pattern for consistent random selection
+- Ready for Hill/Barton to integrate into:
+  - BackCommandHandler (room entry display with floor context)
+  - LootDisplay or ShowItemPickup (item pickup narration with tier context)
+
+**Testing:**
+- ✅ Build: 0 warnings, 0 errors
+- ✅ Tests: 1913 passing, 0 failures
+- No new test classes added (per Fury charter: Romanoff owns tests)
+
+**Key Learning:**
+- Floor tier structure (1-3) maps cleanly to dungeon progression (1-3 shallow, 4-6 mid, 7+ deep)
+- Fallback behavior important for room states that don't have tier-specific variants (Merchant/Shrine/Boss)
+- ItemTier enum import required (using Dungnz.Models)
+- Content pools follow established pattern: `private static readonly string[] _poolName = new[] { ... }`
