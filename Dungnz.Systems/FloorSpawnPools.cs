@@ -1,5 +1,7 @@
 namespace Dungnz.Systems;
 
+using Dungnz.Models;
+
 /// <summary>
 /// Defines per-floor enemy spawn pools for an 8-floor dungeon.
 /// Each floor has Common (60%), Uncommon (30%), and Rare (10%) pools.

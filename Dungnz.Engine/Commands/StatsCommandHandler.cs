@@ -1,5 +1,7 @@
 namespace Dungnz.Engine.Commands;
 
+using Dungnz.Models;
+
 internal sealed class StatsCommandHandler : CommandHandlerBase
 {
     protected override void HandleCore(string argument, CommandContext context)
