@@ -326,3 +326,30 @@ quit      → exit the game
 - ✅ Verified locally: game runs clean, no crash, exits with "Thanks for playing!"
 - ✅ Crash detection grep (`Unhandled exception|System\.InvalidOperationException|...`) correctly returns no match
 - ✅ Build succeeds with updated Program.cs (0 errors, 0 warnings)
+
+---
+
+### 2026-03-11 — Combat Smoke Test Extended (#1338)
+
+**PR:** (pending) — `ci: extend smoke test with scripted combat scenario`
+**Branch:** `squad/1338-smoke-test-combat-scenario`
+**Files Modified:**
+- `.github/workflows/smoke-test.yml` — added "Publish Release Binary" step + "Smoke Test - Scripted Combat Scenario" step
+- `Program.cs` — added non-TTY mode: uses `ConsoleDisplayService` when `Console.IsInputRedirected`
+
+**How the game accepts stdin input:**
+- `ConsoleInputReader.IsInteractive` returns `!Console.IsInputRedirected`
+- When `IsInteractive == false`, `ConsoleDisplayService.SelectFromMenu()` prints numbered options and reads plain `Console.ReadLine()` — works perfectly with piped input
+- `GameLoop` reads commands via `_display.ReadCommandInput()` → `_input.ReadLine()` — also works with piped input
+
+**Whether it has a headless/non-TTY mode:**
+- Before this PR: NO. `Program.cs` hardcoded `SpectreLayoutDisplayService`, which throws `System.NotSupportedException: Cannot show selection prompt since the current terminal isn't interactive.`
+- After this PR: YES. `Program.cs` now checks `inputReader.IsInteractive`. When false (piped/redirected stdin), it uses `ConsoleDisplayService` and skips Spectre Live rendering entirely.
+
+**The smoke test workflow path:** `.github/workflows/smoke-test.yml`
+
+**Verified locally:**
+- ✅ Game runs clean with piped input, no crash, exits with "Thanks for playing!"
+- ✅ Crash detection grep returns no match on clean output
+- ✅ Game reached actual combat (COMBAT BEGINS rendered in output)
+- ✅ Build succeeds (0 errors, 0 warnings)

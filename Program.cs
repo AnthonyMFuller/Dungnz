@@ -27,9 +27,21 @@ logger.LogInformation("Dungnz starting...");
 
 var prestige = PrestigeSystem.Load();
 
-var displayService = new SpectreLayoutDisplayService();
 var inputReader = new ConsoleInputReader();
-IDisplayService display = displayService;
+SpectreLayoutDisplayService? spectreService = null;
+IDisplayService display;
+
+// Use the plain console display when stdin is redirected (CI, piped input, headless).
+// Spectre Console throws NotSupportedException on SelectionPrompt without a TTY.
+if (inputReader.IsInteractive)
+{
+    spectreService = new SpectreLayoutDisplayService();
+    display = spectreService;
+}
+else
+{
+    display = new ConsoleDisplayService(inputReader);
+}
 
 var startup = new StartupOrchestrator(display, inputReader, prestige);
 var result = startup.Run();
@@ -39,9 +51,12 @@ if (result is StartupResult.ExitGame)
     return;
 }
 
-// Start Spectre Live rendering loop now that startup is complete
-_ = displayService.StartAsync();
-await Task.Delay(200);
+// Start Spectre Live rendering loop now that startup is complete (interactive only).
+if (spectreService != null)
+{
+    _ = spectreService.StartAsync();
+    await Task.Delay(200);
+}
 
 // Initialize data
 EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
@@ -81,5 +96,5 @@ switch (result)
     }
 }
 
-displayService.StopLive();
+spectreService?.StopLive();
 

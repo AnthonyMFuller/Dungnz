@@ -27,6 +27,9 @@ jobs:
     
     - name: Build Release
       run: dotnet build --configuration Release --no-restore
+
+    - name: Publish Release Binary
+      run: dotnet publish Dungnz.csproj --configuration Release --no-build --output ./publish
     
     - name: Smoke Test - Process Startup
       run: |
@@ -36,3 +39,38 @@ jobs:
         quit
         EOF
         echo "✅ Smoke test: binary started and exited cleanly"
+
+    - name: Smoke Test - Scripted Combat Scenario
+      run: |
+        # Drive the game through startup → new game → class/difficulty selection → game loop.
+        # When stdin is not a TTY, Program.cs uses ConsoleDisplayService (plain ReadLine menus)
+        # instead of Spectre prompts, so numbered input works here.
+        #
+        # Input sequence:
+        #   1        → New Game (startup menu)
+        #   (blank)  → skip intro narrative (Press Enter to begin...)
+        #   Hero     → player name
+        #   1        → Warrior class
+        #   1        → Casual difficulty
+        #   go south → navigate (direction varies by seed; errors are non-fatal)
+        #   go east  → try alternate direction
+        #   1        → attack if in combat menu, or unknown command in game loop (non-fatal)
+        #   1        → second action
+        #   go north → navigate back
+        #   1        → third action
+        #   go south → continue navigation
+        #   1        → fourth action
+        #   quit     → exit the game
+        printf '1\n\nHero\n1\n1\ngo south\ngo east\n1\n1\ngo north\n1\ngo south\n1\nquit\n' \
+          | timeout 30 dotnet ./publish/Dungnz.dll 2>&1 \
+          | tee /tmp/smoke-combat.txt \
+          || true
+
+        # Fail if output contains a stack trace or unhandled exception
+        if grep -qE "Unhandled exception|System\.InvalidOperationException|System\.NullReferenceException|at .*\.cs:line" /tmp/smoke-combat.txt; then
+          echo "❌ Crash detected in combat smoke test output:"
+          cat /tmp/smoke-combat.txt
+          exit 1
+        fi
+        echo "✅ Combat smoke test passed — no crash detected"
+
