@@ -49,7 +49,9 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     // Cached ability cooldown state for combat HUD (Issue #1268)
     private IReadOnlyList<(string name, int turnsRemaining)> _cachedCooldowns = [];
 
-
+    // Cached enemy state for combat Stats panel (Issue #1312)
+    private Enemy? _cachedCombatEnemy;
+    private IReadOnlyList<ActiveEffect> _cachedEnemyEffects = Array.Empty<ActiveEffect>();
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SpectreLayoutDisplayService"/> class.
@@ -451,6 +453,119 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         UpdateStatsPanel(sb.ToString().TrimEnd());
     }
 
+    private void RenderCombatStatsPanel(Player player, Enemy enemy, IReadOnlyList<ActiveEffect> enemyEffects)
+    {
+        var sb = new StringBuilder();
+
+        // Player section (same as RenderStatsPanel)
+        sb.AppendLine($"[bold]{Markup.Escape(player.Name)}[/]  [grey]Lv {player.Level}[/]  [dim]{Markup.Escape(player.Class.ToString())}[/]");
+        sb.AppendLine();
+
+        var hpBar = BuildHpBar(player.HP, player.MaxHP);
+        sb.AppendLine($"HP {hpBar} [bold]{player.HP}/{player.MaxHP}[/]");
+
+        if (player.MaxMana > 0)
+        {
+            var mpBar = BuildMpBar(player.Mana, player.MaxMana);
+            sb.AppendLine($"MP {mpBar} [bold]{player.Mana}/{player.MaxMana}[/]");
+        }
+
+        if (_cachedCooldowns.Count > 0)
+        {
+            var cdParts = _cachedCooldowns.Select(c =>
+                c.turnsRemaining == 0
+                    ? $"[green]{Markup.Escape(c.name)}:✅[/]"
+                    : $"[grey]{Markup.Escape(c.name)}:[/][yellow]{c.turnsRemaining}t[/]");
+            sb.AppendLine($"[dim]CD:[/] {string.Join("  ", cdParts)}");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine($"[red]ATK[/] [bold]{player.Attack}[/]   [cyan]DEF[/] [bold]{player.Defense}[/]");
+        sb.AppendLine($"[yellow]Gold[/] {player.Gold}g");
+        var xpToNext = 100 * player.Level;
+        sb.AppendLine($"[green]XP[/] {player.XP}/{xpToNext}");
+
+        if (player.Class == PlayerClass.Rogue && player.ComboPoints > 0)
+        {
+            var dots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
+            sb.AppendLine($"[yellow]✦ Combo[/] {dots}");
+        }
+
+        if (player.Momentum is { } momentum)
+        {
+            var label = player.Class switch
+            {
+                PlayerClass.Warrior => "Fury",
+                PlayerClass.Mage    => "Charge",
+                PlayerClass.Paladin => "Devotion",
+                PlayerClass.Ranger  => "Focus",
+                _                   => "Momentum"
+            };
+            var dots = new string('●', momentum.Current) + new string('○', momentum.Maximum - momentum.Current);
+            var chargedSuffix = momentum.IsCharged ? " [bold cyan][CHARGED][/]" : string.Empty;
+            sb.AppendLine($"[yellow]✦ {label}[/] {dots}{chargedSuffix}");
+        }
+
+        // Separator
+        sb.AppendLine();
+        sb.AppendLine("[grey]──────────────────[/]");
+        sb.AppendLine();
+
+        // Enemy section (Issue #1312)
+        sb.AppendLine($"🐉 [bold]{Markup.Escape(enemy.Name)}[/]");
+
+        if (enemy is Dungnz.Systems.Enemies.DungeonBoss boss)
+        {
+            var phaseNum = boss.FiredPhases.Count + 1;
+            sb.Append($"[grey]Phase {phaseNum}[/]");
+            if (boss.IsEnraged)
+                sb.Append($"  [bold red]⚡ ENRAGED[/]");
+            sb.AppendLine();
+        }
+
+        sb.Append($"HP {BuildHpBar(enemy.HP, enemy.MaxHP)} {enemy.HP}/{enemy.MaxHP}");
+        sb.Append($"  [red]ATK {enemy.Attack}[/]  [cyan]DEF {enemy.Defense}[/]");
+        sb.AppendLine();
+
+        var regenParts = new System.Collections.Generic.List<string>();
+        if (enemy.RegenPerTurn > 0)
+            regenParts.Add($"[green]Regen +{enemy.RegenPerTurn}/turn[/]");
+        if (enemy.SelfHealAmount > 0 && enemy.SelfHealEveryTurns > 0)
+            regenParts.Add($"[green]Heals +{enemy.SelfHealAmount} every {enemy.SelfHealEveryTurns}t[/]");
+        if (regenParts.Count > 0)
+        {
+            sb.Append(string.Join("  ", regenParts));
+            sb.AppendLine();
+        }
+
+        var badges = new System.Collections.Generic.List<string>();
+        if (enemy.IsElite)                  badges.Add("[yellow]⭐ Elite[/]");
+        if (enemy.IsUndead)                 badges.Add("[grey]💀 Undead[/]");
+        if (enemy.IsStunImmune)             badges.Add("[purple]🛡 StunImm[/]");
+        if (enemy.IsImmuneToEffects)        badges.Add("[purple]🔒 EffectImm[/]");
+        if (enemy.LifestealPercent > 0)     badges.Add("[red]🩸 Lifesteal[/]");
+        if (enemy.AppliesPoisonOnHit)       badges.Add("[green]☠ Poison[/]");
+        if (enemy.CounterStrikeChance > 0)  badges.Add("[red]↩ Counter[/]");
+        if (enemy.PackCount > 1)            badges.Add($"[grey]🐾 Pack×{enemy.PackCount}[/]");
+        if (badges.Count > 0)
+        {
+            sb.Append(string.Join(" ", badges));
+            sb.AppendLine();
+        }
+
+        if (enemyEffects.Count > 0)
+        {
+            foreach (var e in enemyEffects)
+            {
+                var col = e.IsBuff ? "purple" : "red";
+                sb.Append($"[{col}][[{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t]][/] ");
+            }
+            sb.AppendLine();
+        }
+
+        UpdateStatsPanel(sb.ToString().TrimEnd());
+    }
+
     private void RenderGearPanel(Player player)
     {
         var sb = new StringBuilder();
@@ -541,6 +656,8 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         bool isNewRoom = _cachedRoom?.Id != room.Id;
         _cachedRoom = room;
         _cachedCooldowns = []; // clear combat cooldown HUD when re-entering room context (Issue #1268)
+        _cachedCombatEnemy = null; // clear enemy cache so Stats panel reverts to player-only view (Issue #1312)
+        _cachedEnemyEffects = Array.Empty<ActiveEffect>();
 
         var sb = new StringBuilder();
 
@@ -651,92 +768,12 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         IReadOnlyList<ActiveEffect> playerEffects,
         IReadOnlyList<ActiveEffect> enemyEffects)
     {
-        var sb = new StringBuilder();
+        // Cache enemy state for Stats panel persistence (Issue #1312)
+        _cachedCombatEnemy = enemy;
+        _cachedEnemyEffects = enemyEffects;
 
-        // Player status
-        sb.AppendLine($"⚔  [bold]{Markup.Escape(player.Name)}[/]");
-        sb.Append($"HP {BuildHpBar(player.HP, player.MaxHP)} {player.HP}/{player.MaxHP}");
-        if (player.MaxMana > 0)
-            sb.Append($"  MP {BuildMpBar(player.Mana, player.MaxMana)} {player.Mana}/{player.MaxMana}");
-        sb.AppendLine();
-        if (playerEffects.Count > 0)
-        {
-            foreach (var e in playerEffects)
-            {
-                var col = e.IsBuff ? "purple" : "red";
-                sb.Append($"[{col}][[{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t]][/] ");
-            }
-            sb.AppendLine();
-        }
-
-        sb.AppendLine();
-
-        // Enemy status
-        sb.AppendLine($"🐉 [bold]{Markup.Escape(enemy.Name)}[/]");
-
-        // Issue #1308 — Boss phase / enrage (after name, before HP bar)
-        if (enemy is Dungnz.Systems.Enemies.DungeonBoss boss)
-        {
-            var phaseNum = boss.FiredPhases.Count + 1;
-            sb.Append($"[grey]Phase {phaseNum}[/]");
-            if (boss.IsEnraged)
-                sb.Append($"  [bold red]⚡ ENRAGED[/]");
-            sb.AppendLine();
-        }
-
-        sb.Append($"HP {BuildHpBar(enemy.HP, enemy.MaxHP)} {enemy.HP}/{enemy.MaxHP}");
-        sb.Append($"  [red]ATK {enemy.Attack}[/]  [cyan]DEF {enemy.Defense}[/]");
-        sb.AppendLine();
-
-        // Issue #1309 — Regen / self-heal indicators (after HP+ATK+DEF, before trait badges)
-        var regenParts = new System.Collections.Generic.List<string>();
-        if (enemy.RegenPerTurn > 0)
-            regenParts.Add($"[green]Regen +{enemy.RegenPerTurn}/turn[/]");
-        if (enemy.SelfHealAmount > 0 && enemy.SelfHealEveryTurns > 0)
-            regenParts.Add($"[green]Heals +{enemy.SelfHealAmount} every {enemy.SelfHealEveryTurns}t[/]");
-        if (regenParts.Count > 0)
-        {
-            sb.Append(string.Join("  ", regenParts));
-            sb.AppendLine();
-        }
-
-        // Issue #1307 — Trait badges (after regen indicators)
-        var badges = new System.Collections.Generic.List<string>();
-        if (enemy.IsElite)                  badges.Add("[yellow]⭐ Elite[/]");
-        if (enemy.IsUndead)                 badges.Add("[grey]💀 Undead[/]");
-        if (enemy.IsStunImmune)             badges.Add("[purple]🛡 StunImm[/]");
-        if (enemy.IsImmuneToEffects)        badges.Add("[purple]🔒 EffectImm[/]");
-        if (enemy.LifestealPercent > 0)     badges.Add("[red]🩸 Lifesteal[/]");
-        if (enemy.AppliesPoisonOnHit)       badges.Add("[green]☠ Poison[/]");
-        if (enemy.CounterStrikeChance > 0)  badges.Add("[red]↩ Counter[/]");
-        if (enemy.PackCount > 1)            badges.Add($"[grey]🐾 Pack×{enemy.PackCount}[/]");
-        if (badges.Count > 0)
-        {
-            sb.Append(string.Join(" ", badges));
-            sb.AppendLine();
-        }
-
-        if (enemyEffects.Count > 0)
-        {
-            foreach (var e in enemyEffects)
-            {
-                var col = e.IsBuff ? "purple" : "red";
-                sb.Append($"[{col}][[{EffectIcon(e.Effect)}{Markup.Escape(e.Effect.ToString())} {e.RemainingTurns}t]][/] ");
-            }
-            sb.AppendLine();
-        }
-
-        if (_contentHeader == "⚔  Combat")
-        {
-            // Append HP status to existing combat history (don't wipe messages)
-            AppendContent("[grey]──────────────────[/]");
-            foreach (var line in sb.ToString().TrimEnd().Split('\n'))
-                AppendContent(line);
-        }
-        else
-        {
-            SetContent(sb.ToString().TrimEnd(), "⚔  Combat", Color.Red);
-        }
+        if (_cachedPlayer != null)
+            RenderCombatStatsPanel(_cachedPlayer, enemy, enemyEffects);
     }
 
     /// <inheritdoc/>
@@ -751,7 +788,10 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     public void ShowPlayerStats(Player player)
     {
         _cachedPlayer = player;
-        RenderStatsPanel(player);
+        if (_cachedCombatEnemy != null)
+            RenderCombatStatsPanel(player, _cachedCombatEnemy, _cachedEnemyEffects);
+        else
+            RenderStatsPanel(player);
         RenderGearPanel(player);
     }
 
@@ -760,7 +800,12 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     {
         _cachedCooldowns = cooldowns;
         if (_cachedPlayer != null)
-            RenderStatsPanel(_cachedPlayer);
+        {
+            if (_cachedCombatEnemy != null)
+                RenderCombatStatsPanel(_cachedPlayer, _cachedCombatEnemy, _cachedEnemyEffects);
+            else
+                RenderStatsPanel(_cachedPlayer);
+        }
     }
 
     /// <inheritdoc/>

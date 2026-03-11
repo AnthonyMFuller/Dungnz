@@ -165,7 +165,7 @@ public class CompareCommandHandlerTests
 
         display.AllOutput.Should().Contain(s => s.StartsWith("equipment_compare:"),
             "ShowEquipmentComparison should be called for a valid equippable item");
-        display.AllOutput.Should().Contain(s => s.StartsWith("room:"),
-            "ShowRoom should be called after the comparison");
+        display.AllOutput.Should().NotContain(s => s.StartsWith("room:"),
+            "ShowRoom should NOT be called after comparison so the comparison stays visible");
     }
 }

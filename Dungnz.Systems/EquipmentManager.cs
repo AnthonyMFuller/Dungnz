@@ -20,21 +20,20 @@ public class EquipmentManager
     }
 
     /// <summary>Finds an item in the player's inventory by name (case-insensitive contains), validates it, and equips it.</summary>
-    /// <returns>True if an item was equipped or an error occurred that still consumed the turn; false if the player cancelled the menu.</returns>
-    public bool HandleEquip(Player player, string itemName)
+    /// <returns>A tuple of (success, errorMessage). success is true if equipped; false otherwise. errorMessage is set on failure.</returns>
+    public (bool success, string? errorMessage) HandleEquip(Player player, string itemName)
     {
         if (string.IsNullOrWhiteSpace(itemName))
         {
             var equippable = player.Inventory.Where(i => i.IsEquippable).ToList();
             if (equippable.Count == 0)
             {
-                _display.ShowError("You have no equippable items in your inventory.");
-                return true;
+                return (false, "You have no equippable items in your inventory.");
             }
             var selected = _display.ShowEquipMenuAndSelect(equippable.AsReadOnly());
-            if (selected == null) { return false; }
-            DoEquip(player, selected);
-            return true;
+            if (selected == null) { return (false, null); }
+            var (ok, err) = DoEquip(player, selected);
+            return (ok || err == null, err);
         }
 
         var itemNameLower = itemName.ToLowerInvariant();
@@ -51,8 +50,7 @@ public class EquipmentManager
 
             if (candidates.Count == 0)
             {
-                _display.ShowError($"You don't have '{itemName}' in your inventory.");
-                return true;
+                return (false, $"You don't have '{itemName}' in your inventory.");
             }
 
             int bestDistance = candidates.Min(x => x.Distance);
@@ -61,8 +59,7 @@ public class EquipmentManager
             if (bestCandidates.Count > 1)
             {
                 var names = string.Join(", ", bestCandidates.Select(x => x.Item.Name));
-                _display.ShowError($"Did you mean one of: {names}? Please be more specific.");
-                return true;
+                return (false, $"Did you mean one of: {names}? Please be more specific.");
             }
 
             item = bestCandidates[0].Item;
@@ -71,28 +68,24 @@ public class EquipmentManager
 
         if (!item.IsEquippable)
         {
-            _display.ShowError($"{item.Name} cannot be equipped.");
-            return true;
+            return (false, $"{item.Name} cannot be equipped.");
         }
 
-        DoEquip(player, item);
-        return true;
+        return DoEquip(player, item);
     }
 
-    private void DoEquip(Player player, Item item)
+    private (bool success, string? errorMessage) DoEquip(Player player, Item item)
     {
         if (!item.IsEquippable)
         {
-            _display.ShowError($"{item.Name} cannot be equipped.");
-            return;
+            return (false, $"{item.Name} cannot be equipped.");
         }
 
         if (item.ClassRestriction != null && item.ClassRestriction.Length > 0
             && !item.ClassRestriction.Contains(player.Class.ToString(), StringComparer.OrdinalIgnoreCase))
         {
             var allowed = string.Join(", ", item.ClassRestriction);
-            _display.ShowError($"Only {allowed} can equip the {item.Name}.");
-            return;
+            return (false, $"Only {allowed} can equip the {item.Name}.");
         }
 
         // Weight check: equipping swaps new item into equipped slot and old item back into
@@ -109,8 +102,7 @@ public class EquipmentManager
             + (currentlyEquipped?.Weight ?? 0);
         if (inventoryWeightAfterSwap > InventoryManager.MaxWeight)
         {
-            _display.ShowError($"Equipping {item.Name} would exceed your carry weight limit.");
-            return;
+            return (false, $"Equipping {item.Name} would exceed your carry weight limit.");
         }
 
         try
@@ -138,10 +130,11 @@ public class EquipmentManager
             if (!string.IsNullOrEmpty(item.Description))
                 _display.ShowMessage($"  {item.Description}");
             _display.ShowPlayerStats(player);
+            return (true, null);
         }
         catch (ArgumentException ex)
         {
-            _display.ShowError(ex.Message);
+            return (false, ex.Message);
         }
     }
 

@@ -3514,3 +3514,32 @@ Critical path: #1187 → #1188 → #1189 → #1190 → #1191 → #1192 → #1193
 **Key pattern established:**
 - When migrating methods that track RunStats, add `SetStats(RunStats)` to the interface and call it in `RunCombat` alongside `_attackResolver.SetStats`.
 - The three interfaces (IStatusEffectApplicator, IAbilityProcessor, ICombatLogger) are all injected via CombatEngine constructor with optional parameters, defaulting to concrete instances.
+
+### 2026-03-04: Display Overwrite Audit (#1313)
+
+**Scope:** Full audit of all 26 command handlers in `Dungnz.Engine/Commands/`, `GameLoop.cs` (HandleShrine, HandleContestedArmory), and `EquipmentManager.cs`.
+
+**Key findings:**
+- `ShowError`/`ShowMessage` → `AppendContent` (adds to content panel)
+- `ShowRoom` → `SetContent` (clears content panel)
+- `ShowItemDetail`, `ShowEquipmentComparison`, `ShowCraftRecipe` → also `SetContent` (also clears)
+- `ShowPlayerStats` → updates stats side panel ONLY, does not touch content panel
+
+**Bugs confirmed (previously filed):** #1311, #1312, #1314
+
+**New issues filed:** 7 new GitHub issues (#1315–#1321):
+- #1315: UseCommandHandler — 7 error paths all wiped by unconditional trailing ShowRoom
+- #1316: ExamineCommandHandler — item detail + comparison + error messages all wiped
+- #1317: CraftCommandHandler — recipe card + result message wiped
+- #1318: SkillsCommandHandler / LearnCommandHandler — skill feedback wiped
+- #1319: GameLoop HandleShrine — 6 error/message locations wiped
+- #1320: GameLoop HandleContestedArmory — 2 message locations wiped
+- #1321: GoCommandHandler — post-combat narrative wiped by ShowRoom after CombatResult.Won
+
+**Pattern observed:** Two shapes:
+1. `ShowError → ShowRoom` (error invisible to player)
+2. `ShowItemDetail/ShowEquipmentComparison/ShowCraftRecipe (SetContent) → ShowRoom (SetContent)` (detail panel immediately replaced)
+
+**Clean handlers:** 18 handlers confirmed clean. The handlers that are already correct use the pattern of returning early without ShowRoom on error paths.
+
+**Recommended fix:** Error paths should `return` without calling `ShowRoom`. The content panel retains the last room view. Only success/completion paths need to refresh via ShowRoom. This matches the already-correct pattern in GoCommandHandler error paths and AscendCommandHandler.

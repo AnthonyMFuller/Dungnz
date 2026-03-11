@@ -69,12 +69,11 @@ public class EquipmentManagerNoArgTests
         player.Inventory.Add(new Item { Name = "Gold Coin", Type = ItemType.Gold, IsEquippable = false });
 
         // Act
-        manager.HandleEquip(player, "");
+        var (_, errorMessage) = manager.HandleEquip(player, "");
 
         // Assert
-        display.Errors.Should().ContainSingle(
-            e => e.Contains("no equippable", StringComparison.OrdinalIgnoreCase),
-            "an error should tell the player there are no equippable items");
+        errorMessage.Should().NotBeNull();
+        errorMessage.Should().Contain("no equippable", "an error should tell the player there are no equippable items");
         display.AllOutput.Should().NotContain("equip_menu", "the menu should not appear when there is nothing to equip");
     }
 

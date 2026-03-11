@@ -51,6 +51,5 @@ internal sealed class CompareCommandHandler : ICommandHandler
 
         // Show comparison
         context.Display.ShowEquipmentComparison(context.Player, currentlyEquipped, item);
-        context.Display.ShowRoom(context.CurrentRoom);
     }
 }

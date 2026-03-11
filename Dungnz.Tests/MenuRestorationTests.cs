@@ -334,8 +334,8 @@ public class MenuRestorationTests
 
         handler.Handle("Iron Sword", ctx);
 
-        display.ShowRoomCallCount.Should().BeGreaterThan(initialShowRoomCount, 
-            "ShowRoom should be called after comparison even when item name is provided directly");
+        display.ShowRoomCallCount.Should().Be(initialShowRoomCount,
+            "ShowRoom should NOT be called after comparison so the comparison stays visible (Issue #1314)");
     }
 
     [Fact]

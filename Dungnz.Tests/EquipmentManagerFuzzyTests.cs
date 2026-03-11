@@ -70,9 +70,9 @@ public class EquipmentManagerFuzzyTests
         var sword = new Item { Name = "Iron Sword", Type = ItemType.Weapon, AttackBonus = 5, IsEquippable = true };
         player.Inventory.Add(sword);
 
-        manager.HandleEquip(player, "zzzzzzzzz");
+        var (_, errorMessage) = manager.HandleEquip(player, "zzzzzzzzz");
 
-        display.Errors.Should().ContainSingle().Which.Should().Contain("don't have");
+        errorMessage.Should().NotBeNull().And.Contain("don't have");
     }
 
     [Fact]

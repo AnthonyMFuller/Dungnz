@@ -241,9 +241,10 @@ public class Phase6IntegrationTests
         player.Inventory.Add(item);
 
         var equipMgr = new EquipmentManager(_display);
-        equipMgr.HandleEquip(player, "Warrior's Cleaver");
+        var (success, errorMessage) = equipMgr.HandleEquip(player, "Warrior's Cleaver");
 
-        _display.Errors.Should().NotBeEmpty("equipping a class-restricted item should produce an error");
+        errorMessage.Should().NotBeNull("equipping a class-restricted item should produce an error");
+        success.Should().BeFalse();
         player.EquippedWeapon.Should().BeNull("Mage cannot equip a Warrior-only item");
     }
 
