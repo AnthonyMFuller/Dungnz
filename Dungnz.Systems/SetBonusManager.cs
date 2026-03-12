@@ -203,32 +203,39 @@ public static class SetBonusManager
     }
 
     /// <summary>
-    /// Applies the cumulative stat bonuses of all active set bonuses to the player,
-    /// then removes the effects of bonuses that are no longer active.
+    /// Applies the cumulative stat bonuses of all active set bonuses to the player.
+    /// Subtracts the values recorded from the previous call before re-computing, so
+    /// equip/unequip cycles never double-apply or strand stale bonuses on
+    /// <see cref="Player.Defense"/> or <see cref="Player.Attack"/>.
     /// Should be called after every equip/unequip operation.
     /// </summary>
     public static void ApplySetBonuses(Player player)
     {
-        // We recompute from scratch each call — first remove any previously applied set bonuses,
-        // then re-apply based on current equipment.
-        // To keep things simple without a separate "previously applied" tracker,
-        // we store the total delta on the player via dedicated set-bonus fields.
-        // Instead, we layer on top of base stats and recompute the delta.
+        // Undo whatever was applied last call.  SetBonusDefense/SetBonusAttack default to 0,
+        // so this is a safe no-op on the very first call after equipment or load.
+        player.ModifyDefense(-player.SetBonusDefense);
+        player.ModifyAttack(-player.SetBonusAttack);
 
         var active = GetActiveBonuses(player);
 
-        int totalDef  = active.Sum(b => b.DefenseBonus);
-        int totalHP   = active.Sum(b => b.MaxHPBonus);
-        int totalMana = active.Sum(b => b.MaxManaBonus);
+        int totalDef    = active.Sum(b => b.DefenseBonus);
+        int totalAttack = active.Sum(b => b.AttackBonus);
+        int totalHP     = active.Sum(b => b.MaxHPBonus);
+        int totalMana   = active.Sum(b => b.MaxManaBonus);
         float totalDodge = active.Sum(b => b.DodgeChanceBonus);
 
-        // Apply 2/3-piece stat bonuses to dedicated player fields so combat systems can read them.
+        // Record new totals so the next call can undo them.
         player.SetBonusDefense  = totalDef;
+        player.SetBonusAttack   = totalAttack;
         player.SetBonusMaxHP    = totalHP;
         player.SetBonusMaxMana  = totalMana;
         player.SetBonusDodge    = totalDodge;
+
+        // Apply 2/3-piece stat bonuses to the live player stats read by combat.
         player.MaxHP   += totalHP;
         player.MaxMana += totalMana;
+        player.ModifyDefense(totalDef);
+        player.ModifyAttack(totalAttack);
 
         // Wire 4-piece set bonus flags onto the player so combat systems can read them.
         player.DamageReflectPercent = active.Sum(b => b.DamageReflectPercent);
