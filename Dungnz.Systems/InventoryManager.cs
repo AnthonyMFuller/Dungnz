@@ -139,10 +139,15 @@ public class InventoryManager
         switch (item.Type)
         {
             case ItemType.Consumable:
+                int hpBefore = player.HP;
                 player.Heal(item.HealAmount);
                 if (item.ManaRestore > 0)
                     player.RestoreMana(item.ManaRestore);
+                int healedAmt = player.HP - hpBefore;
                 _display.ShowMessage($"You used {item.Name}. HP restored to {player.HP}/{player.MaxHP}.");
+                var consumeFlavor = ItemInteractionNarration.UseConsumable(item, healedAmt);
+                if (!string.IsNullOrEmpty(consumeFlavor))
+                    _display.ShowMessage(consumeFlavor);
                 player.Inventory.Remove(item);
                 return UseResult.Used;
 
