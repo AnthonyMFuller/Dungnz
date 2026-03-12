@@ -326,31 +326,93 @@ public sealed class SpectreDisplayService : IDisplayService
         var header    = isElite ? "[bold yellow]✦ ELITE LOOT DROP[/]" : "[bold yellow]✦ LOOT DROP[/]";
         var stat      = PrimaryStatLabel(item);
 
-        // Build optional upgrade hint
-        string statLine = $"[cyan]{Markup.Escape(stat)}[/]";
-        if (item.AttackBonus > 0 && player.EquippedWeapon != null)
+        var sb = new System.Text.StringBuilder();
+        sb.AppendLine(header);
+        sb.AppendLine($"[{tc}]{item.Tier}[/]");
+        sb.AppendLine($"{ItemIcon(item)} [{tc}]{Markup.Escape(item.Name)}[/]");
+        sb.Append($"[cyan]{Markup.Escape(stat)}[/]  [grey]{item.Weight} wt[/]");
+
+        var equippedInSlot = GetEquippedInSameSlot(item, player);
+        if (equippedInSlot != null)
         {
-            int delta = item.AttackBonus - player.EquippedWeapon.AttackBonus;
-            if (delta > 0) statLine += $"  [green](+{delta} vs equipped!)[/]";
+            sb.AppendLine();
+            var deltas = BuildSpectreDeltas(item, equippedInSlot);
+            if (deltas.Count > 0)
+                sb.AppendLine($"[grey]vs {Markup.Escape(equippedInSlot.Name)}:[/] " + string.Join("  ", deltas));
+            else
+                sb.AppendLine($"[grey]vs {Markup.Escape(equippedInSlot.Name)} — same stats[/]");
+
+            var setBonusWarn = GetSetBonusBreakWarning(item, equippedInSlot, player);
+            if (setBonusWarn != null)
+                sb.Append(setBonusWarn);
         }
-        else if (item.DefenseBonus > 0 && player.EquippedChest != null)
+        else if (item.IsEquippable)
         {
-            int delta = item.DefenseBonus - player.EquippedChest.DefenseBonus;
-            if (delta > 0) statLine += $"  [green](+{delta} vs equipped!)[/]";
+            sb.AppendLine();
+            sb.Append("[dim]New slot — nothing equipped[/]");
         }
 
-        var content = new Markup(
-            $"{header}\n" +
-            $"[{tc}]{item.Tier}[/]\n" +
-            $"{ItemIcon(item)} [{tc}]{Markup.Escape(item.Name)}[/]\n" +
-            $"{statLine}  [grey]{item.Weight} wt[/]");
-
+        var content = new Markup(sb.ToString().TrimEnd());
         AnsiConsole.Write(new Panel(content)
         {
             Border    = BoxBorder.Rounded,
             BorderStyle = Style.Parse(tc),
         });
         AnsiConsole.WriteLine();
+    }
+
+    private static Item? GetEquippedInSameSlot(Item candidate, Player player) =>
+        candidate.Type switch
+        {
+            ItemType.Weapon    => player.EquippedWeapon,
+            ItemType.Accessory => player.EquippedAccessory,
+            ItemType.Armor     => candidate.Slot switch
+            {
+                ArmorSlot.Head      => player.EquippedHead,
+                ArmorSlot.Shoulders => player.EquippedShoulders,
+                ArmorSlot.Chest     => player.EquippedChest,
+                ArmorSlot.Hands     => player.EquippedHands,
+                ArmorSlot.Legs      => player.EquippedLegs,
+                ArmorSlot.Feet      => player.EquippedFeet,
+                ArmorSlot.Back      => player.EquippedBack,
+                ArmorSlot.OffHand   => player.EquippedOffHand,
+                _                   => player.EquippedChest,
+            },
+            _ => null,
+        };
+
+    private static List<string> BuildSpectreDeltas(Item newItem, Item equipped)
+    {
+        var parts = new List<string>();
+        int atkDelta  = newItem.AttackBonus  - equipped.AttackBonus;
+        int defDelta  = newItem.DefenseBonus - equipped.DefenseBonus;
+        int manaDelta = newItem.MaxManaBonus - equipped.MaxManaBonus;
+        int hpDelta   = newItem.StatModifier - equipped.StatModifier;
+
+        if (atkDelta  != 0) parts.Add(atkDelta  > 0 ? $"[green]+{atkDelta} ATK[/]"   : $"[yellow]{atkDelta} ATK[/]");
+        if (defDelta  != 0) parts.Add(defDelta  > 0 ? $"[green]+{defDelta} DEF[/]"   : $"[yellow]{defDelta} DEF[/]");
+        if (manaDelta != 0) parts.Add(manaDelta > 0 ? $"[green]+{manaDelta} MaxMP[/]" : $"[yellow]{manaDelta} MaxMP[/]");
+        if (hpDelta   != 0) parts.Add(hpDelta   > 0 ? $"[green]+{hpDelta} HP[/]"     : $"[yellow]{hpDelta} HP[/]");
+        return parts;
+    }
+
+    private static string? GetSetBonusBreakWarning(Item newItem, Item currentlyEquipped, Player player)
+    {
+        var oldSetId = currentlyEquipped.SetId;
+        if (string.IsNullOrEmpty(oldSetId)) return null;
+        if (newItem.SetId == oldSetId)      return null;
+
+        var activeBonuses = SetBonusManager.GetActiveBonuses(player)
+            .Where(b => b.SetId == oldSetId)
+            .ToList();
+        if (activeBonuses.Count == 0) return null;
+
+        int currentPieces = SetBonusManager.GetEquippedSetPieces(player, oldSetId);
+        bool willBreak = activeBonuses.Any(b => b.PiecesRequired >= currentPieces);
+        if (!willBreak) return null;
+
+        var desc = activeBonuses.First().Description;
+        return "[orange3]⚠ Breaks " + Markup.Escape(desc) + "[/]";
     }
 
     /// <inheritdoc/>
@@ -1146,6 +1208,13 @@ public sealed class SpectreDisplayService : IDisplayService
             Border = BoxBorder.Rounded,
         };
         AnsiConsole.Write(panel);
+    }
+
+    /// <inheritdoc/>
+    public void ShowCombatHistory()
+    {
+        AnsiConsole.MarkupLine("[grey]── Combat History ──[/]");
+        AnsiConsole.MarkupLine("[grey](See session output above for full combat history.)[/]");
     }
 
     /// <inheritdoc/>
