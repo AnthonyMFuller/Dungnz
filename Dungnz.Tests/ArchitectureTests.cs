@@ -28,19 +28,73 @@ public class ArchitectureTests
             typeof(CombatNarration).Assembly    // Dungnz.Data
         ).Build();
 
-    // TODO: Re-enable when ArchUnitNET supports NotCallMethod (requires newer version)
-    // [Fact]
-    // public void Engine_And_Systems_Must_Not_Call_Console_Write_Directly()
-    // {
-    //     var rule = Types()
-    //         .That().ResideInNamespace("Dungnz.Engine")
-    //         .Or().ResideInNamespace("Dungnz.Systems")
-    //         .Should().NotCallMethod(typeof(Console), nameof(Console.Write))
-    //         .AndShould().NotCallMethod(typeof(Console), nameof(Console.WriteLine))
-    //         .AndShould().NotCallMethod(typeof(Console), nameof(Console.ReadLine))
-    //         .AndShould().NotCallMethod(typeof(Console), nameof(Console.ReadKey));
-    //     rule.Check(Architecture);
-    // }
+    [Fact]
+    public void Engine_And_Systems_Must_Not_Call_Console_Write_Directly()
+    {
+        // Custom enforcement: scan IL for bare Console method calls.
+        // IDisplayService pattern is the only valid path for I/O.
+        var engineAssembly = typeof(GameLoop).Assembly;
+        var systemsAssembly = typeof(InventoryManager).Assembly;
+        
+        var violations = new List<string>();
+        
+        foreach (var assembly in new[] { engineAssembly, systemsAssembly })
+        {
+            foreach (var type in assembly.GetTypes())
+            {
+                // Skip compiler-generated types (async state machines, etc.)
+                if (type.Name.Contains("<") || type.Name.Contains(">"))
+                    continue;
+                    
+                foreach (var method in type.GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+                {
+                    try
+                    {
+                        var methodBody = method.GetMethodBody();
+                        if (methodBody == null) continue;
+                        
+                        var il = methodBody.GetILAsByteArray();
+                        if (il == null) continue;
+                        
+                        // Scan IL bytes for call/callvirt opcodes followed by Console method tokens
+                        var module = method.Module;
+                        for (int i = 0; i < il.Length - 5; i++)
+                        {
+                            // call = 0x28, callvirt = 0x6F
+                            if (il[i] == 0x28 || il[i] == 0x6F)
+                            {
+                                var token = BitConverter.ToInt32(il, i + 1);
+                                try
+                                {
+                                    var calledMethod = module.ResolveMethod(token);
+                                    if (calledMethod?.DeclaringType == typeof(Console) &&
+                                        (calledMethod.Name == "Write" || 
+                                         calledMethod.Name == "WriteLine" || 
+                                         calledMethod.Name == "ReadLine" || 
+                                         calledMethod.Name == "ReadKey"))
+                                    {
+                                        violations.Add($"{type.FullName}.{method.Name} calls Console.{calledMethod.Name}");
+                                    }
+                                }
+                                catch
+                                {
+                                    // Token resolution can fail for generic methods, extern, etc. - skip
+                                }
+                            }
+                        }
+                    }
+                    catch
+                    {
+                        // GetMethodBody can throw for abstract/extern methods - skip
+                    }
+                }
+            }
+        }
+        
+        Assert.True(violations.Count == 0,
+            $"Production code must not call Console I/O methods directly. Use IDisplayService instead.\n" +
+            $"Violations:\n{string.Join("\n", violations)}");
+    }
 
     [Fact]
     public void Models_Must_Not_Depend_On_Systems()
