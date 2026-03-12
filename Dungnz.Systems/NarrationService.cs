@@ -122,10 +122,6 @@ public class NarrationService
         };
     }
 
-    // TODO(Barton): Call GetEnemyIdleTaunt(enemy.Name) every 3-4 turns in CombatEngine.PerformEnemyTurn() to display periodic mid-combat banter when no special action is taken
-    // TODO(Barton): Call GetEnemyDesperationLine(enemy.Name) in CombatEngine.PerformEnemyTurn() when enemy HP < 25% of MaxHP (before the turn action) to display final stand desperation
-    // TODO(Barton): Call GetPhaseAwareAttackNarration() from CombatEngine during player attack turn and display the result
-
     private static readonly string[] _firstVisitPool = new[]
     {
         "You step into shadow-drenched stone. The air tastes of rust and old death.",
