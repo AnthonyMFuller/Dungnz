@@ -559,6 +559,28 @@ public class CombatEngine : ICombatEngine
                     _display.ShowCombatMessage($"{enemy.Name} cowers in fear and does nothing!");
                     return;
 
+                case EnemyActionType.SelfHeal:
+                {
+                    int healAmt = Math.Max(1, (int)(enemy.MaxHP * action.Modifier));
+                    enemy.HP = Math.Min(enemy.MaxHP, enemy.HP + healAmt);
+                    _display.ShowCombatMessage($"The {enemy.Name} mends its wounds, recovering {healAmt} HP!");
+                    _display.ShowCombatMessage($"({enemy.Name} HP: {enemy.HP}/{enemy.MaxHP})");
+                    return;
+                }
+
+                case EnemyActionType.DrainAttack:
+                {
+                    int manaDrain = Math.Min(player.Mana, 8);
+                    if (manaDrain > 0)
+                    {
+                        player.DrainMana(manaDrain);
+                        _display.ShowCombatMessage($"The {enemy.Name} siphons {manaDrain} mana from your soul!");
+                    }
+                    isArmorPiercingAttack = true;
+                    _display.ShowCombatMessage($"The {enemy.Name} phases through your defenses!");
+                    break;
+                }
+
                 case EnemyActionType.Attack:
                 default:
                     // Standard attack — continue with normal flow
