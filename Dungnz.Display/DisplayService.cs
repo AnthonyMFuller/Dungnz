@@ -320,7 +320,8 @@ public class ConsoleDisplayService : IDisplayService
     }
 
     /// <summary>
-    /// Renders a box-drawn loot drop card with type icon, item name, primary stat, and weight.
+    /// Renders a box-drawn loot drop card with type icon, item name, primary stat,
+    /// weight, and inline comparison delta vs. the currently equipped item (Issue #1378).
     /// </summary>
     public void ShowLootDrop(Item item, Player player, bool isElite = false)
     {
@@ -341,37 +342,96 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine($"║  {PadRightVisible(tierLabel, 36)}║");
         Console.WriteLine($"║  {icon} {ColorizeItemName(item)}{namePad}║");
 
-        // Build stat line with optional "new best" indicator
         string statLine = stat;
-        if (item.AttackBonus > 0 && player.EquippedWeapon != null)
+        var equippedInSlot = GetEquippedInSameSlot(item, player);
+        if (equippedInSlot != null)
         {
-            int delta = item.AttackBonus - player.EquippedWeapon.AttackBonus;
-            if (delta > 0)
-                statLine += $"  {Systems.ColorCodes.Green}(+{delta} vs equipped!){Systems.ColorCodes.Reset}";
-        }
-        else if (item.DefenseBonus > 0 && player.EquippedChest != null)
-        {
-            int delta = item.DefenseBonus - player.EquippedChest.DefenseBonus;
-            if (delta > 0)
-                statLine += $"  {Systems.ColorCodes.Green}(+{delta} vs equipped!){Systems.ColorCodes.Reset}";
-        }
-        else if (item.Type == ItemType.Accessory && player.EquippedAccessory != null)
-        {
-            // Compare all relevant stats for accessories
-            var deltas = new List<string>();
-            if (item.StatModifier > player.EquippedAccessory.StatModifier)
-                deltas.Add($"+{item.StatModifier - player.EquippedAccessory.StatModifier} HP");
-            if (item.AttackBonus > player.EquippedAccessory.AttackBonus)
-                deltas.Add($"+{item.AttackBonus - player.EquippedAccessory.AttackBonus} ATK");
-            if (item.DefenseBonus > player.EquippedAccessory.DefenseBonus)
-                deltas.Add($"+{item.DefenseBonus - player.EquippedAccessory.DefenseBonus} DEF");
-            
+            var deltas = BuildConsoleDeltaParts(item, equippedInSlot);
             if (deltas.Count > 0)
-                statLine += $"  {Systems.ColorCodes.Green}({string.Join(", ", deltas)} vs equipped!){Systems.ColorCodes.Reset}";
+            {
+                if (IsNetUpgrade(item, equippedInSlot))
+                    statLine += $"  ({string.Join(", ", deltas)} vs equipped)";
+                else
+                    statLine += $"  ({string.Join(", ", deltas)} vs {equippedInSlot.Name})";
+            }
+            else { statLine += $"  (same stats as {equippedInSlot.Name})"; }
         }
+        else if (item.IsEquippable)
+        {
+            statLine += $"  {Systems.ColorCodes.Cyan}[new slot]{Systems.ColorCodes.Reset}";
+        }
+
         var statWithWeight = $"{Systems.ColorCodes.Cyan}{statLine}{Systems.ColorCodes.Reset} • {item.Weight} wt";
         Console.WriteLine($"║  {PadRightVisible(statWithWeight, 36)}║");
+
+        if (equippedInSlot != null)
+        {
+            var setBonusWarn = GetConsoleSetBonusBreakWarning(item, equippedInSlot, player);
+            if (setBonusWarn != null)
+                Console.WriteLine($"║  {PadRightVisible(setBonusWarn, 36)}║");
+        }
+
         Console.WriteLine("╚══════════════════════════════════════╝");
+    }
+
+    private static Item? GetEquippedInSameSlot(Item candidate, Player player) =>
+        candidate.Type switch
+        {
+            ItemType.Weapon    => player.EquippedWeapon,
+            ItemType.Accessory => player.EquippedAccessory,
+            ItemType.Armor     => candidate.Slot switch
+            {
+                ArmorSlot.Head      => player.EquippedHead,
+                ArmorSlot.Shoulders => player.EquippedShoulders,
+                ArmorSlot.Chest     => player.EquippedChest,
+                ArmorSlot.Hands     => player.EquippedHands,
+                ArmorSlot.Legs      => player.EquippedLegs,
+                ArmorSlot.Feet      => player.EquippedFeet,
+                ArmorSlot.Back      => player.EquippedBack,
+                ArmorSlot.OffHand   => player.EquippedOffHand,
+                _                   => player.EquippedChest,
+            },
+            _ => null,
+        };
+
+    private static List<string> BuildConsoleDeltaParts(Item newItem, Item equipped)
+    {
+        var parts = new List<string>();
+        int atkDelta  = newItem.AttackBonus  - equipped.AttackBonus;
+        int defDelta  = newItem.DefenseBonus - equipped.DefenseBonus;
+        int manaDelta = newItem.MaxManaBonus - equipped.MaxManaBonus;
+        int hpDelta   = newItem.StatModifier - equipped.StatModifier;
+        string Sign(int d) => d > 0 ? $"+{d}" : $"{d}";
+        if (atkDelta  != 0) parts.Add($"{Sign(atkDelta)} ATK");
+        if (defDelta  != 0) parts.Add($"{Sign(defDelta)} DEF");
+        if (manaDelta != 0) parts.Add($"{Sign(manaDelta)} MaxMP");
+        if (hpDelta   != 0) parts.Add($"{Sign(hpDelta)} HP");
+        return parts;
+    }
+
+    private static bool IsNetUpgrade(Item newItem, Item equipped) =>
+        (newItem.AttackBonus  - equipped.AttackBonus)
+      + (newItem.DefenseBonus - equipped.DefenseBonus)
+      + (newItem.MaxManaBonus - equipped.MaxManaBonus)
+      + (newItem.StatModifier - equipped.StatModifier) >= 0;
+
+    private static string? GetConsoleSetBonusBreakWarning(Item newItem, Item currentlyEquipped, Player player)
+    {
+        var oldSetId = currentlyEquipped.SetId;
+        if (string.IsNullOrEmpty(oldSetId)) return null;
+        if (newItem.SetId == oldSetId)      return null;
+
+        var activeBonuses = Systems.SetBonusManager.GetActiveBonuses(player)
+            .Where(b => b.SetId == oldSetId)
+            .ToList();
+        if (activeBonuses.Count == 0) return null;
+
+        int currentPieces = Systems.SetBonusManager.GetEquippedSetPieces(player, oldSetId);
+        bool willBreak = activeBonuses.Any(b => b.PiecesRequired >= currentPieces);
+        if (!willBreak) return null;
+
+        var desc = activeBonuses.First().Description;
+        return $"{Systems.ColorCodes.Yellow}⚠ Breaks {desc}{Systems.ColorCodes.Reset}";
     }
 
     /// <summary>
@@ -1446,6 +1506,13 @@ public class ConsoleDisplayService : IDisplayService
             Console.WriteLine($"│ {PadRightVisible(colored, innerWidth)} │");
         }
         Console.WriteLine($"└{boxBorder}┘");
+    }
+
+    /// <summary>Prints combat log history notice to the console (Issue #1379).</summary>
+    public void ShowCombatHistory()
+    {
+        Console.WriteLine("── Combat History ──");
+        Console.WriteLine("(See session output above for full combat history.)");
     }
 
     private static string RenderBar(int current, int max, int width, string fillColor, string emptyColor = Systems.ColorCodes.Gray)

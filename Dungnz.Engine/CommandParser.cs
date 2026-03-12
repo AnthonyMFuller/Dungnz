@@ -86,6 +86,9 @@ public enum CommandType
     /// <summary>Display side-by-side stats for an inventory item vs. currently equipped gear.</summary>
     Compare,
 
+    /// <summary>Display the full combat log history in the Content panel.</summary>
+    History,
+
     /// <summary>
     /// The player's input could not be matched to any known command verb;
     /// the game loop will display an error and prompt again.
@@ -175,6 +178,7 @@ public static class CommandParser
             "craft" => new ParsedCommand { Type = CommandType.Craft, Argument = argument },
             "leaderboard" or "lb" or "scores" => new ParsedCommand { Type = CommandType.Leaderboard },
             "compare" or "comp" => new ParsedCommand { Type = CommandType.Compare, Argument = argument },
+            "history" or "hist" or "log" => new ParsedCommand { Type = CommandType.History },
             _ => TryFuzzyMatch(command, argument)
         };
     }
@@ -199,7 +203,8 @@ public static class CommandParser
             "shop", "buy", "sell",
             "prestige", "p", "skills", "skill", "learn",
             "craft", "leaderboard", "lb", "scores",
-            "compare", "comp"
+            "compare", "comp",
+            "history", "hist", "log"
         ];
 
         // Find verbs with Levenshtein distance <= 1
