@@ -166,6 +166,8 @@ public class TestDisplayService : IDisplayService
             AllOutput.Add($"enemy_art:{string.Join("|", enemy.AsciiArt)}");
     }
 
+    public void ShowCombatHistory() { AllOutput.Add("combat_history"); }
+
     public virtual StartupMenuOption ShowStartupMenu(bool hasSaves) => StartupMenuOption.NewGame;
     public virtual string? SelectSaveToLoad(string[] saveNames) => saveNames.FirstOrDefault();
     public virtual int? ReadSeed() => null;
