@@ -1,0 +1,9 @@
+﻿[bold]Vael[/]  [grey]Lv 6[/]  [dim]Ranger[/]
+
+HP [green]█████████░[/] [bold]90/105[/]
+MP [blue]█████████░[/] [bold]35/40[/]
+
+[red]ATK[/] [bold]16[/]   [cyan]DEF[/] [bold]6[/]
+[yellow]Gold[/] 175g
+[green]XP[/] 480/600
+[yellow]❖ Focus[/] ●○○

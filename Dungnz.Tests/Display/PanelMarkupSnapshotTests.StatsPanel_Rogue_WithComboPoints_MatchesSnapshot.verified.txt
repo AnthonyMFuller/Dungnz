@@ -1,0 +1,9 @@
+﻿[bold]Sable[/]  [grey]Lv 6[/]  [dim]Rogue[/]
+
+HP [green]████████░░[/] [bold]70/90[/]
+MP [blue]██████████[/] [bold]25/25[/]
+
+[red]ATK[/] [bold]18[/]   [cyan]DEF[/] [bold]5[/]
+[yellow]Gold[/] 300g
+[green]XP[/] 500/600
+[yellow]❖ Combo[/] ●●●○○

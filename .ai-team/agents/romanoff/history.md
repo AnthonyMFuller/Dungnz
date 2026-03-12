@@ -1889,3 +1889,69 @@ Extract `BuildGearPanelMarkup(Player player)` as `internal static` in `SpectreLa
 
 **2026-03-12: Decisions 13, 14, 15 — Panel Height Tests & PR Contamination Process**
 Your PR #1340 contamination resolution (Decision 13) established a key process rule: always verify `gh pr view --json mergeable` before attempting to merge on branch contamination. Decisions 14 & 15 capture the cooldown exclusion and GearPanel seam deferral from PR #1344. The GearPanel extraction task is assigned to Hill with clear follow-up: once extracted, Romanoff/Barton to close the TODO with a concrete test.
+### 2026-03-11 — Three QA Improvements (Issues #1355, #1356, #1361)
+
+**Completed three independent QA issues in parallel branches/PRs:**
+
+#### Issue #1355 — NarrationMarkupSafetyTests (PR #1362)
+
+**What:** Added reflection-based test that validates all narration strings parse as valid Spectre.Console Markup.
+
+**Why:** ~192 narration strings exist across 3 static classes (CombatNarration, RoomStateNarration, MerchantNarration). Docs warn authors about markup safety but docs don't run. This test enforces the Content Authoring Spec as a CI gate.
+
+**Implementation:**
+- Iterates narration static classes via reflection (discovers all `public static readonly string[]` fields)
+- Validates each string via `new Markup(s)` — fails on throw
+- ~65 lines of test code in `NarrationMarkupSafetyTests.cs`
+
+**Learnings:**
+- Spectre.Console already available via transitive dependencies (tests import Display services)
+- Existing `MarkupAdversarialTests.cs` demonstrates similar pattern with `AnsiConsole.Create()` setup
+- Test catches unescaped brackets (e.g., `[HERO]` should be `[[HERO]]`) before they crash live display
+
+#### Issue #1356 — SoulHarvest Double-Heal Bug Comment (PR #1363)
+
+**What:** Investigated `// THIS IS THE BUG:` comment in `SoulHarvestIntegrationTests.cs` about double-heal condition.
+
+**Verdict:** False alarm. No actual bug exists.
+
+**Findings:**
+- SoulHarvest only implemented in `AttackResolver.cs:245` (single heal path: `player.Heal(5)`)
+- GameEventBus is NOT wired to CombatEngine in production code
+- OnEnemyKilled event type is defined but never published
+- Test comment's heal was ALREADY commented out — test is a regression GUARD, not documenting active bug
+
+**Changes:**
+- Removed misleading "THIS IS THE BUG" comment
+- Added clarifying note that GameEventBus is currently unwired
+- Documented test intent: regression guard preventing future double-heal if OnEnemyKilled is ever published
+
+**Learnings:**
+- When triaging bug comments, search for ALL implementations — `grep -rn "Soul Harvest\|essence" --include="*.cs"`
+- Check both inline implementation AND event-based patterns (EventBus vs direct calls)
+- A comment that says "BUG" with commented-out code is usually a guard test, not a bug report
+
+#### Issue #1361 — Replace Disabled ArchUnit Check (PR #1366)
+
+**What:** Replaced TODO-commented ArchUnit `NotCallMethod` check with custom xUnit fact that enforces "no bare Console I/O in game logic" rule.
+
+**Why:** A TODO-commented architecture enforcement rule is worse than no rule — it implies the constraint exists but doesn't actually enforce it.
+
+**Implementation:**
+- Custom xUnit fact scans IL bytecode for Console method calls
+- Uses reflection to iterate Engine and Systems assemblies
+- Inspects method bodies for `call`/`callvirt` opcodes (0x28/0x6F) targeting Console.Write/WriteLine/ReadLine/ReadKey
+- ~70 lines replacing 13 commented lines
+
+**Learnings:**
+- IL scanning via `MethodBase.GetMethodBody().GetILAsByteArray()` + `Module.ResolveMethod(token)` is reliable for enforcing call constraints
+- Skip compiler-generated types (names containing `<>`) to avoid noise from async state machines
+- Wrap token resolution in try/catch — generic methods and extern declarations can fail resolution
+- ArchUnit NotCallMethod not available in ArchUnitNET 0.13.3 — custom reflection is the alternative
+
+**QA workflow for parallel issues:**
+- Created separate branches for each (squad/1355, squad/1356, squad/1361)
+- Independent PRs with clear scoping — no cross-contamination
+- All tests green before commit/push
+- Updated history in one session after all three PRs opened
+
