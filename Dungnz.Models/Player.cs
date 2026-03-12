@@ -138,7 +138,10 @@ public partial class Player
 
     // ── 2/3-piece set bonus stat modifiers (set by SetBonusManager.ApplySetBonuses) ──────
 
-    /// <summary>Aggregate defense bonus from set bonuses.</summary>
+    /// <summary>Aggregate attack bonus from set bonuses. Tracked so the previous value can be subtracted before re-applying.</summary>
+    public int SetBonusAttack { get; set; }
+
+    /// <summary>Aggregate defense bonus from set bonuses. Tracked so the previous value can be subtracted before re-applying.</summary>
     public int SetBonusDefense { get; set; }
 
     /// <summary>Aggregate max HP bonus from set bonuses.</summary>

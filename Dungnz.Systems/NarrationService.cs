@@ -1,5 +1,7 @@
 namespace Dungnz.Systems;
 
+using Dungnz.Models;
+
 /// <summary>
 /// Room state identifiers for context-aware narration.
 /// </summary>
@@ -218,6 +220,122 @@ public class NarrationService
         "One final stand — your strike burns with desperation and resolve.",
         "You drive forward, knowing this could be your last chance.",
         "The air crackles with finality. Your attack could decide everything."
+    };
+
+    // ── Floor-Tiered Room Narration (Tier 1: Floors 1-3, Tier 2: Floors 4-6, Tier 3: Floors 7+) ──
+
+    /// <summary>Tier 1 (Floors 1-3): Surface-level dungeon entrance, cautious tone.</summary>
+    private static readonly string[] _firstVisitTier1Pool = new[]
+    {
+        "You step into pale torchlight. The dungeon's entrance looms behind you.",
+        "Worn walls bear ancient chisel marks. This level is old, but not yet cursed.",
+        "The air is cold but breathable. Footprints in the dust suggest others passed through.",
+        "You hear water dripping. A river runs beneath these stones somewhere.",
+        "Lantern light reveals shallow carvings—warnings, or just time? You can't tell yet."
+    };
+
+    /// <summary>Tier 1 (Floors 1-3): Surface-level dungeon, lighter enemy threat.</summary>
+    private static readonly string[] _activeEnemiesTier1Pool = new[]
+    {
+        "Movement ahead—small shapes, not yet monstrous. Your first real test.",
+        "Shadows dance. These aren't the deep things yet, but they're still dangerous.",
+        "You hear chittering, scraping. Basic dungeon vermin, but hungry.",
+        "Claws on stone. It heard you. The hunt begins.",
+        "Something shifts in the torchlight. First blood is about to matter."
+    };
+
+    /// <summary>Tier 1 (Floors 1-3): Surface-level dungeon, cleared room.</summary>
+    private static readonly string[] _clearedTier1Pool = new[]
+    {
+        "You step over broken bodies. The dungeon tastes weakness.",
+        "Corpses settle. You're one step deeper into this place.",
+        "Victory comes easy here. Don't get comfortable.",
+        "The shallow dungeon forgets quickly. Keep moving.",
+        "You've earned a breath. The real darkness waits below."
+    };
+
+    /// <summary>Tier 2 (Floors 4-6): Mid-dungeon, darker atmosphere.</summary>
+    private static readonly string[] _firstVisitTier2Pool = new[]
+    {
+        "You've gone deep enough that surface light no longer reaches here. Stone and shadow rule now.",
+        "The walls sweat with moisture. Something ancient pulses in the stone beneath your feet.",
+        "Bones line the corridor—scattered, old, worn smooth by years. Many who came here didn't leave.",
+        "The air tastes of copper and earth. You've crossed a threshold you can't uncross.",
+        "Carvings here aren't warnings anymore. They're prayers from the damned."
+    };
+
+    /// <summary>Tier 2 (Floors 4-6): Mid-dungeon, more dangerous threats.</summary>
+    private static readonly string[] _activeEnemiesTier2Pool = new[]
+    {
+        "Something far more dangerous than dungeon vermin awakens. This is where the real monsters live.",
+        "You feel it before you see it—a presence, malevolent and aware. Combat is unavoidable.",
+        "The darkness grows teeth. Whatever hunts here isn't just trying to survive.",
+        "A snarl that shakes dust from the ceiling. You've disturbed something old and powerful.",
+        "Eyes that glow with hunger. The dungeon's true predators have found you."
+    };
+
+    /// <summary>Tier 2 (Floors 4-6): Mid-dungeon, cleared rooms feel earned.</summary>
+    private static readonly string[] _clearedTier2Pool = new[]
+    {
+        "The corpse cools on cold stone. You're stronger than you were. Barely.",
+        "Blood pools merge with dungeon moisture. You're no longer a surface dweller.",
+        "The fight drained you. But you won. That counts for something down here.",
+        "Victory here tastes like ash and survival. One step deeper. One step closer to escape.",
+        "The monster falls. And somewhere in the depths, something else takes notice."
+    };
+
+    /// <summary>Tier 3 (Floors 7+): Deep dungeon, oppressive ancient atmosphere.</summary>
+    private static readonly string[] _firstVisitTier3Pool = new[]
+    {
+        "You've reached the truly ancient levels. The stone itself groans with age and wrongness.",
+        "Light struggles here. Darkness feels like a living thing, pressing against your sanity.",
+        "The walls pulse with something that might be heartbeat, might be something worse.",
+        "You smell things that have no name in the light world. This depth was sealed for a reason.",
+        "Reality feels thin at this depth. The dungeon's deepest secrets breathe here."
+    };
+
+    /// <summary>Tier 3 (Floors 7+): Deep dungeon, monstrous threats.</summary>
+    private static readonly string[] _activeEnemiesTier3Pool = new[]
+    {
+        "Something impossibly ancient stirs. This is what the dungeon guards.",
+        "The darkness coalesces into something that should not exist. Combat becomes prayer.",
+        "You've found what lives at the absolute bottom. It's found you too.",
+        "A roar that predates language. The dungeon's final guardians are waking.",
+        "The pressure of ancient malice. Only one of you walks out of this."
+    };
+
+    /// <summary>Tier 3 (Floors 7+): Deep dungeon, hard-won victories.</summary>
+    private static readonly string[] _clearedTier3Pool = new[]
+    {
+        "The abomination falls. Reality snaps back into place. You're still breathing.",
+        "The corpse of something ancient goes still. You're not sure you survived—or what the price was.",
+        "The dungeon's breath halts. For a moment, the pressure releases. Don't expect it to last.",
+        "You've killed something that was supposed to be unkillable. The dungeon remembers.",
+        "Silence. And in that silence, the terrible knowledge that you're still alive—and still down here."
+    };
+
+    // ── Item Pickup Narration (Legendary & Epic Tiers) ──
+
+    /// <summary>Legendary item pickup lines (5+). Sense of awe, destiny, rarity.</summary>
+    private static readonly string[] _legendaryPickupPool = new[]
+    {
+        "You find yourself holding something *legendary*. The dungeon has chosen to let you live.",
+        "The artifact pulses with power that transcends any mortal understanding. This changes everything.",
+        "Ancient light emanates from your hands. You're holding something the dungeon itself fears.",
+        "A legend crystallized into form. To hold this is to rewrite your fate.",
+        "The very air warps around it. You've found the kind of power that reshapes worlds.",
+        "This isn't treasure. This is destiny. The dungeon just handed you the key to everything."
+    };
+
+    /// <summary>Epic item pickup lines (5+). Excitement, power, less awe than Legendary.</summary>
+    private static readonly string[] _epicPickupPool = new[]
+    {
+        "You pull an epic-tier artifact from the wreckage. This is serious power.",
+        "A glorious discovery—artifact-class gear that belongs in the hands of champions.",
+        "The weapon thrums with impossible potential. This is the kind of tool that saves lives.",
+        "Magnificent. Whatever this is, it wasn't meant for ordinary heroes.",
+        "You've found something rare enough to matter. Power concentrated into a single form.",
+        "An epic find—gear that separates survivors from legends."
     };
 
     /// <summary>Determines the current combat phase based on turn number and HP percentages.</summary>
