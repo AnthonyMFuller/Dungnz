@@ -1,9 +1,9 @@
 # Content Authoring Spec
 
-**For:** Dungnz Content Writers  
-**By:** Fury (Narrative Specialist)  
-**Version:** 1.0  
-**Last Updated:** 2026-03-11
+**For:** Dungnz Content Writers and C# Developers  
+**By:** Fury (Narrative) · Barton (Systems/Display)  
+**Version:** 1.1  
+**Last Updated:** 2025
 
 This guide documents where your content appears in the game UI, how much space it has, and which characters will crash the display. **Read this before writing any flavor text.**
 
@@ -53,40 +53,80 @@ The game UI consists of 6 panels arranged in a 3-row layout:
 
 ## 2. Panel Dimensions & Hard Limits
 
+All height constants are defined in `Dungnz.Display/Spectre/LayoutConstants.cs` relative to a 40-row baseline terminal. Width is calculated from proportional ratios applied to the terminal width.
+
+### Height constants (from `LayoutConstants.cs`)
+
+| Constant | Value | Panel |
+|----------|-------|-------|
+| `LayoutConstants.BaselineTerminalHeight` | 40 rows | baseline terminal |
+| `LayoutConstants.StatsPanelHeight` | 8 rows | Stats (TopRow, 40 % width) |
+| `LayoutConstants.MapPanelHeight` | 8 rows | Map (TopRow, 60 % width) |
+| `LayoutConstants.ContentPanelHeight` | 20 rows | Content (MiddleRow, 70 % width) |
+| `LayoutConstants.GearPanelHeight` | 20 rows | Gear (MiddleRow, 30 % width) |
+| `LayoutConstants.LogPanelHeight` | 8 rows | Log (BottomRow) |
+
+### Width ratios
+
+The layout splits columns proportionally:
+
+| Row band | Left panel | Right panel |
+|----------|------------|-------------|
+| TopRow | Map — **60 %** terminal width | Stats — **40 %** terminal width |
+| MiddleRow | Content — **70 %** terminal width | Gear — **30 %** terminal width |
+| BottomRow | Log spans full width | — |
+
+### Derived character widths
+
+| Panel | 80-col terminal | 120-col terminal |
+|-------|----------------|-----------------|
+| Content (70 %) | ~56 chars | ~84 chars |
+| Gear (30 %) | ~24 chars | ~36 chars |
+| Map (60 %) | ~48 chars | ~72 chars |
+| Stats (40 %) | ~32 chars | ~48 chars |
+
+### In-memory buffer limits (from `SpectreLayoutDisplayService.cs`)
+
+| Constant | Value | Meaning |
+|----------|-------|---------|
+| `MaxContentLines` | 50 | Content panel ring buffer — oldest lines dropped beyond 50 |
+| `MaxLogHistory` | 50 | Log ring buffer |
+| `MaxDisplayedLog` | 12 | Visible log lines rendered at any one time |
+
 ### Content Panel (Middle-Left)
-- **Width:** ~70 characters (depending on terminal width)
-- **Height:** ~20 lines  
+- **Width:** ~70 % of terminal width (~56 chars at 80-col)
+- **Height:** `ContentPanelHeight` = 20 rows (baseline)
 - **Behavior:** Text wraps and scrolls naturally
 - **Use for:** Room descriptions, combat log, item descriptions, dialog, floor transitions, enemy intros
 
 ### Gear Panel (Middle-Right, Combat Mode)
-- **Width:** ~25–30 characters  
-- **Height:** ~20 lines  
+- **Width:** ~30 % of terminal width (~24 chars at 80-col; borders consume ~4, leaving ~20 usable)
+- **Height:** `GearPanelHeight` = 20 rows (baseline)
 - **Behavior:** Displays enemy name, level, stats, and lore in a fixed layout
 - **Enemy Lore Line Limit:** ~8 lines visible before scrolling (if longer, only first 8 show without explicit scroll)
 - **Use for:** Enemy stats + lore during combat; equipped gear outside combat
 
 ### Stats Panel (Top-Right)
-- **Width:** ~25–30 characters  
-- **Height:** ~8 lines  
+- **Width:** ~40 % of terminal width (~32 chars at 80-col)
+- **Height:** `StatsPanelHeight` = 8 rows (baseline)
 - **Behavior:** Compact display, limited room
 - **Use for:** Player HP, MP, XP bars, status effects (abbreviated)
 
 ### Log Panel (Bottom-Left)
-- **Width:** ~70 characters  
-- **Height:** ~8 lines  
+- **Width:** ~70 % of terminal width (~56 chars at 80-col)
+- **Height:** `LogPanelHeight` = 8 rows (baseline); `MaxDisplayedLog = 12` lines visible
 - **Behavior:** Scrolling history of recent actions
 - **Use for:** Recent combat actions, item pickups, shrine messages (optional)
 
 ### Map Panel (Top-Left)
-- **Width:** ~70 characters  
-- **Height:** ~8 lines (MapPanelHeight = 8 in LayoutConstants.cs)  
+- **Width:** ~60 % of terminal width (~48 chars at 80-col)
+- **Height:** `MapPanelHeight` = 8 rows (baseline)
 - **Behavior:** ASCII dungeon map
 - **Use for:** Procedurally generated dungeon layout (not for written content)
 
 ### Input Panel (Bottom-Right)
-- **Width:** ~25–30 characters  
-- **Height:** ~4 lines  
+- **Width:** ~30 % of terminal width
+- **Height:** ~4 rows (BottomRow = 30 % of 40 = 12 rows; Input = 30 % of that ≈ 4)
 - **Behavior:** Command prompt
 - **Use for:** Command entry only (not content)
 
@@ -162,7 +202,121 @@ These colors are **safe to use** in markup:
 
 ---
 
+## 3a. Dynamic Content — `Markup.Escape()` Rule (Developers)
+
+> **This section is for C# developers** writing display code. Content writers do not call `Markup.Escape()` directly, but they should understand why it is required.
+
+### The problem
+
+Spectre.Console's `new Markup(string)` constructor parses **all** `[word]` sequences as colour/style tags. If a player names their character `[red]` or `[DarkKnight]`, any string that embeds it raw will either crash with `MarkupException` or render with unintended colours.
+
+### The rule — all runtime values MUST be escaped
+
+**Every value that comes from runtime state** (player name, enemy name, item name, room description, ability name, status effect name, any user input) **must be wrapped with `Markup.Escape()`** before being inserted into a markup string.
+
+```csharp
+// ❌ WRONG — player named "[red]" turns the rest of the panel red
+$"Welcome, {player.Name}!"
+$"[bold]{player.Name}[/] has arrived."
+$"Enemy: {enemy.Name}"
+$"[{tc}]{item.Name}[/]"
+
+// ✅ CORRECT — safe for any player/enemy/item name
+$"Welcome, {Markup.Escape(player.Name)}!"
+$"[bold]{Markup.Escape(player.Name)}[/] has arrived."
+$"[red]Enemy: {Markup.Escape(enemy.Name)}[/]"
+$"[{tc}]{Markup.Escape(item.Name)}[/]"
+```
+
+### Fields that ALWAYS require `Markup.Escape()`
+
+| Expression | Escaped form |
+|------------|-------------|
+| `player.Name` | `Markup.Escape(player.Name)` |
+| `player.Class.ToString()` | `Markup.Escape(player.Class.ToString())` |
+| `enemy.Name` | `Markup.Escape(enemy.Name)` |
+| `item.Name` | `Markup.Escape(item.Name)` |
+| `room.Description` | `Markup.Escape(room.Description)` |
+| `effect.Effect.ToString()` | `Markup.Escape(effect.Effect.ToString())` |
+| `killedBy` (game-over string) | `Markup.Escape(killedBy)` |
+| Any narration string from `NarrationService` | `Markup.Escape(narration)` |
+| Recipe / ability / set-bonus names | `Markup.Escape(name)` |
+
+### Alternative — `new Text()` bypasses the parser entirely
+
+When building complex layouts, use `new Text(value)` for plain values alongside `new Markup("...")` for styled labels:
+
+```csharp
+// ✅ Text() never parses markup — safe for any player name
+var row = new Columns(
+    new Markup("[bold red]Enemy:[/]"),
+    new Text(enemy.Name)
+);
+
+// ✅ Victory banner — escape the name, markup the decoration
+sb.AppendLine($"[bold gold1]✦  V I C T O R Y  ✦[/]");
+sb.AppendLine($"[bold]{Markup.Escape(player.Name)}[/]  •  Level {player.Level}");
+```
+
+### `AppendLog` takes plain text — do NOT add markup
+
+The `AppendLog(string message, string type)` method in `SpectreLayoutDisplayService` **automatically escapes** its input and wraps it with the correct icon and colour for the log type. Passing markup into it will render as literal tag text.
+
+```csharp
+// ❌ WRONG — renders as literal "[bold]Critical hit![/]" in the log
+AppendLog("[bold]Critical hit![/]");
+
+// ✅ CORRECT — the service applies icon + colour automatically
+AppendLog("Critical hit!");
+AppendLog($"Picked up {item.Name}", "loot");   // plain text; service escapes item.Name internally
+```
+
+---
+
+## 3b. Narration Strings — Plain Text Only
+
+All strings in `NarrationService.cs` pools (room entry, combat, pickup, etc.) are **plain text**. They are passed through `Markup.Escape()` by the display service before rendering. Do not add Spectre tags inside narration pool strings.
+
+```csharp
+// ❌ WRONG — markup tag inside narration pool
+private static readonly string[] _openingAttackPool = [
+    "You swing [bold]furiously[/] at the enemy.",   // BAD — renders as literal "[bold]..."
+];
+
+// ✅ CORRECT — plain prose, zero markup tags
+private static readonly string[] _openingAttackPool = [
+    "You swing furiously at the enemy.",
+    "Your blade finds a gap in their guard.",
+];
+```
+
+### Multi-line narration — use `\n`, not multiple calls
+
+```csharp
+// ❌ WRONG — three separate calls cause panel flicker and inconsistent timing
+AppendContent("The dungeon trembles.");
+AppendContent("Dust falls from the ceiling.");
+AppendContent("Something has awakened.");
+
+// ✅ CORRECT — one atomic content update
+AppendContent("The dungeon trembles.\nDust falls from the ceiling.\nSomething has awakened.");
+```
+
+### Narration length limits
+
+| Context | Max recommended length | Notes |
+|---------|----------------------|-------|
+| Single combat narration line | **70 chars** | Prevents wrap on 80-col terminal |
+| Room entry / atmospheric line | **70 chars** | Same constraint |
+| Enemy taunt / idle line | **80 chars** | Content panel has room to wrap once |
+| Log message | **55 chars** | Log panel is ~70 % of bottom row width |
+| Gear slot item description | **20 chars** | Gear panel ≈ 24 chars; borders eat ~4 |
+
+---
+
 ## 4. Content Self-Validation Checklist
+
+### For content writers
 
 Before submitting content for code integration, verify:
 
@@ -174,6 +328,17 @@ Before submitting content for code integration, verify:
 - [ ] **Tone & style consistent?** Reviewed similar content in codebase for matching voice
 - [ ] **No trailing whitespace?** Cleaned up line endings
 - [ ] **Plural/singular correct?** Checked grammar for placeholder text
+- [ ] **No markup tags in narration strings?** Narration pool strings are plain text — no `[bold]`, `[red]`, etc.
+- [ ] **Multi-line uses `\n`?** Not multiple separate `AppendContent` calls
+
+### For developers adding display code
+
+- [ ] All `player.Name`, `enemy.Name`, `item.Name`, `room.Description` calls wrapped in `Markup.Escape()`
+- [ ] Any literal `[` or `]` in a non-markup string is doubled to `[[` / `]]`
+- [ ] `AppendLog()` called with plain text (it escapes and styles internally)
+- [ ] Map symbols use `[[S]]`, `[[B]]`, `[[?]]` etc. — never bare `[S]`
+- [ ] New emoji use the EAW=N set **or** use the `EL()` helper for aligned rows (see section 3c)
+- [ ] No tier/rarity string baked into `item.Name` — tier shown via colour only
 
 ---
 
@@ -372,24 +537,69 @@ Valid colors are safe; invalid ones will crash:
 
 ---
 
-## 8. Integration Points for Coders
+## 7b. Emoji Width Rules (Developers)
+
+Spectre.Console uses terminal column widths for alignment. Emoji have two widths depending on their Unicode East Asian Width (EAW) property:
+
+| EAW class | Width | Examples | Trailing padding needed |
+|-----------|-------|----------|------------------------|
+| EAW=N (Narrow) | 1 column | `⚔ ⚗ ☠ ★ ↩ •` | 2 spaces |
+| EAW=W (Wide) | 2 columns | `🔥 💧 🐉 📜 🎒 🦺 🪖` | 1 space |
+
+Mixing EAW=W and EAW=N in aligned text (e.g., gear slot list) causes column drift. The codebase uses the `EL(emoji, text)` helper to compensate:
+
+```csharp
+// EL adds correct spacing based on whether emoji is in NarrowEmoji set
+// NarrowEmoji set: { "⚔", "⚗", "☠", "★", "↩", "•" }
+// Wide emoji → 1 trailing space; Narrow emoji → 2 trailing spaces
+EL("⚔",  "Weapon")    // "⚔  Weapon" — 2 spaces for narrow
+EL("🦺", "Chest")     // "🦺 Chest"  — 1 space for wide
+```
+
+**Rule:** Use the `EL()` helper for any new aligned list rows that mix emoji and text labels.
+
+## 7c. Item Tier — Display via Colour, Not Name
+
+Item tier/rarity is shown via Spectre colour markup around the item name. **Do not embed tier text in `item.Name`.**
+
+| Tier | Colour in markup |
+|------|----------------|
+| Common | `white` |
+| Uncommon | `green` |
+| Rare | `blue` |
+| Epic | `purple` |
+| Legendary | `gold1` |
+
+```csharp
+// ❌ Wrong — tier baked into name string
+item.Name = "Mystic Blade [Epic]";
+$"{item.Name}"   // pollutes save files, breaks ItemNames constants
+
+// ✅ Correct — clean name; colour signals tier
+item.Name = "Mystic Blade";
+$"[purple]{Markup.Escape(item.Name)}[/]"   // Epic
+$"[gold1]{Markup.Escape(item.Name)}[/]"    // Legendary
+```
+
+---
+
+## 8. Integration Points for Developers
 
 Content is referenced from these locations in code:
 
-| Feature | Code Location | Access Pattern |
-|---------|---------------|-----------------|
-| Enemy intros | `Dungnz.Systems/EnemyNarration.cs` | `EnemyNarration.GetIntro(enemyName)` |
-| Enemy lore | `Data/enemy-stats.json` | `.Lore` field per enemy |
-| Enemy crits | `Dungnz.Systems/EnemyNarration.cs` | `EnemyNarration.GetCritReactions(enemyName)` |
-| Enemy idle taunts | `Dungnz.Systems/EnemyNarration.cs` | `EnemyNarration.GetIdleTaunts(enemyName)` |
-| Enemy desperation | `Dungnz.Systems/EnemyNarration.cs` | `EnemyNarration.GetDesperationLines(enemyName)` |
-| Enemy death | `Dungnz.Systems/EnemyNarration.cs` | `EnemyNarration.GetDeath(enemyName)` |
-| Room entry | `Dungnz.Systems/NarrationService.cs` | `GetRoomEntryNarration(RoomNarrationState)` |
-| Combat narration | `Dungnz.Systems/NarrationService.cs` | `GetPhaseAwareAttackNarration(...)` |
-| Merchant | `Dungnz.Systems/MerchantNarration.cs` | Merchant greeting/farewell pools |
-| Shrine | `Dungnz.Systems/ShrineNarration.cs` | Shrine description/grant/deny pools |
-| Floor transitions | `Dungnz.Systems/FloorTransitionNarration.cs` | Floor-specific pools |
-| Items | `Data/item-stats.json` | `.Description` field per item |
+| Feature | Code Location | Notes |
+|---------|---------------|-------|
+| Room entry narration | `Dungnz.Systems/NarrationService.cs` | `GetRoomEntryNarration(RoomNarrationState)` |
+| Combat phase narration | `Dungnz.Systems/NarrationService.cs` | `GetPhaseAwareAttackNarration(turn, playerPct, enemyPct)` |
+| Legendary/Epic pickup flavour | `Dungnz.Systems/NarrationService.cs` | `_legendaryPickupPool`, `_epicPickupPool` |
+| Enemy crit / taunt / desperation | `Dungnz.Systems/NarrationService.cs` | `GetEnemyCritReaction`, `GetEnemyIdleTaunt`, `GetEnemyDesperationLine` |
+| Enemy lore (data-driven) | `Dungnz.Data/enemy-stats.json` | `.Lore` field per enemy entry |
+| Item descriptions (data-driven) | `Dungnz.Data/item-stats.json` | `.Description` field per item |
+| Status effects (data-driven) | `Dungnz.Data/status-effects.json` | Effect display names and descriptions |
+| UI panel rendering | `Dungnz.Display/Spectre/SpectreLayoutDisplayService.cs` | All markup construction, emoji icons, `Markup.Escape()` sites |
+| Layout constants | `Dungnz.Display/Spectre/LayoutConstants.cs` | `StatsPanelHeight`, `ContentPanelHeight`, etc. |
+
+> **Note:** `EnemyNarration.cs`, `MerchantNarration.cs`, `ShrineNarration.cs`, and `FloorTransitionNarration.cs` are planned but not yet present. Those strings currently live in `NarrationService.cs` or inline in the display service.
 
 ---
 
@@ -404,12 +614,17 @@ Content is referenced from these locations in code:
 | Tone inconsistent with enemy archetype | Goblins being sophisticated | Review archetype learnings (see Fury history) |
 | Trailing whitespace | Extra spaces at line end | Clean before submission |
 | Forgetting closing markup tag | `"[red]Blood flows"` (no `[/]`) | Always close: `"[red]Blood flows[/]"` |
+| Raw player/enemy/item name in markup | `$"Welcome {player.Name}!"` | `$"Welcome {Markup.Escape(player.Name)}!"` |
+| Markup tags inside narration pool strings | `"You strike [bold]hard[/]."` | Plain text only: `"You strike hard."` |
+| Multiple `AppendContent` calls for one beat | Three separate calls with flicker | One call with `\n` separators |
+| Tier text baked into item name | `item.Name = "Blade [Epic]"` | Clean name; use colour markup for tier |
+| `AppendLog` with markup | `AppendLog("[bold]Crit![/]")` | `AppendLog("Crit!")` — plain text |
 
 ---
 
 ## 10. Questions?
 
-Refer back to **Section 1** for panel sizes, **Section 3** for bracket escaping rules, and **Section 6** for content surface details. If adding a new content surface, coordinate with Coulson (lead architect) and Hill (display layer owner) to determine panel allocation and line limits.
+Refer back to **Section 1** for panel sizes, **Section 3** for bracket escaping rules, **Section 3a** for `Markup.Escape()` rules, **Section 3b** for narration plain-text rules, and **Section 6** for content surface details. If adding a new content surface, coordinate with Coulson (lead architect) and Hill (display layer owner) to determine panel allocation and line limits.
 
 ---
 
