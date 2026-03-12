@@ -79,7 +79,7 @@ internal sealed class GoCommandHandler : ICommandHandler
         context.CurrentRoom = nextRoom;
 
         // ~15% chance of a brief atmospheric flavor message before the room description
-        if (context.Narration.Chance(0.15))
+        if (context.Narration.Chance(GameConstants.AtmosphericNarrationChance))
             context.Display.ShowMessage(context.Narration.Pick(AmbientEvents.ForFloor(context.CurrentFloor)));
 
         // Show revisit flavor when returning to an already-explored room
@@ -107,9 +107,9 @@ internal sealed class GoCommandHandler : ICommandHandler
         if (context.CurrentRoom.Hazard != HazardType.None)
         {
             var dmg = context.CurrentRoom.Hazard switch {
-                HazardType.Spike => 5,
-                HazardType.Poison => 3,
-                HazardType.Fire => 7,
+                HazardType.Spike => GameConstants.HazardDamageSpike,
+                HazardType.Poison => GameConstants.HazardDamagePoison,
+                HazardType.Fire => GameConstants.HazardDamageFire,
                 _ => 0
             };
             context.Player.TakeDamage(dmg);
@@ -175,7 +175,7 @@ internal sealed class GoCommandHandler : ICommandHandler
             }
         }
 
-        if (context.Player.HP < context.Player.MaxHP * 0.2)
+        if (context.Player.HP < context.Player.MaxHP * GameConstants.CriticalHpThreshold)
             context.Logger.LogWarning("Player HP critically low: {HP}/{MaxHP}", context.Player.HP, context.Player.MaxHP);
 
         // Check win/floor condition

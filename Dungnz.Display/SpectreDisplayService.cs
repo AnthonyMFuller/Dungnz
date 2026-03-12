@@ -431,6 +431,8 @@ public sealed class SpectreDisplayService : IDisplayService
         table.AddRow("look",       "Re-describe the current room");
         table.AddRow("map",        "Show ASCII mini-map of discovered rooms");
         table.AddRow("descend",    "Descend to the next floor (at cleared exit)");
+        table.AddRow("return",     "Fast-travel to the floor entrance  [grey](alias: retreat)[/]");
+        table.AddRow("back",       "Step back to the previous room  [grey](alias: b)[/]");
         table.AddRow("[grey]── Items ──[/]", "");
         table.AddRow("examine [[target]]", "Inspect an enemy, room item, or inventory item");
         table.AddRow("take [[item]]",      "Pick up an item from the floor");
