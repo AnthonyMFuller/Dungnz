@@ -137,19 +137,19 @@ jobs:
               sys.exit(1)
           PYEOF
 
-       - name: Publish job summary
-         if: always()
-         run: |
-           echo "## CI Results" >> $GITHUB_STEP_SUMMARY
-           echo "" >> $GITHUB_STEP_SUMMARY
-           echo "- **Build**: ✅ Success" >> $GITHUB_STEP_SUMMARY
-           echo "- **Tests**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
-           
-           # Extract coverage percentage from cobertura XML
-           if [ -f "Dungnz.Tests/coverage/coverage.cobertura.xml" ]; then
-             COVERAGE=$(grep -oP 'line-rate="\K[^"]+' Dungnz.Tests/coverage/coverage.cobertura.xml | head -1)
-             COVERAGE_PCT=$(printf "%.2f" $(echo "$COVERAGE * 100" | bc))%
-             echo "- **Coverage**: $COVERAGE_PCT (threshold: 80%)" >> $GITHUB_STEP_SUMMARY
-           else
-             echo "- **Coverage**: Unknown" >> $GITHUB_STEP_SUMMARY
-           fi
+      - name: Publish job summary
+        if: always()
+        run: |
+          echo "## CI Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- **Build**: ✅ Success" >> $GITHUB_STEP_SUMMARY
+          echo "- **Tests**: ✅ Passed" >> $GITHUB_STEP_SUMMARY
+          
+          # Extract coverage percentage from cobertura XML
+          if [ -f "Dungnz.Tests/coverage/coverage.cobertura.xml" ]; then
+            COVERAGE=$(grep -oP 'line-rate="\K[^"]+' Dungnz.Tests/coverage/coverage.cobertura.xml | head -1)
+            COVERAGE_PCT=$(printf "%.2f" $(echo "$COVERAGE * 100" | bc))%
+            echo "- **Coverage**: $COVERAGE_PCT (threshold: 80%)" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "- **Coverage**: Unknown" >> $GITHUB_STEP_SUMMARY
+          fi

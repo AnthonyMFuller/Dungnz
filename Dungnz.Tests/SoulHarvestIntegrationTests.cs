@@ -206,7 +206,10 @@ public class SoulHarvestIntegrationTests
             if (evt.Player.Class == PlayerClass.Necromancer)
             {
                 eventBusHealCount++;
-                // THIS IS THE BUG: If both CombatEngine AND EventBus fire SoulHarvest, double-heal occurs
+                // NOTE: GameEventBus.OnEnemyKilled is not yet wired to trigger SoulHarvest healing.
+                // The heal is applied directly by CombatEngine. This handler only counts the
+                // EventBus firing — it deliberately does NOT apply a second heal, which would
+                // cause the double-heal regression this test guards against.
                 // evt.Player.Heal(5); // DELIBERATELY COMMENTED — this is what we're preventing
             }
         });
