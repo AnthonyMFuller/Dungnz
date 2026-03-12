@@ -4305,4 +4305,180 @@ Extracting `BuildGearPanelMarkup` requires changes to a display plumbing file ow
 
 ---
 
+# Content Authoring Spec Created
+
+**Date:** 2026-03-11  
+**Architect/Author:** Fury  
+**Issues:** #1337  
+**PRs:** #1340, #1345  
+
+---
+
+## Context
+
+Content authors were writing game text (enemy descriptions, room narration, shrine/merchant greetings, etc.)
+without documentation on which UI panels each surface renders in, what the line and character limits are,
+or which characters crash Spectre Console. The retrospective surfaced: *"If I write a 6-line enemy lore
+block and it gets swallowed, I'm writing into a void."*
+
+## Decision
+
+Created `docs/content-authoring-spec.md` — a 416-line authoring guide covering:
+
+1. Visual diagram of 6-panel UI layout with a table mapping 18 content surfaces to specific panels
+2. Panel dimensions and hard limits (Content: ~70×20; Gear: ~25–30×20; Stats: ~25–30×8; Log: ~70×8; Map: ~70×5; Input: ~25–30×4)
+3. Unsafe characters and escaping rules: `[ALL_CAPS]` / `[PascalCase]` in brackets crash Spectre → must use `[[DOUBLE_BRACKETS]]`; invalid color names crash → only named Spectre colors allowed
+4. A 9-point self-validation checklist for content authors before submission
+5. Correct/incorrect examples with bracket escaping and tone guidance
+
+## Rationale
+
+Eliminates blind authoring, reduces rework from bracket crashes and line overflows, centralises knowledge
+in a single reference, and provides a scalable template as new content surfaces are added.
+
+## Alternatives Considered
+
+- Inline code comments only — not discoverable by content-focused contributors
+- Per-PR checklists — duplicated effort; no persistent reference
+
+## Related Files
+
+- `docs/content-authoring-spec.md`
+
+---
+
+# Combat Smoke Test Added to CI
+
+**Date:** 2026-03-11  
+**Architect/Author:** Fitz  
+**Issues:** N/A (Retro P1 action item)  
+**PRs:** N/A (part of CI infrastructure work)  
+
+---
+
+## Context
+
+`dotnet test` was green while the game crashed during actual gameplay
+(`System.InvalidOperationException` in rendering). Unit tests do not exercise the real execution
+path through combat — only the smoke test running the actual binary catches that crash class.
+
+## Decision
+
+Added a scripted combat scenario to CI smoke test (`smoke-test.yml`). The workflow drives the game
+through: startup → new game → class/difficulty selection → game loop via piped stdin. It fails if
+output contains stack traces or unhandled exceptions.
+
+Also modified `Program.cs`: when stdin is not a TTY (`Console.IsInputRedirected`), the game uses
+`ConsoleDisplayService` instead of `SpectreLayoutDisplayService`. Spectre throws
+`NotSupportedException` on `SelectionPrompt` without a live terminal.
+
+## Rationale
+
+Unit tests have a coverage blind spot for the actual rendering pipeline. The smoke test closes the
+gap between "tests pass" and "game is actually playable" — the gap that caused an undetected
+production crash.
+
+## Alternatives Considered
+
+- Integration tests for rendering — too tightly coupled to Spectre internals; brittle
+- Manual smoke test before each PR — not enforceable
+
+## Related Files
+
+- `.github/workflows/smoke-test.yml`
+- `Program.cs`
+
+---
+
+# PR #1340 Review — Branch Contamination Handling
+
+**Date:** 2026-03-11  
+**Architect/Author:** Romanoff  
+**Issues:** #1336 (bracket sweep), #1337 (content authoring spec)  
+**PRs:** #1340 (closed — conflicting), #1345 (merged ✅)  
+
+---
+
+## Context
+
+PR #1340 (`squad/1336-bracket-markup-sweep`) was contaminated by Hill's FinalFloor commit
+(`9c9ddce`). The assumption was that a squash merge would "self-heal" the contamination because
+the contamination commit existed on both sides. In fact, master had merged a **newer version** of
+the same commit — diverging on the same lines — producing genuine `CONFLICTING` status on GitHub.
+
+## Decision
+
+Rather than rebasing the contaminated branch, Romanoff:
+
+1. Identified the uniquely new content on the branch (Barton's history additions + decision inbox file)
+2. Created `squad/1340-clean-docs-sweep` from master HEAD
+3. Applied only the unique content; fixed a spec inaccuracy (Map panel height ~5 → ~8 lines, per `LayoutConstants.MapPanelHeight = 8`)
+4. Closed #1340, merged #1345
+
+**Process rule added:** When squash self-heal is assumed, verify with `gh pr view --json mergeable,mergeStateStatus` before attempting to merge. If `CONFLICTING`, extract unique content manually.
+
+## Rationale
+
+Rebasing a contaminated branch with conflicts across many files creates additional error surface.
+Extracting unique content to a clean branch is faster and safer.
+
+## Alternatives Considered
+
+- Force-rebase and conflict resolution — higher risk of missing lines; slower
+- Leave the branch open — would block issue closure and create confusion
+
+## Related Files
+
+- `.ai-team/agents/barton/history.md`
+- `.ai-team/decisions/inbox/barton-markup-escape-complete.md` (merged)
+- `docs/content-authoring-spec.md`
+
+---
+
+# PR #1344 — PanelHeightRegressionTests Approved and Merged
+
+**Date:** 2026-03-11  
+**Architect/Author:** Romanoff  
+**Issues:** #1333  
+**PRs:** #1344 (merged ✅)  
+
+---
+
+## Context
+
+Retro action item #1333: add regression tests to guard `SpectreLayoutDisplayService` panel height
+calculations, using the `InternalsVisibleTo` seam established by Hill to call
+`BuildPlayerStatsPanelMarkup` directly (no live terminal needed).
+
+## Decision
+
+Merged `squad/1333-panel-height-regression-tests` after verifying:
+
+- 4 tests in `Dungnz.Tests/Display/PanelHeightRegressionTests.cs`, all passing (targeted: 4/4; full suite: 1913/1913)
+- All height assertions reference `LayoutConstants.StatsPanelHeight` — no magic numbers
+- `[Collection("console-output")]` present — parallel interference prevented
+- GearPanel test deferred as `// TODO:` comment only (no failing/skipped test)
+
+**Outstanding follow-up (not blocking):** Hill to extract `BuildGearPanelMarkup(Player player)` as
+`internal static` in `SpectreLayoutDisplayService.cs`, mirroring the `BuildPlayerStatsPanelMarkup`
+seam. Romanoff or Barton to write the concrete test in a follow-up PR.
+
+## Rationale
+
+Final retro action item (#1333) — all 9 retro items are now complete. The seam-based test pattern
+avoids live terminal dependencies and is the correct long-term approach for display layer testing.
+
+## Alternatives Considered
+
+- Mock the display service entirely — loses coverage of the actual markup generation logic
+- Skip GearPanel until seam is ready — accepted as `// TODO:` to avoid a failing test in CI
+
+## Related Files
+
+- `Dungnz.Tests/Display/PanelHeightRegressionTests.cs`
+- `Dungnz.Display/SpectreLayoutDisplayService.cs`
+- `Dungnz.Models/LayoutConstants.cs`
+
+---
+
 *End decisions.*

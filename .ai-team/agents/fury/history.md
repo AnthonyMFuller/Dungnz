@@ -235,3 +235,5 @@ Enemy archetype notes for future consistency:
 - **Infernal Dragon**: heat and light arrive before it does; death = furnace dying
 
 **Build:** ✅ 0 warnings, 0 errors
+
+- 2026-03-11: Content Authoring Spec created — `docs/content-authoring-spec.md`, 416 lines, covering 18 content surfaces, panel dimensions, Spectre markup rules, self-validation checklist (see decisions.md: "Content Authoring Spec Created")
