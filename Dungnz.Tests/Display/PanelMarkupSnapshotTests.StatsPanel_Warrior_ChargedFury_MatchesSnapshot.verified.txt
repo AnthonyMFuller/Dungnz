@@ -1,0 +1,9 @@
+﻿[bold]Aldric[/]  [grey]Lv 5[/]  [dim]Warrior[/]
+
+HP [green]████████░░[/] [bold]80/100[/]
+MP [blue]███████░░░[/] [bold]20/30[/]
+
+[red]ATK[/] [bold]15[/]   [cyan]DEF[/] [bold]8[/]
+[yellow]Gold[/] 200g
+[green]XP[/] 380/500
+[yellow]❖ Fury[/] ●●●●● [bold cyan][[CHARGED]][/]
