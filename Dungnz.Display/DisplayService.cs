@@ -832,6 +832,8 @@ public class ConsoleDisplayService : IDisplayService
         Console.WriteLine("    look                         Re-describe the current room");
         Console.WriteLine("    map                          Show ASCII mini-map of discovered rooms");
         Console.WriteLine("    descend                      Descend to the next floor (at cleared exit)");
+        Console.WriteLine("    return                       Fast-travel to the floor entrance  (alias: retreat)");
+        Console.WriteLine("    back                         Step back to the previous room  (alias: b)");
         Console.WriteLine();
         Console.WriteLine("  Items");
         Console.WriteLine("    examine [target]             Inspect an enemy, room item, or inventory item");

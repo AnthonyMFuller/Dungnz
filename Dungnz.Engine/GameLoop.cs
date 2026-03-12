@@ -126,6 +126,7 @@ public class GameLoop
             [CommandType.Descend]     = new DescendCommandHandler(),
             [CommandType.Ascend]      = new AscendCommandHandler(),
             [CommandType.Back]        = new BackCommandHandler(),
+            [CommandType.Return]      = new ReturnCommandHandler(),
             [CommandType.Map]         = new MapCommandHandler(),
             [CommandType.Shop]        = new ShopCommandHandler(),
             [CommandType.Sell]        = new SellCommandHandler(),

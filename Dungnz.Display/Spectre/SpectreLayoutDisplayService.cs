@@ -1069,6 +1069,7 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         sb.AppendLine("[grey]── Navigation ──[/]");
         sb.AppendLine("[yellow]go [[n|s|e|w]][/]  Move   [grey]│[/]  [yellow]look[/]  Redescribe   [grey]│[/]  [yellow]map[/]  Mini-map");
         sb.AppendLine("[yellow]descend[/]  Descend to the next floor   [grey]│[/]  [yellow]ascend[/]  Return to previous floor");
+        sb.AppendLine("[yellow]return[/]   Fast-travel to the floor entrance   [grey]│[/]  [yellow]back[/]  Step back one room");
         sb.AppendLine();
         sb.AppendLine("[grey]── Items ──[/]");
         sb.AppendLine("[yellow]take [[item]][/]   [yellow]use [[item]][/]   [yellow]equip [[item]][/]   [yellow]examine [[target]][/]");
