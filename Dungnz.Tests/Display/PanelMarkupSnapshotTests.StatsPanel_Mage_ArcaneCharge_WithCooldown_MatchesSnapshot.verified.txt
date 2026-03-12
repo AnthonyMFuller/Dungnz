@@ -1,0 +1,10 @@
+﻿[bold]Lyra[/]  [grey]Lv 7[/]  [dim]Mage[/]
+
+HP [green]████████░░[/] [bold]60/80[/]
+MP [blue]████████░░[/] [bold]50/60[/]
+[dim]CD:[/] [grey]Fireball:[/][yellow]2t[/]  [green]Blink:✅[/]
+
+[red]ATK[/] [bold]8[/]   [cyan]DEF[/] [bold]3[/]
+[yellow]Gold[/] 150g
+[green]XP[/] 620/700
+[yellow]❖ Charge[/] ●●○
