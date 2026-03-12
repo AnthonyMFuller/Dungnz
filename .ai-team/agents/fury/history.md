@@ -235,3 +235,8 @@ Enemy archetype notes for future consistency:
 - **Infernal Dragon**: heat and light arrive before it does; death = furnace dying
 
 **Build:** ✅ 0 warnings, 0 errors
+
+---
+
+**2026-03-12: Decision 12 & Related Process**
+Your content-authoring-spec.md has been formally documented in decisions.md (Decision 12). This captures the panel layout reference, dimension hard limits, unsafe character rules, and self-validation checklist you authored. The spec is now the authoritative reference for all content authors on the project. Also noted: PR #1340 contamination was resolved via extract-clean merge (Decision 13).

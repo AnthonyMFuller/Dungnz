@@ -353,3 +353,8 @@ quit      → exit the game
 - ✅ Crash detection grep returns no match on clean output
 - ✅ Game reached actual combat (COMBAT BEGINS rendered in output)
 - ✅ Build succeeds (0 errors, 0 warnings)
+
+---
+
+**2026-03-12: Decision 11 — Combat Smoke Test in CI**
+Your smoke-test.yml addition has been recorded in decisions.md. This captures the retro item fix: catching runtime crashes that unit tests miss via scripted combat execution through piped stdin.

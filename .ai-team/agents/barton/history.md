@@ -2126,3 +2126,8 @@ grep -rn '".*\[.*{' Dungnz.Display/ --include="*.cs"
 5. Map symbols in markup strings → `[[X]]` double-bracket notation
 
 **Future risk surface:** Any new `AppendContent(...)` or `SetContent(...)` call that interpolates game state (enemy names, status effects, skill names, ability names) without `Markup.Escape()` would reintroduce the crash class.
+
+---
+
+**2026-03-12: Decision 13 Addendum — PR Contamination Resolution**
+Your bracket sweep findings and history additions from the contaminated branch were successfully extracted and merged via PR #1345 (Decision 13). The branch contamination taught the team a process rule: verify mergeable state before assuming self-healing on squash merges. Also noted: Decision 15 defers the GearPanel seam extraction to Hill; once done, you and Romanoff will write the companion test.

@@ -1884,3 +1884,8 @@ A `// TODO:` comment in section 4 defers `GearPanelLineCount_IsWithinGearPanelHe
 Extract `BuildGearPanelMarkup(Player player)` as `internal static` in `SpectreLayoutDisplayService.cs`, mirroring the `BuildPlayerStatsPanelMarkup` seam. Once extracted, Romanoff or Barton can write the concrete test in a follow-up PR against `Dungnz.Tests/Display/PanelHeightRegressionTests.cs`.
 
 **Issue #1333:** Auto-closed on merge. All 9 retro action items are now complete.
+
+---
+
+**2026-03-12: Decisions 13, 14, 15 — Panel Height Tests & PR Contamination Process**
+Your PR #1340 contamination resolution (Decision 13) established a key process rule: always verify `gh pr view --json mergeable` before attempting to merge on branch contamination. Decisions 14 & 15 capture the cooldown exclusion and GearPanel seam deferral from PR #1344. The GearPanel extraction task is assigned to Hill with clear follow-up: once extracted, Romanoff/Barton to close the TODO with a concrete test.
