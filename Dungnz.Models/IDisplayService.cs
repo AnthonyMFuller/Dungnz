@@ -318,6 +318,14 @@ public interface IDisplayService
     void ShowEnemyArt(Enemy enemy);
 
     /// <summary>
+    /// Displays the full combat log history in the Content panel (or to console output).
+    /// Shows all retained log entries — up to the maximum buffer size — with timestamps and type icons.
+    /// Useful for reviewing events from earlier in the combat session.
+    /// </summary>
+    void ShowCombatHistory();
+
+
+    /// <summary>
     /// Displays an arrow-key navigable level-up stat choice menu and returns the
     /// player's selection as a 1-based index (1 = +5 Max HP, 2 = +2 Attack, 3 = +2 Defense).
     /// Falls back to numbered text input when arrow-key input is unavailable.

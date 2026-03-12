@@ -53,6 +53,9 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     private Enemy? _cachedCombatEnemy;
     private IReadOnlyList<ActiveEffect> _cachedEnemyEffects = Array.Empty<ActiveEffect>();
 
+    // Low-HP log warning gate — fires once per HP dip below 30%, resets on recovery or combat start
+    private bool _lowHpWarningIssued;
+
     /// <summary>
     /// Initializes a new instance of the <see cref="SpectreLayoutDisplayService"/> class.
     /// </summary>
@@ -179,17 +182,58 @@ public partial class SpectreLayoutDisplayService : IDisplayService
     private void AppendLog(string plainMessage, string type = "info")
     {
         var timestamp = DateTime.Now.ToString("HH:mm");
-        var (icon, color) = type switch
+        string icon, color;
+
+        if (type == "combat")
         {
-            "error"  => ("❌", "red"),
-            "combat" => ("⚔",  "yellow"),
-            "loot"   => ("💰", "green"),
-            _        => ("ℹ",  "grey")
-        };
+            icon  = "⚔";
+            color = ClassifyCombatLogColor(plainMessage);
+        }
+        else
+        {
+            (icon, color) = type switch
+            {
+                "error"  => ("❌", "red"),
+                "loot"   => ("💰", "green"),
+                _        => ("ℹ",  "grey")
+            };
+        }
+
         _logHistory.Add($"[grey]{timestamp}[/] {icon} [{color}]{Markup.Escape(plainMessage)}[/]");
         if (_logHistory.Count > MaxLogHistory)
             _logHistory.RemoveAt(0);
         UpdateLogPanel();
+    }
+
+    /// <summary>
+    /// Classifies a plain-text combat message and returns the appropriate
+    /// <see cref="CombatColors"/> token for the log panel.
+    /// </summary>
+    private static string ClassifyCombatLogColor(string message)
+    {
+        if (message.Contains("Critical", StringComparison.OrdinalIgnoreCase))
+            return CombatColors.CritHit;
+
+        if (message.Contains("Healed", StringComparison.OrdinalIgnoreCase)
+         || message.Contains(" heals ", StringComparison.OrdinalIgnoreCase)
+         || message.Contains("HP restored", StringComparison.OrdinalIgnoreCase)
+         || message.Contains("Second Wind", StringComparison.OrdinalIgnoreCase)
+         || message.Contains("Regen", StringComparison.OrdinalIgnoreCase))
+            return CombatColors.Heal;
+
+        if (message.Contains("Poison", StringComparison.OrdinalIgnoreCase))
+            return CombatColors.Poison;
+
+        if (message.Contains("Burn", StringComparison.OrdinalIgnoreCase)
+         || message.Contains("Flame", StringComparison.OrdinalIgnoreCase)
+         || message.Contains("Ignit", StringComparison.OrdinalIgnoreCase))
+            return CombatColors.Burn;
+
+        if (message.Contains("below 30%", StringComparison.OrdinalIgnoreCase)
+         || message.Contains("Low HP", StringComparison.OrdinalIgnoreCase))
+            return CombatColors.LowHp;
+
+        return CombatColors.Default;
     }
 
     // ── HP/MP urgency bars (Issue #1066) ─────────────────────────────────────
@@ -754,13 +798,27 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         IReadOnlyList<ActiveEffect> playerEffects,
         IReadOnlyList<ActiveEffect> enemyEffects)
     {
-        _cachedPlayer = player;              // FIX: cache player so RenderCombatStatsPanel fires
-        // Cache enemy state for Stats panel persistence (Issue #1312)
+        _cachedPlayer = player;
         _cachedCombatEnemy = enemy;
         _cachedEnemyEffects = enemyEffects;
 
         if (_cachedPlayer != null)
             RenderCombatStatsPanel(_cachedPlayer, enemy, enemyEffects);
+
+        // Danger colour low-HP log warning (Issue #1379): fires once per dip below 30%
+        if (player.MaxHP > 0)
+        {
+            bool isLowHp = player.HP < player.MaxHP * 0.30;
+            if (isLowHp && !_lowHpWarningIssued)
+            {
+                _lowHpWarningIssued = true;
+                AppendLog($"Low HP! {player.HP}/{player.MaxHP} — below 30%!", "combat");
+            }
+            else if (!isLowHp)
+            {
+                _lowHpWarningIssued = false;
+            }
+        }
     }
 
     /// <inheritdoc/>
@@ -846,21 +904,94 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         sb.AppendLine(header);
         sb.AppendLine($"[{tc}]{item.Tier}[/]");
         sb.AppendLine($"{ItemIcon(item)} [{tc}]{Markup.Escape(item.Name)}[/]");
-        sb.Append($"[cyan]{Markup.Escape(stat)}[/]  [grey]{item.Weight} wt[/]");
+        sb.AppendLine($"[cyan]{Markup.Escape(stat)}[/]  [grey]{item.Weight} wt[/]");
 
-        if (item.AttackBonus > 0 && player.EquippedWeapon != null)
+        var equipped = GetEquippedInSameSlot(item, player);
+        if (equipped != null)
         {
-            int delta = item.AttackBonus - player.EquippedWeapon.AttackBonus;
-            if (delta > 0) sb.Append($"  [green](+{delta} vs equipped!)[/]");
+            sb.AppendLine();
+            sb.AppendLine(BuildLootComparisonLine(item, equipped));
+
+            var setBonusWarn = GetSetBonusBreakWarning(item, equipped, player);
+            if (setBonusWarn != null)
+                sb.AppendLine(setBonusWarn);
         }
-        else if (item.DefenseBonus > 0 && player.EquippedChest != null)
+        else if (item.IsEquippable)
         {
-            int delta = item.DefenseBonus - player.EquippedChest.DefenseBonus;
-            if (delta > 0) sb.Append($"  [green](+{delta} vs equipped!)[/]");
+            sb.AppendLine();
+            sb.Append("[dim]New slot — nothing equipped[/]");
         }
 
         SetContent(sb.ToString().TrimEnd(), "💰 Loot", Color.Gold1);
         AppendLog($"Loot: {item.Name}", "loot");
+    }
+
+    private static Item? GetEquippedInSameSlot(Item candidate, Player player) =>
+        candidate.Type switch
+        {
+            ItemType.Weapon    => player.EquippedWeapon,
+            ItemType.Accessory => player.EquippedAccessory,
+            ItemType.Armor     => candidate.Slot switch
+            {
+                ArmorSlot.Head      => player.EquippedHead,
+                ArmorSlot.Shoulders => player.EquippedShoulders,
+                ArmorSlot.Chest     => player.EquippedChest,
+                ArmorSlot.Hands     => player.EquippedHands,
+                ArmorSlot.Legs      => player.EquippedLegs,
+                ArmorSlot.Feet      => player.EquippedFeet,
+                ArmorSlot.Back      => player.EquippedBack,
+                ArmorSlot.OffHand   => player.EquippedOffHand,
+                _                   => player.EquippedChest,
+            },
+            _ => null,
+        };
+
+    private static string BuildLootComparisonLine(Item newItem, Item equipped)
+    {
+        var parts = new List<string>();
+        int atkDelta  = newItem.AttackBonus  - equipped.AttackBonus;
+        int defDelta  = newItem.DefenseBonus - equipped.DefenseBonus;
+        int manaDelta = newItem.MaxManaBonus - equipped.MaxManaBonus;
+        int hpDelta   = newItem.StatModifier - equipped.StatModifier;
+        double dodgeDelta = newItem.DodgeBonus - equipped.DodgeBonus;
+        double critDelta  = newItem.CritChance  - equipped.CritChance;
+
+        if (atkDelta  != 0) parts.Add(FormatIntDelta(atkDelta,  "ATK"));
+        if (defDelta  != 0) parts.Add(FormatIntDelta(defDelta,  "DEF"));
+        if (manaDelta != 0) parts.Add(FormatIntDelta(manaDelta, "MaxMP"));
+        if (hpDelta   != 0) parts.Add(FormatIntDelta(hpDelta,   "HP"));
+        if (Math.Abs(dodgeDelta) > 0.001) parts.Add(FormatPctDelta(dodgeDelta, "Dodge"));
+        if (Math.Abs(critDelta)  > 0.001) parts.Add(FormatPctDelta(critDelta,  "Crit"));
+
+        if (parts.Count == 0)
+            return $"[grey]vs {Markup.Escape(equipped.Name)} — same stats[/]";
+
+        return $"[grey]vs {Markup.Escape(equipped.Name)}:[/] " + string.Join("  ", parts);
+    }
+
+    private static string FormatIntDelta(int delta, string stat) =>
+        delta > 0 ? $"[green]+{delta} {stat}[/]" : $"[yellow]{delta} {stat}[/]";
+
+    private static string FormatPctDelta(double delta, string stat) =>
+        delta > 0 ? $"[green]+{delta:P0} {stat}[/]" : $"[yellow]{delta:P0} {stat}[/]";
+
+    private static string? GetSetBonusBreakWarning(Item newItem, Item currentlyEquipped, Player player)
+    {
+        var oldSetId = currentlyEquipped.SetId;
+        if (string.IsNullOrEmpty(oldSetId)) return null;
+        if (newItem.SetId == oldSetId)      return null;
+
+        var activeBonuses = SetBonusManager.GetActiveBonuses(player)
+            .Where(b => b.SetId == oldSetId)
+            .ToList();
+        if (activeBonuses.Count == 0) return null;
+
+        int currentPieces = SetBonusManager.GetEquippedSetPieces(player, oldSetId);
+        bool willBreak = activeBonuses.Any(b => b.PiecesRequired >= currentPieces);
+        if (!willBreak) return null;
+
+        var desc = activeBonuses.First().Description;
+        return $"[{CombatColors.SetBonusBreak}]⚠ Breaks " + Markup.Escape(desc) + "[/]";
     }
 
     /// <inheritdoc/>
@@ -950,7 +1081,28 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         sb.AppendLine("[grey]── Systems ──[/]");
         sb.AppendLine("[yellow]save [[name]][/]   [yellow]load [[name]][/]   [yellow]listsaves[/]");
         sb.AppendLine("[yellow]prestige[/]   [yellow]leaderboard[/]   [yellow]help[/]   [yellow]quit[/]");
+        sb.AppendLine();
+        sb.AppendLine("[grey]── Log ──[/]");
+        sb.Append("[yellow]history[/]   Show full combat log scrollback in this panel");
         SetContent(sb.ToString().TrimEnd(), "❓ Help", Color.Yellow);
+    }
+
+    /// <inheritdoc/>
+    public void ShowCombatHistory()
+    {
+        if (_logHistory.Count == 0)
+        {
+            SetContent("[grey](No log entries yet)[/]", "📜 Combat History", Color.Grey);
+            return;
+        }
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"[grey]── Combat History ({_logHistory.Count} entries) ──[/]");
+        sb.AppendLine();
+        foreach (var entry in _logHistory)
+            sb.AppendLine(entry);
+
+        SetContent(sb.ToString().TrimEnd(), "📜 Combat History", Color.Grey);
     }
 
     /// <inheritdoc/>
