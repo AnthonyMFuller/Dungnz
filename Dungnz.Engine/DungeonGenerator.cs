@@ -12,11 +12,11 @@ using Dungnz.Systems;
 /// </summary>
 public class DungeonGenerator
 {
-    /// <summary>Default number of rooms along the horizontal axis.</summary>
-    public const int DefaultWidth = 5;
+    /// <inheritdoc cref="GameConstants.DungeonWidth"/>
+    public const int DefaultWidth = GameConstants.DungeonWidth;
 
-    /// <summary>Default number of rooms along the vertical axis.</summary>
-    public const int DefaultHeight = 4;
+    /// <inheritdoc cref="GameConstants.DungeonHeight"/>
+    public const int DefaultHeight = GameConstants.DungeonHeight;
 
     /// <inheritdoc cref="GameConstants.FinalFloor"/>
     public const int FinalFloor = GameConstants.FinalFloor;
