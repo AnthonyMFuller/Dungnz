@@ -56,5 +56,11 @@ public enum EnemyActionType
     Flee,
     
     /// <summary>Cower in fear, doing nothing.</summary>
-    Cower
+    Cower,
+
+    /// <summary>Enemy heals itself (Modifier * MaxHP HP restored). Skips attack.</summary>
+    SelfHeal,
+
+    /// <summary>Drains player mana then deals armor-piercing damage.</summary>
+    DrainAttack
 }
