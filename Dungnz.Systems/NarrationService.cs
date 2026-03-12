@@ -85,6 +85,49 @@ public class NarrationService
         };
     }
 
+    /// <summary>
+    /// Returns a random room entry narration line based on the current room state and floor tier.
+    /// Floors 1-3 (Tier 1): lighter, surface-level dungeon tone.
+    /// Floors 4-6 (Tier 2): darker, more oppressive mid-dungeon atmosphere.
+    /// Floors 7+ (Tier 3): ancient, oppressive, barely-survived deep depths.
+    /// </summary>
+    public string GetFloorTieredRoomNarration(RoomNarrationState state, int currentFloor)
+    {
+        int tier = GetFloorTier(currentFloor);
+        return (state, tier) switch
+        {
+            (RoomNarrationState.FirstVisit, 1) => Pick(_firstVisitTier1Pool),
+            (RoomNarrationState.FirstVisit, 2) => Pick(_firstVisitTier2Pool),
+            (RoomNarrationState.FirstVisit, 3) => Pick(_firstVisitTier3Pool),
+            (RoomNarrationState.ActiveEnemies, 1) => Pick(_activeEnemiesTier1Pool),
+            (RoomNarrationState.ActiveEnemies, 2) => Pick(_activeEnemiesTier2Pool),
+            (RoomNarrationState.ActiveEnemies, 3) => Pick(_activeEnemiesTier3Pool),
+            (RoomNarrationState.Cleared, 1) => Pick(_clearedTier1Pool),
+            (RoomNarrationState.Cleared, 2) => Pick(_clearedTier2Pool),
+            (RoomNarrationState.Cleared, 3) => Pick(_clearedTier3Pool),
+            _ => GetRoomEntryNarration(state) // Fallback to generic narration for Merchant, Shrine, Boss
+        };
+    }
+
+    /// <summary>Returns a random item pickup narration line based on item tier (Legendary or Epic). Returns empty string for other tiers.</summary>
+    public string GetItemPickupNarration(ItemTier tier)
+    {
+        return tier switch
+        {
+            ItemTier.Legendary => Pick(_legendaryPickupPool),
+            ItemTier.Epic => Pick(_epicPickupPool),
+            _ => string.Empty
+        };
+    }
+
+    /// <summary>Determines the floor tier (1, 2, or 3) based on current floor number.</summary>
+    private static int GetFloorTier(int currentFloor)
+    {
+        if (currentFloor <= 3) return 1;
+        if (currentFloor <= 6) return 2;
+        return 3;
+    }
+
     /// <summary>Returns a random critical hit reaction line for the given enemy name.</summary>
     public string GetEnemyCritReaction(string enemyName)
     {
