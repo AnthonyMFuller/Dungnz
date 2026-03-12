@@ -4547,3 +4547,200 @@ Hill to extract `BuildGearPanelMarkup` seam → Romanoff/Barton to write `GearPa
 ---
 
 *End decisions.*
+
+---
+
+## Decision 11: Combat Smoke Test Added to CI
+
+**Date:** 2026-03-11  
+**Architect/Author:** Fitz (DevOps)  
+**Issues:** Retro P1
+
+---
+
+### Context
+`dotnet test` was passing (unit tests green) while the game crashed during actual gameplay (`System.InvalidOperationException` in rendering). Unit tests don't exercise the actual game execution path through combat. The crash class was undetected.
+
+### Decision
+Added scripted combat scenario to CI smoke test (`smoke-test.yml`). Drives the game through startup → new game → class/difficulty selection → game loop via piped stdin. Fails if output contains stack traces or unhandled exceptions.
+
+### Rationale
+Smoke tests catch runtime crashes that unit tests miss. This scenario exercises the full game flow, including combat rendering and display subsystems.
+
+### Implementation Changes
+- **`Program.cs`:** When stdin is not a TTY (`Console.IsInputRedirected`), uses `ConsoleDisplayService` instead of `SpectreLayoutDisplayService`. Spectre throws `NotSupportedException` on `SelectionPrompt` without a live terminal.
+
+### Related Files
+- `.github/workflows/smoke-test.yml`
+- `Program.cs`
+- Test input script for smoke test
+
+---
+
+## Decision 12: Content Authoring Spec — Centralized Reference Created
+
+**Date:** 2026-03-11  
+**Architect/Author:** Fury (Narrative Content Specialist)  
+**Issues:** #1337  
+**PRs:** #1340  
+
+---
+
+### Context
+Content authors on the TextGame project were operating without documentation on:
+- Which game UI panels each content surface renders in
+- Line limits per panel/surface
+- Which characters would crash Spectre Console during rendering
+
+Content was being written blind, with no way to self-validate before handing off to developers.
+
+### Decision
+Created `docs/content-authoring-spec.md` — a comprehensive 416-line authoring guide covering:
+
+1. **Panel Layout Reference**
+   - Visual diagram of 6-panel UI layout
+   - Table mapping 18 content surfaces (room descriptions, enemy intros, merchant greetings, etc.) to specific panels
+   - Panel dimensions and wrapping behavior
+
+2. **Panel Dimensions & Hard Limits**
+   - Content panel: ~70 chars wide × ~20 lines tall (wraps naturally)
+   - Gear panel: ~25–30 chars wide × ~20 lines (enemy lore: ~8 lines max visible)
+   - Stats panel: ~25–30 chars wide × ~8 lines (compact display)
+   - Log panel: ~70 chars wide × ~8 lines (scrolling history)
+   - Map panel: ~70 chars wide × ~8 lines (procedural, not authored) — *corrected from ~5 lines*
+   - Input panel: ~25–30 chars wide × ~4 lines (command only)
+
+3. **Unsafe Characters & Escaping Rules**
+   - `[ALL_CAPS]` and `[PascalCase]` inside brackets crash Spectre → must escape with `[[DOUBLE_BRACKETS]]`
+   - Invalid color names (`[crimson]`, `[darkgreen]`) crash → use only valid colors
+   - Safe colors: [red], [green], [blue], [yellow], [cyan], [magenta], [grey], [white], [bold], [dim], [italic], [underline]
+
+4. **Content Self-Validation Checklist**
+   - 9-point checklist authors complete before submission
+   - Covers line limits, panel widths, bracket safety, tone consistency, grammar
+
+5. **Examples & Integration Points**
+   - Correct vs incorrect enemy entry example (showing bracket escaping, tone)
+   - 9 common pitfalls with fixes
+   - Integration reference table (where content is used in code)
+
+### Rationale
+- **Eliminates blind authoring:** Authors can now verify their work against documented constraints
+- **Reduces rework:** Self-validation catches bracket crashes and line overflows before code review
+- **Centralizes knowledge:** Single authoritative reference for all content surface locations and limits
+- **Supports scaling:** Template is in place for future content surfaces
+
+### Consequences
+- Content authors have a single "go-to" reference document (no more asking developers "will this fit?")
+- Developers can link to specific sections when reviewing content PRs
+- Future content surfaces should be documented in this spec before implementation
+- The spec is a living document—update when panel layouts or Spectre markup rules change
+
+### Related Files
+- `docs/content-authoring-spec.md`
+
+---
+
+## Decision 13: PR #1340 Contamination — Extract and Merge Clean
+
+**Date:** 2026-03-11  
+**Architect/Author:** Romanoff (Quality Engineer)  
+**Issues:** #1336 (bracket sweep), #1337 (content authoring spec)  
+**PRs:** #1340 (closed — conflicting), #1345 (merged ✅)
+
+---
+
+### Context
+PR #1340 was submitted as a docs-only PR but was contaminated by Hill's FinalFloor commit and a retrospective commit that had landed independently on master. Anthony pre-briefed that contamination would "self-heal via squash merge."
+
+### Finding: Self-Heal Did Not Apply
+GitHub reported `mergeable: CONFLICTING`. The contamination commit on the branch was an **older version** of Hill's FinalFloor refactor. Master had merged that work in a **newer form** (with full `GameConstants.FinalFloor` usage). The two versions diverged on the same lines in the same files, producing genuine merge conflicts.
+
+The "self-heal" assumption only holds when the contamination commit is **byte-for-byte identical** on both sides. In this case it was not.
+
+### Decision: Extract and Merge Clean
+Rather than attempting to rebase the contaminated branch:
+
+1. Identified genuinely unique content in the branch:
+   - `.ai-team/agents/barton/history.md` additions (markup sweep session)
+   - `.ai-team/decisions/inbox/barton-markup-escape-complete.md` (new file)
+   - `docs/content-authoring-spec.md` (already on master, branch version had minor typo)
+
+2. Created `squad/1340-clean-docs-sweep` from master HEAD
+
+3. Applied only the unique content (Barton history + decision inbox file)
+
+4. Fixed one spec inaccuracy: Map panel height ~5 lines → ~8 lines (MapPanelHeight = 8 in LayoutConstants.cs)
+
+5. Closed #1340, merged #1345
+
+### Outcomes
+- ✅ Bracket sweep finding documented
+- ✅ Barton history updated
+- ✅ Content authoring spec Map panel height corrected
+- ✅ Issues #1336 and #1337 closed
+- ✅ Build: clean, Tests: 1909 passing
+
+### Process Improvement
+**Rule:** When Anthony says "squash self-heals contamination," always verify with `gh pr view --json mergeable,mergeStateStatus` before attempting to merge. If CONFLICTING, extract unique content manually rather than trying to resolve the contaminated branch.
+
+### Related Files
+- `docs/content-authoring-spec.md`
+- `.ai-team/agents/barton/history.md`
+
+---
+
+## Decision 14: Panel Height Regression Tests — Cooldown Row Excluded
+
+**Date:** 2026-03-12  
+**Architect/Author:** Romanoff (Quality Engineer)  
+**Issues:** #1333  
+**PRs:** #1344  
+
+---
+
+### Context
+`BuildPlayerStatsPanelMarkup` with active cooldowns produces 9 newlines (10 content lines). `LayoutConstants.StatsPanelHeight = 8`. Including cooldowns in the max-level player regression test would cause it to fail. The regression being guarded is enemy stats appearing in the Stats panel — not cooldown overflow.
+
+### Decision
+Panel height regression tests do NOT exercise the cooldown rendering path. Tests pass empty cooldowns (`Array.Empty<(string, int)>()`). A future decision should address whether cooldown overflow is permitted or whether `StatsPanelHeight` should be raised to 9/10.
+
+### Rationale
+The cooldown overflow is a separate, known layout constraint. Bundling it into this regression would confound the signal the test is meant to provide.
+
+### Alternatives Considered
+- Raise `StatsPanelHeight` now: deferred — requires product/design input on acceptable panel size.
+- Compress cooldown row display: deferred — separate PR scope.
+
+### Related Files
+- `Dungnz.Tests/Display/PanelHeightRegressionTests.cs`
+- `Dungnz.Display/LayoutConstants.cs`
+
+---
+
+## Decision 15: GearPanel Seam Deferred to Hill
+
+**Date:** 2026-03-12  
+**Architect/Author:** Romanoff (Quality Engineer)  
+**Issues:** #1333  
+**PRs:** #1344  
+
+---
+
+### Context
+`SpectreLayoutDisplayService.RenderGearPanel` is `private`, making it untestable from outside the class. `BuildPlayerStatsPanelMarkup` was previously extracted as `internal static` for this exact reason. A parallel extraction is needed for gear panel height testing.
+
+### Decision
+The `GearPanelLineCount_IsWithinGearPanelHeight` test is deferred with a `// TODO:` comment in the test file. No gear panel height test is written in this PR. Hill to extract `BuildGearPanelMarkup(Player player)` as `internal static` in `SpectreLayoutDisplayService.cs`; once done, Romanoff/Barton to close the TODO with a concrete test.
+
+### Rationale
+Extracting `BuildGearPanelMarkup` requires changes to a display plumbing file owned by Hill. That work belongs in a separate, targeted PR rather than bundled into a test-only PR.
+
+### Alternatives Considered
+- Use reflection to call `RenderGearPanel`: rejected — brittle, not a test pattern we want to establish.
+- Extract in this PR: out of scope for a test-only PR; Hill owns that file.
+
+### Related Files
+- `Dungnz.Display/SpectreLayoutDisplayService.cs`
+- `Dungnz.Tests/Display/PanelHeightRegressionTests.cs`
+
