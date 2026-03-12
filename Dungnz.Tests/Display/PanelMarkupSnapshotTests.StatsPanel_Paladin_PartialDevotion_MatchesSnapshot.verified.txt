@@ -1,0 +1,9 @@
+﻿[bold]Crestfall[/]  [grey]Lv 8[/]  [dim]Paladin[/]
+
+HP [green]████████░░[/] [bold]120/150[/]
+MP [blue]█████████░[/] [bold]30/35[/]
+
+[red]ATK[/] [bold]12[/]   [cyan]DEF[/] [bold]14[/]
+[yellow]Gold[/] 100g
+[green]XP[/] 750/800
+[yellow]❖ Devotion[/] ●●○○
