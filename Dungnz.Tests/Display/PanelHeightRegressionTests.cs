@@ -136,8 +136,8 @@ public sealed class PanelHeightRegressionTests
     [Fact]
     public void LayoutConstants_HasCorrectValues()
     {
-        LayoutConstants.StatsPanelHeight.Should().Be(9,
-            "StatsPanelHeight is 20% of 40-row baseline (8 rows) + 1 for cooldown line; " +
+        LayoutConstants.StatsPanelHeight.Should().Be(8,
+            "StatsPanelHeight is 20% of 40-row baseline (8 rows); " +
             "if this changes, update all panel height regression tests and renderers");
 
         LayoutConstants.GearPanelHeight.Should().Be(20,

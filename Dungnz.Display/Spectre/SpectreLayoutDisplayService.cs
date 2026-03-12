@@ -464,63 +464,6 @@ public partial class SpectreLayoutDisplayService : IDisplayService
         return sb.ToString().TrimEnd();
     }
 
-    internal static string BuildGearPanelMarkup(Player player)
-    {
-        var sb = new StringBuilder();
-
-        void AddSlot(string slotLabel, Item? item, bool isWeapon = false, bool isAccessory = false)
-        {
-            if (item == null)
-            {
-                sb.AppendLine($"[grey]{slotLabel}:[/]  [dim](empty)[/]");
-                return;
-            }
-            var tc = TierColor(item.Tier);
-            var statParts = new List<string>();
-            if (isWeapon)
-            {
-                if (item.AttackBonus  != 0) statParts.Add($"[red]+{item.AttackBonus} ATK[/]");
-                if (item.DodgeBonus   >  0) statParts.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
-                if (item.MaxManaBonus >  0) statParts.Add($"[blue]+{item.MaxManaBonus} mana[/]");
-            }
-            else if (isAccessory)
-            {
-                if (item.AttackBonus  != 0) statParts.Add($"[red]+{item.AttackBonus} ATK[/]");
-                if (item.DefenseBonus != 0) statParts.Add($"[cyan]+{item.DefenseBonus} DEF[/]");
-                if (item.StatModifier != 0) statParts.Add($"[green]+{item.StatModifier} HP[/]");
-                if (item.DodgeBonus   >  0) statParts.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
-            }
-            else
-            {
-                if (item.DefenseBonus != 0) statParts.Add($"[cyan]+{item.DefenseBonus} DEF[/]");
-                if (item.DodgeBonus   >  0) statParts.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
-                if (item.MaxManaBonus >  0) statParts.Add($"[blue]+{item.MaxManaBonus} mana[/]");
-            }
-            var statsStr = statParts.Count > 0 ? "  " + string.Join(", ", statParts) : "";
-            sb.AppendLine($"[grey]{slotLabel}:[/]  [{tc}]{Markup.Escape(item.Name)}[/]{statsStr}");
-        }
-
-        AddSlot("⚔  Weapon",    player.EquippedWeapon,    isWeapon: true);
-        AddSlot("💍 Accessory", player.EquippedAccessory, isAccessory: true);
-        AddSlot("🪖 Head",      player.EquippedHead);
-        AddSlot("🥋 Shoulders", player.EquippedShoulders);
-        AddSlot("🦺 Chest",     player.EquippedChest);
-        AddSlot("🧤 Hands",     player.EquippedHands);
-        AddSlot("👖 Legs",      player.EquippedLegs);
-        AddSlot("👟 Feet",      player.EquippedFeet);
-        AddSlot("🧥 Back",      player.EquippedBack);
-        AddSlot("🔰 Off-Hand",  player.EquippedOffHand);
-
-        var setDesc = SetBonusManager.GetActiveBonusDescription(player);
-        if (!string.IsNullOrEmpty(setDesc))
-        {
-            sb.AppendLine();
-            sb.Append($"[yellow]Set Bonus: {Markup.Escape(setDesc)}[/]");
-        }
-
-        return sb.ToString().TrimEnd();
-    }
-
     private void RenderStatsPanel(Player player) =>
         UpdateStatsPanel(BuildPlayerStatsPanelMarkup(player, _cachedCooldowns));
 
@@ -600,7 +543,59 @@ public partial class SpectreLayoutDisplayService : IDisplayService
 
     private void RenderGearPanel(Player player)
     {
-        var panel = new Panel(new Markup(BuildGearPanelMarkup(player)))
+        var sb = new StringBuilder();
+
+        void AddSlot(string slotLabel, Item? item, bool isWeapon = false, bool isAccessory = false)
+        {
+            if (item == null)
+            {
+                sb.AppendLine($"[grey]{slotLabel}:[/]  [dim](empty)[/]");
+                return;
+            }
+            var tc = TierColor(item.Tier);
+            var statParts = new List<string>();
+            if (isWeapon)
+            {
+                if (item.AttackBonus  != 0) statParts.Add($"[red]+{item.AttackBonus} ATK[/]");
+                if (item.DodgeBonus   >  0) statParts.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
+                if (item.MaxManaBonus >  0) statParts.Add($"[blue]+{item.MaxManaBonus} mana[/]");
+            }
+            else if (isAccessory)
+            {
+                if (item.AttackBonus  != 0) statParts.Add($"[red]+{item.AttackBonus} ATK[/]");
+                if (item.DefenseBonus != 0) statParts.Add($"[cyan]+{item.DefenseBonus} DEF[/]");
+                if (item.StatModifier != 0) statParts.Add($"[green]+{item.StatModifier} HP[/]");
+                if (item.DodgeBonus   >  0) statParts.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
+            }
+            else
+            {
+                if (item.DefenseBonus != 0) statParts.Add($"[cyan]+{item.DefenseBonus} DEF[/]");
+                if (item.DodgeBonus   >  0) statParts.Add($"[yellow]+{item.DodgeBonus:P0} dodge[/]");
+                if (item.MaxManaBonus >  0) statParts.Add($"[blue]+{item.MaxManaBonus} mana[/]");
+            }
+            var statsStr = statParts.Count > 0 ? "  " + string.Join(", ", statParts) : "";
+            sb.AppendLine($"[grey]{slotLabel}:[/]  [{tc}]{Markup.Escape(item.Name)}[/]{statsStr}");
+        }
+
+        AddSlot("⚔  Weapon",    player.EquippedWeapon,    isWeapon: true);
+        AddSlot("💍 Accessory", player.EquippedAccessory, isAccessory: true);
+        AddSlot("🪖 Head",      player.EquippedHead);
+        AddSlot("🥋 Shoulders", player.EquippedShoulders);
+        AddSlot("🦺 Chest",     player.EquippedChest);
+        AddSlot("🧤 Hands",     player.EquippedHands);
+        AddSlot("👖 Legs",      player.EquippedLegs);
+        AddSlot("👟 Feet",      player.EquippedFeet);
+        AddSlot("🧥 Back",      player.EquippedBack);
+        AddSlot("🔰 Off-Hand",  player.EquippedOffHand);
+
+        var setDesc = SetBonusManager.GetActiveBonusDescription(player);
+        if (!string.IsNullOrEmpty(setDesc))
+        {
+            sb.AppendLine();
+            sb.Append($"[yellow]Set Bonus: {Markup.Escape(setDesc)}[/]");
+        }
+
+        var panel = new Panel(new Markup(sb.ToString().TrimEnd()))
             .Header("[bold yellow]⚔  Gear[/]")
             .Border(BoxBorder.Rounded)
             .BorderColor(Color.Gold1);
