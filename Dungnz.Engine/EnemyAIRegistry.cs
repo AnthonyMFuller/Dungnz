@@ -11,6 +11,27 @@ public static class EnemyAIRegistry
     private static readonly DefaultEnemyAI _defaultAI = new();
     private static readonly GoblinAI _goblinAI = new();
     private static readonly SkeletonAI _skeletonAI = new();
+
+    // Specialized regular-enemy AIs (#1375)
+    private static readonly GoblinShamanAI _goblinShamanAI = new();
+    private static readonly WraithAI _wraithAI = new();
+    private static readonly StoneGolemAI _stoneGolemAI = new();
+    private static readonly VampireLordAI _vampireLordAI = new();
+    private static readonly MimicAI _mimicAI = new();
+
+    // Boss AIs (#1375)
+    private static readonly GoblinWarchiefAI _goblinWarchiefAI = new();
+    private static readonly PlagueHoundAlphaAI _plagueHoundAlphaAI = new();
+    private static readonly IronSentinelAI _ironSentinelAI = new();
+    private static readonly BoneArchonAI _boneArchonAI = new();
+    private static readonly CrimsonVampireAI _crimsonVampireAI = new();
+    private static readonly LichKingAI _lichKingAI = new();
+    private static readonly StoneTitanAI _stoneTitanAI = new();
+    private static readonly ShadowWraithAI _shadowWraithAI = new();
+    private static readonly VampireBossAI _vampireBossAI = new();
+    private static readonly ArchlichSovereignAI _archlichSovereignAI = new();
+    private static readonly AbyssalLeviathanAI _abyssalLeviathanAI = new();
+    private static readonly InfernalDragonAI _infernalDragonAI = new();
     
     private static readonly Dictionary<Type, IEnemyAI> _aiByType = new()
     {
@@ -30,32 +51,32 @@ public static class EnemyAIRegistry
         { typeof(DarkSorcerer), _defaultAI },
         { typeof(FrostWyvern), _defaultAI },
         { typeof(GiantRat), _defaultAI },
-        { typeof(GoblinShaman), _defaultAI },
+        { typeof(GoblinShaman), _goblinShamanAI },
         { typeof(IronGuard), _defaultAI },
         { typeof(ManaLeech), _defaultAI },
-        { typeof(Mimic), _defaultAI },
+        { typeof(Mimic), _mimicAI },
         { typeof(NightStalker), _defaultAI },
         { typeof(PlagueBear), _defaultAI },
         { typeof(ShadowImp), _defaultAI },
         { typeof(ShieldBreaker), _defaultAI },
         { typeof(SiegeOgre), _defaultAI },
-        { typeof(StoneGolem), _defaultAI },
+        { typeof(StoneGolem), _stoneGolemAI },
         { typeof(Troll), _defaultAI },
-        { typeof(VampireLord), _defaultAI },
-        { typeof(Wraith), _defaultAI },
+        { typeof(VampireLord), _vampireLordAI },
+        { typeof(Wraith), _wraithAI },
         
         // Boss enemies - using default AI
-        { typeof(GoblinWarchief), _defaultAI },
-        { typeof(PlagueHoundAlpha), _defaultAI },
-        { typeof(IronSentinel), _defaultAI },
-        { typeof(BoneArchon), _defaultAI },
-        { typeof(CrimsonVampire), _defaultAI },
-        { typeof(LichKing), _defaultAI },
-        { typeof(StoneTitan), _defaultAI },
-        { typeof(ShadowWraith), _defaultAI },
-        { typeof(VampireBoss), _defaultAI },
-        { typeof(ArchlichSovereign), _defaultAI },
-        { typeof(AbyssalLeviathan), _defaultAI },
+        { typeof(GoblinWarchief), _goblinWarchiefAI },
+        { typeof(PlagueHoundAlpha), _plagueHoundAlphaAI },
+        { typeof(IronSentinel), _ironSentinelAI },
+        { typeof(BoneArchon), _boneArchonAI },
+        { typeof(CrimsonVampire), _crimsonVampireAI },
+        { typeof(LichKing), _lichKingAI },
+        { typeof(StoneTitan), _stoneTitanAI },
+        { typeof(ShadowWraith), _shadowWraithAI },
+        { typeof(VampireBoss), _vampireBossAI },
+        { typeof(ArchlichSovereign), _archlichSovereignAI },
+        { typeof(AbyssalLeviathan), _abyssalLeviathanAI },
         { typeof(InfernalDragon), _defaultAI }
     };
     
