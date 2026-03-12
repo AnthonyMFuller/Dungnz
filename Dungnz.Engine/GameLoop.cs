@@ -136,6 +136,7 @@ public class GameLoop
             [CommandType.Craft]       = new CraftCommandHandler(),
             [CommandType.Leaderboard] = new LeaderboardCommandHandler(),
             [CommandType.Compare]     = new CompareCommandHandler(),
+            [CommandType.History]     = new HistoryCommandHandler(),
             [CommandType.Equip]       = new EquipCommandHandler(),
             [CommandType.Unequip]     = new UnequipCommandHandler(),
             [CommandType.Equipment]   = new EquipmentCommandHandler(),
