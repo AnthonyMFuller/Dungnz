@@ -1,0 +1,19 @@
+#!/bin/bash
+# Pre-commit hook: quick build sanity check.
+# Runs dotnet build (with restore) to catch compilation errors and missing
+# XML doc comments before the commit lands — giving fast, local feedback
+# rather than waiting for CI to fail.
+#
+# This hook is committed to the repo and activated via:
+#   git config core.hooksPath scripts
+#
+# To bypass in an emergency (not recommended):
+#   git commit --no-verify
+
+set -e
+
+echo "🔨 Pre-commit: verifying build..."
+
+dotnet build Dungnz.slnx --no-incremental -v quiet 2>&1
+
+echo "✅ Build clean — proceeding with commit."
