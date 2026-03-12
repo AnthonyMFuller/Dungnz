@@ -121,6 +121,9 @@ Choose one class at the start of each run. Bonuses are applied on top of base st
 | `load <name>` | | Load a saved game |
 | `list` | `saves` | List all save files |
 | `descend` | `down` | Descend to next floor at a cleared exit |
+| `ascend` | `up`, `u` | Return to the previous floor from the current floor entrance |
+| `return` | `retreat` | Fast-travel to the entrance room of the current floor (blocked during combat) |
+| `back` | `b` | Step back to the previous room |
 | `prestige` | `p` | View prestige level and bonuses |
 | `leaderboard` | `lb`, `scores` | View achievements and run history |
 | `help` | `?`, `h` | Show command list |
@@ -573,7 +576,7 @@ Dungnz/
 │   ├── EnemyFactory.cs          # Spawns regular enemies or boss variants by floor
 │   └── EnemyTypeRegistry.cs     # Runtime JSON polymorphism for all Enemy subtypes
 ├── Dungnz.Models/               # Class library: pure domain models, zero external deps
-│   └── (Player, Room, Enemy, Item, SkillTree, MerchantInventoryConfig, DefaultItems, ...)
+│   └── (Player, Room, Enemy, Item, SkillTree, GameConstants, MerchantInventoryConfig, DefaultItems, ...)
 ├── Data/
 │   ├── enemy-stats.json         # Stats and ASCII art for all 29+ enemy types
 │   ├── item-stats.json          # 119 items: stats, tiers, passiveEffectId, setId, classRestriction
