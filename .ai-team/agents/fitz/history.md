@@ -358,3 +358,59 @@ quit      → exit the game
 
 **2026-03-12: Decision 11 — Combat Smoke Test in CI**
 Your smoke-test.yml addition has been recorded in decisions.md. This captures the retro item fix: catching runtime crashes that unit tests miss via scripted combat execution through piped stdin.
+
+---
+
+### 2026-03-12 — Merge Sequence Phase B-E Execution
+
+**Task:** Execute merge sequence for all remaining open PRs after Phase A completion.
+
+**PRs Merged (14 total):**
+
+**Phase B — Small Fixes:**
+- PR #1395 — fix: SoulHarvest comment fix (#1363)
+- PR #1394 — test: NarrationMarkupSafetyTests (#1362)
+- PR #1366 — Console.Write enforcement (#1361)
+- PR #1367 — Verify XUnit snapshots (#1353)
+- PR #1368 — Expand PanelHeightRegressionTests (#1354)
+
+**Phase C — Features:**
+- PR #1386 — Wire narration into floor transitions (#1376)
+- PR #1389 — Enemy AI improvements (#1375)
+- PR #1388 — RETURN command + GameConstants (#1380, #1381)
+- PR #1392 — HISTORY + loot compare + combat log (#1378, #1379)
+
+**Phase D — Integration Tests:**
+- PR #1390 — Integration test wave (#1369, #1372, #1373, #1374)
+- PR #1391 — Expanded integration tests (#1383)
+
+**Phase E — Docs/Logs:**
+- PR #1385 — Content authoring spec (#1377)
+- PR #1393 — Scribe log phase 4 full-send
+- PR #1348 — Retrospective
+
+**Conflicts Resolved:**
+
+1. **PanelHeightRegressionTests.cs (PR #1368)** — Master had minimal version with TODOs; branch had expanded tests for all 5 panels. Took branch version (this is the "REAL home" per task notes).
+
+2. **CombatColors.cs (PRs #1393, #1392)** — Both branches added CombatColors.cs independently. Master had simple internal class, branches had expanded docs. Took master version for consistency.
+
+3. **GameLoop.cs duplicate key (PR #1393)** — Branch had duplicate `[CommandType.History]` entry (startup crash bug mentioned in task). Took master version which had single entry, fixing the bug.
+
+**Merge Strategy:**
+- Used `gh pr merge {NUMBER} --squash --delete-branch --admin` for all merges
+- After each merge, updated all remaining open branches with master
+- Contamination files (smoke-test.yml, squad-ci.yml, NarrationService.cs) auto-resolved by taking master's version
+- Pre-commit hooks passed for all merge commits
+
+**Final State:**
+- ✅ 0 open PRs remaining
+- ✅ 0 errors, 0 warnings on final build
+- ✅ All 16+ issues auto-closed via PR merges
+- ✅ Master at commit 966bf23 with all Phase B-E work merged
+
+**Key Learnings:**
+- The GameLoop.cs duplicate key conflict was a real startup crash bug — PR #1392 accidentally duplicated the History command handler registration, which would throw at runtime. Conflict resolution caught and fixed it.
+- Contamination file conflicts were handled cleanly by always taking master's version (--theirs).
+- Pre-commit build verification caught all issues before merge completion.
+- Squash merges preserved all PR context while keeping master history clean.
