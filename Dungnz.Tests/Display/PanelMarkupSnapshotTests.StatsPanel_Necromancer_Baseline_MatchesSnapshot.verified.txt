@@ -1,0 +1,8 @@
+﻿[bold]Morthis[/]  [grey]Lv 4[/]  [dim]Necromancer[/]
+
+HP [green]███████░░░[/] [bold]50/70[/]
+MP [blue]██████████[/] [bold]70/70[/]
+
+[red]ATK[/] [bold]6[/]   [cyan]DEF[/] [bold]3[/]
+[yellow]Gold[/] 80g
+[green]XP[/] 280/400
