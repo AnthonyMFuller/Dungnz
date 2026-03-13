@@ -21,7 +21,7 @@
 | Romanoff | QA Engineer | .ai-team/agents/romanoff/charter.md | ✅ Active |
 | Fury | Content Writer | .ai-team/agents/fury/charter.md | ✅ Active |
 | Fitz | DevOps | .ai-team/agents/fitz/charter.md | ✅ Active |
-| Scribe | Session Logger | .ai-team/agents/scribe/charter.md | 🚫 Inactive |
+| Scribe | Session Logger | .ai-team/agents/scribe/charter.md | ✅ Active |
 | Ralph | Work Monitor | — | 🚫 Inactive |
 
 ## Role Updates (2026-03-13)
@@ -33,7 +33,7 @@ Post-Phase 4 squad evolution — Coulson's analysis, executed by coordinator.
 | Barton | Systems Dev / Display Specialist (Trial) | Display Specialist | Trial confirmed — permanent Display owner; combat/AI/systems migrate to Hill |
 | Hill | C# Dev (P1 Gameplay Focus) | Core C# Developer | P1 constraint removed; scope expanded to engine, dungeon gen, game systems, seam extractions |
 | Fury | Content Writer | Content Writer (Proactive Mode) | Added proactive content mandate — monthly Content Audit, self-generates improvement backlog |
-| Scribe | Session Logger | — | Deactivated — agents self-log; low value/overhead ratio confirmed |
+| Scribe | Session Logger | — | Re-activated (2026-03-13) — inbox drain + history summarization are real jobs; session logging deprioritized |
 | Ralph | Work Monitor | — | Deactivated — zero triggers in Phase 4; board clear = no backlog to monitor |
 
 The following role changes are effective immediately as of the Design Review ceremony:
