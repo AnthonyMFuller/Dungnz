@@ -2251,3 +2251,119 @@ Critical path: #1187 → #1188 → #1189 → #1190 → #1191 → #1192 → #1193
 - ConsoleDisplayService (non-Spectre fallback) exists for CI/headless — any migration must preserve a headless path
 - The interface documents planned input/output separation ("Targeted for separation in the HUD/Dashboard refactor") but this hasn't happened yet — doing it pre-migration would dramatically reduce migration cost
 - Domain types crossing the interface boundary means the display layer references Dungnz.Models and Dungnz.Systems — a view-model layer would decouple further but isn't strictly necessary
+
+---
+
+## 2026-03-13: Avalonia Migration Spec — Two-Executable Architecture Fix
+
+**Context:** PR #1401 (Hill's P1+P2 Avalonia scaffold) hit architectural blocker. Original spec assumed single-exe with `--avalonia` flag, requiring `Dungnz.csproj` to reference `Dungnz.Display.Avalonia.csproj`. This triggers Avalonia XAML source generator in parent project context, causing build conflicts.
+
+### The AXAML Source Generator Problem
+
+**Root cause:** Avalonia's build-time source generators (`Avalonia.Generators.NameGenerator`, `AVLN2000` errors) process `.axaml` files when ANY project in the compilation context references the Avalonia project. When `Dungnz.csproj` (non-Avalonia) references `Dungnz.Display.Avalonia.csproj`:
+
+1. Parent project build includes child project's source files
+2. Avalonia generator activates on `.axaml` files  
+3. Generator expects parent to have Avalonia NuGet packages
+4. Missing packages → AVLN2000 errors: "Unable to resolve suitable regular or attached property..."
+
+**Attempted workarounds (all failed):**
+- `<AvaloniaResource Remove="...">` — ignored by generator (different MSBuild phase)
+- `<Compile Remove="...">` — excludes C#, but AXAML processing still triggers
+- Conditional `<ProjectReference Condition="...">` — breaks IDE IntelliSense
+
+**Standard solution:** Avalonia apps are standalone executables, not libraries referenced by console apps.
+
+### Decision: Two-Executable Architecture
+
+**Adopted pattern:**
+```
+Dungnz.csproj (Console Exe)          Dungnz.Display.Avalonia.csproj (GUI Exe)
+       ↓                                           ↓
+    Program.cs                                  Program.cs
+       ↓                                           ↓
+SpectreLayoutDisplayService           AvaloniaDisplayService
+       ↓                                           ↓
+    GameLoop ←───────── Shared Libraries ──────→ GameLoop
+                    (Models, Engine, Systems)
+```
+
+**Zero cross-reference between executables.** Both depend on shared game logic; neither depends on the other.
+
+**Launch:**
+- Console: `dotnet run` (default, unchanged)
+- GUI: `dotnet run --project Dungnz.Display.Avalonia`
+
+**Benefits:**
+1. No AXAML build conflicts (each exe compiles in its own context)
+2. Clean separation — console code never touches Avalonia, Avalonia never touches Spectre
+3. Easy rollback — delete directory, revert one solution file line
+4. Standard Avalonia pattern (follows framework conventions)
+
+**Trade-offs:**
+1. ~30 lines of startup code duplication in two `Program.cs` files (mitigated: extract to shared `StartupBootstrap` helper)
+2. Two binaries to distribute (mitigated: clear README documentation)
+3. No runtime UI switching (non-issue: users pick mode at launch)
+
+### Spec Revisions
+
+**File:** `docs/avalonia-migration-spec.md`
+
+**Updated sections:**
+- **Section 3:** Replaced single-exe with two-exe architecture diagrams, added "Why Not Single-Executable?" explanation
+- **Section 4:** Moved from "AvaloniaDisplayService Architecture" to "Avalonia Program.cs and App.axaml.cs" — shows bootstrap pattern
+- **Section 5:** Kept display service thread model, 6-panel layout (unchanged)
+- **Section 6:** Revised Phase 2 deliverables:
+  - Change `Dungnz.Display.Avalonia.csproj` to `<OutputType>Exe</OutputType>`
+  - Create `Dungnz.Display.Avalonia/Program.cs` with Avalonia bootstrap
+  - Wire `App.axaml.cs` to launch game loop on `Task.Run`
+  - DELETE all commented `--avalonia` code from `Dungnz/Program.cs` (lines 2, 31-42)
+  - Update `Dungnz.csproj` comment: clarify reference is omitted BY DESIGN, not TODO
+- **Section 7 (Risks):** Added R6 (code duplication), R7 (two binaries), updated rollback plan
+
+**Phase 2 acceptance criteria (revised):**
+- `dotnet build` builds both executables with no errors
+- `dotnet run` launches console mode (unchanged behavior)
+- `dotnet run --project Dungnz.Display.Avalonia` launches GUI window (6 empty panels, stub game loop, closes after 1-2 sec)
+- All 2,154 tests pass
+
+### PR #1401 Impact
+
+**Current state:** P1 (MapRenderer) complete ✅. P2 (scaffold) structurally complete but architecturally broken (commented references).
+
+**Required changes:**
+1. Uncomment `Dungnz.csproj` reference comment, change to "omitted by design" explanation
+2. Delete commented `--avalonia` code from `Dungnz/Program.cs`
+3. Convert Avalonia project to `<OutputType>Exe</OutputType>`
+4. Add shared library references (Engine, Models, Systems, Data, Display)
+5. Create `Dungnz.Display.Avalonia/Program.cs`
+6. Update `App.axaml.cs` with game loop wiring (stub)
+7. Delete or repurpose `AvaloniaAppBuilder.cs` (replaced by `Program.cs` + `App.axaml.cs`)
+
+**Estimated rework:** 1-2 hours (mechanical changes, no logic rewrites)
+
+### Learnings
+
+**AXAML source generator issue:**
+- Avalonia's XAML compiler operates at build-time via MSBuild source generators
+- Source generators see the entire compilation context, not just `<Compile Include>` items
+- MSBuild item exclusions (`<Compile Remove>`, `<AvaloniaResource Remove>`) don't prevent generator activation
+- Cross-project XAML compilation only works when parent has Avalonia packages — you can't "half-reference" an Avalonia project
+
+**Two-executable architecture rationale:**
+- Standard pattern for desktop apps with both CLI and GUI modes (e.g., `git` vs `git-gui`, `dotnet` vs VS)
+- Framework-agnostic: works with any UI stack (Avalonia, WinForms, WPF, Terminal.Gui)
+- Zero coupling between modes — complete isolation
+- Rollback is trivial: delete directory, no contamination of console codebase
+
+**When single-exe-with-flag works:**
+- Pure runtime switching (e.g., `--json` output format) — no build-time dependencies
+- Libraries that don't require source generators or build-time XAML compilation
+- Frameworks with runtime-only activation (e.g., Terminal.Gui was attempted this way, also failed)
+
+**Files created:**
+- `.ai-team/decisions/inbox/coulson-avalonia-integration-fix.md` (19.5 KB comprehensive decision doc)
+- Revised: `docs/avalonia-migration-spec.md` (sections 3-7 updated)
+
+**Next step:** Hill updates PR #1401 with Phase 2 revisions per decision.
+
