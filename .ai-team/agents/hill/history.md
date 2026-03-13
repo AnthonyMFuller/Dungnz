@@ -2221,3 +2221,4 @@ ReadCommandInput() unblocks ←────────
 
 **P6:** Menu implementations — selection prompts for difficulty, class, combat, inventory, shop menus. Will use overlay dialogs or in-panel selection lists.
 **P7-P8:** Remaining IGameInput stubs (shrine menus, skill tree, confirm dialogs, etc.).
+- 2025-07-17: Avalonia P5 — TCS-Based Input Bridge (see decisions.md)
