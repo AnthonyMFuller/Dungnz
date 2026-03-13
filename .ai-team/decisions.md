@@ -5371,3 +5371,23 @@ Master branch is now clean, all PRs merged, all issues auto-closed, and build pa
 
 **Fitz, DevOps Engineer**  
 *Merge sequence executed successfully. All systems nominal.*
+### 2026-03-13: Avalonia UI migration approved — architecture spec complete
+**By:** Coulson
+**What:** Anthony approved Avalonia as the migration target. IDisplayService split into IGameDisplay + IGameInput is the first phase. Full spec written to `docs/avalonia-migration-spec.md`.
+**Why:** Spectre TUI has hit its visual ceiling. Avalonia provides windowed GPU rendering, proper widget model, and maps 1:1 to the current 6-panel layout. IDisplayService seam makes this viable without touching the game engine.
+
+**Key architectural decisions:**
+
+1. **Interface split:** `IDisplayService` becomes `IGameDisplay` (37 output methods) + `IGameInput` (26 input methods). `IDisplayService : IGameDisplay, IGameInput` preserves backward compatibility. Zero call-site changes.
+
+2. **MVVM framework:** CommunityToolkit.Mvvm (source-generator based), NOT ReactiveUI. Simpler learning curve, `[ObservableProperty]` for binding, `[RelayCommand]` for commands.
+
+3. **Thread model:** Avalonia UI on main thread, game on background thread. Output methods use `Dispatcher.UIThread.InvokeAsync()` fire-and-forget. Input methods use `TaskCompletionSource<T>` to block game thread until user picks.
+
+4. **Map rendering:** `TextBlock` with monospace font (Cascadia Mono). Reuses existing `BuildAsciiMap` logic. Upgrade path to custom `DrawText` control if Unicode issues arise.
+
+5. **Project isolation:** `Dungnz.Display.Avalonia` references only Models + Systems. `--avalonia` CLI flag for opt-in. Full rollback = delete directory + revert two lines in Program.cs.
+
+6. **11 migration phases:** P0 (interface split) through P10 (integration test). Game stays playable in Spectre mode throughout. Critical path: P0 → P2 → P3 → P5 → P6 → P10.
+
+**Packages:** Avalonia 11.3.x, Avalonia.Desktop, Avalonia.Themes.Fluent, CommunityToolkit.Mvvm 8.4.x.
