@@ -1496,3 +1496,82 @@ Your PR #1340 contamination resolution (Decision 13) established a key process r
 - Facade pattern `interface I : IA, IB { }` is valid C# — empty body is intentional for backward compatibility during migration.
 
 **Next:** Hill can merge after Coulson/Anthony approval. Phase 0 complete → unblocks Phase 1 (AvaloniaUI scaffold) and Phase 3 (data-binding implementations).
+
+### 2026-03-13 — PR #1401 Review: Avalonia P1+P2 with Two-Exe Architecture Fix (Issues #1397, #1398)
+
+**PR:** #1401 — `feat: Avalonia P1+P2 — MapRenderer extraction + project scaffold`  
+**Branch:** `squad/avalonia-p1-p2-scaffold`  
+**Author:** Hill  
+**Status:** ✅ **APPROVED**
+
+**What was reviewed:**
+
+This PR implements:
+1. **Phase 1 (MapRenderer)** — Extraction of map rendering logic into shared static class  
+2. **Phase 2 (Avalonia scaffold)** — Project scaffold converted to **two-executable architecture** (fix for AXAML source generator conflicts)
+
+**Phase 1 Review — MapRenderer Extraction:**
+
+✅ **Complete extraction:** All map rendering methods extracted from `SpectreLayoutDisplayService` to new `MapRenderer` static class (357 lines)  
+✅ **Dual variants present:** Both `BuildMarkupMap()` (Spectre markup) and `BuildPlainTextMap()` (plain text) exist  
+✅ **Correct delegation:** `SpectreLayoutDisplayService.RenderMapPanel()` now calls `MapRenderer.BuildMarkupMap(currentRoom, _currentFloor)` (line 275)  
+✅ **Placement:** MapRenderer placed in `Dungnz.Models` namespace to avoid circular dependencies  
+✅ **Zero Spectre dependency:** MapRenderer uses ONLY `System.Text` — no Spectre.Console references  
+✅ **Logic fidelity:** Core BFS grid-building logic (`BuildMapGrid`) shared between both variants — identical room symbol priority order  
+✅ **Legend rendering:** Both markup and plain text legend methods present with dynamic symbol filtering  
+
+**Phase 2 Review — Avalonia Two-Exe Architecture:**
+
+✅ **OutputType:** `Dungnz.Display.Avalonia.csproj` has `<OutputType>Exe</OutputType>` (line 4)  
+✅ **Program.cs exists:** `Dungnz.Display.Avalonia/Program.cs` present with proper Avalonia bootstrap (AppBuilder.Configure, UsePlatformDetect, StartWithClassicDesktopLifetime)  
+✅ **Console project does NOT reference Avalonia:** `Dungnz.csproj` has NO `<ProjectReference>` to Avalonia project (line 32 comment confirms this is intentional per two-exe architecture)  
+✅ **Console Program.cs clean:** ZERO commented-out Avalonia code in `Program.cs` — no --avalonia flag, no imports, no stubs  
+✅ **Shared library references correct:**  
+  - Avalonia project references: Models, Data, Systems, Engine, Display (lines 13-17)  
+  - Console project references: Engine only (line 34)  
+  - Both share game libraries without direct cross-reference
+
+**Build & Test Verification:**
+
+✅ **Full solution build:** `dotnet build Dungnz.slnx --no-incremental` succeeded  
+  - Only 1 warning (pre-existing): `TakeSelection.cs:3 XML comment cref unresolved` — NOT introduced by this PR  
+  - All 8 projects compiled successfully  
+
+✅ **Avalonia independent build:** `dotnet build Dungnz.Display.Avalonia/` succeeded independently  
+
+✅ **Test suite:** All 2154 tests passed, 4 skipped, 0 failed  
+
+✅ **Avalonia smoke test:** `dotnet run --project Dungnz.Display.Avalonia/ --help` executed without crash  
+
+**Scaffold Completeness (Phase 2):**
+
+✅ **6-panel Grid layout:** MainWindow.axaml has Map/Stats (20%/60:40), Content/Gear (50%/70:30), Log/Input (30%/70:30) proportions  
+✅ **MVVM structure:** All 6 ViewModels and 6 Panel views present (ContentPanel, GearPanel, InputPanel, LogPanel, MapPanel, StatsPanel)  
+✅ **Dark theme:** `App.axaml` has `RequestedThemeVariant="Dark"` with FluentTheme  
+✅ **AvaloniaDisplayService stub:** All 63 IDisplayService methods implemented as stubs with `// TODO: P3-P8 implementation` markers  
+✅ **App.axaml.cs:** OnFrameworkInitializationCompleted wires MainWindow, starts game loop on background thread with default player/dungeon  
+✅ **Serilog logging:** Same pattern as console app (rolling file logs to AppData/Dungnz/Logs)  
+
+**Architecture Compliance:**
+
+✅ **Two-exe pattern enforced:** Console and Avalonia are separate executables sharing game libraries — no AXAML source generator conflicts  
+✅ **InternalsVisibleTo:** `Dungnz.Models.csproj` includes `Dungnz.Display.Avalonia` (line 25)  
+✅ **Solution file updated:** `Dungnz.slnx` includes Avalonia project  
+✅ **README.md updated:** Notes two-exe architecture (2 lines added)  
+
+**Verdict:**
+
+✅ **APPROVED — PR #1401**
+
+**Reason:** Flawless Phase 1 extraction — MapRenderer dual variants work correctly with zero Spectre coupling. Phase 2 two-exe architecture fix is architecturally sound and solves the AXAML conflict problem. All builds pass, all tests green, zero new warnings. Scaffold is complete with proper MVVM structure and stub implementations ready for P3-P8 work. This unblocks Avalonia migration without contaminating the console project.
+
+**Learnings:**
+
+- **Two-executable architecture is the correct pattern for Avalonia + Console hybrid.** AXAML source generators operate at build time and emit code into the referencing project — if console project references Avalonia project, AXAML-generated types pollute the console namespace and cause build conflicts. Keeping them as separate exes sharing game libraries sidesteps this entirely.
+- **MapRenderer placement in Dungnz.Models is correct.** It has zero Display dependencies and only uses System.Text — safe to reference from both Spectre and Avalonia implementations.
+- **Dual variant pattern (markup + plain text) is future-proof.** Spectre Console uses `[color]text[/]` markup; Avalonia uses native TextBlock.Foreground properties. Extracting plain text variant now means Avalonia P3-P8 implementation can use `MapRenderer.BuildPlainTextMap()` directly without stripping markup tags.
+- **Phase 2 stub pattern is test-friendly.** All IDisplayService methods return safe defaults (empty, false, null, 0) — tests can inject AvaloniaDisplayService without crashes. Stub TODOs are clearly marked for P3-P8 implementation.
+- **`InternalsVisibleTo` for Avalonia project is necessary.** Avalonia display service needs access to internal game logic helpers just like Spectre does — same pattern applied.
+
+**Next steps for Hill (P3):** Implement actual panel rendering in AvaloniaDisplayService using MapRenderer.BuildPlainTextMap, data-binding to ViewModels, and Avalonia-native input handling (no more ConsoleInputReader temp stub).
+

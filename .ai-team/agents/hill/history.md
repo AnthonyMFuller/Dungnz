@@ -1948,3 +1948,68 @@ Every handler that sets content panel content MUST call `ShowRoom()` before retu
 
 **PR:** https://github.com/AnthonyMFuller/Dungnz/pull/1401
 
+
+## Learnings — Avalonia Phase 2 Revisions (2026-03-13)
+
+**Task:** Convert Avalonia scaffold from library to standalone executable (two-exe architecture).
+
+**Context:** Original spec assumed single-exe with `--avalonia` flag, but Avalonia's AXAML source generator conflicts arise when console project references Avalonia project. Coulson revised spec to adopt standard two-executable pattern.
+
+**Changes Made:**
+
+1. **Dungnz.csproj:** Updated comment on line 32 to clarify Avalonia reference is omitted BY DESIGN (two-exe architecture), not TODO
+2. **Program.cs:** Deleted all commented-out Avalonia integration code (using statement, `--avalonia` flag logic)
+3. **Dungnz.Display.Avalonia.csproj:**
+   - Added `<OutputType>Exe</OutputType>`
+   - Added project references to Engine, Data, Systems, Display (full game loop dependencies)
+   - Added logging packages (Serilog, Microsoft.Extensions.Logging.Console)
+   - Added Data directory copying to output
+4. **Dungnz.Display.Avalonia/Program.cs (NEW):** Standard Avalonia bootstrap — Serilog setup, `AppBuilder.Configure<App>().UsePlatformDetect().StartWithClassicDesktopLifetime(args)`
+5. **App.axaml.cs:** Wired game loop on background thread in `OnFrameworkInitializationCompleted` → `mainWindow.Opened` event
+6. **Dungnz.Models/Dungnz.Models.csproj:** Added `InternalsVisibleTo` for `Dungnz.Display.Avalonia` (needed for `Player.SetHPDirect`)
+7. **README.md:** Updated Avalonia section to document two-exe architecture and launch command
+
+**Two-Executable Architecture Pattern:**
+
+```
+Dungnz.csproj (Console Exe)          Dungnz.Display.Avalonia.csproj (GUI Exe)
+  Program.cs                            Program.cs
+  SpectreLayoutDisplayService           AvaloniaDisplayService
+         ↓                                      ↓
+      GameLoop ←──── Shared Libraries ─────→ GameLoop
+              (Models, Engine, Systems, Data)
+```
+
+**No cross-reference between executables.** Both depend on shared game logic; neither depends on the other.
+
+**Launch Commands:**
+- Console: `dotnet run` (default)
+- GUI: `dotnet run --project Dungnz.Display.Avalonia`
+
+**Benefits of Two-Exe:**
+- Zero AXAML source generator conflicts (each exe compiles in its own context)
+- Clean separation of concerns (console lightweight, GUI optional)
+- Easy rollback (delete Avalonia directory, zero contamination)
+- Standard Avalonia pattern (most Avalonia apps are standalone executables)
+
+**Build Validation:**
+- ✅ `dotnet build Dungnz.slnx` builds both executables with 0 errors
+- ✅ `dotnet test` passes all 2,154 tests
+- ✅ `dotnet build Dungnz.Display.Avalonia/` builds GUI independently
+
+**Threading Model:**
+- Avalonia takes main thread (`AppBuilder...StartWithClassicDesktopLifetime`)
+- Game loop runs on `Task.Run(() => gameLoop.Run(player, startRoom))` (background thread)
+- `AvaloniaDisplayService` methods marshal to UI thread via `Dispatcher.UIThread.InvokeAsync` (P3 implementation)
+
+**P2 Stub Flow (smoke test):**
+- Default player (Warrior, name "Adventurer")
+- Default dungeon (seed 12345, Normal difficulty)
+- ConsoleInputReader temporarily used (P3 will add AvaloniaInputReader)
+- Game loop runs one turn, then exits and closes window
+
+**Commit:** `d531378` on `squad/avalonia-p1-p2-scaffold`
+
+**Key Pattern Reinforced:** `Player` uses object initializer syntax (`new Player { Name = "..." }`), not constructor parameters. `SetHPDirect` is `internal` (requires `InternalsVisibleTo`).
+
+**Next:** Phase 3 — implement output-only display methods (Stats, Gear, Log, Content panels).
