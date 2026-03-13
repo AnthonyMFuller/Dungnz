@@ -18,7 +18,72 @@
 3. Identify risks and edge cases
 4. Assign action items
 
-## Retrospective
+## Polish Cycle
+
+| Field | Value |
+|-------|-------|
+| **Trigger** | manual |
+| **When** | after |
+| **Condition** | user requests polish cycle, or after every feature sprint at phase boundary |
+| **Facilitator** | lead |
+| **Participants** | all-relevant |
+| **Time budget** | focused |
+| **Enabled** | ✅ yes |
+
+**Agenda:**
+1. Review recently shipped features — what rough edges remain?
+2. Audit open TODOs/FIXMEs and known deferred items in codebase
+3. Each agent proposes 1-3 polish items in their domain (UI tuning, edge case fixes, performance, test gaps)
+4. Coulson prioritizes as P2 background issues
+5. Output: 5-10 polish issues filed and assigned for next sprint
+
+---
+
+## Content Audit
+
+| Field | Value |
+|-------|-------|
+| **Trigger** | manual |
+| **When** | after |
+| **Condition** | user requests content audit, or monthly |
+| **Facilitator** | fury |
+| **Participants** | fury |
+| **Time budget** | focused |
+| **Enabled** | ✅ yes |
+
+**Agenda:**
+1. Review current content pools: merchant greetings, room descriptions, enemy lore, shrine narration, item flavor
+2. Identify thin or stale areas (e.g., pool < 15 entries, no floor-specific variation, repetitive tone)
+3. Propose 5-10 content improvement issues with specific targets (e.g., "Expand Tier 2 room descriptions — only 3 entries for Haunted Crypt floors")
+4. Coulson prioritizes improvements (P1 immersion-blocking, P2 nice-to-have)
+5. Fury self-assigns and works during lulls between reactive bug fixes
+
+---
+
+## Squad Health Check
+
+| Field | Value |
+|-------|-------|
+| **Trigger** | manual |
+| **When** | after |
+| **Condition** | user requests squad health check, or end of every phase (every 3-4 weeks) |
+| **Facilitator** | lead |
+| **Participants** | all |
+| **Time budget** | thorough |
+| **Enabled** | ✅ yes |
+
+**Agenda:**
+1. Project health metrics: test count, coverage, open issues, build warnings
+2. Agent performance review: each agent's Phase accomplishments vs responsibilities
+3. Squad gap analysis: domains lacking coverage, routing ambiguities, ownership gaps
+4. Process retrospective: what process rules worked, which need adjustment
+5. Structural recommendations: charter updates, routing changes, ceremony additions
+6. Phase N+1 outlook: what work is accumulating, what the next sprint probably looks like
+7. Output: squad evolution analysis document in `.ai-team/decisions/inbox/`
+
+---
+
+
 
 | Field | Value |
 |-------|-------|

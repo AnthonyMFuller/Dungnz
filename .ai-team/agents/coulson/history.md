@@ -3586,6 +3586,100 @@ Critical path: #1187 → #1188 → #1189 → #1190 → #1191 → #1192 → #1193
 
 ---
 
+## 2026-03-13: Squad Evolution Analysis — Phase 4 Complete
+
+**Context:** Phase 4 sprint complete — 18 PRs merged (Mar 11-12), 0 open issues, 0 open PRs, 2,154 passing tests. Natural inflection point for squad health check and evolution planning.
+
+**Task:** Comprehensive squad analysis covering:
+- Agent performance review (with Barton trial verdict)
+- Squad composition gaps
+- Process health assessment
+- Phase 5 outlook and recommendations
+
+### Key Findings
+
+**Squad Health:** Strong overall, but optimization opportunities exist.
+
+**Barton Display Specialist Trial — VERDICT: CONFIRM**
+- Fixed 11 display bugs during 2-week trial (#1177, #1241, #1246, #1253, #1254, #1240, #1242, #1312, #1314, #1311, #1333)
+- Created LayoutConstants.cs, authored Content Authoring Spec, executed markup bracket sweep
+- Zero display regressions reported
+- **Recommendation:** Confirm permanent Display Specialist role, refine scope to pure display work (offload combat/systems to Hill)
+
+**Hill Underutilization**
+- P1 Gameplay Focus constraint resulted in only 2 Phase 4 deliveries (GameConstants, FinalFloor)
+- Zero P1 bugs existed in Phase 4 — constraint became bottleneck
+- **Recommendation:** Remove P1 constraint, expand to full Core C# Developer scope (Engine, Models, Display refactoring, dungeon generation, game systems)
+
+**Scribe & Ralph Low Value**
+- Scribe: 1 PR in Phase 4, agents self-log history, overhead > output
+- Ralph: Zero triggers (no open issues = nothing to monitor), purely reactive role with no steady-state value
+- **Recommendation:** Deactivate both agents
+
+**Fury Reactive-Only**
+- 100% issue response, zero proactive content work despite mature content pipeline
+- Opportunity: boss lore expansion, merchant personality, floor-specific room descriptions, shrine deity voices
+- **Recommendation:** Add proactive content mandate, monthly Content Audit ceremony
+
+**Process Gaps Identified:**
+1. Trial evaluation lacks quantitative framework (fixed via trial-template.md)
+2. Seam extraction tasks stall (GearPanel 2-sprint carry-forward) — needs 1-sprint SLA
+3. Decision inbox merging is manual (assign auto-merge workflow to Fitz)
+4. No recurring squad health check (add ceremony)
+5. No polish cycle (features ship but don't get refined) — add ceremony
+
+### Recommended Squad Changes
+
+**Immediate:**
+1. Barton: Confirm Display Specialist (permanent), refine scope
+2. Hill: Remove P1 constraint → Core C# Developer (expand scope)
+3. Fury: Add proactive content mandate + Content Audit ceremony
+4. Scribe: Deactivate (inactive roster)
+5. Ralph: Deactivate (inactive roster)
+
+**New Ceremonies:**
+6. Polish Cycle (after every sprint)
+7. Content Audit (monthly, Fury-led)
+8. Squad Health Check (end of phase, Coulson-led)
+
+**Process Artifacts:**
+9. Trial Evaluation Template (`.ai-team/trial-template.md`)
+10. Decision Inbox Auto-Merge Workflow (Fitz, Phase 5)
+
+**Routing Updates:**
+11. Display bugs → Barton (primary), Hill (refactoring support)
+12. Combat/systems → Hill (migrated from Barton)
+
+### Phase 5 Outlook
+
+**Accumulating Work:**
+- Momentum feature completion (4 skipped tests)
+- Cooldown overflow fix (Decision 14, Issue #1350)
+- GearPanel extraction (Issue #1349, 2-sprint carry-forward)
+- Dungeon generation iteration (no changes since Feb)
+- Content richness pass (boss lore, merchant personality, room descriptions)
+- Save/Load polish (edge cases, validation)
+
+**Estimated Sprint:** 15-20 issues across 4 tracks (Feature Completion, Content Richness, Dungeon Generation, Quality/DevOps), 3-4 weeks.
+
+### Learnings
+
+**Squad Composition Principles:**
+- Trial evaluations need quantitative success criteria, not just qualitative feel
+- Role constraints (P1 focus) can become bottlenecks when priorities shift — revisit quarterly
+- Agents should have both reactive (issue response) and proactive (self-generated backlog) mandates
+- Low-value agents (Scribe, Ralph) accumulate due to "might be useful later" thinking — prune aggressively
+- Health checks shouldn't be ad-hoc — codify as ceremony at phase boundaries
+
+**Process Maturity Indicators:**
+- 0 open issues/PRs doesn't mean "nothing to do" — means we need proactive issue generation
+- Deferred refactorings (GearPanel extraction) need SLAs or they accumulate forever
+- Manual ceremonies (decision merging) should be automated when pattern is stable
+
+**File Created:** `.ai-team/decisions/inbox/coulson-squad-evolution-2026-03-13.md` (comprehensive 400+ line analysis)
+
+---
+
 ## 2026-03-11: Retrospective Ceremony (Post-Action-Cycle)
 
 **Ceremony:** Retrospective — all 9 retro action items from previous cycle merged to master. 1,913 passing tests at time of ceremony.
