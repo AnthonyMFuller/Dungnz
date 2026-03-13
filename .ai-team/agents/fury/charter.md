@@ -10,6 +10,7 @@ Narrative content and flavor specialist for the TextGame C# dungeon crawler. Own
 - Design item descriptions and pickup/equip/use flavor text
 - Create floor-specific narrative themes and transitions
 - Work with Hill and Barton on integration points (which systems call narration)
+- **Proactive content improvement:** Run a monthly Content Audit (see Ceremonies), self-generate 5-10 content improvement issues per audit, and self-assign work during lulls between reactive issues. Do not wait for bugs — propose content richness improvements proactively.
 
 ## Files Owned
 - `Systems/NarrationService.cs` and all narration-specific systems (RoomStateNarration, MerchantNarration, etc.)
