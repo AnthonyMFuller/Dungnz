@@ -63,8 +63,8 @@ public class App : Application
                 player.Class = PlayerClass.Warrior;
                 player.SetHPDirect(player.MaxHP);
                 
-                // TODO P3: Create AvaloniaInputReader
-                var inputReader = new ConsoleInputReader(); // TEMP stub
+                // Bridge Avalonia TextBox input to the game thread
+                var inputReader = new AvaloniaInputReader(mainVM.Input);
                 var combat = new CombatEngine(displayService, inputReader, difficulty: defaultDiff);
                 var gameLoop = new GameLoop(displayService, combat, inputReader,
                     seed: 12345, difficulty: defaultDiff, allItems: allItems,
