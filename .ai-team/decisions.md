@@ -5391,3 +5391,53 @@ Master branch is now clean, all PRs merged, all issues auto-closed, and build pa
 6. **11 migration phases:** P0 (interface split) through P10 (integration test). Game stays playable in Spectre mode throughout. Critical path: P0 → P2 → P3 → P5 → P6 → P10.
 
 **Packages:** Avalonia 11.3.x, Avalonia.Desktop, Avalonia.Themes.Fluent, CommunityToolkit.Mvvm 8.4.x.
+
+---
+
+# Avalonia Phase 0 — IDisplayService Split
+
+**Date:** 2026-03-13  
+**Decided by:** Hill (Core C# Developer)  
+**Approved by:** Anthony (via Avalonia migration spec)  
+**PR:** #1399
+
+## Decision
+
+Split the 58-method `IDisplayService` interface into two focused sub-interfaces to prepare for Avalonia UI migration:
+
+1. **`IGameDisplay`** (41 methods) — Output-only methods that render information to the player without blocking for input
+2. **`IGameInput`** (26 methods) — Input-coupled methods that block the game thread to collect user input
+3. **`IDisplayService`** — Facade interface inheriting both for backward compatibility
+
+## Rationale
+
+The Avalonia migration requires a clean separation between:
+- **Display operations** — can be implemented as reactive ViewModels with property change notifications
+- **Input operations** — require `TaskCompletionSource<T>` completion patterns for async UI interactions
+
+Splitting the interface now enables incremental migration without breaking existing code:
+- Existing implementations (ConsoleDisplayService, SpectreLayoutDisplayService) automatically satisfy both interfaces via `IDisplayService` inheritance
+- Future Avalonia ViewModels can implement the narrower interface they actually need
+- All 2154+ tests pass unchanged with zero call-site modifications
+
+## Method Classification Notes
+
+**ShowIntroNarrative()** returns `bool` but was classified as output-only (`IGameDisplay`) because:
+- The return value is currently always `false` (reserved for future skip path)
+- It's a "press any key to continue" gate, not a meaningful choice
+- Per spec Section 2 design notes, trivial gates stay on the output side
+
+**UpdateCooldownDisplay()** has a default implementation (`{ }`) — kept as-is in `IGameDisplay` to maintain no-op behavior for implementations that don't override it.
+
+## Files Created
+
+- `Dungnz.Models/IGameDisplay.cs` — 41 output-only methods with full XML documentation
+- `Dungnz.Models/IGameInput.cs` — 26 input-coupled methods with full XML documentation
+- `Dungnz.Models/IDisplayService.cs` — Modified to 17-line facade interface
+
+## Impact
+
+- **Breaking:** None — pure additive change
+- **Tests:** All 2154+ tests pass unchanged
+- **Build:** Clean (1 pre-existing warning in TakeSelection.cs)
+- **Next Phase:** Phase 1 will create Avalonia project skeleton and implement stub ViewModels for IGameDisplay
