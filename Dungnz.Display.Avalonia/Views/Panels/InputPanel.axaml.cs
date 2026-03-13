@@ -1,14 +1,40 @@
 using Avalonia.Controls;
+using Avalonia.Input;
+using Avalonia.Interactivity;
+using Dungnz.Display.Avalonia.ViewModels;
 
 namespace Dungnz.Display.Avalonia.Views.Panels;
 
 /// <summary>
-/// Input panel code-behind.
+/// Input panel code-behind. Handles Enter key submission and auto-focus
+/// when the input becomes enabled.
 /// </summary>
 public partial class InputPanel : UserControl
 {
+    /// <summary>
+    /// Initialises the input panel and wires keyboard / property-changed hooks.
+    /// </summary>
     public InputPanel()
     {
         InitializeComponent();
+
+        CommandInput.AddHandler(KeyDownEvent, OnCommandInputKeyDown, RoutingStrategies.Tunnel);
+
+        // Auto-focus the TextBox whenever IsEnabled flips to true
+        CommandInput.PropertyChanged += (_, e) =>
+        {
+            if (e.Property == IsEnabledProperty && e.NewValue is true)
+                CommandInput.Focus();
+        };
+    }
+
+    private void OnCommandInputKeyDown(object? sender, KeyEventArgs e)
+    {
+        if (e.Key != Key.Enter) return;
+
+        e.Handled = true;
+
+        if (DataContext is InputPanelViewModel vm && vm.IsInputEnabled)
+            vm.Submit();
     }
 }

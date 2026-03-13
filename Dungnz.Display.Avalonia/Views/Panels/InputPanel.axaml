@@ -5,6 +5,10 @@
              x:DataType="vm:InputPanelViewModel">
   <StackPanel>
     <TextBlock Text="{Binding PromptText}" FontFamily="Consolas,Courier New,monospace" Margin="0,0,0,5" />
-    <TextBox Text="{Binding CommandText}" Watermark="Enter command..." FontFamily="Consolas,Courier New,monospace" />
+    <TextBox x:Name="CommandInput"
+             Text="{Binding CommandText}"
+             Watermark="Enter command..."
+             IsEnabled="{Binding IsInputEnabled}"
+             FontFamily="Consolas,Courier New,monospace" />
   </StackPanel>
 </UserControl>

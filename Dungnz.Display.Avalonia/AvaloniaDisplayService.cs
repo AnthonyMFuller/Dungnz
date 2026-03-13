@@ -749,7 +749,47 @@ public class AvaloniaDisplayService : IDisplayService
     // ══════════════════════════════════════════════════════════════════════════
 
     // TODO: P5-P8 implementation
-    public string? ReadCommandInput() => null;
+    private TaskCompletionSource<string?>? _pendingCommand;
+
+    /// <summary>
+    /// Blocks the game thread until the player types a command and presses Enter
+    /// in the Avalonia input panel. Uses <see cref="TaskCompletionSource{T}"/> to
+    /// bridge between the game thread and the Avalonia UI thread.
+    /// </summary>
+    /// <returns>The trimmed command string, or <see langword="null"/> if blank.</returns>
+    public string? ReadCommandInput()
+    {
+        var tcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
+        _pendingCommand = tcs;
+
+        void OnSubmitted(string text)
+        {
+            var pending = _pendingCommand;
+            _pendingCommand = null;
+            _vm.Input.InputSubmitted -= OnSubmitted;
+            pending?.TrySetResult(text);
+        }
+
+        // Enable input on UI thread
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _vm.Input.InputSubmitted += OnSubmitted;
+            _vm.Input.PromptText = "> ";
+            _vm.Input.CommandText = "";
+            _vm.Input.IsInputEnabled = true;
+        });
+
+        // Block game thread until the player submits
+        var result = tcs.Task.GetAwaiter().GetResult();
+
+        // Ensure input is disabled after submission
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _vm.Input.IsInputEnabled = false;
+        });
+
+        return string.IsNullOrWhiteSpace(result) ? null : result.Trim();
+    }
     public string ReadPlayerName() => "Player";
     public int? ReadSeed() => null;
 
