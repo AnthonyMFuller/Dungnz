@@ -1432,3 +1432,67 @@ Your PR #1340 contamination resolution (Decision 13) established a key process r
 - All tests green before commit/push
 - Updated history in one session after all three PRs opened
 
+
+---
+
+## 2026-03-13 — PR #1399 Review: Avalonia P0 IDisplayService Split
+
+**Task:** Review Hill's PR #1399 — split `IDisplayService` into `IGameDisplay` (output-only) and `IGameInput` (input-coupled) for Avalonia migration Phase 0.
+
+**Review scope:**
+1. Completeness — all 63 original methods accounted for
+2. Classification correctness — output vs input per docs/avalonia-migration-spec.md Section 2
+3. Signature fidelity — byte-for-byte identical to original
+4. Facade correctness — `IDisplayService : IGameDisplay, IGameInput { }` empty inheritance
+5. Build/test pass — all 2,154+ tests green, zero new warnings (except pre-existing XML doc warning)
+6. Backward compatibility — ConsoleDisplayService, SpectreLayoutDisplayService, SpectreDisplayService all compile unchanged
+7. XML documentation preserved
+
+**Results:**
+
+✅ **Completeness:** All 63 methods from original `IDisplayService` accounted for:
+- Original: 63 method signatures
+- IGameDisplay: 38 methods
+- IGameInput: 25 methods
+- Combined: 63 (perfect match)
+- Zero methods lost, zero duplicates between interfaces
+
+✅ **Classification correctness:**
+- `ShowIntroNarrative()` → IGameDisplay (per spec Section 2 decision override)
+- `UpdateCooldownDisplay()` → IGameDisplay with default implementation `{ }` (per spec)
+- All 38 IGameDisplay methods are output-only (void or simple return, no blocking input)
+- All 25 IGameInput methods are input-coupled (menu selection, text entry, confirmations)
+- Spec Section 1 audit listed 37 output + 26 input, but Section 2 moved `ShowIntroNarrative` from input to output → 38 + 25 = 63 ✅
+
+✅ **Signature fidelity:** Automated comparison script verified all 63 signatures byte-for-byte identical (after namespace normalization).
+
+✅ **Facade correctness:** `IDisplayService : IGameDisplay, IGameInput { }` — empty interface, just inheritance. No additional members. Perfect facade pattern.
+
+✅ **Build/test pass:**
+- `dotnet build Dungnz.slnx --no-incremental` succeeded
+- Only 1 warning (pre-existing): `TakeSelection.cs:3 XML comment cref 'ShowTakeMenuAndSelect' unresolved` — NOT introduced by this PR
+- `dotnet test Dungnz.slnx --no-build` passed: 2,154 passed, 4 skipped, 0 failed
+- Zero regressions
+
+✅ **Backward compatibility:** Three implementations compile unchanged:
+- `ConsoleDisplayService : IDisplayService` ✅
+- `SpectreLayoutDisplayService : IDisplayService` ✅
+- `SpectreDisplayService : IDisplayService` ✅
+
+✅ **XML documentation:** All three new files have complete XML doc comments:
+- IGameDisplay: `<summary>` + `<remarks>` on interface, `<summary>` on all 38 methods
+- IGameInput: `<summary>` + `<remarks>` on interface, `<summary>` on all 25 methods
+- IDisplayService: `<summary>` + `<remarks>` explaining facade pattern
+
+**Verdict:** ✅ **APPROVED — PR #1399**
+
+**Reason:** Flawless execution of the spec. All 63 methods accounted for with correct classification per Section 2 decisions. Signature fidelity confirmed by automated diff. All 2,154+ tests pass. Zero call-site changes required. Facade pattern implemented correctly. XML docs complete. This is a textbook additive interface split — zero risk, pure structural refactor.
+
+**Learnings:**
+- Spec Section 1 vs Section 2 distinction matters — Section 1 is audit/inventory, Section 2 is binding decisions. `ShowIntroNarrative` moved from input (Section 1 line 91) to output (Section 2 explicit override) — correct implementation follows Section 2.
+- Automated signature diff using `git show origin/master:file | sed 's/Dungnz\.Models\.//g' | diff -` is reliable for detecting regressions.
+- For interface splits, verify (a) method count match, (b) zero duplicates (`sort | uniq -d`), (c) build green, (d) test green. If all four pass, the split is correct.
+- Pre-existing warnings (XML doc refs) must not be counted as introduced by PR — check `git diff --stat` to confirm files untouched.
+- Facade pattern `interface I : IA, IB { }` is valid C# — empty body is intentional for backward compatibility during migration.
+
+**Next:** Hill can merge after Coulson/Anthony approval. Phase 0 complete → unblocks Phase 1 (AvaloniaUI scaffold) and Phase 3 (data-binding implementations).

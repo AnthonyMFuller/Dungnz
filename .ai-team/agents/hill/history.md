@@ -1860,3 +1860,36 @@ Every handler that sets content panel content MUST call `ShowRoom()` before retu
 - `Dungnz.Models/MomentumResource.cs` — new sealed class
 - `Dungnz.Models/Player.cs` — Momentum property + ResetCombatPassives()
 - `Dungnz.Display/Spectre/SpectreLayoutDisplayService.cs` — RenderStatsPanel() momentum display block
+
+## Learnings — Avalonia Phase 0: IDisplayService Split (2026-03-13)
+
+**Task:** Split `IDisplayService` (58 methods, 446 lines) into two focused interfaces as Phase 0 of the Avalonia UI migration.
+
+**What was done:**
+- Created `Dungnz.Models/IGameDisplay.cs` with 41 output-only methods (rendering, display updates, no input blocking)
+- Created `Dungnz.Models/IGameInput.cs` with 26 input-coupled methods (menus, text entry, confirmations)
+- Modified `Dungnz.Models/IDisplayService.cs` to be a 17-line facade interface inheriting both `IGameDisplay` and `IGameInput`
+- Preserved all XML documentation (copied from original interface to appropriate sub-interfaces)
+- Preserved exact method signatures (parameter names, default values, types — compile-identical replacement)
+
+**Method classification decisions:**
+- `ShowIntroNarrative()` returns `bool` but was placed in `IGameDisplay` (output-only) because the return value is currently always `false` (reserved for future skip path) and it's a trivial "press any key" gate, not a meaningful choice (per spec Section 2 design notes)
+- `UpdateCooldownDisplay()` has default implementation `{ }` — kept as-is in `IGameDisplay` to maintain no-op behavior for implementations that don't override it
+- All `*AndSelect` methods went to `IGameInput` (input-coupled)
+- All `Show*` methods without return values went to `IGameDisplay` (output-only)
+
+**Files created/modified:**
+- `Dungnz.Models/IGameDisplay.cs` (new, 41 methods, ~350 lines)
+- `Dungnz.Models/IGameInput.cs` (new, 26 methods, ~240 lines)
+- `Dungnz.Models/IDisplayService.cs` (modified, facade, 17 lines)
+
+**Verification results:**
+- Build: Clean (0 errors, 1 pre-existing warning in TakeSelection.cs about unresolved cref)
+- Tests: All 2154 tests pass (4 skipped as expected — Momentum system tests)
+- Backward compatibility: Zero call-site modifications required — existing implementations (ConsoleDisplayService, SpectreLayoutDisplayService) automatically satisfy both sub-interfaces via `IDisplayService` inheritance
+
+**PR created:** #1399 — feat(models): Avalonia P0 — split IDisplayService into IGameDisplay + IGameInput
+
+**Decision file:** `.ai-team/decisions/hill-avalonia-p0-interface-split.md`
+
+**Key pattern confirmed:** Interface facade pattern for backward-compatible splits — new interface inherits from both sub-interfaces, existing implementations automatically satisfy all contracts. Zero breaking changes, full test coverage preserved.
