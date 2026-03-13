@@ -1893,3 +1893,58 @@ Every handler that sets content panel content MUST call `ShowRoom()` before retu
 **Decision file:** `.ai-team/decisions/hill-avalonia-p0-interface-split.md`
 
 **Key pattern confirmed:** Interface facade pattern for backward-compatible splits — new interface inherits from both sub-interfaces, existing implementations automatically satisfy all contracts. Zero breaking changes, full test coverage preserved.
+
+## Learnings — Avalonia P1+P2 (2026-03-13)
+
+**Task:** Implemented Phase 1 (MapRenderer extraction) and Phase 2 (Avalonia project scaffold) of the Avalonia migration spec.
+
+**Phase 1: MapRenderer Extraction**
+- Extracted BFS-based map rendering logic from `SpectreLayoutDisplayService` into a new `MapRenderer` static class
+- Created two variants: `BuildMarkupMap()` for Spectre markup and `BuildPlainTextMap()` for plain text (Avalonia-ready)
+- Both variants share core `BuildMapGrid()` helper method that performs BFS coordinate assignment and visibility filtering
+- Also extracted `BuildLegendMarkup()` and `BuildLegendPlain()` for dynamic legend rendering
+- Placed in `Dungnz.Models` to avoid circular dependencies (Engine references Display, so couldn't put it in Engine)
+- `SpectreLayoutDisplayService` now delegates to `MapRenderer.BuildMarkupMap()` instead of having its own implementation
+
+**Phase 2: Avalonia Project Scaffold**
+- Created `Dungnz.Display.Avalonia` project targeting net10.0 (matching all other projects)
+- Scaffolded complete MVVM structure: 6 ViewModels + 6 Views (AXAML + code-behind)
+- Created stub `AvaloniaDisplayService` implementing both `IGameDisplay` and `IGameInput` (all methods return sensible defaults)
+- Added `AvaloniaAppBuilder` helper for Avalonia app configuration
+- Created `App.axaml` with Dark FluentTheme
+- Created `MainWindow.axaml` with 6-panel Grid layout matching SpectreLayout proportions
+- All stub classes have XML doc comments
+
+**Key Technical Decisions:**
+1. **MapRenderer location:** Placed in `Dungnz.Models` because `Dungnz.Engine` references `Dungnz.Display`, creating circular dependency if placed in Engine
+2. **Target framework:** Used net10.0 (not net9.0) to match all other projects — this was critical for project references to work
+3. **AXAML build conflicts:** When building the solution via `Dungnz.slnx`, the main `Dungnz.csproj` tries to compile AXAML files from the Avalonia project, causing Avalonia compiler errors
+   - Root cause: `Dungnz.csproj` has a `ProjectReference` to `Dungnz.Display.Avalonia`, which brings in Avalonia SDK targets
+   - Solution for P2: Commented out the project reference and Program.cs wiring with TODO comments for P3
+   - The Avalonia project builds successfully on its own
+4. **Program.cs wiring:** Scaffolded `--avalonia` flag but commented out to avoid build conflicts until P3
+5. **README.md update:** Added brief note about Avalonia migration in progress to satisfy pre-push hook
+
+**Avalonia Package Versions:**
+- Avalonia 11.3.2 (stable, cross-platform, GPU-accelerated)
+- CommunityToolkit.Mvvm 8.4.0 (for source-generated observables)
+- No ReactiveUI dependency (CommunityToolkit is simpler)
+
+**Build Validation:**
+- ✅ `Dungnz.Display.Avalonia` project builds independently
+- ✅ Full solution builds with commented-out wiring
+- ✅ SpectreLayoutDisplayService map display works identically after refactor
+- ✅ All tests pass (map rendering is internal to display layer)
+
+**Known Issues for P3:**
+- AXAML cross-compilation when main project references Avalonia project
+- Need to resolve build target conflicts or restructure project references
+- `WithInterFont()` method doesn't exist in Avalonia 11.3.2 — removed from AvaloniaAppBuilder
+
+**Patterns Discovered:**
+- Static utility classes for shared rendering logic can be placed in Models layer when they have zero dependencies
+- Avalonia AXAML files are automatically included by Avalonia SDK — don't add explicit `<AvaloniaResource>` items
+- Main project shouldn't reference Avalonia project directly if it causes SDK conflicts — may need indirect wiring via Engine
+
+**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/1401
+

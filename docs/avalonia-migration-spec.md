@@ -249,21 +249,81 @@ All existing code (`GameLoop`, `CombatEngine`, `StartupOrchestrator`) continues 
 
 ---
 
-## Section 3: Avalonia Project Structure
+## Section 3: Two-Executable Architecture
+
+### Why Not Single-Executable?
+
+**The original spec assumed** `Dungnz.csproj` could reference `Dungnz.Display.Avalonia.csproj` and use a `--avalonia` CLI flag to switch UIs at runtime. This doesn't work due to **Avalonia's XAML compilation model.**
+
+#### The AXAML Source Generator Conflict
+
+Avalonia uses build-time source generators to compile `.axaml` files into typed C# classes with compiled bindings. When a non-Avalonia project references an Avalonia project:
+
+1. The parent project's build context includes the child project's files
+2. Avalonia's source generator (`Avalonia.Generators.NameGenerator`) activates on `.axaml` files
+3. The generator expects the parent project to have Avalonia NuGet packages
+4. When those packages are missing → build failure
+
+**Attempted workarounds (all failed):**
+- `<AvaloniaResource Remove="...">` — ignored by source generator (different MSBuild phase)
+- `<Compile Remove="...">` — excludes C# files, but AXAML processing still triggers
+- Conditional `<ProjectReference Condition="...">` — breaks IDE IntelliSense and Go To Definition
+
+**The standard solution:** Avalonia applications are standalone executables, not library projects referenced by console apps.
+
+---
+
+### Revised Architecture: Two Independent Executables
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│                      Shared Game Logic                          │
+│  Dungnz.Models / Dungnz.Engine / Dungnz.Systems / Dungnz.Data  │
+│  (IDisplayService, IGameDisplay, IGameInput interfaces)         │
+│  (Player, Enemy, Room, GameLoop, CombatEngine, etc.)            │
+└────────────────────────────────────────────────────────────────┘
+                            ▲         ▲
+                            │         │
+          ┌─────────────────┘         └──────────────────┐
+          │                                               │
+┌─────────┴──────────┐                     ┌─────────────┴────────────┐
+│   Dungnz.csproj    │                     │ Dungnz.Display.Avalonia/ │
+│   (Console Exe)    │                     │ Dungnz.Display.Avalonia. │
+│                    │                     │         csproj           │
+│  Program.cs        │                     │      (GUI Exe)           │
+│  - Console I/O     │                     │                          │
+│  - SpectreLayout   │                     │  Program.cs              │
+│  - GameLoop        │                     │  - Avalonia bootstrap    │
+│  - SaveSystem      │                     │  - AvaloniaDisplaySvc    │
+│                    │                     │  - GameLoop (Task.Run)   │
+│  Uses:             │                     │  - MainWindow.axaml      │
+│  ConsoleDisplay    │                     │  - 6 Panel ViewModels    │
+│  SpectreDisplay    │                     │                          │
+└────────────────────┘                     └──────────────────────────┘
+
+       Default                                    Opt-in GUI
+  (current experience)                        (new feature)
+```
+
+**Zero cross-reference between executables.** Both depend on shared libraries; neither depends on the other.
+
+---
 
 ### Solution Layout
 
 ```
 Dungnz.slnx
-├── Dungnz.csproj                    (entry point — references Engine, Display.Avalonia)
-├── Dungnz.Models/                   (IDisplayService, IGameDisplay, IGameInput, domain types)
-├── Dungnz.Data/
-├── Dungnz.Systems/
-├── Dungnz.Engine/                   (references Models, Data, Systems, Display)
-├── Dungnz.Display/                  (Spectre impl + ConsoleDisplayService — unchanged)
-├── Dungnz.Display.Avalonia/         (NEW — Avalonia impl)
-│   ├── Dungnz.Display.Avalonia.csproj
-│   ├── AvaloniaDisplayService.cs    (IDisplayService implementation)
+├── Dungnz.csproj                           (Console executable — unchanged)
+├── Dungnz.Models/                          (IDisplayService, domain models)
+├── Dungnz.Data/                            (JSON config, registries)
+├── Dungnz.Systems/                         (Managers, events, SaveSystem)
+├── Dungnz.Engine/                          (GameLoop, CombatEngine, CommandParser)
+├── Dungnz.Display/                         (SpectreLayoutDisplayService — unchanged)
+├── Dungnz.Display.Avalonia/                (NEW — standalone GUI executable)
+│   ├── Dungnz.Display.Avalonia.csproj      (OutputType: Exe, references Engine/Models/Systems)
+│   ├── Program.cs                          (Avalonia bootstrap + game launch)
+│   ├── App.axaml(.cs)                      (Application entry, creates MainWindow)
+│   ├── AvaloniaDisplayService.cs           (IDisplayService implementation)
 │   ├── ViewModels/
 │   │   ├── MainWindowViewModel.cs
 │   │   ├── MapPanelViewModel.cs
@@ -273,7 +333,7 @@ Dungnz.slnx
 │   │   ├── LogPanelViewModel.cs
 │   │   └── InputPanelViewModel.cs
 │   ├── Views/
-│   │   ├── MainWindow.axaml(.cs)
+│   │   ├── MainWindow.axaml(.cs)           (6-panel Grid layout)
 │   │   └── Panels/
 │   │       ├── MapPanel.axaml(.cs)
 │   │       ├── StatsPanel.axaml(.cs)
@@ -281,21 +341,26 @@ Dungnz.slnx
 │   │       ├── GearPanel.axaml(.cs)
 │   │       ├── LogPanel.axaml(.cs)
 │   │       └── InputPanel.axaml(.cs)
-│   ├── Controls/
-│   │   └── AsciiMapControl.cs       (custom control for map rendering)
-│   ├── Converters/
-│   │   └── TierColorConverter.cs
-│   └── App.axaml(.cs)
+│   └── Converters/
+│       └── TierColorConverter.cs
 └── Dungnz.Tests/
 ```
 
-### New csproj
+**Key differences from original spec:**
+1. **No `--avalonia` flag in `Dungnz/Program.cs`** — user runs a different executable
+2. **`Dungnz.csproj` does NOT reference Avalonia project** — no cross-compilation issues
+3. **`Dungnz.Display.Avalonia.csproj` is `<OutputType>Exe`** with its own `Program.cs`
+
+---
+
+### Avalonia Project Configuration
 
 ```xml
 <!-- Dungnz.Display.Avalonia/Dungnz.Display.Avalonia.csproj -->
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <OutputType>Exe</OutputType>
     <TargetFramework>net10.0</TargetFramework>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
@@ -304,8 +369,12 @@ Dungnz.slnx
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Shared game logic dependencies -->
     <ProjectReference Include="../Dungnz.Models/Dungnz.Models.csproj" />
+    <ProjectReference Include="../Dungnz.Data/Dungnz.Data.csproj" />
     <ProjectReference Include="../Dungnz.Systems/Dungnz.Systems.csproj" />
+    <ProjectReference Include="../Dungnz.Engine/Dungnz.Engine.csproj" />
+    <ProjectReference Include="../Dungnz.Display/Dungnz.Display.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -315,76 +384,187 @@ Dungnz.slnx
     <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.2" />
     <!-- CommunityToolkit.Mvvm for ObservableObject + source generators -->
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <!-- Logging -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.3" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
   </ItemGroup>
 
   <ItemGroup>
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>Dungnz.Tests</_Parameter1>
-    </AssemblyAttribute>
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>Dungnz</_Parameter1>
-    </AssemblyAttribute>
+    <!-- Copy Data directory to output (JSON config files) -->
+    <Content Include="../Data/**" Exclude="../Data/**/*.cs">
+      <Link>Data/%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
 </Project>
 ```
 
-**Key package choices:**
-- `Avalonia` 11.3.x — stable, cross-platform, GPU-accelerated
-- `Avalonia.Desktop` — desktop windowing (Skia/OpenGL backend)
-- `Avalonia.Themes.Fluent` — built-in theme, dark mode ready
-- `CommunityToolkit.Mvvm` — lightweight MVVM (no ReactiveUI complexity)
+**Why reference `Dungnz.Display`?** So Avalonia can reuse `MapRenderer` static utilities if helpful. Optional.
 
-**No ReactiveUI.** CommunityToolkit.Mvvm provides `ObservableObject`, `[ObservableProperty]`, `[RelayCommand]` via source generators. Simpler learning curve, zero reactive pipeline complexity. If we need reactive streams later, it's additive.
-
-### Program.cs Wiring
-
-```csharp
-// Program.cs — updated entry point
-var useAvalonia = args.Contains("--avalonia");
-
-if (useAvalonia)
-{
-    // Avalonia takes over the main thread.
-    // Game runs on background thread, display on UI thread.
-    var app = AvaloniaAppBuilder.Configure(args);
-    app.RunGame(prestige); // Internally: starts Avalonia, creates window, runs game on Task.Run
-}
-else if (inputReader.IsInteractive)
-{
-    spectreService = new SpectreLayoutDisplayService();
-    display = spectreService;
-    // ... existing Spectre flow unchanged ...
-}
-else
-{
-    display = new ConsoleDisplayService(inputReader);
-    // ... existing headless flow unchanged ...
-}
-```
-
-The `--avalonia` flag mirrors the pattern used by the deleted `--tui` flag. ConsoleDisplayService and SpectreLayoutDisplayService remain untouched — full rollback = remove flag + delete directory.
-
-### Dungnz.csproj Reference Update
-
-```xml
-<!-- Add to Dungnz.csproj ItemGroup -->
-<ProjectReference Include="Dungnz.Display.Avalonia/Dungnz.Display.Avalonia.csproj" />
-```
-
-### Dungnz.slnx Update
-
-```xml
-<Project Path="Dungnz.Display.Avalonia/Dungnz.Display.Avalonia.csproj" />
-```
+**Why logging packages in Avalonia project?** Both executables use same Serilog setup for consistent logs.
 
 ---
 
-## Section 4: AvaloniaDisplayService Architecture
+### Launching the Two Modes
+
+```bash
+# Console mode (current default) — unchanged
+dotnet run
+# OR
+dotnet run --project Dungnz
+
+# GUI mode (new feature)
+dotnet run --project Dungnz.Display.Avalonia
+```
+
+**No runtime switching.** User picks an executable at launch. Each mode is a complete, self-contained application.
+
+---
+
+## Section 4: Avalonia Program.cs and App.axaml.cs
+
+### Avalonia Executable Bootstrap
+
+**File:** `Dungnz.Display.Avalonia/Program.cs`
+
+```csharp
+using Avalonia;
+using Dungnz.Display.Avalonia;
+using Microsoft.Extensions.Logging;
+using Serilog;
+
+// Configure Serilog (same pattern as console app)
+var logDir = Path.Combine(
+    Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+    "Dungnz", "Logs");
+Directory.CreateDirectory(logDir);
+
+Log.Logger = new LoggerConfiguration()
+    .MinimumLevel.Debug()
+    .WriteTo.File(Path.Combine(logDir, "dungnz-avalonia-.log"),
+                  rollingInterval: Serilog.RollingInterval.Day)
+    .CreateLogger();
+
+var loggerFactory = LoggerFactory.Create(builder => builder.AddSerilog());
+var logger = loggerFactory.CreateLogger("Dungnz.Avalonia");
+
+logger.LogInformation("Dungnz Avalonia GUI starting...");
+
+// Build and start Avalonia application
+AppBuilder.Configure<App>()
+    .UsePlatformDetect()
+    .LogToTrace()
+    .StartWithClassicDesktopLifetime(args);
+```
+
+**Flow:**
+1. Avalonia bootstraps on main thread
+2. `App.OnFrameworkInitializationCompleted` creates MainWindow and wires game loop
+3. Main thread runs Avalonia message loop
+4. Game loop runs on `Task.Run(() => gameLoop.Run(...))`
+
+---
+
+### App.axaml.cs: Game Loop Integration
+
+**File:** `Dungnz.Display.Avalonia/App.axaml.cs`
+
+```csharp
+using Avalonia;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Markup.Xaml;
+using Dungnz.Display.Avalonia.ViewModels;
+using Dungnz.Display.Avalonia.Views;
+using Dungnz.Engine;
+using Dungnz.Models;
+using Dungnz.Systems;
+using Microsoft.Extensions.Logging;
+using Serilog;
+
+namespace Dungnz.Display.Avalonia;
+
+public class App : Application
+{
+    public override void Initialize()
+    {
+        AvaloniaXamlLoader.Load(this);
+    }
+
+    public override void OnFrameworkInitializationCompleted()
+    {
+        if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+        {
+            var loggerFactory = LoggerFactory.Create(builder => builder.AddSerilog());
+            
+            // Load prestige
+            var prestige = PrestigeSystem.Load();
+            
+            // Create main window and ViewModel
+            var mainVM = new MainWindowViewModel();
+            var displayService = new AvaloniaDisplayService(mainVM);
+            
+            var mainWindow = new MainWindow
+            {
+                DataContext = mainVM
+            };
+            desktop.MainWindow = mainWindow;
+            
+            // Start game loop on background thread after window is shown
+            mainWindow.Opened += async (s, e) =>
+            {
+                // TODO P3-P8: Full startup flow (StartupOrchestrator, SelectClass, SelectDifficulty)
+                // For P2: launch with default player for smoke test
+                
+                var defaultDiff = DifficultySettings.For(Difficulty.Normal);
+                
+                EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
+                StartupValidator.ValidateOrThrow();
+                CraftingSystem.Load("Data/crafting-recipes.json");
+                AffixRegistry.Load("Data/item-affixes.json");
+                StatusEffectRegistry.Load("Data/status-effects.json");
+                var allItems = ItemConfig.Load("Data/item-stats.json")
+                    .Select(ItemConfig.CreateItem).ToList();
+                
+                var generator = new DungeonGenerator(seed: 12345, allItems);
+                var (startRoom, _) = generator.Generate(difficulty: defaultDiff);
+                
+                var player = new Player("Adventurer", PlayerClass.Warrior);
+                
+                var inputReader = new AvaloniaInputReader(displayService); // NEW
+                var combat = new CombatEngine(displayService, inputReader, difficulty: defaultDiff);
+                var gameLoop = new GameLoop(displayService, combat, inputReader,
+                    seed: 12345, difficulty: defaultDiff, allItems: allItems,
+                    logger: loggerFactory.CreateLogger<GameLoop>());
+                
+                // Run game on background thread
+                await Task.Run(() => gameLoop.Run(player, startRoom));
+                
+                // Game ended — close window
+                mainWindow.Close();
+            };
+        }
+
+        base.OnFrameworkInitializationCompleted();
+    }
+}
+```
+
+**Key points:**
+- `MainWindowViewModel` holds all 6 panel ViewModels
+- `AvaloniaDisplayService` wraps the VM and implements `IDisplayService`
+- `AvaloniaInputReader` implements `IInputReader` via TaskCompletionSource pattern
+- Game loop runs on `Task.Run` (background thread)
+- Main thread runs Avalonia message loop (UI thread)
+
+---
+
+## Section 5: AvaloniaDisplayService Architecture
 
 ### 1. Thread Model
 
-Avalonia runs its UI on the main thread via `Dispatcher.UIThread`. The game engine runs on a background thread (same as today). All display method calls from the game thread must be marshalled to the UI thread.
+Avalonia's UI runs on the main thread via `Dispatcher.UIThread`. The game engine runs on a background thread (same as console mode). All display method calls from the game thread must be marshalled to the UI thread.
 
 **Pattern: `Dispatcher.UIThread.InvokeAsync`**
 
@@ -392,6 +572,11 @@ Avalonia runs its UI on the main thread via `Dispatcher.UIThread`. The game engi
 public class AvaloniaDisplayService : IDisplayService
 {
     private readonly MainWindowViewModel _vm;
+
+    public AvaloniaDisplayService(MainWindowViewModel viewModel)
+    {
+        _vm = viewModel;
+    }
 
     // ── Output methods: fire-and-forget marshal to UI thread ──
     public void ShowMessage(string message)
@@ -619,31 +804,88 @@ public partial class MapPanelViewModel : ObservableObject
 
 ---
 
-## Section 5: Migration Phases
+## Section 6: Migration Phases (Revised for Two-Executable Architecture)
 
 | Phase | What | Who | Dependencies | Risk | Notes |
 |-------|------|-----|-------------|------|-------|
-| **P0** | `IDisplayService` split → `IGameDisplay` + `IGameInput` + facade `IDisplayService : IGameDisplay, IGameInput` | Hill | None | **Low** | Pure additive. Zero call-site changes. Add two new files to Dungnz.Models. Existing interface inherits both. |
-| **P1** | Extract `MapRenderer` static class from `SpectreLayoutDisplayService.ShowMap` | Hill | None | **Low** | Shared map logic for both Spectre and Avalonia. Strip Spectre markup → plain text variant. |
-| **P2** | Scaffold `Dungnz.Display.Avalonia` project | Hill | P0 | **Low** | Empty project, csproj, App.axaml, MainWindow.axaml with 6-panel Grid. Builds but renders empty panels. Wire `--avalonia` flag in Program.cs. |
+| **P0** | `IDisplayService` split → `IGameDisplay` + `IGameInput` + facade `IDisplayService : IGameDisplay, IGameInput` | Hill | None | **Low** | ✅ COMPLETE (PR #1399). Pure additive. Zero call-site changes. |
+| **P1** | Extract `MapRenderer` static class from `SpectreLayoutDisplayService.ShowMap` | Hill | None | **Low** | ✅ COMPLETE (PR #1401 P1). Shared map logic. `BuildMarkupMap()` + `BuildPlainTextMap()`. |
+| **P2** | Convert Avalonia project to standalone executable | Hill | P0, P1 | **Low** | Convert to `<OutputType>Exe</OutputType>`. Add `Program.cs` + wire `App.axaml.cs`. Delete commented `--avalonia` code from `Dungnz/Program.cs`. See revised spec Section 3-4. |
 | **P3** | Output-only panels: Stats, Gear, Log, Content | Hill + Barton | P2 | **Medium** | Implement `IGameDisplay` output methods. Stats/Gear use data binding. Content/Log use `ObservableCollection<string>`. Map deferred. |
 | **P4** | Map panel | Hill | P1, P3 | **Medium** | `MapPanelViewModel` + `TextBlock` monospace rendering. Reuses extracted `MapRenderer`. |
 | **P5** | Input panel + `ReadCommandInput` | Hill | P3 | **Medium** | `TextBox` for command entry, Enter to submit, `TaskCompletionSource<string?>` pattern. Game thread can resume. |
 | **P6** | Menu input: all `*AndSelect` methods | Hill + Barton | P3, P5 | **High** | 22 menu-selection methods via `ContentPanelViewModel.ShowMenu<T>`. Keyboard nav (arrow keys + Enter). This is the hardest phase — every menu needs testing. |
 | **P7** | Text entry inputs: `ReadPlayerName`, `ReadSeed` | Hill | P5 | **Low** | Reuse `InputPanel` TextBox with validation. |
 | **P8** | Startup flow: `SelectDifficulty`, `SelectClass`, `ShowStartupMenu` | Hill | P6 | **Medium** | Pre-game-loop menus. May need a dedicated startup view or reuse Content panel. |
-| **P9** | ConsoleDisplayService compatibility verification | Romanoff | P0 | **Low** | Verify `ConsoleDisplayService` still implements `IDisplayService` after split. Run all existing tests. CI must stay green at every phase. |
+| **P9** | ConsoleDisplayService compatibility verification | Romanoff | P0 | **Low** | ✅ COMPLETE. Verify `ConsoleDisplayService` still implements `IDisplayService` after split. Run all existing tests. CI must stay green at every phase. |
 | **P10** | Integration testing + polish | Romanoff + Hill | P6, P7, P8 | **Medium** | Play through full game in Avalonia mode. File bugs. Fix rendering edge cases. |
 | **P11** | CI build update: add `Dungnz.Display.Avalonia` to build matrix | Fitz | P2 | **Low** | Ensure `dotnet build` and `dotnet test` include the new project. |
 
-**Critical path:** P0 → P2 → P3 → P5 → P6 → P10
+**Critical path:** P0 ✅ → P1 ✅ → P2 → P3 → P5 → P6 → P10
 
 **Parallel tracks:**
-- P1 (MapRenderer extraction) can run in parallel with P0-P2
-- P9 (ConsoleDisplayService compat) can run in parallel with P3-P8
+- P9 (ConsoleDisplayService compat) ✅ complete
 - P11 (CI) can run immediately after P2
 
-**Game stays playable throughout.** Spectre mode is the default. `--avalonia` is opt-in. Every PR must leave `dotnet build && dotnet test` green.
+**Game stays playable throughout.** Console/Spectre mode is the default. Avalonia GUI launches with `dotnet run --project Dungnz.Display.Avalonia`.
+
+---
+
+### **Phase 2 (Revised): Convert Avalonia to Standalone Executable**
+
+**Who:** Hill  
+**Dependencies:** P0 ✅, P1 ✅  
+**Estimated effort:** 1-2 hours
+
+**What changed from original spec:**
+- Original spec: Wire `--avalonia` flag in `Dungnz/Program.cs`, add project reference to `Dungnz.csproj`
+- **Revised spec:** Two-executable architecture — no flag, no cross-project reference
+
+**Deliverables:**
+
+1. **Update `Dungnz.Display.Avalonia.csproj`:**
+   - Change `<OutputType>` to `Exe`
+   - Add project references: Engine, Models, Systems, Data, Display
+   - Add logging packages (Serilog)
+   - Add `<Content Include="../Data/**">` to copy JSON config to output
+
+2. **Create `Dungnz.Display.Avalonia/Program.cs`:**
+   - Avalonia bootstrap code (see Section 4 of revised spec)
+   - Configure Serilog with "dungnz-avalonia-.log" prefix
+   - Call `AppBuilder.Configure<App>().UsePlatformDetect().StartWithClassicDesktopLifetime(args)`
+
+3. **Update `Dungnz.Display.Avalonia/App.axaml.cs`:**
+   - Implement `OnFrameworkInitializationCompleted`
+   - Create `MainWindowViewModel` + `AvaloniaDisplayService`
+   - Wire `mainWindow.Opened` to launch game loop on `Task.Run`
+   - **P2 stub:** Default player (Warrior, seed 12345) for smoke test — no startup flow yet
+
+4. **Delete commented Avalonia code from `Dungnz/Program.cs`:**
+   - Remove line 2: `// using Dungnz.Display.Avalonia;  // TODO: ...`
+   - Remove lines 31-42: All commented `--avalonia` flag logic
+
+5. **Update `Dungnz.csproj` comment (line 32):**
+   ```xml
+   <!-- NOTE: Avalonia project is a separate executable — no reference needed (two-exe architecture) -->
+   <!-- <ProjectReference Include="Dungnz.Display.Avalonia/Dungnz.Display.Avalonia.csproj" /> -->
+   ```
+
+6. **Delete or update `AvaloniaAppBuilder.cs`:**
+   - Original helper class is replaced by `Program.cs` + `App.axaml.cs` pattern
+   - Either delete the file or repurpose for shared utilities
+
+**Acceptance Criteria:**
+- `dotnet build` builds both `Dungnz.dll` and `Dungnz.Display.Avalonia.dll` with no errors
+- `dotnet run` launches console mode (Spectre UI, unchanged behavior)
+- `dotnet run --project Dungnz.Display.Avalonia` launches GUI window with 6 empty panels
+- GUI window shows for 1-2 seconds (stub game loop runs), then closes
+- All 2,154 existing tests pass (console mode unchanged)
+
+---
+
+### **Phase 3: Implement Output-Only Display Methods**
+
+**No changes from original spec.** Proceeds as planned.
 
 ---
 
@@ -696,7 +938,33 @@ public partial class MapPanelViewModel : ObservableObject
 - **Separate project isolation.** `Dungnz.Display.Avalonia` has zero reverse dependencies — nothing in Engine/Systems/Models knows about Avalonia. Removing it is delete-directory-and-revert-two-lines.
 - Fitz handles CI integration in P11.
 
-### R6: Spectre Deprecation Timeline
+### R6: Two-Executable Architecture — Code Duplication
+**Risk:** Both `Dungnz/Program.cs` and `Dungnz.Display.Avalonia/Program.cs` need startup logic (logging, data loading, prestige, dungeon generation). Duplicate code increases maintenance burden.  
+**Likelihood:** Medium  
+**Impact:** Low (manageable)  
+**Mitigation:**
+- Extract shared startup to `StartupOrchestrator` helper in `Dungnz.Engine`:
+  ```csharp
+  public static class StartupBootstrap
+  {
+      public static void ConfigureLogging() { /* Serilog setup */ }
+      public static void LoadGameData() { /* EnemyFactory, CraftingSystem, etc. */ }
+      public static (Player, Room) CreateNewGame(int seed, Difficulty diff) { /* ... */ }
+  }
+  ```
+- Both `Program.cs` files call these helpers — keeps code DRY
+- ~30 lines of duplication max; worth the architectural cleanliness
+
+### R7: Two Binaries to Distribute
+**Risk:** Release artifacts now include two executables. Users might be confused about which to run.  
+**Likelihood:** High  
+**Impact:** Low  
+**Mitigation:**
+- **Clear documentation in README:** "For console mode: run `Dungnz`. For GUI: run `Dungnz.Avalonia`."
+- **Future enhancement:** Add a launcher exe that shows dialog: "Console or GUI?" and spawns the chosen binary
+- Not a blocker — users who want GUI will figure it out; console remains default
+
+### R8: Spectre Deprecation Timeline
 **Risk:** Maintaining two full `IDisplayService` implementations (Spectre + Avalonia) doubles the display maintenance burden long-term.  
 **Likelihood:** High (if migration succeeds)  
 **Impact:** Medium  
@@ -704,6 +972,23 @@ public partial class MapPanelViewModel : ObservableObject
 - No deprecation until Avalonia achieves feature parity AND passes a full play-through.
 - Target: Spectre becomes `--classic` fallback (same pattern as Terminal.Gui experiment).
 - ConsoleDisplayService (headless/CI) is permanent — it's 100 lines and never changes.
+
+---
+
+## Rollback Plan
+
+If Avalonia migration fails or Anthony decides to abandon:
+
+1. Delete `Dungnz.Display.Avalonia/` directory entirely
+2. Remove `<Project Path="Dungnz.Display.Avalonia/...">` from `Dungnz.slnx`
+3. **No changes needed to `Dungnz.csproj`** (it never referenced the Avalonia project)
+4. **No changes needed to `Dungnz/Program.cs`** (all commented Avalonia code deleted in P2)
+5. No changes to Engine/Systems/Models (all game logic is Avalonia-agnostic)
+6. MapRenderer stays in Models (useful for both Spectre and future display implementations)
+
+**Cost of rollback:** Delete 1 directory, revert 1 line in solution file. **< 5 minutes.**
+
+**This is the key benefit of two-executable architecture** — zero coupling, zero contamination of the console codebase.
 
 ---
 

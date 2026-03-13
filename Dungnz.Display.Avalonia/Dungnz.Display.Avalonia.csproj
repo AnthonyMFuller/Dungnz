@@ -1,0 +1,50 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <WarningsAsErrors>CS1591;CS1573;CS1712</WarningsAsErrors>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Dungnz.Models/Dungnz.Models.csproj" />
+    <ProjectReference Include="../Dungnz.Data/Dungnz.Data.csproj" />
+    <ProjectReference Include="../Dungnz.Systems/Dungnz.Systems.csproj" />
+    <ProjectReference Include="../Dungnz.Engine/Dungnz.Engine.csproj" />
+    <ProjectReference Include="../Dungnz.Display/Dungnz.Display.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Avalonia 11.x — stable release line -->
+    <PackageReference Include="Avalonia" Version="11.3.2" />
+    <PackageReference Include="Avalonia.Desktop" Version="11.3.2" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.2" />
+    <!-- CommunityToolkit.Mvvm for ObservableObject + source generators -->
+    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <!-- Logging (same as console app) -->
+    <PackageReference Include="Microsoft.Extensions.Logging.Console" Version="10.0.3" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <!-- Copy JSON config to output directory -->
+    <Content Include="../Data/**" Exclude="../Data/**/*.cs">
+      <Link>Data/%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Dungnz.Tests</_Parameter1>
+    </AssemblyAttribute>
+    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+      <_Parameter1>Dungnz</_Parameter1>
+    </AssemblyAttribute>
+  </ItemGroup>
+
+</Project>
