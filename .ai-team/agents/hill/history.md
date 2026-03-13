@@ -2013,3 +2013,155 @@ Dungnz.csproj (Console Exe)          Dungnz.Display.Avalonia.csproj (GUI Exe)
 **Key Pattern Reinforced:** `Player` uses object initializer syntax (`new Player { Name = "..." }`), not constructor parameters. `SetHPDirect` is `internal` (requires `InternalsVisibleTo`).
 
 **Next:** Phase 3 — implement output-only display methods (Stats, Gear, Log, Content panels).
+
+## Learnings — Avalonia P3 Output Panel Implementation (2025-01-12)
+
+**Branch:** `squad/avalonia-p3-output-panels`
+**PR:** #1403 — `feat(avalonia): P3 output panel implementation`
+
+### What Was Implemented
+
+Implemented all 31 IGameDisplay output methods in `AvaloniaDisplayService` for the Avalonia GUI migration (Phase 3). This brings the Avalonia UI to life by wiring all game output to the 5-panel layout.
+
+**Files Modified:**
+- `Dungnz.Display.Avalonia/AvaloniaDisplayService.cs` — Refactored from stub to full implementation (~830 LOC)
+- `Dungnz.Display.Avalonia/ViewModels/StatsPanelViewModel.cs` — Added `Update()` and `UpdateCombat()` methods
+- `Dungnz.Display.Avalonia/ViewModels/GearPanelViewModel.cs` — Added `Update()` and `ShowEnemyStats()` methods
+- `Dungnz.Display.Avalonia/ViewModels/ContentPanelViewModel.cs` — Added `SetContent()`, `Clear()`, buffer management
+- `Dungnz.Display.Avalonia/ViewModels/LogPanelViewModel.cs` — Added `AppendLog()` with classification and timestamp
+- `Dungnz.Display.Avalonia/ViewModels/MapPanelViewModel.cs` — Added `Update()` method wiring `MapRenderer.BuildPlainTextMap()`
+- `Dungnz.Display.Avalonia/App.axaml.cs` — Wire MainWindowViewModel to AvaloniaDisplayService constructor
+
+### Architecture Patterns
+
+**Thread Model:**
+- All output methods follow `Dispatcher.UIThread.InvokeAsync(() => _vm.Panel.Method())` pattern
+- Fire-and-forget from game thread (background) to UI thread (main)
+- No blocking, no PauseAndRun pattern needed (unlike Spectre which had AnsiConsole.Prompt exclusivity issues)
+
+**Cached State (mirrored from SpectreLayoutDisplayService):**
+```csharp
+private Player? _cachedPlayer;
+private Room? _cachedRoom;
+private int _currentFloor = 1;
+private Enemy? _cachedCombatEnemy;
+private IReadOnlyList<ActiveEffect> _cachedEnemyEffects = Array.Empty<ActiveEffect>();
+private IReadOnlyList<(string name, int turnsRemaining)> _cachedCooldowns = [];
+private bool _lowHpWarningIssued;
+```
+
+**Combat Mode Panel Switching:**
+- `ShowRoom()`: Clears `_cachedCombatEnemy`, restores Gear panel to player equipment
+- `ShowCombatStatus()`: Sets `_cachedCombatEnemy`, switches Gear panel to enemy stats
+- Stats panel always shows player (exploration and combat)
+- Gear panel context-switches: player gear in exploration, enemy stats in combat
+
+**Plain Text Rendering:**
+- NO Spectre markup (`[red]`, `[bold]`, etc.) — raw text only
+- HP bars: `BuildPlainHpBar()` returns `"████░░░░"` (filled + empty blocks)
+- ANSI stripping: `StripAnsi()` uses Regex `@"\x1b\[[0-9;]*m"` to remove color codes from incoming strings
+- Icons: Same Unicode symbols as Spectre (⚔ ⛨ 🧪 💍 ⚗) but no color/style markup
+
+**Log Panel Classification:**
+- `AppendLog(string message, string type)` where `type` ∈ `{"info", "error", "combat", "loot"}`
+- Combat messages auto-classified: "Critical" → 💥, "Healed" → 💚, "Poison" → ☠, "Burn" → 🔥, default → ⚔
+- Timestamp format: `HH:mm` (24-hour)
+- Buffer: 50 max history, display last 12 in UI
+
+### Helper Methods Added
+
+**Display Helpers (static):**
+- `StripAnsi(string text)` — Strip ANSI escape codes before rendering
+- `BuildPlainHpBar(int current, int max, int width = 10)` — Plain text HP bar
+- `ItemTypeIcon(ItemType)` — Icon for item types
+- `SlotIcon(ArmorSlot)` — Icon for armor slots
+- `ItemIcon(Item)` — Delegates to SlotIcon for armor, ItemTypeIcon for others
+- `PrimaryStatLabel(Item)` — First non-zero stat as display string (e.g., "Attack +5")
+- `GetRoomDisplayName(Room)` — Friendly room type names (e.g., "Dark Chamber")
+- `GetEquippedInSameSlot(Item candidate, Player)` — Returns currently equipped item in same slot for comparison
+- `FormatDelta(int delta)` — Formats stat deltas as "+X" or "-X"
+
+### Key Property Name Corrections
+
+Fixed three property name mismatches vs. actual model definitions:
+- `PrestigeData.Wins` → `PrestigeData.TotalWins`
+- `DungeonVariant.DangerLevel` → removed (property doesn't exist)
+- `Enemy.XPReward` → `Enemy.XPValue`
+
+### All 31 IGameDisplay Methods Implemented
+
+**Title / Narrative:**
+- `ShowTitle()` — ASCII art banner
+- `ShowEnhancedTitle()` — delegates to ShowTitle()
+- `ShowIntroNarrative()` — lore text
+- `ShowPrestigeInfo(PrestigeData)` — prestige level + bonuses
+- `ShowFloorBanner(int, int, DungeonVariant)` — floor transition banner
+
+**Room / Map:**
+- `ShowRoom(Room)` — Room description + exits + enemies + items + special hints; updates Map+Stats+Gear panels
+- `ShowMap(Room, int)` — Wires `MapRenderer.BuildPlainTextMap()`
+
+**Combat Output:**
+- `ShowCombat(string)` — Clear + combat headline
+- `ShowCombatStatus(Player, Enemy, effects, effects)` — Update Stats + Gear panels, issue low HP warning at <30%
+- `ShowCombatMessage(string)` — Indented message + log
+- `ShowColoredCombatMessage(string, string)` — Same as ShowCombatMessage (ignore color)
+- `ShowCombatStart(Enemy)` — Clear + "⚔ ─── COMBAT ─── ⚔" + enemy name
+- `ShowCombatEntryFlags(Enemy)` — Elite/Enraged badges
+- `ShowEnemyArt(Enemy)` — ASCII art lines
+- `ShowEnemyDetail(Enemy)` — HP bar + stats + XP
+- `ShowCombatHistory()` — Notify user (log panel already shows scrollback)
+
+**Player / Item Display:**
+- `ShowPlayerStats(Player)` — Update Stats panel; in combat also refresh Gear enemy panel
+- `ShowInventory(Player)` — Inventory list with grouping, slots, weight
+- `ShowEquipment(Player)` — 10 equipment slots + set bonuses
+- `ShowEquipmentComparison(Player, Item?, Item)` — Comparison with stat deltas
+- `ShowItemDetail(Item)` — Full item stats card
+- `ShowLootDrop(Item, Player, bool)` — Loot card with comparison
+- `ShowGoldPickup(int, int)` — Gold pickup message
+- `ShowItemPickup(Item, int, int, int, int)` — Pickup confirmation with slot/weight status
+
+**Shop / Craft Display:**
+- `ShowShop(stock, int)` — Merchant inventory
+- `ShowSellMenu(items, int)` — Sell list
+- `ShowCraftRecipe(string, Item, ingredients)` — Recipe card with ingredient checks
+
+**General Output:**
+- `ShowMessage(string)` — Append message + log (info type)
+- `ShowError(string)` — "✗ message" + log (error type)
+- `ShowHelp()` — Command reference
+- `ShowCommandPrompt(Player?)` — Deferred to P5
+- `ShowColoredMessage(string, string)` — Same as ShowMessage (ignore color)
+- `ShowColoredStat(string, string, string)` — "label    value" (ignore color)
+- `ShowLevelUpChoice(Player)` — Level up menu display
+
+**End Screens:**
+- `ShowVictory(Player, int, RunStats)` — Victory summary
+- `ShowGameOver(Player, string?, RunStats)` — Game over summary
+
+**Refresh / HUD:**
+- `RefreshDisplay(Player, Room, int)` — Update all panels atomically
+- `UpdateCooldownDisplay(cooldowns)` — Refresh Stats panel with cooldown state
+
+### Testing
+
+- `dotnet build Dungnz.slnx` — 0 errors (1 pre-existing XML doc warning)
+- `dotnet test` — 2,154 tests passed, 4 skipped
+- `dotnet build Dungnz.Display.Avalonia/` — 0 errors
+
+### Next Steps
+
+**P4:** Map panel polish (deferred — basic map already wired via MapRenderer.BuildPlainTextMap)
+**P5:** Input panel and ReadCommandInput (async text input via dialog)
+**P6–P8:** All IGameInput menu methods (difficulty selection, class selection, combat menus, inventory selection, shop/craft menus)
+
+### Key Design Decision: Plain Text vs. Rich UI
+
+For P3, all output is plain text (no colors, no styles). This unblocks P4-P8 work. A future polish phase (P9+) can add:
+- Color-coded HP bars (green/yellow/red)
+- Tier-colored item names
+- Styled panels (borders, gradients)
+- Rich text combat log with inline icons
+
+The plain text foundation is sufficient to validate all 31 output methods and test the full game loop.
