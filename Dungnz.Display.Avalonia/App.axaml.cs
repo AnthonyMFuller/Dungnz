@@ -32,7 +32,7 @@ public class App : Application
             
             // Create main window and ViewModel
             var mainVM = new MainWindowViewModel();
-            var displayService = new AvaloniaDisplayService();
+            var displayService = new AvaloniaDisplayService(mainVM);
             
             var mainWindow = new MainWindow
             {
