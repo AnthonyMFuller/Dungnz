@@ -2165,3 +2165,59 @@ For P3, all output is plain text (no colors, no styles). This unblocks P4-P8 wor
 - Rich text combat log with inline icons
 
 The plain text foundation is sufficient to validate all 31 output methods and test the full game loop.
+
+---
+
+## Avalonia P5 — Input Panel + ReadCommandInput (2025-07-17)
+
+**PR:** #1405 | **Branch:** `squad/avalonia-p5-input-panel`
+
+### What Was Implemented
+
+Implemented the TCS-based input bridge between the synchronous game thread and the Avalonia UI thread. This is the critical-path item that enables the game to actually accept player commands.
+
+**Files changed (6):**
+
+| File | Change |
+|------|--------|
+| `AvaloniaInputReader.cs` | **New.** `IInputReader` implementation using `TaskCompletionSource<string?>` to bridge `ReadLine()` to Avalonia TextBox. `ReadKey()` returns null, `IsInteractive` returns false (P6 will enable). |
+| `AvaloniaDisplayService.cs` | Replaced `ReadCommandInput() => null` stub with full TCS implementation. Subscribes/unsubscribes to `InputSubmitted` per-call. |
+| `InputPanelViewModel.cs` | Added `IsInputEnabled` (observable), `InputSubmitted` event, `Submit()` method. Submit trims text, clears, disables, then fires event. |
+| `InputPanel.axaml` | Added `x:Name="CommandInput"`, `IsEnabled="{Binding IsInputEnabled}"` binding. |
+| `InputPanel.axaml.cs` | Enter key handling via tunnel `KeyDown` handler. Auto-focus via `PropertyChanged` on `IsEnabledProperty`. |
+| `App.axaml.cs` | Replaced `ConsoleInputReader()` temp stub with `AvaloniaInputReader(mainVM.Input)`. |
+
+### Architecture: TCS Pattern
+
+```
+Game Thread                          UI Thread
+───────────                          ─────────
+ReadCommandInput() called
+  → creates new TCS
+  → dispatches to UI: enable input   → TextBox becomes enabled, focused
+  → blocks on TCS.Task.Result
+                                     User types "go north", presses Enter
+                                     → TCS.TrySetResult("go north")
+ReadCommandInput() unblocks ←────────
+  → returns "go north"               → TextBox cleared, disabled
+```
+
+**Key detail:** `TaskCreationOptions.RunContinuationsAsynchronously` prevents the continuation from running on the UI thread (which would deadlock).
+
+### Design Decisions
+
+1. **Two consumers, one event** — Both `AvaloniaInputReader.ReadLine()` and `AvaloniaDisplayService.ReadCommandInput()` use `InputPanelViewModel.InputSubmitted`. Safe because game thread is single-threaded.
+2. **Tunnel handler for Enter** — Used `RoutingStrategies.Tunnel` so the handler fires before the TextBox processes Enter (which would insert a newline in multiline mode).
+3. **`IsInteractive = false`** — Forces numbered text prompts instead of arrow-key menus. P6 will flip to `true` when key navigation is ready.
+4. **Build error fix** — Initial approach used `GetObservable(IsEnabledProperty)` which was ambiguous between `AvaloniaObjectExtensions` and `InteractiveExtensions`. Switched to `PropertyChanged` event handler.
+
+### Validation
+
+- ✅ `dotnet build Dungnz.slnx --no-incremental` — 0 errors
+- ✅ `dotnet test` — 2,154 passed, 0 failed, 4 skipped
+- ✅ Only `Dungnz.Display.Avalonia/` files touched
+
+### Next Steps
+
+**P6:** Menu implementations — selection prompts for difficulty, class, combat, inventory, shop menus. Will use overlay dialogs or in-panel selection lists.
+**P7-P8:** Remaining IGameInput stubs (shrine menus, skill tree, confirm dialogs, etc.).
