@@ -414,6 +414,8 @@ Armor crafting recipes are now available for all equipment slots (Head, Shoulder
 
 Dungnz uses [Spectre.Console](https://spectreconsole.net/) for all rendering — rich panels, tables, progress bars, and arrow-key selection menus. Colour and styling are applied via Spectre markup tags.
 
+**Avalonia Migration (In Progress):** A cross-platform GUI using Avalonia UI is being developed alongside the Spectre terminal UI. Core map rendering logic has been extracted to `MapRenderer` (in `Models/`) to enable sharing between both display implementations. The Avalonia project scaffold exists at `Dungnz.Display.Avalonia/` but is not yet functional.
+
 ### What's colour-coded
 
 | Element | Colour |

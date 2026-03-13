@@ -1,0 +1,10 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:vm="using:Dungnz.Display.Avalonia.ViewModels"
+             x:Class="Dungnz.Display.Avalonia.Views.Panels.InputPanel"
+             x:DataType="vm:InputPanelViewModel">
+  <StackPanel>
+    <TextBlock Text="{Binding PromptText}" FontFamily="Consolas,Courier New,monospace" Margin="0,0,0,5" />
+    <TextBox Text="{Binding CommandText}" Watermark="Enter command..." FontFamily="Consolas,Courier New,monospace" />
+  </StackPanel>
+</UserControl>

@@ -1,4 +1,5 @@
 using Dungnz.Display;
+// using Dungnz.Display.Avalonia;  // TODO: P3 — uncomment when Avalonia build issues resolved
 using Dungnz.Display.Spectre;
 using Dungnz.Engine;
 using Dungnz.Models;
@@ -26,6 +27,19 @@ var logger = loggerFactory.CreateLogger<Program>();
 logger.LogInformation("Dungnz starting...");
 
 var prestige = PrestigeSystem.Load();
+
+// TODO: P3 — re-enable --avalonia flag once build issues resolved
+// Check for --avalonia flag
+// var useAvalonia = args.Contains("--avalonia");
+
+// if (useAvalonia)
+// {
+//     logger.LogInformation("Launching Avalonia UI...");
+//     var app = AvaloniaAppBuilder.Configure(args);
+//     app.RunGame();
+//     // TODO: P3-P8 — wire game loop to run on background thread with AvaloniaDisplayService
+//     return;
+// }
 
 var inputReader = new ConsoleInputReader();
 SpectreLayoutDisplayService? spectreService = null;

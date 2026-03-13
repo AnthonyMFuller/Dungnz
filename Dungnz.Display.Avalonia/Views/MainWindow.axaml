@@ -1,0 +1,44 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:Dungnz.Display.Avalonia.ViewModels"
+        xmlns:panels="using:Dungnz.Display.Avalonia.Views.Panels"
+        x:Class="Dungnz.Display.Avalonia.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="Dungnz — Dungeon Crawler"
+        Width="1200" Height="800"
+        Background="#1a1a1a">
+
+  <Grid RowDefinitions="0.2*,0.5*,0.3*" ColumnDefinitions="*">
+    
+    <!-- Top Row: Map (60%) | Stats (40%) -->
+    <Grid Grid.Row="0" ColumnDefinitions="0.6*,0.4*" Margin="5">
+      <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Padding="5" Margin="0,0,5,0">
+        <panels:MapPanel DataContext="{Binding Map}" />
+      </Border>
+      <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Padding="5" Margin="5,0,0,0">
+        <panels:StatsPanel DataContext="{Binding Stats}" />
+      </Border>
+    </Grid>
+
+    <!-- Middle Row: Content (70%) | Gear (30%) -->
+    <Grid Grid.Row="1" ColumnDefinitions="0.7*,0.3*" Margin="5">
+      <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Padding="5" Margin="0,0,5,0">
+        <panels:ContentPanel DataContext="{Binding Content}" />
+      </Border>
+      <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Padding="5" Margin="5,0,0,0">
+        <panels:GearPanel DataContext="{Binding Gear}" />
+      </Border>
+    </Grid>
+
+    <!-- Bottom Row: Log (70%) | Input (30%) -->
+    <Grid Grid.Row="2" ColumnDefinitions="0.7*,0.3*" Margin="5">
+      <Border Grid.Column="0" BorderBrush="Gray" BorderThickness="1" Padding="5" Margin="0,0,5,0">
+        <panels:LogPanel DataContext="{Binding Log}" />
+      </Border>
+      <Border Grid.Column="1" BorderBrush="Gray" BorderThickness="1" Padding="5" Margin="5,0,0,0">
+        <panels:InputPanel DataContext="{Binding Input}" />
+      </Border>
+    </Grid>
+
+  </Grid>
+</Window>
