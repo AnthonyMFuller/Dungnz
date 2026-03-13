@@ -6,1278 +6,73 @@
 **Requested by:** Boss
 **Team:** Coulson (Lead), Hill (C# Dev), Barton (Systems Dev), Romanoff (Tester), Scribe, Ralph
 
-## Learnings
+## Core Context
 
-### 2026-04-08 — Menu Input Bug Fixes (#1129–#1135)
+**Summarized:** Entries from 2026-02-20 through 2026-02-23 (archived to history-archive.md)
 
-**PR:** #1142 — `fix: Escape key handling, remove Console.ReadLine fallback, null key guard`
-**Branch:** `squad/1129-1130-1133-1135-menu-fixes`
+**v1 Project Scaffold (2026-02-20):**
+- Created .NET 9 console project with Models/Engine/Systems/Display layer separation
+- Models: Player (9 fields), Enemy (abstract base), Item (7 fields), Room (exits Dictionary<Direction,Room>), LootTable stub, all enums (Direction, CombatResult, UseResult, LootResult, ItemType)
+- DisplayService created as sole Console I/O owner with 11 methods using Unicode box-drawing and emoji
+- DungeonGenerator: procedural 5×4 room grid with BFS path validation, ~60% enemy placement, ~30% item placement
+- GameLoop + CommandParser: 10 command types (Go/Look/Examine/Take/Use/Inventory/Stats/Help/Quit/Unknown), case-insensitive with shortcuts
 
-**Issues addressed:**
+**v2 Phase 0 Refactors (2026-02-20):**
+- IDisplayService extracted: ConsoleDisplayService renamed, GameLoop/CombatEngine constructors updated to accept IDisplayService
+- TestDisplayService created as composition-based headless test double (not inheritance-based)
+- Player Encapsulation Refactor (PR #26): Private setters, TakeDamage/Heal/ModifyAttack/LevelUp public methods, Math.Clamp guards, IReadOnlyList<Item> for inventory
+- Dead code removal: InventoryManager class removed (responsibility merged into Player/Equipment)
+- Config-Driven Balance System (PR #31): appsettings.json for enemy/item stats, configurable spawn rates
+- Equipment Slot System (PR #34): EquippedWeapon, EquippedArmor, EquippedAccessory, ArmorSlot enum, GetArmorSlotItem()
 
-#### #1129 — ReadCommandInput null falls through to Console.ReadLine
-- `GameLoop.cs` line 251: When `ReadCommandInput()` returned null (empty Enter), it fell through to `_input.ReadLine()` which called `Console.ReadLine()` OUTSIDE the Spectre Live layout, corrupting the terminal
-- **Fix:** Changed `var input = _display.ReadCommandInput() ?? _input.ReadLine() ?? string.Empty;` to `var input = _display.ReadCommandInput() ?? string.Empty;` — if ReadCommandInput returns null, treat it as empty string, no fallback
+**v2 v3 Planning Contributions (2026-02-20):**
+- v2 C# implementation proposal: Save/load via System.Text.Json with Guid hydration/dehydration, record types for DTOs, file-scoped namespaces, C# 12 collection expressions
+- v3 session: Player.cs 273 LOC SRP violation, Equipment/Inventory fragmentation, zero integration tests flagged as blockers
+- Pre-v3 encapsulation audit: Player strong encapsulation; Enemy/Room inconsistent (public setters without validation)
+- Save/load architecture: two-pass hydration (create all Rooms, then wire Exits), BFS traversal for dehydration
 
-#### #1130 — No Escape key handling in ContentPanelMenu methods
-- `SpectreLayoutDisplayService.Input.cs`: Three menu methods had no Escape key handling — pressing Escape in a menu consumed keys but loop never exited
-- **Fixes:**
-  - `ContentPanelMenuNullable<T>` (line 599): Added `case ConsoleKey.Escape:` and `case ConsoleKey.Q:` returning `null`
-  - `ContentPanelMenu<T>` (line 564): Added `case ConsoleKey.Escape:` and `case ConsoleKey.Q:` returning `items[selected].Value` (non-nullable, so return current item)
-  - `ShowSkillTreeMenu` (line 438): Added `case ConsoleKey.Escape:` and `case ConsoleKey.Q:` returning `null`
+**UI/UX Phase 0 Infrastructure (PR #298, 2026-02-22):**
+- Added RenderBar() private static helper for HP/MP/XP bars (filled `█` + empty `░` blocks with ANSI color)
+- Added ANSI-safe padding helpers: VisibleLength(), PadRightVisible(), PadLeftVisible() (strips ANSI before measuring)
+- Fixed ShowLootDrop/ShowInventory alignment bugs using PadRightVisible
+- Updated ShowCombatStatus signature to include playerEffects + enemyEffects (IReadOnlyList<ActiveEffect>)
+- Added 7 new IDisplayService stubs for Phases 1–3 display work
 
-#### #1133 — PauseAndRun uses Thread.Sleep(100) instead of synchronization
-- `SpectreLayoutDisplayService.Input.cs` line 531: Used `Thread.Sleep(100)` as a brief timing buffer after signaling pause event
-- **Assessment:** This is a timing buffer, not a correctness mechanism — the pause signal is event-based via `_pauseLiveEvent.Set()`
-- **Fix:** Documented purpose with comment: "Brief wait to allow Live loop to observe pause signal (#1133) / Thread.Sleep is acceptable here as it's a timing buffer, not correctness"
+**Phase 1 Loot Display + Phase 2 Display (PRs #228, #230, #231, 2026-02-22):**
+- Tier-colored item names (ColorizeItemName pattern) across ShowLootDrop, ShowInventory, ShowShop
+- ShowInventory grouping by item type (3.1), ShowLootDrop signature change with weight warning (3.2–3.4)
+- Phase 4 ShowMap overhaul (PRs #239, #243, #248): BFS-based ASCII map with dynamic legend, box-drawing connectors, compass rose
 
-#### #1135 — ContentPanelMenu returns first item on null ReadKey
-- `SpectreLayoutDisplayService.Input.cs` line 600 / 564: If `AnsiConsole.Console.Input.ReadKey()` returned null (can happen in some terminals), `if (key == null) return items[selected].Value;` would return first item instead of handling gracefully
-- **Fix:** Changed to `if (key == null) continue;` in both `ContentPanelMenu<T>` and `ContentPanelMenuNullable<T>` — skip null keys, keep loop running
+**Phase 1 Display Implementations (PR #304, 2026-02-23):**
+- Combat start display, floor banner, victory/gameover screens wired to IDisplayService methods
+- Intro display design: ShowEnhancedTitle, ShowIntroNarrative, ShowNamePrompt, ShowDifficultySelection, ShowClassSelection
+- Intro seed input repositioned post-class selection (silent by default)
+- ASCII art research for enemies: AsciiArtRegistry class, ShowCombatStart(Enemy) integration point, max 8 lines × 36 chars
 
-**Build & Test Status:**
-- ✅ `dotnet build --nologo` — 0 errors, 0 warnings
-- ✅ `dotnet test --nologo -v q` — 1406 passed, 0 failed
-
-**Key Learnings:**
-- `Console.ReadLine()` breaks Spectre.Console's Live display by writing/reading outside the managed terminal context
-- Escape key (and Q for terminals that don't reliably send Escape) should always be handled in menu loops as a cancel/exit option
-- Nullable vs. non-nullable menu methods: nullable can return null on Escape, non-nullable should return current selection
-- `ReadKey()` can return null in non-interactive or redirected input scenarios — always guard with null check before accessing `.Key`
-
----
-
-### 2026-03-05 — TUI Usability Fixes (#1036–#1044)
-
-**PR:** #1045 — `fix: TUI usability — contrast, auto-populating panels, color system, skill tree`
-**Branch:** `squad/1036-tui-usability-fixes`
-
-**Issues addressed (all 9 — triaged by Coulson):**
-
-#### #1036 — No ColorScheme on any TUI panel
-- `TuiLayout.cs`: Defined 5 high-contrast `ColorScheme` objects (normal/map/stats/log/input)
-- Applied to all panels: bright green on black for Map, bright cyan on black for Stats, white on blue for content, bright yellow on black for command input
-- Used `Terminal.Gui.Color` enum values — no `BrightWhite` exists in v1.19, used `Color.White` instead
-- Added `MakeAttr()` private helper with null-guard on `Application.Driver` so tests (which don't call `Application.Init()`) don't NullReferenceException
-
-#### #1042 — SetMap/SetStats destroy and recreate child views
-- `TuiLayout.cs`: Added private `_mapView` and `_statsView` TextViews created once in constructor
-- `SetMap()` and `SetStats()` now just update `.Text` property — no `RemoveAll()` + `new TextView` churn
-
-#### #1038 + #1039 — Map and Stats panels blank on room entry
-- `TerminalGuiDisplayService.cs`: Added `_player`, `_currentRoom`, `_currentFloor` fields
-- `ShowPlayerStats(player)` caches `_player`; `ShowMap(room, floor)` caches `_currentRoom` / `_currentFloor`
-- `ShowRoom(room)` now calls `BuildAsciiMap` and `_layout.SetMap()` automatically after rendering the room description; also calls `BuildStatsText(_player)` and `_layout.SetStats()` if player is cached
-- Extracted `BuildStatsText(Player)` as a private static helper (reused by both `ShowPlayerStats` and the auto-refresh in `ShowRoom`)
-
-#### #1037 — TuiColorMapper never called, ShowColored* ignores color
-- `ShowColoredMessage(message, color)`: Now calls `TuiColorMapper.MapAnsiToTuiColor(color)` and maps the result to a log type (error/loot/info) — message appears in the log with appropriate prefix icon
-- `ShowColoredCombatMessage(message, color)`: Routes to log with type `"combat"` so it gets the ⚔ prefix
-- Terminal.Gui TextViews still don't support inline ANSI; color distinction is via log message type
-
-#### #1041 — BuildColoredHpBar/MpBar dead code (barChar computed but unused)
-- Fixed `BuildColoredHpBar`: `barChar` is now a `char` and `new string(barChar, filled)` uses it properly
-- Fixed `BuildColoredMpBar`: same pattern — bar density reflects mana percentage (`█`/`▓`/`▒`)
-
-#### #1040 — ShowSkillTreeMenu returns null unconditionally
-- Implemented using `TuiMenuDialog<Skill?>`: lists all `Skill` enum values not yet unlocked by the player, plus a Cancel option. Returns selected skill or null.
-
-#### #1043 — Race condition: InvokeOnUiThread drops early calls
-- `GameThreadBridge.cs`: Added `static ManualResetEventSlim _uiReady`
-- Added `static SetUiReady()` method that sets the event
-- `InvokeOnUiThread()` now waits up to 5 s for `_uiReady` when `MainLoop` is null before falling through
-- `Program.cs`: `layout.MainWindow.Loaded += () => GameThreadBridge.SetUiReady()` — fires after first Application.Run tick
-
-#### #1044 — TUI-ARCHITECTURE.md describes non-existent API
-- Rewrote `docs/TUI-ARCHITECTURE.md` to match actual implementation:
-  - Replaced `ConcurrentQueue`/`FlushMessages`/`EnqueueCommand` fiction with `BlockingCollection`, `InvokeOnUiThread`, `Application.MainLoop.Invoke()`
-  - Added `ManualResetEventSlim` / `SetUiReady` documentation
-  - Added panel color table and auto-population notes
-  - Corrected initialization sequence (5 steps → 9 steps)
-
-**Build & Test Status:**
-- ✅ `dotnet build --nologo -v q` — 0 errors, 0 warnings
-- ✅ `dotnet test --nologo` — 1785/1785 passing
-
-**Key Learnings:**
-- Terminal.Gui v1.19 `Color` enum: no `BrightWhite` — use `Color.White`. Available bright variants: BrightBlue, BrightCyan, BrightGreen, BrightMagenta, BrightRed, BrightYellow
-- `Application.Driver` is null before `Application.Init()` — guard with null-check when used in constructors that tests instantiate directly
-- `new string(char, count)` not `new string(string, count)` — C# string repeat takes a `char`, not a `string`
-- `Terminal.Gui.Attribute` conflicts with `System.Attribute` — use fully qualified name `Terminal.Gui.Attribute` when both namespaces are in scope
+**Interactive Menus + UI Consistency (2026-02-22–27):**
+- feat/interactive-menus: Arrow-key navigation for all menu prompts (commit a8dcb52)
+- fix/ui-consistency-class-card (PR #595): Warrior icon standardization, Rogue indentation, ShowLootDrop name padding
+- squad/ui-consistency-fixes (PR #600): Full Unicode icon audit — all icons standardized to narrow symbols (EAW=N); IL() helper replaces EL() since all icons are 1-column
+- Symbol standards: ⚔ Weapon, ⛨ Chest/Armor/Off-Hand, ⛑ Head, ◈ Shoulders, ☞ Hands, ≡ Legs, ⤓ Feet, ↩ Back, ✦ Accessory/Combo, ★ Level, ⚗ Consumable, ✶ CraftingMaterial
 
 
 
-**PRs:** #965, #966, #967
 
-**Issues addressed:**
 
-#### #928 — GameLoop null! field initialization risk (PR #965)
-**Branch:** `squad/928-gameloop-null-safety`
-- `_player`, `_currentRoom`, `_stats`, `_context` declared with `null!` and only set in `Run()`
-- Constructor accepted `display` and `combat` without null-checking despite non-nullable type
-- `ExitRun()` compared `_context != null!` — syntactically confusing (null-forgiving in comparison)
-- **Fix:** Added `ArgumentNullException.ThrowIfNull()` for `display`/`combat` in constructor; added same for `state.Player`/`state.CurrentRoom` in `Run(GameState)`; replaced `null!` comparison with `is not null`
 
-#### #929 — Silent exception swallowing in PrestigeSystem (PR #966)
-**Branch:** `squad/929-fix-silent-exceptions`
-- `PrestigeSystem.Load()` used bare `catch { return new PrestigeData(); }` — no trace, no log
-- `PrestigeSystem.Save()` used `catch { /* silently fail */ }` — prestige data loss with zero feedback
-- `SaveSystem.SaveGame()` was already correct (re-throws after cleanup); `LoadGame()` already wraps as `InvalidDataException`
-- **Fix:** Both catch blocks now capture `Exception ex` and call `Trace.TraceError()` with context+message. Non-crashing by design, but now observable via any configured trace listener
 
-#### #930 — Console.WriteLine in Systems layer (PR #967)
-**Branch:** `squad/930-remove-console-in-systems`
-- `PrestigeSystem.Load()` called `Console.WriteLine()` for a version mismatch warning — the only offending Console.* call in Engine/ and Systems/
-- **Fix:** Replaced with `Trace.TraceWarning()`. PrestigeSystem is static with no DI, so Trace is the right diagnostic channel
 
-**Key Learnings:**
-- Static systems without DI should use `System.Diagnostics.Trace` for diagnostics, not `Console.*`
-- `null!` (null-forgiving) is for suppressing nullable warnings — never use it in comparisons; use `is not null` instead
-- Bare `catch { }` is always wrong unless intentional; always capture `Exception ex` and trace/log it
 
-### 2026-03-04 — Bug and Quality Scan (#868)
 
-**Task:** Thorough scan of Engine/, Models/, and Program.cs for bugs and quality risks.
 
-**Findings (20 issues identified):**
 
-| Severity | Count | Key Issues |
-|----------|-------|-----------|
-| HIGH | 2 | Unvalidated fuzzy-match argument; Duplicated flee-state reset code |
-| MED | 7 | Null checks, edge cases, parameter typo, hardcoded dimensions, bounds checks |
-| LOW | 11 | Resource cleanup, magic numbers, type-system confidence, event handler leaks |
-
-**Top Patterns to Address:**
-
-1. **Duplicate flee-state reset** (CombatEngine.cs lines 436–490)
-   - Nearly identical 50-line code blocks; prone to divergence
-   - Fix: Extract `ResetFleeState(Player, Enemy)` helper
-
-2. **Hardcoded magic numbers** (DungeonGenerator.cs, GameLoop.cs)
-   - `width = 5, height = 4` and `FinalFloor = 8` scattered across logic
-   - Fix: Extract to `const` fields; centralize floor-scaling rules
-
-3. **Missing bounds checks** (DungeonGenerator.cs lines 193, 287)
-   - `eligibleRooms[specialIdx++]` without guard; room description pool access
-   - Fix: Guard before indexing; fallback descriptions
-
-4. **Mutable collection exposure** (Room.cs line 101)
-   - `Items` is public List; external code can mutate during iteration
-   - Fix: Return `IReadOnlyList<Item>` or expose copy
-
-5. **Event handler memory leak vector**
-   - `OnHealthChanged?.Invoke()` never unsubscribed
-   - Fix: Document event lifetime; consider weak-event pattern
-
-**Files to Review for Fixes:**
-- Engine/CombatEngine.cs (duplicate code, event leaks)
-- Engine/DungeonGenerator.cs (magic numbers, bounds checks)
-- Models/Room.cs (collection exposure)
-- Models/PlayerStats.cs (event cleanup)
-- Engine/GameLoop.cs (exit path cleanup, hardcoded constants)
-
-**Quality Assessment:** Code is defensive and well-structured overall. Most issues are maintainability debt (hardcoded values, duplicate code) or edge-case risks (bounds checks, null guards). No critical runtime bugs detected, but the patterns compound risk as codebase grows.
+**Key Technical Patterns Established:**
+- `AsciiArt` on Enemy is `string[]` (not string) — use `string.Join("\n", enemy.AsciiArt)`
+- Enemy model has no Description property on base class
 
 ---
 
 ## Learnings
-
-### 2026-03-03 — GameLoop Decomposition to ICommandHandler Pattern (#868)
-
-**PR:** #889 — `refactor: decompose GameLoop into ICommandHandler pattern`  
-**Branch:** `squad/868-gameloop-decomposition`
-
-**Problem:**
-- GameLoop.cs had grown to 1,635 lines, difficult to maintain and extend
-- Multiple command handling logic mixed together
-- Hard to add new command types or modify existing ones
-- Violated single responsibility principle
-
-**Solution:**
-- Decomposed GameLoop into ICommandHandler pattern
-- Created `Engine/Commands/` directory with 23 handler classes:
-  - Each command type has its own handler (e.g., AttackHandler, HealHandler, UseItemHandler)
-- Created CommandContext class to hold mutable run state:
-  - Player current HP/MP/position
-  - Combat state flags
-  - Inventory state
-- GameLoop.cs reduced to 741 lines (45% reduction)
-- Each handler implements ICommandHandler interface with Execute(CommandContext) method
-- Handlers are registered in a CommandFactory/Registry pattern
-
-**Architecture:**
-- CommandContext holds all mutable run state (replaces scattered local variables)
-- Each handler focuses on single command execution
-- Easy to add new commands without modifying GameLoop
-- Testable: handlers can be unit tested independently with CommandContext
-
-**Testing:**
-- ✅ All 1,422 tests passing
-- ✅ Game starts and plays normally
-- ✅ All command types still work identically
-
-**Key Learning:**
-- ICommandHandler pattern scales better than monolithic Game/GameLoop classes
-- CommandContext makes state explicit and testable
-- 23 focused handlers easier to maintain than one 1,635-line method
-
----
-
-### 2026-03-03 — Schema Validation Fix (#849)
-
-**PR:** #850 — `fix: repair invalid items in item-stats.json`  
-**Branch:** `squad/849-fix-item-stats-schema`  
-**File:** `Data/schemas/item-stats.schema.json` only
-
-**Problem:**
-- Game crashed on startup with schema validation error
-- Error: `System.IO.InvalidDataException: Schema validation failed for Data/item-stats.json`
-- Affected items at indices: 50, 77, 78, 79, 80, 81, 82, 83, 97 (all crafting materials)
-- Validation reported: `ArrayItemNotValid` for each of these items
-
-**Root Cause:**
-- The JSON schema was missing property definitions for 4 fields that exist in all items:
-  - `StatModifier` (integer)
-  - `Description` (string)  
-  - `Weight` (number)
-  - `SellPrice` (integer)
-- JSON Schema validation by default rejects properties not defined in the schema
-- All items in item-stats.json have these properties, but the schema didn't declare them
-- This caused validation to fail when StartupValidator ran its schema checks
-
-**Fix:**
-- Added missing property definitions to `Data/schemas/item-stats.schema.json`:
-  - `"StatModifier": { "type": "integer" }`
-  - `"Description": { "type": "string" }`
-  - `"Weight": { "type": "number", "minimum": 0 }`
-  - `"SellPrice": { "type": "integer", "minimum": 0 }`
-- No changes to item-stats.json data file needed — it was already correct
-- Schema now matches the actual structure of items in the data file
-
-**Testing:**
-- ✅ `dotnet build` succeeds
-- ✅ Game starts without validation errors
-- ✅ StartupValidator.ValidateOrThrow() passes
-- Confirmed by running game — title screen appears (previously crashed immediately)
-
-**Key Learning:**
-- StartupValidator in `Systems/StartupValidator.cs` validates all data files against schemas at startup
-- Schema validation is strict by default — all properties must be declared
-- When schema validation fails, error messages show indices (0-based) and error kind
-- Use `jq '.Items[N]'` to inspect specific items by index in large JSON files
-- Always test both build AND runtime startup after schema changes
-
----
-
-### 2026-03-02 — Emoji Restoration (#832)
-
-**PR:** #833 — `fix: restore visual emojis, replace 🛡 with 🦺 for Chest alignment`  
-**Branch:** `squad/832-restore-visual-emojis`  
-**File:** `Display/SpectreDisplayService.cs` only
-
-**What:**
-- PR #830 replaced all emojis with narrow Unicode symbols to fix an alignment bug. The only ACTUALLY broken emoji was 🛡 (U+1F6E1, SHIELD) — EAW=N but not in NarrowEmoji, so it got 1 space instead of 2.
-- Restored all original wide emojis (💍🪖🥋🧤👖👟🧥⭐✨🏃🧪).
-- Replaced 🛡 with 🦺 (safety vest, U+1F9BA, EAW=W) for Chest and Armor icon — this is the real fix.
-- Replaced `IL()` helper with `EL()` that uses a `NarrowEmoji` HashSet to decide spacing: narrow symbols get 2 spaces, wide emojis get 1 space.
-
-**Key learning — EAW and terminal alignment:**
-- EAW=W (wide) emojis occupy 2 terminal columns → use 1 space after = 3 columns total
-- EAW=N (narrow) symbols occupy 1 terminal column → use 2 spaces after = 3 columns total
-- The NarrowEmoji set: `["⚔", "⛨", "⚗", "☠", "★", "↩", "•"]`
-- ✦ (U+2736) is narrow but only used in Combo row (not an equipment slot) — acceptable
-- Never add 🛡 to the emoji set; 🦺 is the permanent replacement
-
-**Build note:** `dotnet build Dungnz.csproj` (without `-q`, without `--no-restore`) works when the incremental build cache is in a bad state. `dotnet build -q --no-restore` may fail with MSB3492/GenerateTargetFrameworkMonikerAttribute — this is a pre-existing SDK quirk, not a code error.
-
----
-
-### 2026-02-22 — Phase 0: UI/UX Shared Infrastructure (#269, #270, #271)
-
-**PR:** #298 — `feat: Phase 0 — UI/UX shared infrastructure`  
-**Branch:** `squad/269-uiux-shared-infra`  
-**Context:** Critical path implementation blocking all Phase 1/2/3 UI/UX work
-
-**Files Modified:**
-- `Display/DisplayService.cs` — Added RenderBar(), VisibleLength(), PadRightVisible(), PadLeftVisible() helpers; fixed ANSI padding bugs in ShowLootDrop/ShowInventory; added stub implementations for 7 new Phase 1-3 methods
-- `Display/IDisplayService.cs` — Updated ShowCombatStatus signature (added playerEffects, enemyEffects parameters); updated ShowCommandPrompt signature (added optional Player parameter); added 7 new method signatures for Phase 1-3
-- `Engine/CombatEngine.cs` — Updated ShowCombatStatus call to pass effect lists from StatusEffectManager
-- `Dungnz.Tests/DisplayServiceTests.cs` — Updated ShowCombatStatus test to pass empty effect lists
-- `Dungnz.Tests/Helpers/TestDisplayService.cs` — Updated all method signatures; added stubs for 7 new methods
-- `Dungnz.Tests/Helpers/FakeDisplayService.cs` — Updated all method signatures; added stubs for 7 new methods
-
-**Implementation Details:**
-
-1. **RenderBar() Helper (#269)**
-   - Private static method in ConsoleDisplayService
-   - Signature: `RenderBar(int current, int max, int width, string fillColor, string emptyColor = Gray)`
-   - Returns colored progress bar: filled blocks (`█`) + empty blocks (`░`) with proper ANSI reset
-   - Math.Clamp protects against negative/overflow values
-   - Will be used by Phase 1.1 HP/MP bars, Phase 1.6 XP bar, Phase 2.3 command prompt, Phase 3.1 enemy detail
-
-2. **ANSI-Safe Padding Helpers (#270)**
-   - `VisibleLength(string)` — wraps ColorCodes.StripAnsiCodes().Length
-   - `PadRightVisible(string, int)` — pads right accounting for invisible ANSI codes
-   - `PadLeftVisible(string, int)` — pads left accounting for invisible ANSI codes
-   - **Bug fixes applied:**
-     - ShowLootDrop: Fixed header and tierLabel padding (lines 218-219) — replaced `.PadRight(-36)` with `PadRightVisible()`
-     - ShowInventory: Fixed item name column alignment (line 195) — replaced manual padding with `PadRightVisible(nameField, 32)` and `PadRightVisible(statColored, 22)`
-     - ShowMap legend already used hard-coded spacing — no changes needed
-
-3. **New IDisplayService Methods (#271)**
-   - **Signature changes:**
-     - `ShowCombatStatus` — added `IReadOnlyList<ActiveEffect> playerEffects, IReadOnlyList<ActiveEffect> enemyEffects`
-     - `ShowCommandPrompt` — added `Player? player = null` (backward compatible)
-   - **New methods (stubs in ConsoleDisplayService, full implementations in Phase 1-3):**
-     - `ShowCombatStart(Enemy enemy)` — Phase 1.2
-     - `ShowCombatEntryFlags(Enemy enemy)` — Phase 1.3
-     - `ShowLevelUpChoice(Player player)` — Phase 1.5
-     - `ShowFloorBanner(int floor, int maxFloor, DungeonVariant variant)` — Phase 2.2
-     - `ShowEnemyDetail(Enemy enemy)` — Phase 3.1
-     - `ShowVictory(Player player, int floorsCleared, RunStats stats)` — Phase 3.2
-     - `ShowGameOver(Player player, string? killedBy, RunStats stats)` — Phase 3.2
-   - All stubs have XML doc comments to satisfy XML enforcement
-   - RunStats, ActiveEffect, DungeonVariant confirmed pre-existing in codebase
-
-**Integration Work:**
-- CombatEngine call site (line 298) updated to: `_display.ShowCombatStatus(player, enemy, _statusEffects.GetActiveEffects(player), _statusEffects.GetActiveEffects(enemy))`
-- DisplayServiceTests updated to pass `Array.Empty<ActiveEffect>()` for both effect lists
-- TestDisplayService and FakeDisplayService updated with matching signatures and stub implementations
-
-**Build & Test Status:**
-- ✅ `dotnet build` succeeds (0 errors, 24 pre-existing warnings in enemy classes)
-- ✅ `dotnet test` passes (all existing tests still pass)
-- Zero breaking changes for existing code (ShowCommandPrompt has default parameter)
-
-**Design Decisions:**
-1. **RenderBar location:** Private static helper in ConsoleDisplayService (not on IDisplayService) — internal rendering utility, not a public contract
-2. **Padding helper location:** Private static helpers in ConsoleDisplayService (not in ColorCodes) — keeps display concerns in display layer
-3. **Stub implementations:** All 7 new methods are no-op stubs `{ }` — implementations delivered by Barton in Phase 1-3
-4. **Effect list retrieval:** Used existing `StatusEffectManager.GetActiveEffects(target)` — no new types needed
-5. **Backward compatibility:** ShowCommandPrompt default parameter allows existing call sites to compile without changes
-
-**Blockers Cleared:**
-- Barton can begin Phase 1.1 (HP/MP bars using RenderBar)
-- Barton can begin Phase 1.2-1.6 (all call-site wiring using new methods)
-- Phase 2 and Phase 3 work unblocked (all method contracts in place)
-
-**Next Steps (Hill):**
-- Monitor PR #298 for Coulson's review
-- No further Hill work until Phase 4 (if UI/UX Phase 1-3 reveals architectural issues)
-
-### 2026-02-20 — Phase 1: Project Scaffold and Core Models (WI-1, WI-2)
-
-**Files Created:**
-- `TextGame.csproj` — .NET 9 console project, nullable enabled
-- `Program.cs` — Entry point stub (to be wired in WI-4)
-- `Models/Direction.cs` — enum: North, South, East, West
-- `Models/CombatResult.cs` — enum: Won, Fled, PlayerDied (contract for Barton's CombatEngine)
-- `Models/UseResult.cs` — enum: Used, NotUsable, NotFound (contract for Barton's InventoryManager)
-- `Models/LootResult.cs` — readonly struct: Item?, Gold (Barton's LootTable return type)
-- `Models/ItemType.cs` — enum: Weapon, Armor, Consumable, Gold
-- `Models/Item.cs` — 7 fields (Name, Type, StatModifier, Description, AttackBonus, DefenseBonus, HealAmount); IsEquippable computed property
-- `Models/Enemy.cs` — abstract base class with 7 fields (Name, HP, MaxHP, Attack, Defense, XPValue, LootTable); Barton will subclass for 5 enemy types
-- `Models/Player.cs` — 9 fields (Name, HP, MaxHP, Attack, Defense, Gold, XP, Level, Inventory); defaults: HP/MaxHP=100, Attack=10, Defense=5, Level=1
-- `Models/Room.cs` — Description, Exits (Dictionary<Direction, Room>), Enemy?, Items, IsExit, Visited, Looted flags
-- `Models/LootTable.cs` — Placeholder with RollDrop stub (Barton owns implementation)
-- `Display/DisplayService.cs` — Sole owner of Console I/O; 11 methods including ShowRoom, ShowCombat, ShowPlayerStats, ShowInventory, ShowHelp, ShowTitle
-
-**Design Decisions:**
-1. **Item flexibility:** Included all fields from Design Review (AttackBonus, DefenseBonus, HealAmount, StatModifier) to support both simple and complex items without future refactoring
-2. **LootTable ownership:** Placed in Models/ (not Systems/) because it's shared across Hill's and Barton's domains; Barton will implement RollDrop logic
-3. **DisplayService completeness:** Implemented all methods agreed in Design Review plus ShowTitle for polish; includes Unicode symbols for visual clarity (⚔, ⚠, ✦, ✗)
-4. **Nullable annotations:** Enabled in csproj; Enemy? and Item? properly marked to avoid null reference warnings
-
-**Deviations from Plan:**
-- None; all Design Review contracts implemented exactly as specified
-
-**Build Status:**
-- Project structure created successfully
-- All files staged and committed (commit 5c0901c)
-- Build verification skipped (dotnet permission issue in environment); project structure is valid and will build in IDE
-
-**Blockers Cleared:**
-- Barton can now implement Enemy subclasses (Goblin, Skeleton, Troll, DarkKnight, DungeonBoss)
-- Barton can implement CombatEngine.StartCombat with DisplayService dependency injection
-- Barton can implement InventoryManager and LootTable.RollDrop using agreed contracts
-
-**Next Steps (Hill):**
-- WI-3: DungeonGenerator (creates rooms, links exits bidirectionally, places enemies/items)
-- WI-4: GameLoop and CommandParser (wires up DisplayService, handles player commands)
-
-### 2026-02-20 — Phase 2: Dungeon Generator, Command Parser, Game Loop (WI-3, WI-4)
-
-**Files Created:**
-- `Engine/DungeonGenerator.cs` — Procedural 5x4 room grid generator with BFS path validation
-- `Engine/CommandParser.cs` — Parses 10 command types (Go, Look, Examine, Take, Use, Inventory, Stats, Help, Quit, Unknown)
-- `Engine/GameLoop.cs` — Main game loop with command dispatch and all handler implementations
-- `Engine/ICombatEngine.cs` — Interface contract for combat system (Barton implements)
-- `Engine/StubCombatEngine.cs` — Temporary stub (unused; Barton delivered real CombatEngine in parallel)
-- `Engine/EnemyFactory.cs` — Stub enemy instances (Goblin/Skeleton/Troll/DarkKnight/Boss stubs for generator)
-- `Program.cs` — Updated with full wiring: display, player, generator, combat engine, game loop
-
-**Design Decisions:**
-1. **Room graph structure:** 5x4 grid (20 rooms) with bidirectional exits. Start at (0,0), exit at (height-1, width-1). All adjacent rooms connected via Dictionary<Direction, Room>.
-2. **Enemy placement:** ~60% of non-start/non-exit rooms get random enemies via EnemyFactory. Boss always placed in exit room.
-3. **Item placement:** ~30% of rooms get random items (Health Potion, Large Health Potion, Iron Sword, Leather Armor).
-4. **Boss guard:** GameLoop prevents moving to exit room if boss is alive (HP > 0). Win condition: IsExit && Enemy is dead.
-5. **Win/lose conditions:** Win = reach exit with dead boss. Lose = CombatResult.PlayerDied in HandleGo.
-6. **Command parsing:** Case-insensitive with shortcuts (n/s/e/w for directions, i for inventory, h/? for help, q for quit).
-7. **Item interactions:** HandleTake removes from room, adds to inventory. HandleUse applies HealAmount (consumables) or adds stat bonuses (equippables) and removes from inventory.
-8. **Combat integration:** GameLoop takes ICombatEngine via dependency injection. Barton's CombatEngine (already delivered) plugged directly into Program.cs.
-
-**Coordination with Barton:**
-- Barton delivered CombatEngine, 5 enemy types (Goblin, Skeleton, Troll, DarkKnight, DungeonBoss), InventoryManager, and full LootTable implementation in parallel
-- EnemyFactory stubs remain in Engine/ but are not instantiated; Barton's real enemy classes in Systems/Enemies/ are used by EnemyFactory.CreateRandom() and CreateBoss()
-- ICombatEngine interface allows seamless integration: GameLoop is agnostic to combat implementation details
-- StubCombatEngine unused; real CombatEngine wired in Program.cs
-
-**Build Status:**
-- All Engine/ files created successfully
-- Program.cs wired with full game initialization flow
-- Project structure complete and matches agreed architecture
-- Build verification not performed (permission issue in environment), but code follows all .NET 9 patterns and should compile cleanly
-
-**Deviations from Plan:**
-- None; all specified contracts implemented exactly as requested
-- Barton's parallel work (CombatEngine + enemies + loot) delivered simultaneously, allowing immediate integration rather than stub usage
-
-**Functional Completeness:**
-- Dungeon generation with guaranteed start-to-exit path (BFS validation)
-- All 10 command types parsed and handled
-- Room navigation with directional movement
-- Enemy encounters trigger combat automatically on room entry
-- Item collection and usage (heal, equip weapon/armor)
-- Inventory and stats display
-- Win/lose conditions enforced
-- Help system for player guidance
-
-### 2026-02-20: Retrospective Ceremony & v2 Planning Decisions
-
-**Team Update:** Retrospective ceremony identified 3 refactoring decisions for v2:
-
-1. **DisplayService Interface Extraction** — Extract IDisplayService interface for testability and alternative UI implementations. Minimal breaking change (constructors already use DI). Effort: 1-2 hours.
-
-2. **Player Encapsulation Refactor** — Refactor Player model to use private setters and validation methods (TakeDamage, Heal, ModifyAttack, etc.). Prevents invalid state mutations and enables save/load, analytics, achievements. Effort: 2-3 hours.
-
-3. **Test Infrastructure Required** — Before v2 feature work, implement xUnit/NUnit harness and inject Random for deterministic combat testing. Blocks feature work. Effort: 1-2 sprints.
-
-**Participants:** Coulson (facilitator), Hill, Barton, Romanoff
-
-**Impact:** Hill owns DisplayService interface extraction and Player encapsulation. Coordinate with Barton on IDisplayService updates across CombatEngine.
-
-### 2026-02-20: v2 C# Implementation Proposal
-
-**Context:** Boss requested C#-specific refactoring, engine features, and model improvements for v2 planning.
-
-**Deliverable:** Comprehensive proposal document covering:
-1. **C# Refactoring** — Player encapsulation (private setters + validation methods), IDisplayService interface extraction, nullable reference improvements, record types for DTOs
-2. **Engine Features** — Save/load with System.Text.Json (handles circular Room references via Guid hydration/dehydration), procedural generation v2 (graph-based instead of grid), Random dependency injection
-3. **Model Improvements** — Serialization-ready patterns (IReadOnlyList exposure, internal Guid for save/load), Enemy encapsulation consistency
-4. **NET Idioms** — Collection expressions (C# 12), primary constructors, file-scoped namespaces, required members
-
-**Key Technical Decisions:**
-- **Save/Load Architecture:** Serialize to SaveData DTOs (RoomSaveData with Guid IDs for exits, not Room references), hydrate back to runtime object graph. Async System.Text.Json with JsonSerializerOptions (WriteIndented, WhenWritingNull). Avoids Newtonsoft.Json dependency.
-- **Player Encapsulation Pattern:** Private setters + public methods (TakeDamage, Heal, ModifyAttack, LevelUp) with validation (Math.Clamp, ArgumentException guards). IReadOnlyList<Item> for Inventory exposure. Uses C# 9 init-only setters for Name.
-- **IDisplayService Contract:** Extract interface from DisplayService, rename concrete impl to ConsoleDisplayService. Zero breaking changes (constructors already inject). Enables NullDisplayService for headless testing.
-- **Serialization Strategy:** Two-pass hydration (create all Rooms, then wire Exits), BFS room graph traversal for dehydration. SaveData models use init-only properties and required keyword.
-
-**Priority Matrix:**
-- HIGH: Player encapsulation (2-3h), IDisplayService (1-2h), Save/Load (6-8h)
-- MEDIUM: Nullable improvements (30m), Procedural gen v2 (8-10h)
-- LOW: Record types (2h), Random injection (2h), Enemy encapsulation (3h), .NET idioms (1-2h)
-
-**Recommended Implementation Order:**
-1. Testing foundation (IDisplayService, Random injection)
-2. Encapsulation refactors (Player, Enemy)
-3. Persistence (Save/Load system)
-4. Polish (procedural gen, idioms)
-
-**File Paths:**
-- Proposal written to `.ai-team/decisions/inbox/hill-v2-csharp-proposal.md` (21KB)
-- Current models: `Models/Player.cs`, `Models/Room.cs`, `Models/Enemy.cs`
-- Display layer: `Display/DisplayService.cs` (to become ConsoleDisplayService)
-- Engine: `Engine/DungeonGenerator.cs`, `Engine/GameLoop.cs`
-
-**Coordinate With:**
-- Barton: IDisplayService updates in CombatEngine constructor
-- Romanoff: Test harness setup (xUnit/NUnit), mock IDisplayService implementations
-- Scribe: Merge proposal to main decisions.md after review
-
-**Architecture Patterns Used:**
-- Dependency Inversion (interfaces for display, combat)
-- Encapsulation (private state, public methods)
-- Immutability where appropriate (init-only, readonly records)
-- Async/await for file I/O
-- Graph traversal (BFS) for room serialization
-
-**C# Features Leveraged:**
-- System.Text.Json (native, no external deps)
-- Nullable reference types (already enabled in csproj)
-- C# 9: init-only setters
-- C# 10: record struct
-- C# 11: required members
-- C# 12: collection expressions, primary constructors (proposed)
-- .NET 9 target framework (modern APIs)
-
-## 📌 Team Update (2026-02-20): Decisions Merged
-**From Scribe** — 4 inbox decision files merged into canonical decisions.md:
-- **Domain Model Encapsulation Pattern (consolidated):** Coulson + Hill approaches merged. Confirmed: private setters with validation methods (TakeDamage, Heal, LevelUp) using Math.Clamp and Math.Max guards. Hill's detailed Player/Enemy implementation included.
-- **Interface Extraction Pattern for Testability (consolidated):** Coulson + Hill approaches merged. Confirmed: IDisplayService with ConsoleDisplayService + NullDisplayService test implementations. All injection sites updated (GameLoop, CombatEngine, Program.cs).
-- **Injectable Random (consolidated):** Direct System.Random injection (not IRandom interface). Optional constructor parameter with Random.Shared default for testable, deterministic seeds.
-
-**Impact on Hill:** Encapsulation patterns confirmed align with WI-2 Player model. Interface extraction unblocks testing infrastructure (Romanoff). Random injection required for DungeonGenerator and GameLoop seeding.
-
-### 2026-02-20: Dead Code Removal — InventoryManager
-
-**Files Modified:**
-- `Dungnz.csproj` — Fixed TargetFramework from net10.0 → net9.0 (SDK compatibility)
-- `Systems/InventoryManager.cs` — DELETED (zero production callers)
-
-**Analysis:**
-- Grepped entire codebase for InventoryManager references
-- Only usage: test files (`InventoryManagerTests.cs`) and coverage reports
-- GameLoop already has complete inventory logic in HandleTake() and HandleUse() methods
-- InventoryManager was redundant duplication from initial architecture
-
-**Design Decision:**
-- **Consolidated ownership:** GameLoop is sole owner of inventory interactions
-- Item pickup: GameLoop.HandleTake() (lines 189-209) removes from room, adds to player inventory
-- Item usage: GameLoop.HandleUse() (lines 211-256) handles consumables (heal), weapons (attack bonus), armor (defense bonus)
-- No delegation pattern needed for simple item operations
-
-**Build Verification:**
-- Deleted InventoryManager.cs
-- Fixed .NET target framework mismatch (net10.0 → net9.0)
-- Build passed cleanly with zero errors
-- Commit: 8389f76
-
-**Lessons:**
-- Dead code removal requires grep verification across all file types (tests, coverage, docs)
-- GameLoop's inline implementation is more maintainable than delegating to separate manager for simple CRUD operations
-- .NET target framework must match installed SDK version
-
-### 2026-02-20: Player Encapsulation Refactor (GitHub Issue #2, PR #26)
-
-**Files Modified:**
-- `Models/Player.cs` — All setters made private; added TakeDamage, Heal, AddGold, AddXP, ModifyAttack, ModifyDefense, LevelUp methods; added OnHealthChanged event with HealthChangedEventArgs
-- `Engine/CombatEngine.cs` — Updated to use player.TakeDamage(), player.AddGold(), player.AddXP(), player.LevelUp()
-- `Engine/GameLoop.cs` — Updated HandleUse() to use player.Heal(), player.ModifyAttack(), player.ModifyDefense()
-
-**Design Decisions:**
-1. **Private setters:** All Player properties (HP, MaxHP, Attack, Defense, Gold, XP, Level, Inventory) use private set to prevent direct mutation
-2. **Validation pattern:** TakeDamage and Heal throw ArgumentException on negative amounts (fail-fast)
-3. **Clamping pattern:** HP clamped to [0, MaxHP] using Math.Max/Math.Min
-4. **Event-driven:** OnHealthChanged event fires when HP changes (OldHP, NewHP, Delta) — enables future UI updates, analytics, achievements
-5. **LevelUp encapsulation:** All level-up logic (stats, MaxHP, HP restoration) moved into Player.LevelUp() method
-6. **Stat modification guards:** ModifyAttack clamps to minimum 1, ModifyDefense clamps to minimum 0
-
-**Caller Updates:**
-- CombatEngine: 4 call sites updated (flee damage, combat damage, gold loot, XP gain, level-up)
-- GameLoop: 3 call sites updated (heal consumable, equip weapon/armor stat bonuses)
-
-**Build Status:**
-- Clean build with zero warnings (dotnet build)
-- All Player state mutations now go through validated methods
-
-**Branch/PR:**
-- Branch: squad/2-player-encapsulation
-- PR #26: https://github.com/AnthonyMFuller/Dungnz/pull/26
-- Commit: b40cab6
-
-**Benefits:**
-- Prevents invalid state (negative HP, exceeding MaxHP)
-- Enables save/load (controlled state changes)
-- Supports analytics/achievements (OnHealthChanged event)
-- Clean API for game systems
-
-**Pattern Established:**
-- Model encapsulation with private setters + public methods
-- Math.Clamp for boundary enforcement
-- ArgumentException for invalid input
-- Events for state change notifications
-
-### 2026-02-20: Config-Driven Balance System (Issue #10, PR #31)
-
-**Files Created:**
-- `Data/enemy-stats.json` — JSON config with all 5 enemy types (Goblin, Skeleton, Troll, DarkKnight, DungeonBoss) base stats (MaxHP, Attack, Defense, XPValue, MinGold, MaxGold)
-- `Data/item-stats.json` — JSON config with all 10 items (Health Potion, Large Health Potion, Iron Sword, Leather Armor, Rusty Sword, Bone Fragment, Troll Hide, Dark Blade, Knight's Armor, Boss Key)
-- `Systems/EnemyConfig.cs` — Static loader class with Load(path) returning Dictionary<string, EnemyStats>; includes validation for all required fields and value ranges
-- `Systems/ItemConfig.cs` — Static loader class with Load(path) returning List<ItemStats> and CreateItem(ItemStats) factory method; validates item types against ItemType enum
-
-**Design Decisions:**
-1. **Config file location:** Data/ directory at project root, copied to output directory via .csproj <None Update="Data\**\*.json">
-2. **Validation strategy:** Load-time validation with descriptive exceptions (FileNotFoundException, InvalidDataException) specifying which field/enemy failed
-3. **Fallback pattern:** Enemy classes accept nullable EnemyStats/ItemStats parameters with hardcoded defaults if null (graceful degradation if config missing during development)
-4. **Error handling:** Program.cs wraps initialization in try/catch, displays fatal error message and waits for keypress before exit
-5. **Config format:** Enemy stats in flat dictionary by enemy type name; item stats in array under "Items" key for extensibility
-
-**Architecture Patterns:**
-- Static config loader classes (no instances needed)
-- Record types for config DTOs (EnemyStats, ItemStats, ItemConfigData)
-- Dictionary<string, EnemyStats> lookup for fast enemy config access
-- System.Text.Json with PropertyNameCaseInsensitive for flexible JSON parsing
-
-**Integration Points:**
-- EnemyFactory.Initialize(enemyPath, itemPath) called at app startup
-- DungeonGenerator.SetItemConfig(itemConfig) for dungeon item placement
-- Enemy constructors modified to accept config parameters
-
-**Build Configuration:**
-- Updated Dungnz.csproj with <None Update> to copy Data/**/*.json to bin/Debug/net9.0/Data/ at build time (PreserveNewest)
-- Config files loaded from AppContext.BaseDirectory at runtime for deployment compatibility
-
-**Lessons:**
-- JSON config files enable game balance tuning without recompilation
-- Config validation at startup prevents runtime errors from malformed data
-- Record types ideal for immutable config DTOs with init-only properties
-- Fallback defaults useful during iterative development when config incomplete
-
-📌 Team update (2026-02-20): Config-Driven Game Balance consolidated — Coulson + Hill. Finalized pattern: JSON config files (enemy-stats.json, item-stats.json) loaded at startup with validation. Static loader classes with fallback defaults.
-
-📌 Team update (2026-02-20): Two-Pass Serialization for Circular Object Graphs established — Guid-based serialization for Room.Exits circular references in save/load system.
-
-📌 Team update (2026-02-20): AppData Save Location standardized — saves stored in Environment.GetFolderPath(SpecialFolder.ApplicationData)/Dungnz/saves/
-
-### 2026-02-20: Equipment Slot System (GitHub Issue #20, PR #34)
-
-**Files Modified:**
-- `Models/ItemType.cs` — Added Accessory to ItemType enum
-- `Models/Item.cs` — Updated IsEquippable to include Accessory type
-- `Models/Player.cs` — Added 3 equipment slots (EquippedWeapon, EquippedArmor, EquippedAccessory) with EquipItem/UnequipItem methods
-- `Engine/CommandParser.cs` — Added Equip, Unequip, Equipment command types and parsing
-- `Engine/GameLoop.cs` — Added HandleEquip, HandleUnequip, HandleShowEquipment methods; updated HandleUse to direct equippable items to EQUIP command
-- `Dungnz.Tests/EquipmentSystemTests.cs` — Created comprehensive test suite with 16 test cases
-
-**Design Decisions:**
-1. **Equipment slots:** Three private properties (EquippedWeapon, EquippedArmor, EquippedAccessory) following encapsulation pattern
-2. **Swap logic:** EquipItem removes old item from slot, applies/removes stat bonuses, manages inventory transfers automatically
-3. **Stat bonus application:** ApplyStatBonuses/RemoveStatBonuses private methods handle Attack/Defense/MaxHP modifications
-4. **HP management:** MaxHP increases heal proportionally, MaxHP decreases clamp current HP to new maximum
-5. **Error handling:** ArgumentException for invalid operations (not in inventory, not equippable), InvalidOperationException for empty slot unequip
-6. **Command interface:** EQUIP <item name>, UNEQUIP WEAPON/ARMOR/ACCESSORY, EQUIPMENT (show all equipped)
-7. **Save persistence:** Equipment slots automatically persisted by existing SaveSystem (serializes entire Player object)
-
-**Implementation Pattern:**
-- Equipment slots use nullable Item? with private setters
-- EquipItem checks IsEquippable, validates inventory, handles occupied slots via swap
-- UnequipItem uses string slot name ("weapon"/"armor"/"accessory") for flexibility
-- Stat bonuses validated with Math.Max(1, ...) for Attack, Math.Max(0, ...) for Defense, minimum MaxHP of 1
-
-**Lessons:**
-- Encapsulation pattern (private setters + public methods) prevents invalid state mutations
-- Stat bonus apply/remove must be symmetric to ensure correct cumulative effects
-- HP management requires careful handling when MaxHP changes (proportional heal on increase, clamp on decrease)
-- Swap logic simplifies player experience (no manual unequip required)
-- Existing SaveSystem handles new properties automatically via full Player serialization
-
-### 2026-02-20: v3 Planning Session — Player Experience & Game Depth Analysis
-
-**Context:** Post-v2 retrospective identified key player experience gaps. v3 planning focus: character agency, progression hooks, content variety, UX clarity.
-
-**Deliverable:** Comprehensive v3 roadmap spanning 4 waves, 8 concrete GitHub issues, strategic feature prioritization.
-
-**Key Findings:**
-
-1. **Player Agency Gap:** v2 lacks character customization. All players are identical "generic warrior" with no build diversity or strategic choices. Roguelike genre expects class/trait systems for replayability.
-
-2. **Weak Progression Hooks:** Leveling in v2 is purely binary—gain +2 Attack, +1 Defense, +10 MaxHP. No milestones, no unlocks, no meaningful progression beyond "level 5 has better gear." Abilities unlock via AbilityManager automatically (no choice).
-
-3. **Content Repetition:** Dungeon is 20 identical "combat rooms." No environmental variety (shrines, treasuries, arenas). No thematic flavor or narrative context. Feels procedural, not curated.
-
-4. **UX Clarity Issues:**
-   - No map display → players navigate by memory, feel lost
-   - Combat log ephemeral → no turn history for learning
-   - Inventory unwieldy → no quick equipment view
-   - No narrative framing → purely mechanical "escape"
-
-**Recommended v3 Features (8 Issues, 4 Waves):**
-
-**WAVE 1: Foundation** (Unlocks further content)
-- **Issue 1:** Character Class System — Warrior/Rogue/Mage with distinct stat curves, starting abilities, trait pools
-  - Impact: 3x playstyles (vs. 1 generic), drives replayability
-  - Agent: Hill (models), Barton (combat), Romanoff (tests)
-
-- **Issue 2:** Class-Specific Traits — Passive bonuses (block %, crit, mana regen), class-unique pools, +1 every 5 levels
-  - Impact: Every 5 levels = meaningful choice, micro-progression
-  - Agent: Hill (encapsulation), Barton (balance), Romanoff (tests)
-
-- **Issue 3:** Skill Tree Foundation — 8 nodes/class, level-gated unlocks, stat bonuses or new abilities, config-driven
-  - Impact: Path optimization, build guides emerge
-  - Agent: Hill (tree model + UI), Barton (stat application), Romanoff (unlock tests)
-
-**WAVE 2: Core** (Player agency × content variety)
-- **Issue 4:** Variant Room Types — Shrines (blessings/curses), Treasuries (mega-loot), Elite Arenas; breaks monotony
-  - Impact: +25% room diversity, adds spatial strategy
-  - Agent: Hill (room types + generator), Barton (elite logic), Romanoff (tests)
-
-- **Issue 5:** Trait Selection at Level-Up — Prompt at Lvl 5/10/15/20 with 2 random traits; choose, apply, persist
-  - Impact: Turns passive leveling into active choice, anticipation
-  - Agent: Hill (UI/flow), Romanoff (save tests)
-
-- **Issue 6:** Combat Clarity System — Turn log (last 5 turns), crit/dodge notifications, action separation
-  - Impact: Players understand combat math, learn patterns, trust RNG
-  - Agent: Hill (DisplayService), Barton (log data), Romanoff (integration)
-
-**WAVE 3: Advanced** (Content depth + polish)
-- **Issue 7:** Dungeon Variants & Lore — "Standard" / "Forsaken" / "Bestiary" / "Cursed" with thematic enemy distributions, flavor text
-  - Impact: 4x narrative flavor, minimal new code (config + generator tweak)
-  - Agent: Hill (variant enum), Barton (config), Romanoff (integration)
-
-- **Issue 8:** Mini-Map Display — ASCII grid showing visited rooms (.), unvisited (▓), current (*), exit (!), boss (B)
-  - Impact: Addresses "feel lost" pain point, fits aesthetic
-  - Agent: Hill (ASCII rendering), Romanoff (state tests)
-
-**Priority Rationale:**
-- Waves 1-3 are sequential (1 enables 2, both enable 3)
-- Wave 4 (Stretch: Prestige, Difficulty, Leaderboard) deferred (nice-to-have, not core v3)
-- Parallelizable within waves (Hill, Barton, Romanoff work simultaneously)
-
-**Expected Outcomes:**
-- Replayability: +300% (3 classes × trait choices × skill paths)
-- Content variety: +400% (5 room types × 4 dungeon variants)
-- Engagement: +200% (milestone progression, mini-map orientation)
-- Timeline: v3a (Wave 1) Week 3, v3b (Wave 2) Week 6, v3c (Wave 3) Week 8
-
-**C# Patterns Used:**
-- Encapsulation for Trait class (private setters, validation methods)
-- Config-driven design (JSON for traits, skill trees, dungeon variants—building on existing pattern)
-- Enum expansion (CharacterClass, RoomType, DungeonVariant)
-- Event-driven progression (OnTraitUnlocked event for UI updates)
-- ASCII rendering (map grid—fits console aesthetic, zero dependencies)
-
-**Design Decisions Captured in:** `.ai-team/decisions/inbox/hill-v3-planning.md` (11KB comprehensive specification)
-
-**Coordination Notes:**
-- Coulson: Confirm wave priorities, merge into canonical decisions.md
-- Barton: Enemy distribution configs, elite mechanics, trait/skill stat balance
-- Romanoff: Unit tests for trait application, config loading, map state, selection persistence
-- Scribe: Merge inbox file after team review
-
-**Key Insight:** v2 was "dungeon crawler foundations" (systems, mechanics, save/load). v3 is "roguelike identity" (classes, builds, character expression, content variety). Together, they transform Dungnz from "generic text game" to "players have reasons to play again."
-
-### 2026-02-20: Pre-v3 Data Integrity Bug Audit
-
-**Context:** Comprehensive review of Player.cs, Models/, and Display/ for data integrity bugs before v3 feature work begins.
-
-**Files Reviewed:**
-- Models/Player.cs (encapsulation, equipment, mana, events)
-- Models/Item.cs (property flags)
-- Models/Enemy.cs (stat fields, special flags)
-- Models/Room.cs (state flags)
-- Models/StatusEffect.cs, ActiveEffect.cs (effect system)
-- Engine/CombatEngine.cs (loot handling, damage flow)
-- Engine/GameLoop.cs (inventory, equipment commands)
-- Systems/StatusEffectManager.cs (effect processing)
-- Display/DisplayService.cs, IDisplayService.cs (output layer)
-
-**Bugs Identified:** 11 total (3 Critical, 4 High, 3 Medium, 1 Low)
-
-**Critical Bugs:**
-1. **Inventory encapsulation violated** — CombatEngine.cs:336 and GameLoop.cs:298,337 directly call player.Inventory.Add/Remove, bypassing future validation logic. Blocks future inventory limits, weight systems, quest tracking.
-2. **Equipment properties not applied** — MaxManaBonus, DodgeBonus, PoisonImmunity, AppliesBleedOnHit defined on Item but never applied/removed in ApplyStatBonuses/RemoveStatBonuses. Ring of Focus and Cloak of Shadows from LootTable are broken.
-3. **Enemy HP mutations uncontrolled** — CombatEngine.cs:255 (enemy.HP -= playerDmg), AbilityManager.cs:143 (enemy.HP -= damage) directly mutate HP without validation. Allows negative HP, breaks future enemy encapsulation.
-
-**High Severity:**
-4. **RemoveStatBonuses missing OnHealthChanged** — Lines 390-411, when MaxHP decreases and HP doesn't clamp, no event fires. Analytics/achievements miss HP changes from unequipping +MaxHP accessories.
-5. **Event subscription memory leak risk** — OnHealthChanged is public event with no unsubscribe pattern. Long-running sessions or save/load cycles could accumulate stale subscriptions.
-6. **Room.Visited/Looted exposed** — Public setters on Room (lines 44, 50) allow external mutation. Should be private with methods like MarkVisited(), MarkLooted().
-7. **Enemy.IsAmbush/IsElite public setters** — Lines 59, 65 allow runtime mutation after enemy creation, enabling exploit: set boss.IsElite = false to skip tier-2 loot.
-
-**Medium Severity:**
-8. **Mana validation asymmetry** — RestoreMana (line 87) throws on negative, but CombatEngine always passes literal 10 (safe). FortifyMaxMana (line 198) throws on ≤0, but no callers exist. Overly strict validation for unused code paths.
-9. **StatusEffectManager direct Enemy.HP mutation** — Line 57 (poison), 61 (bleed), 65 (regen) mutate enemy.HP directly instead of using TakeDamage/Heal pattern. Breaks future enemy encapsulation, no death check.
-10. **Item.IsEquippable manual flag** — Line 69, boolean set by ItemConfig.cs, not computed from Type. Risk: config typo (IsEquippable=false on Weapon) causes runtime exception in Player.EquipItem.
-
-**Low Severity:**
-11. **DisplayService null-forgiving operator** — ConsoleInputReader pattern matches but DisplayService uses Console.ReadLine() ?? "Hero" (line 205). Technically safe but inconsistent with nullable pattern elsewhere.
-
-**Patterns Observed:**
-- Player encapsulation strong (private setters + validation methods)
-- Enemy/Room encapsulation weak (public setters, direct HP mutation)
-- Inventory follows list-exposure pattern (direct Add/Remove), not encapsulated
-- Equipment stat application incomplete (4 of 8 Item properties ignored)
-- Event-driven architecture present but underutilized (no event for equipment changes)
-
-**Recommended Fixes (Prioritized):**
-- HIGH: Encapsulate inventory (AddItem, RemoveItem methods with validation)
-- HIGH: Apply missing equipment properties (MaxManaBonus, DodgeBonus, immunities)
-- HIGH: Encapsulate Enemy HP (TakeDamage method with Math.Max(0, ...) guard)
-- MEDIUM: Encapsulate Room state (MarkVisited, MarkLooted methods)
-- MEDIUM: Make IsElite/IsAmbush init-only or computed properties
-- LOW: Add OnHealthChanged to RemoveStatBonuses negative-MaxHP path
-- LOW: Document event subscription cleanup pattern or implement IDisposable
-
-**Blockers for v3:**
-- Equipment bugs block class-specific trait/gear systems (Issue #1-3)
-- Inventory encapsulation needed for equipment sets, weight limits
-- Enemy encapsulation required for elite variants, boss phases
-
-### 2026-02-20: Pre-v3 Bug Hunt Session — Encapsulation Findings
-
-📌 **Team update (2026-02-20):** Pre-v3 bug hunt identified 47 critical issues and architectural patterns. Key finding for architecture:
-
-**Encapsulation Pattern Inconsistency:** Player model enforces strong encapsulation (private setters, validation methods), but Enemy and Room models expose mutable state via public setters. This creates:
-- Mental model confusion (Player needs methods, Enemy allows direct mutation)
-- Future refactoring cost (adding Enemy.TakeDamage requires migrating 5+ call sites)
-- Invalid state risks (negative HP, visited=false after entry)
-- Blocks event-driven architecture (no death events, no state change observation)
-
-**Recommendation:** Standardize on Player's encapsulation pattern before v3 Wave 1:
-- Private setters on all mutable state
-- Public methods with validation (Enemy.TakeDamage, Room.MarkVisited, Player.AddItem)
-- Events for observation (OnDeath, OnVisited, OnItemAdded)
-- Estimated effort: 4-6 hours (Enemy refactor 2h, Room 1h, Inventory 1h, testing 2h)
-
-— decided by Hill (from Encapsulation Audit findings)
-
-📌 Team directive (2026-02-22): No commits directly to master. Always create a feature branch (squad/{slug}) before starting work, even without a linked issue. — captured after UI/UX work committed to master directly.
-
-## Learnings
-
-- **README CI check (2026-02-23):** The `readme-check` CI workflow fails any PR that modifies `Engine/`, `Systems/`, `Models/`, or `Data/` without a corresponding change to `README.md`. Always update `README.md` when touching documented systems — this includes new utility classes like `ColorCodes.cs` in `Systems/`.
-
-### 2026-02-23: PR #224 — Display fixes from Coulson's PR #218 follow-up (issues #219, #221, #222)
-
-**Branch:** `squad/219-221-222-display-fixes`
-**PR:** https://github.com/AnthonyMFuller/Dungnz/pull/224
-
-**Issues addressed:**
-1. **#219 — README health threshold table mismatch:** Updated `README.md` color table to match actual `ColorCodes.HealthColor()` thresholds (`> 70%` Green, `40–70%` Yellow, `20–40%` Red). Added missing 4th tier: `≤ 20%` Bright Red.
-2. **#221 — ShowEquipmentComparison box alignment:** Replaced `{"",20}` fixed padding with ANSI-aware calculation using `ColorCodes.StripAnsiCodes()`. Content string built first, then `visibleLen = prefixLen + StripAnsiCodes(content).Length`, then `padding = innerWidth - visibleLen`. Box stays aligned even when colored deltas (`+8`, `-3`) are present.
-3. **#222 — ShowPlayerStats uses ShowColoredStat:** Refactored `ShowPlayerStats()` to call `ShowColoredStat(label, value, color)` for all 6 stat lines (HP, Mana, Attack, Defense, Gold, XP). Eliminates duplicated inline `Colorize` pattern and validates the method is actually used.
-
-**Files changed:**
-- `README.md` — health threshold table (3 rows updated, 1 row added)
-- `Display/DisplayService.cs` — `ShowPlayerStats()` and `ShowEquipmentComparison()` refactored
-
-**Build/Test:** 0 errors, 267/267 tests pass.
-
-### 2026-02-22: Intro display design planning session
-
-**Requested by:** Copilot (on behalf of Anthony)  
-**Task:** Assess current intro UI and plan visual improvements from display engineering perspective
-
-**Findings document:** `.ai-team/decisions/inbox/hill-intro-display-design.md` (15.5 KB)
-
-**Assessment of current weaknesses:**
-
-1. **Minimal title screen** — ShowTitle() renders a plain bordered box with generic text. No personality, visual impact, or atmosphere setting. Feels flat.
-
-2. **Text-dump UI for selections** — Class and difficulty selections presented as wall-of-text lists (3 lines for class, single inline for difficulty). No visual hierarchy or comparison context.
-
-3. **No stat context for choice** — Players cannot see how class choices affect starting stats. Descriptions exist but lack actual numbers and visual comparison.
-
-4. **Monochrome intro flow** — ColorCodes system available throughout game but unused in startup. Difficulty and class selections lack color-coding.
-
-5. **No visual separation** — Name input, seed input, difficulty/class selection flow together in undifferentiated stream of prompts.
-
-**Design solutions proposed:**
-
-1. **Enhanced Title Screen** — ASCII art "DUNGEON" banner with tagline ("Crawl through darkness. Survive the depths.") for visual impact and mood setting.
-
-2. **Class Selection Panels** — Three side-by-side cards showing Warrior/Mage/Rogue with:
-   - Stat bars (░/█) visualizing impact
-   - Color-coded values (Red for attack, Cyan for defense, Blue for mana, Green for HP)
-   - Trait descriptions
-   - Horizontal layout enables visual comparison
-
-3. **Difficulty Panels** — Three color-coded panels (Green/Yellow/Red matching ColorCodes convention):
-   - Casual (Green): Forgiving, abundant resources
-   - Normal (Yellow): Balanced, standard loot
-   - Hard (Red): Punishing, rare drops, stronger enemies
-
-4. **Prestige Display** — Star-decorated panel celebrating progression bonuses if prestige.PrestigeLevel > 0.
-
-5. **Seed Prompt** — Formatted input prompt explaining reproducibility benefit.
-
-**IDisplayService additions required:**
-
-- `ShowIntroTitle()` — Enhanced title with ASCII art
-- `ShowClassSelection() → int` — Display class cards, return 1–3 choice
-- `ShowDifficultySelection() → int` — Display difficulty panels, return 1–3 choice  
-- `ShowPrestigeDisplay(PrestigeSystem)` — Prestige celebration panel
-- `ShowSeedPrompt() → string` — Formatted seed input prompt
-
-**Key technical pattern:**
-
-All intro UI must use ColorCodes.StripAnsiCodes() for ANSI-aware padding/alignment. This is already proven in ShowEquipmentComparison (PR #224). Pattern:
-1. Build colored content string
-2. `visibleLen = StripAnsiCodes(content).Length` 
-3. Calculate padding using visible length
-4. Render colored string + padding
-
-**Implementation priority:**
-
-- Phase 1 (MVP): ShowIntroTitle, ShowDifficultySelection, ShowClassSelection (6.5 hours)
-- Phase 2 (Polish): ShowPrestigeDisplay, ShowSeedPrompt, integration (2 hours)
-
-**Terminal safety assumptions:**
-
-- 80-char width minimum
-- UTF-8 box-drawing characters (╔═╗║╚╝)
-- ASCII fallback available if needed
-
-**Next steps:**
-
-Awaiting decision to proceed. If approved, estimate 6.5–8.5 hours to implement both phases. Recommend:
-1. Implement ShowIntroTitle and new IDisplayService methods in ConsoleDisplayService
-2. Refactor Program.cs intro flow to call new display methods
-3. Update README.md if Systems/ changes documented
-4. Test in 80/120/160 char terminal widths
-5. Validate ANSI-aware padding handles all color combinations
-
-— planned by Hill (display engineering assessment)
-
-### 2026-02-21 — Intro Sequence Architectural Guidance
-
-**Context:** Copilot asked whether intro sequence (lines 7-75 of Program.cs) should be extracted, and if so, how.
-
-**Architectural Decision Made:**
-- Recommend extraction to `Systems/GameSetupService.cs`
-- Return immutable `GameSetup` record (Player, Seed, DifficultySettings)
-- Apply prestige bonuses AFTER class bonuses in CreatePlayer() method
-- GameSetupService receives IDisplayService via constructor (consistent with CombatEngine, GameLoop)
-
-**Key Patterns Established:**
-1. **Setup Service Contract:** Services that orchestrate complex initialization return immutable result objects (records)
-2. **Prestige Application Order:** Base stats → Class bonuses → Prestige bonuses → Set current = max
-3. **Service Placement:** Complex I/O orchestration belongs in Systems/ even if mostly console interaction
-4. **Program.cs Philosophy:** Should be thin wiring layer (15-20 lines), not business logic
-
-**Rejected Alternatives:**
-- Builder pattern: Over-engineered for linear flow
-- Keep in Program.cs: Mixes wiring with business logic, harder to maintain
-- IntroSequenceBuilder: Same as builder, unnecessary abstraction
-
-**Files Referenced:**
-- Program.cs (current: 83 lines, 70% intro sequence)
-- Systems/PrestigeSystem.cs (existing pattern: static methods for prestige data)
-- Display/IDisplayService.cs (existing: ReadPlayerName, ShowMessage, ShowTitle)
-- Models/Player.cs, PlayerClass.cs, Difficulty.cs
-
-**Decision Document:** `.ai-team/decisions/inbox/hill-intro-sequence-extraction.md`
-
-**Implementation Status:** NOT IMPLEMENTED — architectural guidance only, awaiting team consensus
-
-**Notes:**
-- Current Program.cs works correctly, extraction is refactoring not bugfix
-- Best time to extract: when implementing load game (avoid duplication)
-- Testability benefit is modest (mostly I/O, few branches to test)
-- Main benefit is separation of concerns and readability
-
----
-
-## 2026-02-22: Team Decision Merge
-
-📌 **Team update:** Display design patterns, sequence extraction architecture, and intro rendering strategy — decided by Hill (via design documentation). Decisions merged into `.ai-team/decisions.md` by Scribe.
-
-📌 Team update (2026-02-22): Process alignment protocol established — all code changes require a branch and PR before any commits. See decisions.md for full protocol. No exceptions.
-
-
----
-
-## 2026-02-22: Phase 1 Loot Display Implementation
-
-**Branch:** `feature/loot-display-phase1`  
-**PR:** #230
-
-### What was implemented
-
-**Display/IDisplayService.cs** — 3 new methods added to the interface:
-- `ShowGoldPickup(int amount, int newTotal)` — replaces the plain ShowMessage gold notification
-- `ShowItemPickup(Item item, int slotsCurrent, int slotsMax, int weightCurrent, int weightMax)` — replaces "You take the X" with a stat-aware pickup line
-- `ShowItemDetail(Item item)` — full box-drawn stat card for EXAMINE command
-
-**Display/DisplayService.cs (ConsoleDisplayService)** — all 3 interface methods implemented plus:
-- `ShowLootDrop` rewritten as a 5-line box-drawn card (╔/╚ borders, type icon, Yellow item name, Cyan stats)
-- `ShowRoom` items section rewritten: "Items on the ground:" header, each item gets type icon + Gray inline stat
-- `ShowInventory` items loop rewritten: type icon, equipped [E] in Green, Cyan primary stat column, aligned weight column
-- Two private helpers added to the class: `ItemTypeIcon(ItemType)` and `PrimaryStatLabel(Item)`
-
-**Engine/CombatEngine.cs** — `ShowMessage("You found N gold!")` replaced with `ShowGoldPickup(amount, player.Gold)` (called after `AddGold` so total is accurate)
-
-**Engine/GameLoop.cs** — two changes:
-- EXAMINE for room/inventory items: `ShowMessage("Name: Desc")` replaced with `ShowItemDetail(item)`
-- TAKE item: `ShowMessage("You take the X")` replaced with `ShowItemPickup(...)` (passes live slot+weight counts)
-
-**Dungnz.Tests/Helpers/TestDisplayService.cs + FakeDisplayService.cs** — stub implementations added for all 3 new interface methods (no-op, keeps test suite compiling)
-
-### Patterns established for the display layer
-
-- **`ItemTypeIcon(ItemType)`** helper — single source of truth for ⚔🛡🧪💍 icons. All display methods use it.
-- **`PrimaryStatLabel(Item)`** helper — returns the "most interesting" stat string for an item (AttackBonus → DefenseBonus → HealAmount → ManaRestore → etc.). Used in room display, inventory, loot drop, and pickup confirmation.
-- **Box-drawn cards** for high-importance events (loot drop, item detail) use ╔═╗╠╣╚╝║ — consistent with equipment comparison screen.
-- **Color discipline:** item names in Yellow (loot), Cyan for stats everywhere, Green for positive statuses, Red/Yellow/Green for threshold-based slot/weight bars.
-- **No color in room item names** — plain white names, Gray inline stats. Saves color emphasis for when it matters.
-
-### 2026-02-20: Phase 2.1-2.4 — Tier-Colored Display (PR #231)
-
-**Branch:** feature/loot-display-phase2
-
-## Learnings
-
-### ColorizeItemName pattern
-
-Added `private static string ColorizeItemName(Item item)` to `ConsoleDisplayService`:
-- `ItemTier.Common` → `ColorCodes.BrightWhite` (plain visible white)
-- `ItemTier.Uncommon` → `ColorCodes.Green`
-- `ItemTier.Rare` → `ColorCodes.BrightCyan` (new constant added to ColorCodes.cs: `\u001b[96m`)
-- Returns `{color}{item.Name}{Reset}` — always wrapped, never bare name in display
-- Null-safe padding: use `item.Name?.Length ?? 0` where manual padding is computed from plain text lengths
-
-### Display surfaces with tier coloring
-
-- **ShowRoom** — room floor item names now tier-colored via ColorizeItemName
-- **ShowInventory** — inventory item names tier-colored; `namePlain` kept separate for ANSI-safe column alignment
-- **ShowLootDrop** — replaced hardcoded Yellow with ColorizeItemName + null-safe manual padding (`34 - (item.Name?.Length ?? 0)`)
-- **ShowItemPickup** — item name in pickup confirmation is tier-colored
-- **ShowItemDetail** — box title uses ANSI-safe padding: `titlePlain` for length calc, separate colored display string; title color matches tier
-- **ShowShop** (new) — per-item box cards: type icon + ColorizeItemName + tier badge (tier-colored), stat + weight + price (green=affordable, red=too expensive)
-- **ShowCraftRecipe** (new) — recipe box: result item with ColorizeItemName, Cyan stats, per-ingredient ✅/❌ availability
-- **EquipmentManager.ShowEquipment** — type icons + ColorizeItemName + Attack values in BrightRed, Defense values in Cyan
-
-### IDisplayService additions
-- `ShowShop(IEnumerable<(Item item, int price)> stock, int playerGold)`
-- `ShowCraftRecipe(string recipeName, Item result, List<(string ingredient, bool playerHasIt)> ingredients)`
-- Both stubs added to FakeDisplayService and TestDisplayService in test helpers
-
-### ANSI-safe padding pattern (established)
-When a display string contains ANSI escape codes (e.g., from ColorizeItemName), C# string `.Length` and format specifiers like `{x,-30}` count the invisible ANSI bytes. Always:
-1. Compute a `plain` string (no color codes) for length math
-2. Compute a `colored` string for actual Console.Write output
-3. `pad = new string(' ', Math.Max(0, W - plain.Length))`
-
-## Phase 3 Loot Polish (PR #232)
-
-### ShowInventory grouping (3.1)
-- Replaced `foreach (var item in player.Inventory)` with `foreach (var group in player.Inventory.GroupBy(i => i.Name))`
-- Displays `×N` count tag when a group has more than one item; weight label changes to `[N wt each]` for stacked items
-- ANSI-safe: `namePlain` includes countTag for column alignment
-
-### ShowLootDrop signature change (3.2 + 3.4)
-- `IDisplayService.ShowLootDrop(Item item)` → `ShowLootDrop(Item item, Player player, bool isElite = false)`
-- `player` is not optional (required positional arg) — forces all callers to be explicit about context
-- Elite header uses `ColorCodes.Yellow` (not `BrightYellow` — that constant doesn't exist in ColorCodes.cs)
-- Tier label `[Common]` / `[Green]Uncommon` / `[BrightCyan]Rare` shown on its own line in the loot card
-- "New best" delta computed as `item.AttackBonus - player.EquippedWeapon.AttackBonus`; shown only when `delta > 0` and weapon is equipped
-
-### ShowItemPickup weight warning (3.3)
-- After the slots/weight line, if `weightCurrent > weightMax * 0.8`, prints `⚠ Inventory weight: N/M — nearly full!` in `ColorCodes.Yellow`
-- Inventory-full messages updated to use `ColorCodes.Red ❌` prefix in both CombatEngine and GameLoop
-
-### Test file fixes
-- All 20 `ShowLootDrop(item)` calls in test suite updated to `ShowLootDrop(item, new Player())`
-- Pre-existing CS1744 compile error in `TierDisplayTests.cs` line 390 fixed: changed `ContainAny(a, b, because: ...)` to `ContainAny(new[] { a, b }, because: ...)` — this blocked the entire test suite from building on master
-- 342 tests, all passing
-
-### Phase 4 — ShowMap Overhaul (#239, #243, #248)
-
-**PR:** #261 — `[Phase 4] ShowMap overhaul — fog of war, corridor connectors, and legend`
-**Branch:** `squad/phase4-showmap`
-
-**Files Modified:**
-- `Display/DisplayService.cs` — Rewrote `ShowMap()` render section; extracted `GetRoomSymbol()` private helper
-
-**Changes:**
-1. **Fog of war (#239):** BFS still traverses all rooms for stable coordinates. After BFS, filter to `visiblePositions` where `r.Visited || r == currentRoom`. Bounds and grid built from visible rooms only.
-2. **Corridor connectors (#243):** Interleaved room rows and connector rows. H-connector (`-`) printed after each room symbol (except last column) when `r.Exits.ContainsKey(Direction.East) && grid.ContainsKey((x+1, y))`. V-connector row printed between y-rows: ` | ` when south exit exists to a visible room.
-3. **Color-coded legend (#248):** Legend replaced with two-line format. Room types printed in their `GetRoomTypeColor()` color. Current room `[*]` uses `Bold+BrightWhite`. Enemy rooms use `Red`. Color reset after every colored segment.
-4. **`GetRoomSymbol()` helper:** Extracted symbol-selection logic into a private static method for readability.
-
-**Build/Test:** 0 errors, 359/359 tests passed.
-
-### 2026-02-20: Phase 1 Display Implementations + Phase 2 Navigation Polish (PR #304)
-
-**Branch:** `squad/303-display-implementations`
-
-**Task:** Implement all empty display method stubs from Phase 0/1, upgrade existing methods with bars/effects, and add Phase 2 navigation polish to ShowRoom and ShowMap.
-
-**Files Modified:**
-- `Display/DisplayService.cs` — Implemented 8 empty stubs, upgraded 2 existing methods, added 1 helper method, updated ShowRoom and GetRoomSymbol
-
-**Phase 1 Implementations:**
-
-1. **ShowCombatStatus (upgrade)** — Replaced bare HP/MP numbers with colored bars
-   - Player row: 8-wide HP bar + 6-wide MP bar (if MaxMana > 0) via RenderBar helper
-   - Enemy row: 8-wide HP bar
-   - Active effects displayed inline: `[Icon Effect Nt]` in Yellow (player) or Red (enemy)
-   - EffectIcon helper maps StatusEffect enum to Unicode symbols (☠ Poison, 🩸 Bleed, ⚡ Stun, etc.)
-
-2. **ShowCombatStart** — 44-wide red bordered banner with `⚔ COMBAT BEGINS ⚔` header and enemy name
-
-3. **ShowCombatEntryFlags** — Elite ⭐ tag in Yellow, Enraged ⚡ tag in BrightRed+Bold (checks DungeonBoss.IsEnraged)
-
-4. **ShowLevelUpChoice** — 38-wide box card with three options: +5 MaxHP, +2 Attack, +2 Defense. Shows current → projected values in Gray.
-
-5. **ShowFloorBanner** — 40-wide box showing floor N/M, variant name, and threat level (Low/Moderate/High) with color coding (Green ≤2, Yellow ≤4, BrightRed >4)
-
-6. **ShowCommandPrompt (upgrade)** — When player context provided, shows mini HP/MP bars: `[██░░ 12/15 HP │ ██░ 5/8 MP] >`
-
-7. **ShowEnemyDetail** — 36-wide box card: enemy name (Yellow if elite, BrightRed otherwise), 10-wide HP bar, ATK/DEF/XP stats, elite ⭐ tag if present
-
-8. **ShowVictory** — 42-wide victory screen: player name + level, floors conquered, RunStats (enemies/gold/items/turns)
-
-9. **ShowGameOver** — 42-wide game over screen: player name + level, death cause, RunStats (enemies/floors/turns)
-
-10. **EffectIcon helper** — private static method mapping StatusEffect enum to symbols for status indicators
-
-**Phase 2 Navigation Polish:**
-
-1. **ShowRoom — Compass-ordered exits** — Replaced comma-separated list with `↑ North   ↓ South   → East   ← West` (space-separated, ordered N/S/E/W). Uses Direction enum dictionary.
-
-2. **ShowRoom — Hazard forewarning** — After description, before exits: Yellow warning for Scorched, Cyan for Flooded, Gray for Dark room types.
-
-3. **ShowRoom — Contextual hints** — After items, before closing blank line: Shrine prompt `✨ A shrine glimmers here. (USE SHRINE)` in Cyan, Merchant prompt `🛒 A merchant awaits. (SHOP)` in Yellow.
-
-4. **GetRoomSymbol — Unvisited indicator** — Added `!r.Visited` check (before IsExit/Enemy checks): returns `[?]` in Gray for rooms in the map graph but not yet visited (fog of war enhancement).
-
-**Property Verification:**
-- Enemy: Name, HP, MaxHP, Attack, Defense, XPValue, IsElite all confirmed in Models/Enemy.cs
-- DungeonBoss: IsEnraged confirmed in Systems/Enemies/DungeonBoss.cs
-- RunStats: EnemiesDefeated, GoldCollected, ItemsFound, TurnsTaken, FloorsVisited confirmed in Systems/RunStats.cs
-- Room: Visited, HasShrine, ShrineUsed, Merchant, Exits (Dictionary<Direction, Room>) confirmed in Models/Room.cs
-
-**Build/Test:** 0 errors (24 XML doc warnings), all tests passed.
-
-### 2026-02-23 — Research: ASCII Art Enemy Display Feasibility
-
-**Scope:** RESEARCH ONLY — assessed display layer extensibility for multi-line ASCII art of enemies during combat encounters. No implementation.
-
-**Key Findings:**
-
-1. **IDisplayService Interface: Multi-Line Capability**
-   - No existing method for multi-line art display
-   - Current combat methods are single-line: `ShowCombat(string message)`, `ShowCombatMessage(string message)`, `ShowCombatStart(Enemy enemy)`, `ShowCombatEntryFlags(Enemy enemy)`
-   - **Feasible addition:** A new method like `void ShowEnemyArt(string[] lines)` would fit naturally alongside ShowCombatStart
-   - Method signature would mirror existing patterns (target parameter only, no return value, output routed through console)
-
-2. **DisplayService Combat Rendering Patterns**
-   - **ShowCombatStart (lines 1061-1072):** 44-char-wide box using `═` horizontal lines, enemy name displayed on 3rd line in BrightRed
-   - **ShowCombatEntryFlags (lines 1075-1082):** Single-line flags (Elite, Enraged) indented with 2 spaces, using conditional Console.WriteLine per flag
-   - **ShowEnemyDetail (lines 1124-1143):** 36-char-wide box using box-drawing chars (`╔╗╠╣╚╝`), with stats stacked vertically
-   - Pattern: All UI boxes use `const int W = X;` for width, `new string('═', W)` for borders, indentation with 2 spaces after `║`
-   - **Combat zone has more breathing room** (44-char boxes) vs item cards (36-38 chars)
-
-3. **Console Width Constraints**
-   - Standard assumed width: 80 columns (implied by 44-char combat box with breathing room)
-   - Largest implemented box: ShowLootDrop (38-char width at line 258 using `╔══════════════════════════════════════╗`)
-   - **20-character ASCII art block:** Would fit comfortably beside text (e.g., 20-char art + 2-char gutter + 26-char stat block = 48 chars, leaving 32 for margins/layout)
-   - **Practical limit for side-by-side layout:** ~18-20 chars wide ASCII art to avoid cramping
-
-4. **ANSI Color Integration: Full Support Available**
-   - ColorCodes static class (Systems/ColorCodes.cs) provides 8 basic + 4 bright colors (Red, Green, Yellow, Blue, Cyan, Magenta, White, Gray, BrightRed, BrightCyan, BrightWhite)
-   - **VisibleLength/PadRightVisible pattern proven robust:** Already used throughout DisplayService to handle ANSI-padded text (line 1208-1212)
-   - Color escapes embedded in ASCII art strings work seamlessly: `$"{Red}▓▓{Reset}{Green}██{Reset}"` — padding helpers account for invisible codes
-   - **No modification needed to ColorCodes:** Existing StripAnsiCodes (line 202) and color constants support multi-line colored art natively
-   - Example: `string[] dragonArt = { $"{ColorCodes.BrightRed}▓▓▓{Reset}", $"{ColorCodes.Red}███{Reset}" };` would render colored, padded correctly
-
-5. **Multi-Line Rendering Pattern: Already Established**
-   - **Precedent in ShowCombatStatus (lines 117-151):** Loops through effect lists to render conditional status flags
-   - **Precedent in ShowInventory (lines 195-240):** Iterates items in a loop, rendering each on separate lines with PadRightVisible
-   - **ShowEnemyArt(string[] lines) implementation sketch:**
-     ```csharp
-     public void ShowEnemyArt(string[] lines)
-     {
-         Console.WriteLine();
-         foreach (var line in lines)
-             Console.WriteLine($"  {line}");
-         Console.WriteLine();
-     }
-     ```
-   - Could be placed after ShowCombatStart (line 1072) in DisplayService
-   - IDisplayService method signature: `void ShowEnemyArt(string[] artLines);`
-
-6. **FakeDisplayService Test Stub Requirements**
-   - Current pattern: Methods store output in public Lists (Messages, CombatMessages, AllOutput, etc.) or track state (booleans for method calls)
-   - **Minimal stub for ShowEnemyArt:**
-     ```csharp
-     public void ShowEnemyArt(string[] artLines) 
-     { 
-         AllOutput.Add($"enemy_art:{string.Join("|", artLines)}"); 
-     }
-     ```
-   - 2-3 lines per new display method; 4-5 total lines to add (FakeDisplayService.cs lines ~129-136)
-   - Stripping ANSI from art: `ColorCodes.StripAnsiCodes()` can be applied per-line if tests need plain-text verification
-
-7. **Zero-Impact Integration**
-   - **Existing code unaffected:** New method is additive, not a breaking change to IDisplayService signatures
-   - **Build & test status:** No modifications to existing code paths
-   - **Combat flow:** Would insert ShowEnemyArt after ShowCombatStart in game loop's encounter sequence (future work for GameEngine wiring)
-
-**Conclusion:**
-Display layer is **well-structured for multi-line ASCII art integration**. VisibleLength/PadRightVisible helpers already solve ANSI-color padding. Box-drawing patterns are established. A ShowEnemyArt(string[] lines) method fits naturally into IDisplayService contract with minimal FakeDisplayService overhead. Recommended width: 18-22 chars for ASCII art to fit standard 80-column layout. No architectural barriers.
-
----
-
-## Learnings — WI-2 through WI-5 (Interactive Menus)
-
-### Branch: feat/interactive-menus | Commit: a8dcb52
-
-**Context:**
-Converted bounded menu selection from typed-number input to arrow-key navigation with highlighted cursor. Typed-number fallback preserved (tests use FakeInputReader which returns null from ReadKey).
-
-**Key Decisions:**
-
-1. **`SelectFromMenu<T>` uses `IInputReader` parameter** — not `IMenuNavigator`. This keeps the method self-contained and directly spec-compliant. `ConsoleMenuNavigator` is still injected via constructor (`_navigator`) for potential future use but `SelectFromMenu` drives its own key loop.
-
-2. **Constructor signature: `ConsoleDisplayService(IInputReader? input = null, IMenuNavigator? navigator = null)`** — optional params with defaults (`new ConsoleInputReader()`, `new ConsoleMenuNavigator()`) preserve backward compatibility with `new ConsoleDisplayService()` calls in existing tests.
-
-3. **`SelectDifficulty()` / `SelectClass()` converted** — both replaced their `while(true) ReadLine()` loops with `SelectFromMenu` calls. Class card rendering (the elaborate box UI) is preserved; `SelectFromMenu` now handles the selection line below the cards.
-
-4. **`ShowShopAndSelect` / `ShowSellMenuAndSelect`** — new methods added to both `IDisplayService` and `ConsoleDisplayService`. They call the existing `ShowShop`/`ShowSellMenu` for rendering, then use `SelectFromMenu` to handle selection. Returns 1-based index, 0 for cancel. FakeDisplayService stubs return 0.
-
-5. **WI-6/7/8 already committed by Barton** — `ShowLevelUpChoiceAndSelect`, `ShowCombatMenuAndSelect`, `ShowCraftMenuAndSelect` were in the branch already (commit 10097eb). Only needed to ensure `SelectFromMenu` method existed for them to compile.
-
-**Pitfalls:**
-- The branch already had a constructor (`IInputReader`, `IMenuNavigator`) and WI-6/7/8 implementations from Barton's commit. Multiple agents working the same branch required careful diff inspection.
-- `CombatEngineTests` and `CombatBalanceSimulationTests` time out — this is a pre-existing issue from Barton's combat menu work, unrelated to my changes.
-- `IDisplayService` did NOT have `ShowShopAndSelect`/`ShowSellMenuAndSelect` until I added them — test helpers had them already (Barton added stubs), but the interface itself was missing.
-
----
-
-## Learnings — #591, #592, #594 (UI Consistency Fixes)
-
-### Branch: fix/ui-consistency-class-card | PR: #595
-
-**Where class icon/label definitions live in DisplayService.cs:**
-- **Class card icons (iconWidth tuples):** `var classes = new[] { ... }` array around line 1175 inside the `SelectClass()` method. Each entry is `(def, icon, number, iconWidth)`. `iconWidth` drives padding calculation at line 1230: `int nameColWidth = 39 - (iconWidth - 1)`.
-- **Select menu labels:** `var selectOptions = new (string Label, PlayerClassDefinition Value)[]` array around line 1258, also inside `SelectClass()`. These are the strings shown in the arrow-key menu after the card rendering.
-- Both locations must be updated together when changing an icon — the card tuple and the select label.
-
-**The PadRightVisible pattern for card border alignment:**
-- `PadRightVisible(string s, int totalWidth)` pads to `totalWidth` *visible* characters, stripping ANSI codes before measuring. This handles colored strings and multi-byte emoji correctly.
-- For box-drawn cards the pattern is: `$"║{PadRightVisible(field, 38)}║"` where the field string includes leading spaces and the icon. Total inner width is 38 (card is `╔══════════════════════════════════════╗` = 38 inner cells).
-- **Don't manually compute `namePad`** with `34 - name.Length` — that hardcodes icon cell width as 1 and breaks for 2-cell emoji. Always use `PadRightVisible`.
-
-**Unicode variation selectors for emoji rendering:**
-- `⚔` (U+2694) is a text-presentation codepoint — terminals render it as a text symbol (1 cell wide).
-- Appending U+FE0F (variation selector-16) forces emoji presentation: `⚔️` = `⚔` + `️`. Now renders as a 2-cell emoji.
-- `iconWidth` must match the rendered cell width: text symbol = 1, emoji = 2.
-- Other class icons (🔮, 🗡, 🛡, 💀, 🏹) are already inherently emoji-presentation codepoints with `iconWidth: 2`.
-
-## Learnings — #597, #598, #599 (UI Consistency Fixes — Icons, Rogue Indent, Card Border)
-
-### Branch: squad/ui-consistency-fixes | PR: #600
-
-**Which files control class selection display:**
-- `Display/DisplayService.cs` is the sole owner. Inside `SelectClass()`:
-  - `var classes = new[] {...}` (~line 1175): drives the per-class card rendering (icon, number, def).
-  - `var selectOptions = new (string Label, PlayerClassDefinition Value)[] {...}` (~line 1258): drives the arrow-key selection menu displayed below the cards.
-
-**How card/border rendering works for the class cards:**
-- Each class card is a `┌──┐` / `└──┘` box (48 inner chars). The header line uses:  
-  `$"│ [{number}] {icon}  {def.Name.PadRight(nameColWidth)} │"`  
-  where `nameColWidth = 39 - (icon.Length - 1)` to keep total inner chars = 48 regardless of icon C# string length.
-- Stat lines (HP, Attack, Defense, Mana) use ANSI-aware padding via `boxInner - StripAnsiCodes(line).Length` to handle color codes.
-- The key insight: `icon.Length` (C# .Length) must be used, not a hardcoded `iconWidth`, because BMP characters have `.Length=1` while emoji have `.Length=2` (surrogate pairs).
-
-**The pattern for UI box drawing and alignment:**
-- Box borders use `╔═╗`, `║`, `╚═╝` (double-line) or `┌─┐`, `│`, `└─┘` (single-line).
-- Item cards use `PadRightVisible()` for ANSI-aware padding; class cards use `StripAnsiCodes()` + manual padding.
-- The selection menu (`SelectFromMenu<T>`) uses `PadRight(maxLabelLen)` which only works correctly when all labels have consistent `.Length` vs visual width relationships. Mixing BMP chars (`.Length=1`) and emoji (`.Length=2`) causes misalignment because emoji display 2 columns wide but may count as 2 chars in `.Length`, while the terminal renders them at 2 columns. Plain text labels (no icons) are always safe with `PadRight`.
-
-**Decision:** Selection menu labels now use plain class names only (no icons). The class cards above the menu already show all icons prominently. This avoids all Unicode display-width concerns in the menu renderer.
 
 ## Learnings — Deep Code Review (2026-02-27)
 
@@ -1301,67 +96,6 @@ Converted bounded menu selection from typed-number input to arrow-key navigation
 
 **Pattern reinforced:** `PadRightVisible` should be used everywhere icon+name strings are constructed in box rows — raw `.Length` on icons is unreliable.
 
-## Learnings — #639, #641 (Migrate Regular Shrine, Shop, Sell to arrow-key menus)
-
-### Branch: squad/639-641-shrine-shop-sell-menus | PR: #645
-
-**Files changed:**
-- `Display/IDisplayService.cs` — Added 3 new methods: `ShowShrineMenuAndSelect`, `ShowShopWithSellAndSelect`, `ShowConfirmMenu`
-- `Display/DisplayService.cs` — Implemented the 3 new methods using existing `SelectFromMenu<T>` helper
-- `Engine/GameLoop.cs` — Migrated `HandleShrine()`, `HandleShop()`, `HandleSell()` from letter-key/number-entry to arrow-key menu calls
-- `Dungnz.Tests/Helpers/FakeDisplayService.cs` — Added test stubs with input reader fallback support
-- `Dungnz.Tests/Helpers/TestDisplayService.cs` — Added simple test stubs returning safe defaults
-
-**Pattern discovered — menu-driven interaction flow:**
-- Existing `ShowShopAndSelect` and `ShowSellMenuAndSelect` were already implemented but not wired to GameLoop
-- New `ShowShopWithSellAndSelect` extends shop menu to include a "Sell Items" option (returns -1) alongside item selections
-- `ShowConfirmMenu` provides a reusable Yes/No picker (returns bool) — avoids direct ReadLine + string compare in game logic
-- All menu methods use the private `SelectFromMenu<T>` helper which handles arrow-key navigation in interactive mode and falls back to numbered text input in test mode
-
-**The architecture benefit:**
-- Moving menu rendering AND selection to Display layer keeps GameLoop focused on game state changes
-- Numeric choice values (0 = cancel, 1-N = options, -1 = special action like "Sell") are cleaner than string parsing
-- Test helpers can now simulate menu choices by returning integers instead of mocking complex input sequences
-
-**Shop/Sell loop pattern:**
-- `HandleShop()` now loops until player chooses 0 (Leave) — on -1 it calls `HandleSell()` then continues
-- Buying an item decrements shop stock and continues the loop — player can buy multiple items in one visit
-- `HandleSell()` uses `ShowConfirmMenu` for the "Sell X for Yg?" prompt — no more Y/N text parsing
-
-**Test coverage maintained:** All existing tests pass with new stubs returning safe defaults (0 for menus, false for confirms).
-
-## Learnings — #654 (EQUIP no-arg interactive menu)
-
-### Branch: squad/654-equip-no-arg-menu | PR: #656
-
-**Pattern used for the equip menu:**
-- Added `Item? ShowEquipMenuAndSelect(IReadOnlyList<Item> equippable)` to `IDisplayService` and implemented it in `ConsoleDisplayService` following the exact same pattern as `ShowCombatItemMenuAndSelect`.
-- The implementation builds a `(string Label, Item? Value)` array using `ItemTypeIcon` + item name + `PrimaryStatLabel`, appends a `"↩  Cancel"` entry with `null` value, then calls the private `SelectFromMenu<T>` helper with the header `"=== EQUIP — Choose an item ==="`.
-- `EquipmentManager.HandleEquip` now checks for empty `itemName`, filters `player.Inventory` by `IsEquippable`, calls `_display.ShowEquipMenuAndSelect`, then delegates to a new private `DoEquip(Player player, Item item)` method.
-- The equip logic (class restriction, weight check, `player.EquipItem`, set bonus, narration) was extracted into `DoEquip` to avoid duplication between the menu path and the name-resolution path.
-- Test helpers: `FakeDisplayService` reads a line and returns the item at that 1-based index (mirrors the pattern from `ShowCombatItemMenuAndSelect`). `TestDisplayService` returns `null` (safe default).
-- README updated: `equip <item>` command description now mentions "omit item name to pick from an interactive menu".
-
-**How `IMenuNavigator` is used across the codebase:**
-- `IMenuNavigator` is injected into `ConsoleDisplayService` as `_navigator`.
-- All arrow-key menus in `DisplayService` are driven by the private generic helper `SelectFromMenu<T>(IReadOnlyList<(string Label, T Value)> options, IInputReader input, string? header)`.
-- In interactive mode (`input.IsInteractive == true`), `SelectFromMenu` converts options to `MenuOption<T>` and calls `_navigator.Select(menuOptions)` which handles arrow-key navigation and returns the selected value.
-- In non-interactive mode (tests/redirected input), `SelectFromMenu` falls back to numbered text input via `input.ReadLine()`.
-- `IMenuNavigator` is **never** injected into game logic classes (EquipmentManager, CombatEngine, etc.) — all menu presentation is owned by `IDisplayService`. Game logic classes call a typed `ShowXxxAndSelect` method and receive a typed result back.
-
-## Learnings
-
-- Alignment bug: `VisibleLength` was using `.Length` after stripping ANSI, not accounting for wide BMP chars
-- Pattern: Any hardcoded padding constant that involves wide BMP chars in `_wideBmpChars` must account for +1 col per char
-- Fixed files: Display/DisplayService.cs lines 399, 475, 1341, 1353, 1375, 1438
-- CraftingMaterial enum value: Added new `ItemType.CraftingMaterial` between `Consumable` and `Gold` in enum definition
-- Explicit handling in switches: Always add explicit `case ItemType.CraftingMaterial:` to all switch statements on `item.Type`, even when it should match default behavior — makes intent clear and prevents future maintenance issues
-- JSON reclassification: Changed 9 pure crafting materials (no stat effects) from `Consumable` to `CraftingMaterial` in item-stats.json: goblin-ear, skeleton-dust, troll-blood, wraith-essence, dragon-scale, wyvern-fang, soul-gem, iron-ore, rodent-pelt
-- Dragon-fang exception: dragon-fang is a Weapon with 17 ATK bonus, not a crafting material despite appearing in recipes — dual-purpose items keep their primary functional type
-- Display icon: Used ⚗ (alembic) for CraftingMaterial items in `ItemTypeIcon()` — visually distinct from 🧪 (consumables)
-- Error messaging: GameLoop.HandleUse shows helpful message directing players to use crafting materials at a crafting station, not directly
-- Files changed: Models/ItemType.cs, Display/DisplayService.cs, Systems/InventoryManager.cs, Engine/GameLoop.cs, Systems/ItemInteractionNarration.cs, Data/item-stats.json
-- All 1308 tests passed after implementation
 ## Learnings — #674, #679 (Difficulty Balance Overhaul — Phase 1)
 
 ### Branch: squad/674-679-difficulty-settings-expanded | PR: TBD
@@ -2786,6 +1520,290 @@ Fixed 7 display-layer bugs in `SpectreLayoutDisplayService` that caused blank sc
 - `Display/Spectre/SpectreLayoutDisplayService.Input.cs` — ContentPanelMenu (Escape/Q handling)
 - `Dungnz.Tests/SellSystemTests.cs` — sell/shop command tests
 - `Dungnz.Tests/Helpers/FakeDisplayService.cs` — test double for IDisplayService
+
+### 2026-04-08 — Menu Input Bug Fixes (#1129–#1135)
+
+**PR:** #1142 — `fix: Escape key handling, remove Console.ReadLine fallback, null key guard`
+**Branch:** `squad/1129-1130-1133-1135-menu-fixes`
+
+**Issues addressed:**
+
+#### #1129 — ReadCommandInput null falls through to Console.ReadLine
+- `GameLoop.cs` line 251: When `ReadCommandInput()` returned null (empty Enter), it fell through to `_input.ReadLine()` which called `Console.ReadLine()` OUTSIDE the Spectre Live layout, corrupting the terminal
+- **Fix:** Changed `var input = _display.ReadCommandInput() ?? _input.ReadLine() ?? string.Empty;` to `var input = _display.ReadCommandInput() ?? string.Empty;` — if ReadCommandInput returns null, treat it as empty string, no fallback
+
+#### #1130 — No Escape key handling in ContentPanelMenu methods
+- `SpectreLayoutDisplayService.Input.cs`: Three menu methods had no Escape key handling — pressing Escape in a menu consumed keys but loop never exited
+- **Fixes:**
+  - `ContentPanelMenuNullable<T>` (line 599): Added `case ConsoleKey.Escape:` and `case ConsoleKey.Q:` returning `null`
+  - `ContentPanelMenu<T>` (line 564): Added `case ConsoleKey.Escape:` and `case ConsoleKey.Q:` returning `items[selected].Value` (non-nullable, so return current item)
+  - `ShowSkillTreeMenu` (line 438): Added `case ConsoleKey.Escape:` and `case ConsoleKey.Q:` returning `null`
+
+#### #1133 — PauseAndRun uses Thread.Sleep(100) instead of synchronization
+- `SpectreLayoutDisplayService.Input.cs` line 531: Used `Thread.Sleep(100)` as a brief timing buffer after signaling pause event
+- **Assessment:** This is a timing buffer, not a correctness mechanism — the pause signal is event-based via `_pauseLiveEvent.Set()`
+- **Fix:** Documented purpose with comment: "Brief wait to allow Live loop to observe pause signal (#1133) / Thread.Sleep is acceptable here as it's a timing buffer, not correctness"
+
+#### #1135 — ContentPanelMenu returns first item on null ReadKey
+- `SpectreLayoutDisplayService.Input.cs` line 600 / 564: If `AnsiConsole.Console.Input.ReadKey()` returned null (can happen in some terminals), `if (key == null) return items[selected].Value;` would return first item instead of handling gracefully
+- **Fix:** Changed to `if (key == null) continue;` in both `ContentPanelMenu<T>` and `ContentPanelMenuNullable<T>` — skip null keys, keep loop running
+
+**Build & Test Status:**
+- ✅ `dotnet build --nologo` — 0 errors, 0 warnings
+- ✅ `dotnet test --nologo -v q` — 1406 passed, 0 failed
+
+**Key Learnings:**
+- `Console.ReadLine()` breaks Spectre.Console's Live display by writing/reading outside the managed terminal context
+- Escape key (and Q for terminals that don't reliably send Escape) should always be handled in menu loops as a cancel/exit option
+- Nullable vs. non-nullable menu methods: nullable can return null on Escape, non-nullable should return current selection
+- `ReadKey()` can return null in non-interactive or redirected input scenarios — always guard with null check before accessing `.Key`
+
+---
+
+### 2026-03-05 — TUI Usability Fixes (#1036–#1044)
+
+**PR:** #1045 — `fix: TUI usability — contrast, auto-populating panels, color system, skill tree`
+**Branch:** `squad/1036-tui-usability-fixes`
+
+**Issues addressed (all 9 — triaged by Coulson):**
+
+#### #1036 — No ColorScheme on any TUI panel
+- `TuiLayout.cs`: Defined 5 high-contrast `ColorScheme` objects (normal/map/stats/log/input)
+- Applied to all panels: bright green on black for Map, bright cyan on black for Stats, white on blue for content, bright yellow on black for command input
+- Used `Terminal.Gui.Color` enum values — no `BrightWhite` exists in v1.19, used `Color.White` instead
+- Added `MakeAttr()` private helper with null-guard on `Application.Driver` so tests (which don't call `Application.Init()`) don't NullReferenceException
+
+#### #1042 — SetMap/SetStats destroy and recreate child views
+- `TuiLayout.cs`: Added private `_mapView` and `_statsView` TextViews created once in constructor
+- `SetMap()` and `SetStats()` now just update `.Text` property — no `RemoveAll()` + `new TextView` churn
+
+#### #1038 + #1039 — Map and Stats panels blank on room entry
+- `TerminalGuiDisplayService.cs`: Added `_player`, `_currentRoom`, `_currentFloor` fields
+- `ShowPlayerStats(player)` caches `_player`; `ShowMap(room, floor)` caches `_currentRoom` / `_currentFloor`
+- `ShowRoom(room)` now calls `BuildAsciiMap` and `_layout.SetMap()` automatically after rendering the room description; also calls `BuildStatsText(_player)` and `_layout.SetStats()` if player is cached
+- Extracted `BuildStatsText(Player)` as a private static helper (reused by both `ShowPlayerStats` and the auto-refresh in `ShowRoom`)
+
+#### #1037 — TuiColorMapper never called, ShowColored* ignores color
+- `ShowColoredMessage(message, color)`: Now calls `TuiColorMapper.MapAnsiToTuiColor(color)` and maps the result to a log type (error/loot/info) — message appears in the log with appropriate prefix icon
+- `ShowColoredCombatMessage(message, color)`: Routes to log with type `"combat"` so it gets the ⚔ prefix
+- Terminal.Gui TextViews still don't support inline ANSI; color distinction is via log message type
+
+#### #1041 — BuildColoredHpBar/MpBar dead code (barChar computed but unused)
+- Fixed `BuildColoredHpBar`: `barChar` is now a `char` and `new string(barChar, filled)` uses it properly
+- Fixed `BuildColoredMpBar`: same pattern — bar density reflects mana percentage (`█`/`▓`/`▒`)
+
+#### #1040 — ShowSkillTreeMenu returns null unconditionally
+- Implemented using `TuiMenuDialog<Skill?>`: lists all `Skill` enum values not yet unlocked by the player, plus a Cancel option. Returns selected skill or null.
+
+#### #1043 — Race condition: InvokeOnUiThread drops early calls
+- `GameThreadBridge.cs`: Added `static ManualResetEventSlim _uiReady`
+- Added `static SetUiReady()` method that sets the event
+- `InvokeOnUiThread()` now waits up to 5 s for `_uiReady` when `MainLoop` is null before falling through
+- `Program.cs`: `layout.MainWindow.Loaded += () => GameThreadBridge.SetUiReady()` — fires after first Application.Run tick
+
+#### #1044 — TUI-ARCHITECTURE.md describes non-existent API
+- Rewrote `docs/TUI-ARCHITECTURE.md` to match actual implementation:
+  - Replaced `ConcurrentQueue`/`FlushMessages`/`EnqueueCommand` fiction with `BlockingCollection`, `InvokeOnUiThread`, `Application.MainLoop.Invoke()`
+  - Added `ManualResetEventSlim` / `SetUiReady` documentation
+  - Added panel color table and auto-population notes
+  - Corrected initialization sequence (5 steps → 9 steps)
+
+**Build & Test Status:**
+- ✅ `dotnet build --nologo -v q` — 0 errors, 0 warnings
+- ✅ `dotnet test --nologo` — 1785/1785 passing
+
+**Key Learnings:**
+- Terminal.Gui v1.19 `Color` enum: no `BrightWhite` — use `Color.White`. Available bright variants: BrightBlue, BrightCyan, BrightGreen, BrightMagenta, BrightRed, BrightYellow
+- `Application.Driver` is null before `Application.Init()` — guard with null-check when used in constructors that tests instantiate directly
+- `new string(char, count)` not `new string(string, count)` — C# string repeat takes a `char`, not a `string`
+- `Terminal.Gui.Attribute` conflicts with `System.Attribute` — use fully qualified name `Terminal.Gui.Attribute` when both namespaces are in scope
+
+
+
+**PRs:** #965, #966, #967
+
+**Issues addressed:**
+
+#### #928 — GameLoop null! field initialization risk (PR #965)
+**Branch:** `squad/928-gameloop-null-safety`
+- `_player`, `_currentRoom`, `_stats`, `_context` declared with `null!` and only set in `Run()`
+- Constructor accepted `display` and `combat` without null-checking despite non-nullable type
+- `ExitRun()` compared `_context != null!` — syntactically confusing (null-forgiving in comparison)
+- **Fix:** Added `ArgumentNullException.ThrowIfNull()` for `display`/`combat` in constructor; added same for `state.Player`/`state.CurrentRoom` in `Run(GameState)`; replaced `null!` comparison with `is not null`
+
+#### #929 — Silent exception swallowing in PrestigeSystem (PR #966)
+**Branch:** `squad/929-fix-silent-exceptions`
+- `PrestigeSystem.Load()` used bare `catch { return new PrestigeData(); }` — no trace, no log
+- `PrestigeSystem.Save()` used `catch { /* silently fail */ }` — prestige data loss with zero feedback
+- `SaveSystem.SaveGame()` was already correct (re-throws after cleanup); `LoadGame()` already wraps as `InvalidDataException`
+- **Fix:** Both catch blocks now capture `Exception ex` and call `Trace.TraceError()` with context+message. Non-crashing by design, but now observable via any configured trace listener
+
+#### #930 — Console.WriteLine in Systems layer (PR #967)
+**Branch:** `squad/930-remove-console-in-systems`
+- `PrestigeSystem.Load()` called `Console.WriteLine()` for a version mismatch warning — the only offending Console.* call in Engine/ and Systems/
+- **Fix:** Replaced with `Trace.TraceWarning()`. PrestigeSystem is static with no DI, so Trace is the right diagnostic channel
+
+**Key Learnings:**
+- Static systems without DI should use `System.Diagnostics.Trace` for diagnostics, not `Console.*`
+- `null!` (null-forgiving) is for suppressing nullable warnings — never use it in comparisons; use `is not null` instead
+- Bare `catch { }` is always wrong unless intentional; always capture `Exception ex` and trace/log it
+
+### 2026-03-04 — Bug and Quality Scan (#868)
+
+**Task:** Thorough scan of Engine/, Models/, and Program.cs for bugs and quality risks.
+
+**Findings (20 issues identified):**
+
+| Severity | Count | Key Issues |
+|----------|-------|-----------|
+| HIGH | 2 | Unvalidated fuzzy-match argument; Duplicated flee-state reset code |
+| MED | 7 | Null checks, edge cases, parameter typo, hardcoded dimensions, bounds checks |
+| LOW | 11 | Resource cleanup, magic numbers, type-system confidence, event handler leaks |
+
+**Top Patterns to Address:**
+
+1. **Duplicate flee-state reset** (CombatEngine.cs lines 436–490)
+   - Nearly identical 50-line code blocks; prone to divergence
+   - Fix: Extract `ResetFleeState(Player, Enemy)` helper
+
+2. **Hardcoded magic numbers** (DungeonGenerator.cs, GameLoop.cs)
+   - `width = 5, height = 4` and `FinalFloor = 8` scattered across logic
+   - Fix: Extract to `const` fields; centralize floor-scaling rules
+
+3. **Missing bounds checks** (DungeonGenerator.cs lines 193, 287)
+   - `eligibleRooms[specialIdx++]` without guard; room description pool access
+   - Fix: Guard before indexing; fallback descriptions
+
+4. **Mutable collection exposure** (Room.cs line 101)
+   - `Items` is public List; external code can mutate during iteration
+   - Fix: Return `IReadOnlyList<Item>` or expose copy
+
+5. **Event handler memory leak vector**
+   - `OnHealthChanged?.Invoke()` never unsubscribed
+   - Fix: Document event lifetime; consider weak-event pattern
+
+**Files to Review for Fixes:**
+- Engine/CombatEngine.cs (duplicate code, event leaks)
+- Engine/DungeonGenerator.cs (magic numbers, bounds checks)
+- Models/Room.cs (collection exposure)
+- Models/PlayerStats.cs (event cleanup)
+- Engine/GameLoop.cs (exit path cleanup, hardcoded constants)
+
+**Quality Assessment:** Code is defensive and well-structured overall. Most issues are maintainability debt (hardcoded values, duplicate code) or edge-case risks (bounds checks, null guards). No critical runtime bugs detected, but the patterns compound risk as codebase grows.
+
+---
+
+## Learnings
+
+### 2026-03-03 — GameLoop Decomposition to ICommandHandler Pattern (#868)
+
+**PR:** #889 — `refactor: decompose GameLoop into ICommandHandler pattern`  
+**Branch:** `squad/868-gameloop-decomposition`
+
+**Problem:**
+- GameLoop.cs had grown to 1,635 lines, difficult to maintain and extend
+- Multiple command handling logic mixed together
+- Hard to add new command types or modify existing ones
+- Violated single responsibility principle
+
+**Solution:**
+- Decomposed GameLoop into ICommandHandler pattern
+- Created `Engine/Commands/` directory with 23 handler classes:
+  - Each command type has its own handler (e.g., AttackHandler, HealHandler, UseItemHandler)
+- Created CommandContext class to hold mutable run state:
+  - Player current HP/MP/position
+  - Combat state flags
+  - Inventory state
+- GameLoop.cs reduced to 741 lines (45% reduction)
+- Each handler implements ICommandHandler interface with Execute(CommandContext) method
+- Handlers are registered in a CommandFactory/Registry pattern
+
+**Architecture:**
+- CommandContext holds all mutable run state (replaces scattered local variables)
+- Each handler focuses on single command execution
+- Easy to add new commands without modifying GameLoop
+- Testable: handlers can be unit tested independently with CommandContext
+
+**Testing:**
+- ✅ All 1,422 tests passing
+- ✅ Game starts and plays normally
+- ✅ All command types still work identically
+
+**Key Learning:**
+- ICommandHandler pattern scales better than monolithic Game/GameLoop classes
+- CommandContext makes state explicit and testable
+- 23 focused handlers easier to maintain than one 1,635-line method
+
+---
+
+### 2026-03-03 — Schema Validation Fix (#849)
+
+**PR:** #850 — `fix: repair invalid items in item-stats.json`  
+**Branch:** `squad/849-fix-item-stats-schema`  
+**File:** `Data/schemas/item-stats.schema.json` only
+
+**Problem:**
+- Game crashed on startup with schema validation error
+- Error: `System.IO.InvalidDataException: Schema validation failed for Data/item-stats.json`
+- Affected items at indices: 50, 77, 78, 79, 80, 81, 82, 83, 97 (all crafting materials)
+- Validation reported: `ArrayItemNotValid` for each of these items
+
+**Root Cause:**
+- The JSON schema was missing property definitions for 4 fields that exist in all items:
+  - `StatModifier` (integer)
+  - `Description` (string)  
+  - `Weight` (number)
+  - `SellPrice` (integer)
+- JSON Schema validation by default rejects properties not defined in the schema
+- All items in item-stats.json have these properties, but the schema didn't declare them
+- This caused validation to fail when StartupValidator ran its schema checks
+
+**Fix:**
+- Added missing property definitions to `Data/schemas/item-stats.schema.json`:
+  - `"StatModifier": { "type": "integer" }`
+  - `"Description": { "type": "string" }`
+  - `"Weight": { "type": "number", "minimum": 0 }`
+  - `"SellPrice": { "type": "integer", "minimum": 0 }`
+- No changes to item-stats.json data file needed — it was already correct
+- Schema now matches the actual structure of items in the data file
+
+**Testing:**
+- ✅ `dotnet build` succeeds
+- ✅ Game starts without validation errors
+- ✅ StartupValidator.ValidateOrThrow() passes
+- Confirmed by running game — title screen appears (previously crashed immediately)
+
+**Key Learning:**
+- StartupValidator in `Systems/StartupValidator.cs` validates all data files against schemas at startup
+- Schema validation is strict by default — all properties must be declared
+- When schema validation fails, error messages show indices (0-based) and error kind
+- Use `jq '.Items[N]'` to inspect specific items by index in large JSON files
+- Always test both build AND runtime startup after schema changes
+
+---
+
+### 2026-03-02 — Emoji Restoration (#832)
+
+**PR:** #833 — `fix: restore visual emojis, replace 🛡 with 🦺 for Chest alignment`  
+**Branch:** `squad/832-restore-visual-emojis`  
+**File:** `Display/SpectreDisplayService.cs` only
+
+**What:**
+- PR #830 replaced all emojis with narrow Unicode symbols to fix an alignment bug. The only ACTUALLY broken emoji was 🛡 (U+1F6E1, SHIELD) — EAW=N but not in NarrowEmoji, so it got 1 space instead of 2.
+- Restored all original wide emojis (💍🪖🥋🧤👖👟🧥⭐✨🏃🧪).
+- Replaced 🛡 with 🦺 (safety vest, U+1F9BA, EAW=W) for Chest and Armor icon — this is the real fix.
+- Replaced `IL()` helper with `EL()` that uses a `NarrowEmoji` HashSet to decide spacing: narrow symbols get 2 spaces, wide emojis get 1 space.
+
+**Key learning — EAW and terminal alignment:**
+- EAW=W (wide) emojis occupy 2 terminal columns → use 1 space after = 3 columns total
+- EAW=N (narrow) symbols occupy 1 terminal column → use 2 spaces after = 3 columns total
+- The NarrowEmoji set: `["⚔", "⛨", "⚗", "☠", "★", "↩", "•"]`
+- ✦ (U+2736) is narrow but only used in Combo row (not an equipment slot) — acceptable
+- Never add 🛡 to the emoji set; 🦺 is the permanent replacement
+
+**Build note:** `dotnet build Dungnz.csproj` (without `-q`, without `--no-restore`) works when the incremental build cache is in a bad state. `dotnet build -q --no-restore` may fail with MSB3492/GenerateTargetFrameworkMonikerAttribute — this is a pre-existing SDK quirk, not a code error.
+
+---
 
 ## 2026-03-06: Fixed missing ShowRoom() calls in command handlers
 
