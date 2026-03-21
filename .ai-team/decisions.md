@@ -6327,3 +6327,43 @@ The two-exe architecture change only affects P2. All display service implementat
 Let me know if you hit any issues. The changes are mechanical — should be smooth.
 
 — Coulson
+# Text-Based Numbered Menu Pattern for Avalonia Input
+
+**Date:** 2026-03-21  
+**Architect/Author:** Hill  
+**Issues:** #1428, #1429, #1430, #1431, #1432, #1433  
+**PRs:** #1434  
+
+---
+
+## Context
+Implemented 23 Avalonia menu input methods that were previously hardcoded stubs. Required a reliable, consistent pattern for menu-driven input that could integrate seamlessly with the existing ContentPanel/InputPanel architecture and TaskCompletionSource bridge pattern.
+
+## Decision
+All Avalonia menu methods use text-based numbered selection:
+- Menu options rendered as numbered list in ContentPanel (e.g., "1. Attack\n2. Defend\n3. Cast Spell")
+- User enters number via InputPanel
+- Selection validated and returned via SelectFromMenu<T> generic helper method
+- TaskCompletionSource bridge connects InputPanel completion to method return
+- Pattern reuses ReadCommandInput architecture for consistency
+
+## Rationale
+- **Simplicity:** No custom controls or AXAML modifications required
+- **Reliability:** Pattern proven in existing ReadCommandInput implementation
+- **Consistency:** All menu methods use identical architecture and flow
+- **Compatibility:** Works seamlessly with existing ContentPanel/InputPanel infrastructure
+- **Maintainability:** Generic SelectFromMenu<T> reduces code duplication across 23 methods
+
+## Alternatives Considered
+1. **Arrow-key navigation:** Would require custom controls and AXAML modifications; higher complexity, greater risk of breaking existing display methods
+2. **Button-based UI:** Violated text-game design philosophy; required extensive changes to UI layer
+3. **Modal dialogs:** Incompatible with TaskCompletionSource bridge pattern used for input collection
+
+## Related Files
+- Dungnz.Display.Avalonia/Input/* (all 23 menu input methods)
+- Dungnz.Display.Avalonia/SelectFromMenu<T> (generic helper)
+- Dungnz.Display.Avalonia/App.axaml.cs (startup flow integration)
+- Dungnz.Models/Startup/StartupOrchestrator.cs
+
+---
+
