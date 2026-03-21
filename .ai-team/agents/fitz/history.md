@@ -362,3 +362,27 @@ Your smoke-test.yml addition has been recorded in decisions.md. This captures th
 - Contamination file conflicts were handled cleanly by always taking master's version (--theirs).
 - Pre-commit build verification caught all issues before merge completion.
 - Squash merges preserved all PR context while keeping master history clean.
+
+---
+
+### 2026-03-14 — Explicit Avalonia Build Validation in CI (#1424)
+
+**PR:** (pending) — `ci: Add explicit Avalonia build validation step (Regression Wave 3)`
+**Branch:** `squad/regression-wave3-fitz`
+**File Modified:** `.github/workflows/squad-ci.yml`
+
+**Problem:**
+- `Dungnz.Display.Avalonia` is included in the solution and gets built during the `dotnet build` step
+- However, Avalonia-specific failures (XAML compilation, NuGet package issues) are buried in solution-wide output
+- Avalonia is excluded from test coverage via `/p:Exclude=[Dungnz.Display.Avalonia]*`
+- Need a dedicated step so Avalonia build failures surface clearly in CI
+
+**Implementation:**
+- Added explicit `dotnet build Dungnz.Display.Avalonia/Dungnz.Display.Avalonia.csproj --configuration Release --no-restore` step
+- Placed after solution Build and before test step (step 6 of 14)
+- Added explanatory comment about why it's separate
+
+**Verification:**
+- ✅ Local build succeeds (Release configuration)
+- ✅ YAML syntax validated (14 steps, correct ordering)
+- ✅ Avalonia NuGet packages (Avalonia 11.3.12, CommunityToolkit.Mvvm 8.4.0) restore correctly
