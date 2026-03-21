@@ -21,7 +21,7 @@
     <!-- Avalonia 11.x — stable release line -->
     <PackageReference Include="Avalonia" Version="11.3.12" />
     <PackageReference Include="Avalonia.Desktop" Version="11.3.12" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.2" />
+    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.12" />
     <!-- CommunityToolkit.Mvvm for ObservableObject + source generators -->
     <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
     <!-- Logging (same as console app) -->
