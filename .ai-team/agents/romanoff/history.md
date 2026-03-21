@@ -1663,3 +1663,39 @@ Comprehensive tests for the BFS-based ASCII map renderer:
 - `EquipmentManager.HandleEquip(player, itemName)` / `HandleUnequip(player, slotName)` are the correct APIs (not `Equip`/`Unequip`)
 - `DungeonVariant.ForFloor(n)` creates variants — it's a class with static factory, not an enum
 - `GameLoop.Run(Player, Room)` is the correct overload for smoke tests
+
+---
+
+## Wave 3 — Display/Models Coverage Push (WI-R07)
+
+**Date:** 2025-07-22
+**Branch:** `squad/regression-wave3-romanoff`
+**PR:** #1426 — test: Push Display/Models coverage above 80% (Regression Wave 3)
+**Issue:** #1423
+
+### What Was Done
+1. Created `Dungnz.Tests/Display/ConsoleDisplayServiceCoverageWave3Tests.cs` with 107 targeted tests:
+   - **ConsoleDisplayServiceCoverageWave3Tests (63 tests):** Room type prefixes, environmental hazards, special room hints, ShowShop/SellMenu/CraftRecipe, Victory/GameOver screens, FloorBanner, EnemyDetail/Art, CombatStart/EntryFlags, LevelUpChoice, CommandPrompt with HP/MP bars, EnhancedTitle, PrestigeInfo, IntroNarrative, SkillTreeMenu, InventoryAndSelect, ReadSeed, ItemDetail, ItemPickup/GoldPickup, EquipmentComparison, ColoredMessage/CombatMessage/Stat, RefreshDisplay, ShowEquipment
+   - **ConsoleDisplayServiceMenuSelectTests (36 tests):** CombatMenuAndSelect, CraftMenuAndSelect, AbilityMenuAndSelect, EquipMenuAndSelect, UseMenuAndSelect, TakeMenuAndSelect, StartupMenu, SelectSaveToLoad, LevelUpChoiceAndSelect, CombatItemMenuAndSelect, TrapChoiceAndSelect, ForgottenShrineMenuAndSelect, ContestedArmoryMenuAndSelect, ShopWithSellAndSelect, SelectDifficulty, SelectClass
+   - **AnsiMarkupConverterCoverageTests (8 tests):** Trailing-text-with-active-color path, all mapped color codes
+
+### Coverage Results
+| Module | Before | After | Change |
+|--------|--------|-------|--------|
+| Dungnz.Display | 74.63% | 93.92% | **+19.29%** |
+| Dungnz.Models | 95.77% | 95.77% | Already above 80% |
+| TOTAL | ~80% | 81.90% | +1.90% |
+
+### Test Counts
+- **Before:** 2,244 passing
+- **After:** 2,351 passing (+107 new)
+- **Skipped:** 4 pre-existing momentum integration skips
+
+### Key Decisions
+- Console.SetIn(StringReader) for methods using Console.ReadLine() directly (ShowIntroNarrative, ShowInventoryAndSelect, ReadSeed)
+- FakeInputReader for SelectFromMenu-based methods (IsInteractive=false triggers text fallback)
+- `AbilityType.PowerStrike` / `AbilityType.DefensiveStance` — not `Damage` / `Buff`
+- `DungeonVariant.ForFloor(n)` for test floor banners
+- `room.EnvironmentalHazard = RoomHazard.X` set directly (no builder method)
+- `room.Merchant = new Merchant()` set directly (no builder method)
+- All tests in [Collection("console-output")] to prevent parallel stdout races
