@@ -1575,3 +1575,55 @@ This PR implements:
 
 **Next steps for Hill (P3):** Implement actual panel rendering in AvaloniaDisplayService using MapRenderer.BuildPlainTextMap, data-binding to ViewModels, and Avalonia-native input handling (no more ConsoleInputReader temp stub).
 
+
+---
+
+## Regression Wave 1: Interface Conformance + MapRenderer Unit Tests (2026-03-14)
+
+**Branch:** `squad/regression-wave1-romanoff`
+**PR:** test: Interface conformance + MapRenderer unit tests (Regression Wave 1)
+
+### WI-R01: Interface Conformance Tests
+
+**File:** `Dungnz.Tests/Architecture/InterfaceSplitTests.cs`
+**Tests added:** 8
+
+Verified the IDisplayService ↔ IGameDisplay / IGameInput interface split (Avalonia P0):
+
+1. `IDisplayService_InheritsAllMethodsFrom_IGameDisplay` — every IGameDisplay method reachable through IDisplayService
+2. `IDisplayService_InheritsAllMethodsFrom_IGameInput` — every IGameInput method reachable through IDisplayService
+3. `IDisplayService_HasNoMethodsOutside_IGameDisplay_Or_IGameInput` — facade declares no extra methods
+4. `FakeDisplayService_Implements_IDisplayService` — test double satisfies facade + both sub-interfaces
+5. `FakeDisplayService_CanBeAssignedTo_EitherSubInterface` — runtime assignment verification
+6. `EngineAndSystems_DoNotDependDirectlyOn_IGameDisplay` — reflection scan of Engine/Systems ctors, fields, properties
+7. `IDisplayService_InheritsExactly_IGameDisplay_And_IGameInput` — verifies inheritance chain
+8. `InterfaceMethodCounts_AreConsistent` — IDisplayService declares 0 own methods (pure union)
+
+### WI-R03: MapRenderer Unit Tests
+
+**File:** `Dungnz.Tests/MapRendererTests.cs`
+**Tests added:** 28
+
+Comprehensive tests for the BFS-based ASCII map renderer:
+
+- **Grid generation (5):** Single room, linear corridor, T-intersection, cyclic rooms, larger dungeon
+- **Connectors (3):** East horizontal, south vertical, isolated (no connectors)
+- **Current room indicator (2):** `[@]` for current, `[+]` for cleared
+- **Plain text vs markup (3):** No Spectre tags in plain, valid markup in markup, consistent line counts
+- **Edge cases (2):** Unvisited neighbors as `[?]`, rooms with live enemies as `[!]`
+- **Symbol priority chain (5):** Boss `[B]` > Exit `[E]`, shrine `[S]`, merchant `[M]`, trap `[T]`
+- **Map features (3):** Compass header, legend `[@] You`, markup legend uses color tags
+- **Entrance visibility (2):** `[^]` on floor > 1, suppressed on floor 1
+- **Fog of war (1):** Two-hop unvisited rooms hidden
+- **Special rooms (2):** Dark `[D]`, Blessed `[*]`
+
+### Test Counts
+- **Before:** 2,154 passing
+- **After:** 2,190 passing (+36 new)
+- **Skipped:** 4 pre-existing momentum integration skips
+- **Known flake:** ShieldBash_AppliesStunWithMockedRng (pre-existing, order-sensitive)
+
+### Learnings
+- **Legend symbol counting trap:** `CountOccurrences("[@]")` on full map text double-counts legend entries like `[@] You`. Must extract grid section before legend for exact room counts.
+- **Namespace collision:** Creating `Dungnz.Tests.Architecture` namespace conflicts with ArchUnitNET `Architecture` type used in existing `ArchitectureTests.cs`. Used `Dungnz.Tests.ArchRules` to match existing convention.
+- **BFS visibility model:** Rooms visible = visited ∪ current ∪ neighbors-of-(visited ∪ current). Rooms 2+ hops from any visited room are hidden (fog of war).
