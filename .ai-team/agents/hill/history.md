@@ -2222,3 +2222,34 @@ ReadCommandInput() unblocks ←────────
 **P6:** Menu implementations — selection prompts for difficulty, class, combat, inventory, shop menus. Will use overlay dialogs or in-panel selection lists.
 **P7-P8:** Remaining IGameInput stubs (shrine menus, skill tree, confirm dialogs, etc.).
 - 2025-07-17: Avalonia P5 — TCS-Based Input Bridge (see decisions.md)
+
+---
+
+## Regression Wave 1 — TCS Race Fix + Dead Code Cleanup
+
+**Date:** 2025-07-18
+**Work Items:** WI-R02 (P0), WI-R05 (P2)
+**Branch:** `squad/regression-wave1-hill`
+
+### WI-R02: TCS Race Condition Fix
+
+**Problem:** `_pendingLine` in `AvaloniaInputReader` and `_pendingCommand` in `AvaloniaDisplayService` were read-then-nulled in event handlers without synchronization. If the UI thread fires the event handler while the game thread is mid-write to the TCS field, the handler could read a stale/null value — a classic TOCTOU race.
+
+**Fix:** Replaced the non-atomic read-then-null pattern with `Interlocked.Exchange(ref field, null)` in both event handlers. This atomically reads and clears the field in one operation, eliminating the race window. Game-thread writes (`_pendingLine = tcs;`) left as-is — only one game thread writes and it always completes before the UI handler can fire.
+
+**Files changed:**
+- `Dungnz.Display.Avalonia/AvaloniaInputReader.cs` — `OnInputSubmitted()` now uses `Interlocked.Exchange`
+- `Dungnz.Display.Avalonia/AvaloniaDisplayService.cs` — `ReadCommandInput()` local `OnSubmitted` now uses `Interlocked.Exchange`
+- Added `using System.Threading;` to both files
+
+### WI-R05: Dead Code Cleanup
+
+- Deleted `Dungnz.Display.Avalonia/AvaloniaAppBuilder.cs` — P2 scaffold replaced by `Program.cs` + `App.axaml.cs`
+- Verified zero code references to `AvaloniaAppBuilder` (only doc/plan references remain)
+- Annotated `App.axaml.cs` TODO with phase reference: `TODO(P3-P8)`
+
+### Validation
+
+- ✅ `dotnet build Dungnz.Display.Avalonia/Dungnz.Display.Avalonia.csproj` — 0 errors
+- ✅ `dotnet test` — 2,154 passed, 0 failed, 4 skipped
+- ✅ Only `Dungnz.Display.Avalonia/` files touched (no README update needed)
