@@ -2253,3 +2253,41 @@ ReadCommandInput() unblocks ←────────
 - ✅ `dotnet build Dungnz.Display.Avalonia/Dungnz.Display.Avalonia.csproj` — 0 errors
 - ✅ `dotnet test` — 2,154 passed, 0 failed, 4 skipped
 - ✅ Only `Dungnz.Display.Avalonia/` files touched (no README update needed)
+
+---
+
+## Regression Wave 2 (2026-03-21)
+
+### WI-R09: Avalonia Smoke Test Checklist
+
+**Issue:** #1419
+**Branch:** `squad/regression-wave2-hill`
+
+Created `docs/avalonia-smoke-test-checklist.md` — a 12-scenario manual smoke test checklist for the Avalonia GUI frontend.
+
+**Checklist covers:**
+1. Application launch (window opens, 6-panel layout)
+2. Map panel renders ASCII dungeon map
+3. Stats panel shows player name, HP bar, level
+4. Content panel shows room description
+5. Gear panel shows equipment slots
+6. Log panel accumulates timestamped messages
+7. Input panel accepts typing
+8. Command submission via Enter
+9. Movement command (directional)
+10. Quit command
+11. Window close via X button
+12. Window resize / reflow
+
+**Audit findings — hardcoded values in `App.axaml.cs`:**
+- `Difficulty.Normal` (line 49) — should be player-selectable
+- Seed `12345` (line 59) — should be random or player-entered
+- Player name `"Adventurer"` (line 62) — should be player-entered
+- Player class `PlayerClass.Warrior` (line 63) — should be player-selectable
+- All intentional P2 scaffolding; full startup flow planned for P3–P8
+
+**Headless verification attempt:**
+- ✅ Build succeeds (0 errors)
+- ✅ App launches, logs "Dungnz Avalonia GUI starting..."
+- ⚠️ Cannot interactively test — headless session, killed by timeout (exit 124)
+- Conclusion: App initializes correctly; interactive testing requires desktop environment
