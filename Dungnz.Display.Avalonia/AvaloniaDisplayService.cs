@@ -749,16 +749,18 @@ public class AvaloniaDisplayService : IDisplayService
     // IGameInput Implementation (Input-coupled methods)
     // ══════════════════════════════════════════════════════════════════════════
 
-    // TODO: P5-P8 implementation
     private TaskCompletionSource<string?>? _pendingCommand;
 
+    // ── Core Input Helpers ────────────────────────────────────────────────────
+
     /// <summary>
-    /// Blocks the game thread until the player types a command and presses Enter
-    /// in the Avalonia input panel. Uses <see cref="TaskCompletionSource{T}"/> to
-    /// bridge between the game thread and the Avalonia UI thread.
+    /// Blocks the game thread until the player types text and presses Enter in the
+    /// Avalonia input panel. Uses <see cref="TaskCompletionSource{T}"/> to bridge
+    /// between the game thread and the Avalonia UI thread.
     /// </summary>
-    /// <returns>The trimmed command string, or <see langword="null"/> if blank.</returns>
-    public string? ReadCommandInput()
+    /// <param name="prompt">The prompt string shown next to the text box.</param>
+    /// <returns>The raw text the player typed, or <see langword="null"/> if blank.</returns>
+    private string? WaitForTextInput(string prompt = "> ")
     {
         var tcs = new TaskCompletionSource<string?>(TaskCreationOptions.RunContinuationsAsynchronously);
         _pendingCommand = tcs;
@@ -770,19 +772,16 @@ public class AvaloniaDisplayService : IDisplayService
             pending?.TrySetResult(text);
         }
 
-        // Enable input on UI thread
         Dispatcher.UIThread.InvokeAsync(() =>
         {
             _vm.Input.InputSubmitted += OnSubmitted;
-            _vm.Input.PromptText = "> ";
+            _vm.Input.PromptText = prompt;
             _vm.Input.CommandText = "";
             _vm.Input.IsInputEnabled = true;
         });
 
-        // Block game thread until the player submits
         var result = tcs.Task.GetAwaiter().GetResult();
 
-        // Ensure input is disabled after submission
         Dispatcher.UIThread.InvokeAsync(() =>
         {
             _vm.Input.IsInputEnabled = false;
@@ -790,36 +789,589 @@ public class AvaloniaDisplayService : IDisplayService
 
         return string.IsNullOrWhiteSpace(result) ? null : result.Trim();
     }
-    public string ReadPlayerName() => "Player";
-    public int? ReadSeed() => null;
 
-    public StartupMenuOption ShowStartupMenu(bool hasSaves) => StartupMenuOption.NewGame;
-    public Difficulty SelectDifficulty() => Difficulty.Normal;
-    public PlayerClassDefinition SelectClass(PrestigeData? prestige) => PlayerClassDefinition.Warrior;
-    public string? SelectSaveToLoad(string[] saveNames) => null;
+    /// <summary>
+    /// Displays a numbered menu in the content panel, waits for the player to type a
+    /// number, validates the input, and returns the corresponding value. Re-prompts on
+    /// invalid input. This is the generic menu selection infrastructure for Avalonia.
+    /// </summary>
+    /// <typeparam name="T">The type of value associated with each menu option.</typeparam>
+    /// <param name="header">Header text displayed above the options.</param>
+    /// <param name="options">The list of (Label, Value) pairs to display.</param>
+    /// <param name="allowCancel">When <see langword="true"/>, entering "0" or empty returns <paramref name="cancelValue"/>.</param>
+    /// <param name="cancelValue">The value returned when the player cancels.</param>
+    /// <returns>The value corresponding to the player's valid selection.</returns>
+    private T SelectFromMenu<T>(string header, IReadOnlyList<(string Label, T Value)> options,
+        bool allowCancel = false, T? cancelValue = default)
+    {
+        // Build the menu text
+        var sb = new StringBuilder();
+        sb.AppendLine(header);
+        sb.AppendLine();
+        for (int i = 0; i < options.Count; i++)
+            sb.AppendLine($"  [{i + 1}] {options[i].Label}");
+        if (allowCancel)
+            sb.AppendLine($"  [0] Cancel");
 
-    public string ShowCombatMenuAndSelect(Player player, Enemy enemy) => "a";
-    public Ability? ShowAbilityMenuAndSelect(IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities, IEnumerable<Ability> availableAbilities) => null;
-    public Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables) => null;
-    public int ShowLevelUpChoiceAndSelect(Player player) => 1;
+        // Display in content panel
+        Dispatcher.UIThread.InvokeAsync(() => _vm.Content.SetContent(sb.ToString().TrimEnd(), header));
 
-    public Item? ShowInventoryAndSelect(Player player) => null;
-    public Item? ShowEquipMenuAndSelect(IReadOnlyList<Item> equippable) => null;
-    public Item? ShowUseMenuAndSelect(IReadOnlyList<Item> usable) => null;
-    public TakeSelection? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems) => null;
+        // Input loop — re-prompt until valid
+        while (true)
+        {
+            var input = WaitForTextInput("Choice: ");
 
-    public int ShowShopAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold) => 0;
-    public int ShowSellMenuAndSelect(IEnumerable<(Item item, int sellPrice)> items, int playerGold) => 0;
-    public int ShowShopWithSellAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold) => 0;
-    public int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes) => 0;
+            // Cancel path
+            if (allowCancel && (input == null || input == "0"))
+                return cancelValue!;
 
-    public int ShowShrineMenuAndSelect(int playerGold, int healCost = 30, int blessCost = 50, int fortifyCost = 75, int meditateCost = 75) => 0;
-    public bool ShowConfirmMenu(string prompt) => false;
-    public int ShowTrapChoiceAndSelect(string header, string option1, string option2) => 1;
-    public int ShowForgottenShrineMenuAndSelect() => 0;
-    public int ShowContestedArmoryMenuAndSelect(int playerDefense) => 0;
+            if (int.TryParse(input, out int choice) && choice >= 1 && choice <= options.Count)
+                return options[choice - 1].Value;
 
-    public Skill? ShowSkillTreeMenu(Player player) => null;
+            // Invalid — show error briefly in the log, re-display menu
+            Dispatcher.UIThread.InvokeAsync(() =>
+                _vm.Log.AppendLog($"Invalid choice. Enter 1–{options.Count}{(allowCancel ? " or 0 to cancel" : "")}.", "error"));
+        }
+    }
+
+    // ── ReadCommandInput ──────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Blocks the game thread until the player types a command and presses Enter
+    /// in the Avalonia input panel.
+    /// </summary>
+    /// <returns>The trimmed command string, or <see langword="null"/> if blank.</returns>
+    public string? ReadCommandInput() => WaitForTextInput("> ");
+
+    // ── Text Entry (Startup) ─────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public string ReadPlayerName()
+    {
+        Dispatcher.UIThread.InvokeAsync(() =>
+            _vm.Content.SetContent("Enter your name, adventurer:", "✏ Name"));
+
+        var name = WaitForTextInput("Name: ");
+        return string.IsNullOrWhiteSpace(name) ? "Hero" : name;
+    }
+
+    /// <inheritdoc/>
+    public int? ReadSeed()
+    {
+        Dispatcher.UIThread.InvokeAsync(() =>
+            _vm.Content.SetContent(
+                "Enter a 6-digit seed (100000–999999)\nor press Enter to cancel.",
+                "🌱 Seed"));
+
+        while (true)
+        {
+            var input = WaitForTextInput("Seed: ");
+
+            if (input == null)
+                return null;
+
+            if (input.Equals("cancel", StringComparison.OrdinalIgnoreCase))
+                return null;
+
+            if (int.TryParse(input, out var seed) && seed >= 100000 && seed <= 999999)
+                return seed;
+
+            Dispatcher.UIThread.InvokeAsync(() =>
+                _vm.Log.AppendLog("Invalid seed. Enter a 6-digit number (100000–999999) or press Enter to cancel.", "error"));
+        }
+    }
+
+    // ── Startup Flow ─────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public StartupMenuOption ShowStartupMenu(bool hasSaves)
+    {
+        var options = new List<(string Label, StartupMenuOption Value)>
+        {
+            ("🗡  New Game", StartupMenuOption.NewGame)
+        };
+
+        if (hasSaves)
+            options.Add(("📂 Load Save", StartupMenuOption.LoadSave));
+
+        options.Add(("🌱 New Game with Seed", StartupMenuOption.NewGameWithSeed));
+        options.Add(("✖  Exit", StartupMenuOption.Exit));
+
+        return SelectFromMenu("What would you like to do?", options);
+    }
+
+    /// <inheritdoc/>
+    public Difficulty SelectDifficulty()
+    {
+        var options = new (string Label, Difficulty Value)[]
+        {
+            ("CASUAL — Weaker enemies · Cheap shops · Start with 50g + 3 potions", Difficulty.Casual),
+            ("NORMAL — Balanced challenge · The intended experience · Start with 15g + 1 potion", Difficulty.Normal),
+            ("HARD   — Stronger enemies · Scarce rewards · No starting supplies · ☠ Permadeath", Difficulty.Hard),
+        };
+        return SelectFromMenu("Choose your difficulty:", options);
+    }
+
+    /// <inheritdoc/>
+    public PlayerClassDefinition SelectClass(PrestigeData? prestige)
+    {
+        const int baseHP = 100;
+        const int baseAttack = 10;
+        const int baseDefense = 5;
+        const int baseMana = 30;
+
+        // Build class cards in content panel
+        var sb = new StringBuilder();
+        int number = 1;
+        foreach (var def in PlayerClassDefinition.All)
+        {
+            int hp  = baseHP + def.BonusMaxHP;
+            int atk = baseAttack + def.BonusAttack;
+            int def_ = baseDefense + def.BonusDefense;
+            int mana = baseMana + def.BonusMaxMana;
+
+            sb.AppendLine($"  [{number}] {def.Name.ToUpperInvariant()}");
+            sb.AppendLine($"      HP: {hp}  ATK: {atk}  DEF: {def_}  Mana: {mana}");
+            sb.AppendLine($"      \"{def.Description}\"");
+
+            if (prestige is { PrestigeLevel: > 0 })
+            {
+                var extras = new List<string>();
+                if (prestige.BonusStartHP > 0) extras.Add($"+{prestige.BonusStartHP} HP");
+                if (prestige.BonusStartAttack > 0) extras.Add($"+{prestige.BonusStartAttack} ATK");
+                if (prestige.BonusStartDefense > 0) extras.Add($"+{prestige.BonusStartDefense} DEF");
+                if (extras.Count > 0)
+                    sb.AppendLine($"      Prestige: {string.Join(", ", extras)}");
+            }
+
+            sb.AppendLine();
+            number++;
+        }
+
+        Dispatcher.UIThread.InvokeAsync(() =>
+            _vm.Content.SetContent(sb.ToString().TrimEnd(), "⚔ Choose Your Class"));
+
+        // Build selection options
+        var selectOptions = PlayerClassDefinition.All
+            .Select(d => (d.Name, d))
+            .ToArray();
+
+        // Use manual input loop (content already rendered with the cards)
+        while (true)
+        {
+            var input = WaitForTextInput("Class #: ");
+
+            if (int.TryParse(input, out int choice) && choice >= 1 && choice <= selectOptions.Length)
+                return selectOptions[choice - 1].Item2;
+
+            Dispatcher.UIThread.InvokeAsync(() =>
+                _vm.Log.AppendLog($"Invalid choice. Enter 1–{selectOptions.Length}.", "error"));
+        }
+    }
+
+    /// <inheritdoc/>
+    public string? SelectSaveToLoad(string[] saveNames)
+    {
+        var options = saveNames
+            .Select(name => (name, (string?)name))
+            .Append(("↩  Back", (string?)null))
+            .ToArray();
+
+        return SelectFromMenu("Choose a save to load:", options, allowCancel: false);
+    }
+
+    // ── Combat Menus ─────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public string ShowCombatMenuAndSelect(Player player, Enemy enemy)
+    {
+        // Build resource info header
+        var info = new StringBuilder();
+        info.Append($"Mana: {player.Mana}/{player.MaxMana}");
+        if (player.Class == PlayerClass.Rogue)
+        {
+            var dots = new string('●', player.ComboPoints) + new string('○', 5 - player.ComboPoints);
+            info.Append($"  ⚡ Combo: {dots}");
+        }
+        if (player.Class == PlayerClass.Mage && player.IsManaShieldActive)
+            info.Append(" [SHIELD ACTIVE]");
+        if (player.Class == PlayerClass.Paladin && player.DivineShieldTurnsRemaining > 0)
+            info.Append($" [DIVINE SHIELD: {player.DivineShieldTurnsRemaining}T]");
+
+        var options = new (string Label, string Value)[]
+        {
+            ("⚔  Attack",  "A"),
+            ("✨ Ability",  "B"),
+            ("🏃 Flee",     "F"),
+            ("🧪 Use Item", "I"),
+        };
+
+        // Build combined menu text
+        var sb = new StringBuilder();
+        sb.AppendLine(info.ToString());
+        sb.AppendLine();
+        for (int i = 0; i < options.Length; i++)
+            sb.AppendLine($"  [{i + 1}] {options[i].Label}");
+
+        Dispatcher.UIThread.InvokeAsync(() =>
+            _vm.Content.SetContent(sb.ToString().TrimEnd(), "⚔ Combat Action"));
+
+        while (true)
+        {
+            var input = WaitForTextInput("Action: ");
+
+            if (int.TryParse(input, out int choice) && choice >= 1 && choice <= options.Length)
+                return options[choice - 1].Value;
+
+            // Also accept letter shortcuts directly
+            if (input != null)
+            {
+                var upper = input.ToUpperInvariant();
+                if (upper is "A" or "B" or "F" or "I")
+                    return upper;
+            }
+
+            Dispatcher.UIThread.InvokeAsync(() =>
+                _vm.Log.AppendLog("Invalid choice. Enter 1–4 or A/B/F/I.", "error"));
+        }
+    }
+
+    /// <inheritdoc/>
+    public Ability? ShowAbilityMenuAndSelect(
+        IEnumerable<(Ability ability, bool onCooldown, int cooldownTurns, bool notEnoughMana)> unavailableAbilities,
+        IEnumerable<Ability> availableAbilities)
+    {
+        var sb = new StringBuilder();
+
+        // Show unavailable abilities as info lines (not selectable)
+        foreach (var (ability, onCooldown, cooldownTurns, notEnoughMana) in unavailableAbilities)
+        {
+            if (onCooldown)
+                sb.AppendLine($"  ○ {ability.Name} — Cooldown: {cooldownTurns} turns (Cost: {ability.ManaCost} MP)");
+            else if (notEnoughMana)
+                sb.AppendLine($"  ○ {ability.Name} — Need {ability.ManaCost} MP");
+        }
+
+        sb.AppendLine();
+
+        // Build selectable options
+        var availList = availableAbilities.ToList();
+        var options = availList
+            .Select(a => ($"{a.Name} — {a.Description} (Cost: {a.ManaCost} MP)", (Ability?)a))
+            .Append(("↩  Cancel", (Ability?)null))
+            .ToArray();
+
+        for (int i = 0; i < options.Length; i++)
+            sb.AppendLine($"  [{i + 1}] {options[i].Item1}");
+
+        Dispatcher.UIThread.InvokeAsync(() =>
+            _vm.Content.SetContent(sb.ToString().TrimEnd(), "✨ Abilities"));
+
+        while (true)
+        {
+            var input = WaitForTextInput("Ability #: ");
+
+            // Empty/null = cancel (last option)
+            if (input == null)
+                return null;
+
+            if (int.TryParse(input, out int choice) && choice >= 1 && choice <= options.Length)
+                return options[choice - 1].Item2;
+
+            Dispatcher.UIThread.InvokeAsync(() =>
+                _vm.Log.AppendLog($"Invalid choice. Enter 1–{options.Length}.", "error"));
+        }
+    }
+
+    /// <inheritdoc/>
+    public Item? ShowCombatItemMenuAndSelect(IReadOnlyList<Item> consumables)
+    {
+        var options = consumables
+            .Select(item =>
+            {
+                var manaStr = item.ManaRestore > 0 ? $" +{item.ManaRestore} MP" : "";
+                return ($"🧪 {item.Name} (+{item.HealAmount} HP{manaStr})", (Item?)item);
+            })
+            .Append(("↩  Cancel", (Item?)null))
+            .ToArray();
+
+        return SelectFromMenu("Choose a consumable:", options);
+    }
+
+    /// <inheritdoc/>
+    public int ShowTrapChoiceAndSelect(string header, string option1, string option2)
+    {
+        var options = new (string Label, int Value)[]
+        {
+            (option1, 1),
+            (option2, 2),
+            ("Leave", 0),
+        };
+        return SelectFromMenu(header, options);
+    }
+
+    // ── Inventory / Equipment Menus ──────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public Item? ShowInventoryAndSelect(Player player)
+    {
+        ShowInventory(player);
+
+        if (player.Inventory.Count == 0)
+            return null;
+
+        var options = player.Inventory
+            .Select(item => ($"{ItemIcon(item)} {item.Name}  {PrimaryStatLabel(item)}", (Item?)item))
+            .Append(("↩  Cancel", (Item?)null))
+            .ToArray();
+
+        return SelectFromMenu("Select an item:", options, allowCancel: true);
+    }
+
+    /// <inheritdoc/>
+    public Item? ShowEquipMenuAndSelect(IReadOnlyList<Item> equippable)
+    {
+        var options = equippable
+            .Select(item =>
+            {
+                var icon = ItemIcon(item);
+                var stat = PrimaryStatLabel(item);
+                return ($"{icon} {item.Name}  [{stat}]", (Item?)item);
+            })
+            .Append(("↩  Cancel", (Item?)null))
+            .ToArray();
+
+        return SelectFromMenu("EQUIP — Choose an item:", options);
+    }
+
+    /// <inheritdoc/>
+    public Item? ShowUseMenuAndSelect(IReadOnlyList<Item> usable)
+    {
+        var options = usable
+            .Select(item =>
+            {
+                var icon = ItemIcon(item);
+                var stat = PrimaryStatLabel(item);
+                return ($"{icon} {item.Name}  [{stat}]", (Item?)item);
+            })
+            .Append(("↩  Cancel", (Item?)null))
+            .ToArray();
+
+        return SelectFromMenu("Use which item?", options);
+    }
+
+    /// <inheritdoc/>
+    public TakeSelection? ShowTakeMenuAndSelect(IReadOnlyList<Item> roomItems)
+    {
+        var options = roomItems
+            .Select(item =>
+            {
+                var icon = ItemIcon(item);
+                var stat = PrimaryStatLabel(item);
+                return ($"{icon} {item.Name}  [{stat}]", (TakeSelection?)new TakeSelection.Single(item));
+            })
+            .Prepend(("📦 Take All", (TakeSelection?)new TakeSelection.All()))
+            .Append(("↩  Cancel", (TakeSelection?)null))
+            .ToArray();
+
+        return SelectFromMenu("TAKE — Choose an item:", options);
+    }
+
+    // ── Shop / Craft Menus ───────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public int ShowShopAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold)
+    {
+        var stockList = stock.ToList();
+        ShowShop(stockList, playerGold);
+
+        var options = stockList
+            .Select((s, i) => ($"{ItemIcon(s.item)} {s.item.Name} — {s.price}g", i + 1))
+            .Append(("↩  Cancel", 0))
+            .ToArray();
+
+        return SelectFromMenu($"Your gold: {playerGold}g — Buy which item?", options);
+    }
+
+    /// <inheritdoc/>
+    public int ShowSellMenuAndSelect(IEnumerable<(Item item, int sellPrice)> items, int playerGold)
+    {
+        var itemList = items.ToList();
+        ShowSellMenu(itemList, playerGold);
+
+        var options = itemList
+            .Select((s, i) => ($"{ItemIcon(s.item)} {s.item.Name} — sell for {s.sellPrice}g", i + 1))
+            .Append(("↩  Cancel", 0))
+            .ToArray();
+
+        return SelectFromMenu($"Your gold: {playerGold}g — Sell which item?", options);
+    }
+
+    /// <inheritdoc/>
+    public int ShowShopWithSellAndSelect(IEnumerable<(Item item, int price)> stock, int playerGold)
+    {
+        var stockList = stock.ToList();
+        ShowShop(stockList, playerGold);
+
+        var options = stockList
+            .Select((s, i) => ($"{ItemIcon(s.item)} {s.item.Name} — {s.price}g", i + 1))
+            .Append(("💰 Sell Items", -1))
+            .Append(("Leave", 0))
+            .ToArray();
+
+        return SelectFromMenu($"Your gold: {playerGold}g — What would you like to do?", options);
+    }
+
+    /// <inheritdoc/>
+    public int ShowCraftMenuAndSelect(IEnumerable<(string recipeName, bool canCraft)> recipes)
+    {
+        var recipeList = recipes.ToList();
+
+        var options = recipeList
+            .Select((r, i) => (
+                Label: r.canCraft ? $"✅ {r.recipeName}" : $"❌ {r.recipeName}",
+                Value: i + 1))
+            .Append(("↩  Cancel", 0))
+            .ToArray();
+
+        return SelectFromMenu("CRAFTING — Choose a recipe:", options);
+    }
+
+    // ── Progression Menus ────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public int ShowLevelUpChoiceAndSelect(Player player)
+    {
+        var options = new (string Label, int Value)[]
+        {
+            ($"+5 Max HP     ({player.MaxHP} → {player.MaxHP + 5})", 1),
+            ($"+2 Attack     ({player.Attack} → {player.Attack + 2})", 2),
+            ($"+2 Defense    ({player.Defense} → {player.Defense + 2})", 3),
+        };
+        return SelectFromMenu("★ Choose a stat bonus:", options);
+    }
+
+    /// <inheritdoc/>
+    public Skill? ShowSkillTreeMenu(Player player)
+    {
+        var allSkills = SkillTree.GetSkillsForClass(player);
+
+        var sb = new StringBuilder();
+        sb.AppendLine($"Your level: {player.Level}");
+        sb.AppendLine();
+
+        var available = new List<(string Label, Skill? Value)>();
+
+        foreach (var skill in allSkills)
+        {
+            if (player.Skills.IsUnlocked(skill))
+                continue;
+
+            var (minLevel, _) = SkillTree.GetSkillRequirements(skill);
+            var desc = SkillTree.GetDescription(skill);
+
+            if (player.Level >= minLevel)
+            {
+                available.Add(($"{skill}: {desc}", skill));
+                sb.AppendLine($"  ★ {skill}: {desc} [Available]");
+            }
+            else
+            {
+                sb.AppendLine($"  ○ {skill}: {desc} [Req. Lv{minLevel}]");
+            }
+        }
+
+        if (available.Count == 0)
+        {
+            sb.AppendLine();
+            sb.Append("No skills available to learn right now.");
+            Dispatcher.UIThread.InvokeAsync(() =>
+                _vm.Content.SetContent(sb.ToString().TrimEnd(), "📖 Skill Tree"));
+
+            // Show briefly and return null — player can press Enter to dismiss
+            WaitForTextInput("Press Enter...");
+            return null;
+        }
+
+        available.Add(("↩  Cancel", null));
+
+        // Add numbered options to display
+        sb.AppendLine();
+        sb.AppendLine("Learn a skill:");
+        for (int i = 0; i < available.Count; i++)
+            sb.AppendLine($"  [{i + 1}] {available[i].Label}");
+
+        Dispatcher.UIThread.InvokeAsync(() =>
+            _vm.Content.SetContent(sb.ToString().TrimEnd(), "📖 Skill Tree"));
+
+        while (true)
+        {
+            var input = WaitForTextInput("Skill #: ");
+
+            if (input == null)
+                return null;
+
+            if (int.TryParse(input, out int choice) && choice >= 1 && choice <= available.Count)
+                return available[choice - 1].Value;
+
+            Dispatcher.UIThread.InvokeAsync(() =>
+                _vm.Log.AppendLog($"Invalid choice. Enter 1–{available.Count}.", "error"));
+        }
+    }
+
+    // ── Special Room Menus ───────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public int ShowShrineMenuAndSelect(int playerGold, int healCost = 30, int blessCost = 50, int fortifyCost = 75, int meditateCost = 75)
+    {
+        var options = new (string Label, int Value)[]
+        {
+            ($"Heal fully        — {healCost}g  (Your gold: {playerGold}g)", 1),
+            ($"Bless             — {blessCost}g  (+2 ATK/DEF permanently)", 2),
+            ($"Fortify           — {fortifyCost}g  (MaxHP +10, permanent)", 3),
+            ($"Meditate          — {meditateCost}g  (MaxMana +10, permanent)", 4),
+            ("Leave", 0),
+        };
+        return SelectFromMenu("✨ Shrine Menu:", options);
+    }
+
+    /// <inheritdoc/>
+    public int ShowForgottenShrineMenuAndSelect()
+    {
+        var options = new (string Label, int Value)[]
+        {
+            ("Holy Strength   — +5 ATK (lasts until next floor)", 1),
+            ("Sacred Ground   — Auto-heal at shrines", 2),
+            ("Warding Veil    — 20% chance to deflect enemy attacks this floor", 3),
+            ("Leave", 0),
+        };
+        return SelectFromMenu("🕯 Forgotten Shrine — choose a blessing:", options);
+    }
+
+    /// <inheritdoc/>
+    public int ShowContestedArmoryMenuAndSelect(int playerDefense)
+    {
+        var options = new (string Label, int Value)[]
+        {
+            ($"Careful approach — disarm traps (requires DEF > 12, yours: {playerDefense})", 1),
+            ("Reckless grab   — take what you can (15-30 damage)", 2),
+            ("Leave", 0),
+        };
+        return SelectFromMenu("⚔ Contested Armory — how do you approach?", options);
+    }
+
+    // ── Utility Menus ────────────────────────────────────────────────────────
+
+    /// <inheritdoc/>
+    public bool ShowConfirmMenu(string prompt)
+    {
+        var options = new (string Label, bool Value)[]
+        {
+            ("Yes", true),
+            ("No", false),
+        };
+        return SelectFromMenu(prompt, options);
+    }
 
     // ── Private static helpers ────────────────────────────────────────────────
 

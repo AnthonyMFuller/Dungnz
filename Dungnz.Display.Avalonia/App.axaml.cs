@@ -26,53 +26,84 @@ public class App : Application
         if (ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
         {
             var loggerFactory = LoggerFactory.Create(builder => builder.AddSerilog());
-            
+
             // Load prestige
             var prestige = PrestigeSystem.Load();
-            
+
             // Create main window and ViewModel
             var mainVM = new MainWindowViewModel();
             var displayService = new AvaloniaDisplayService(mainVM);
-            
+
             var mainWindow = new MainWindow
             {
                 DataContext = mainVM
             };
             desktop.MainWindow = mainWindow;
-            
+
             // Start game loop on background thread after window is shown
             mainWindow.Opened += async (s, e) =>
             {
-                // TODO(P3-P8): Full startup flow (StartupOrchestrator, SelectClass, SelectDifficulty)
-                // For P2: launch with default player for smoke test
-                
-                var defaultDiff = DifficultySettings.For(Difficulty.Normal);
-                
-                EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
-                StartupValidator.ValidateOrThrow();
-                CraftingSystem.Load("Data/crafting-recipes.json");
-                AffixRegistry.Load("Data/item-affixes.json");
-                StatusEffectRegistry.Load("Data/status-effects.json");
-                var allItems = ItemConfig.Load("Data/item-stats.json")
-                    .Select(ItemConfig.CreateItem).ToList();
-                
-                var generator = new DungeonGenerator(seed: 12345, allItems);
-                var (startRoom, _) = generator.Generate(difficulty: defaultDiff);
-                
-                var player = new Player { Name = "Adventurer" };
-                player.Class = PlayerClass.Warrior;
-                player.SetHPDirect(player.MaxHP);
-                
-                // Bridge Avalonia TextBox input to the game thread
-                var inputReader = new AvaloniaInputReader(mainVM.Input);
-                var combat = new CombatEngine(displayService, inputReader, difficulty: defaultDiff);
-                var gameLoop = new GameLoop(displayService, combat, inputReader,
-                    seed: 12345, difficulty: defaultDiff, allItems: allItems,
-                    logger: loggerFactory.CreateLogger<GameLoop>());
-                
-                // Run game on background thread
-                await Task.Run(() => gameLoop.Run(player, startRoom));
-                
+                await Task.Run(() =>
+                {
+                    // Bridge Avalonia TextBox input to the game thread
+                    var inputReader = new AvaloniaInputReader(mainVM.Input);
+
+                    // Run the startup orchestrator to get user choices
+                    var startup = new StartupOrchestrator(displayService, inputReader, prestige);
+                    var result = startup.Run();
+
+                    if (result is StartupResult.ExitGame)
+                    {
+                        global::Avalonia.Threading.Dispatcher.UIThread.InvokeAsync(() => mainWindow.Close());
+                        return;
+                    }
+
+                    // Initialize data systems
+                    EnemyFactory.Initialize("Data/enemy-stats.json", "Data/item-stats.json");
+                    StartupValidator.ValidateOrThrow();
+                    CraftingSystem.Load("Data/crafting-recipes.json");
+                    AffixRegistry.Load("Data/item-affixes.json");
+                    StatusEffectRegistry.Load("Data/status-effects.json");
+                    var allItems = ItemConfig.Load("Data/item-stats.json")
+                        .Select(ItemConfig.CreateItem).ToList();
+
+                    switch (result)
+                    {
+                        case StartupResult.NewGame ng:
+                        {
+                            var difficultySettings = DifficultySettings.For(ng.Difficulty);
+                            displayService.ShowMessage(
+                                $"Run #{prestige.TotalRuns + 1} — Seed: {ng.Seed} (share to replay)");
+
+                            var generator = new DungeonGenerator(ng.Seed, allItems);
+                            var (startRoom, _) = generator.Generate(difficulty: difficultySettings);
+
+                            var combat = new CombatEngine(displayService, inputReader,
+                                difficulty: difficultySettings);
+                            var gameLoop = new GameLoop(displayService, combat, inputReader,
+                                seed: ng.Seed, difficulty: difficultySettings, allItems: allItems,
+                                logger: loggerFactory.CreateLogger<GameLoop>());
+
+                            gameLoop.Run(ng.Player, startRoom);
+                            break;
+                        }
+
+                        case StartupResult.LoadedGame lg:
+                        {
+                            var difficultySettings = DifficultySettings.For(lg.State.Difficulty);
+                            var combat = new CombatEngine(displayService, inputReader,
+                                difficulty: difficultySettings);
+                            var gameLoop = new GameLoop(displayService, combat, inputReader,
+                                seed: lg.State.Seed ?? 0, difficulty: difficultySettings,
+                                allItems: allItems,
+                                logger: loggerFactory.CreateLogger<GameLoop>());
+
+                            gameLoop.Run(lg.State);
+                            break;
+                        }
+                    }
+                });
+
                 // Game ended — close window
                 mainWindow.Close();
             };
