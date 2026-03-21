@@ -37,7 +37,7 @@ public partial class GearPanelViewModel : ObservableObject
         {
             if (item == null)
             {
-                sb.AppendLine($"{slotLabel}:  (empty)");
+                sb.AppendLine($"{slotLabel}:  {ColorCodes.Gray}(empty){ColorCodes.Reset}");
                 return;
             }
             var statParts = new List<string>();
@@ -61,7 +61,8 @@ public partial class GearPanelViewModel : ObservableObject
                 if (item.MaxManaBonus >  0) statParts.Add($"+{item.MaxManaBonus} mana");
             }
             var statsStr = statParts.Count > 0 ? "  " + string.Join(", ", statParts) : "";
-            sb.AppendLine($"{slotLabel}:  {item.Name}{statsStr}");
+            var coloredName = ColorCodes.ColorizeItemName(item.Name, item.Tier);
+            sb.AppendLine($"{slotLabel}:  {coloredName}{statsStr}");
         }
 
         AddSlot("⚔  Weapon",    player.EquippedWeapon,    isWeapon: true);
@@ -89,19 +90,20 @@ public partial class GearPanelViewModel : ObservableObject
     {
         var sb = new StringBuilder();
 
-        sb.AppendLine($"🐉 {enemy.Name}");
+        sb.AppendLine($"🐉 {ColorCodes.BrightRed}{enemy.Name}{ColorCodes.Reset}");
 
         if (enemy is Dungnz.Systems.Enemies.DungeonBoss boss)
         {
             var phaseNum = boss.FiredPhases.Count + 1;
             sb.Append($"Phase {phaseNum}");
             if (boss.IsEnraged)
-                sb.Append($"  ⚡ ENRAGED");
+                sb.Append($"  {ColorCodes.BrightRed}⚡ ENRAGED{ColorCodes.Reset}");
             sb.AppendLine();
         }
 
+        var hpColor = ColorCodes.HealthColor(enemy.HP, enemy.MaxHP);
         var hpBar = BuildPlainHpBar(enemy.HP, enemy.MaxHP);
-        sb.AppendLine($"HP {hpBar} {enemy.HP}/{enemy.MaxHP}");
+        sb.AppendLine($"HP {hpColor}{hpBar} {enemy.HP}/{enemy.MaxHP}{ColorCodes.Reset}");
         sb.AppendLine($"ATK {enemy.Attack}  DEF {enemy.Defense}");
 
         var regenParts = new List<string>();

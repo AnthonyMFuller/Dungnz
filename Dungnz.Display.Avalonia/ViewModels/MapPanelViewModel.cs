@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Dungnz.Display;
 using Dungnz.Models;
+using Dungnz.Systems;
 
 namespace Dungnz.Display.Avalonia.ViewModels;
 
@@ -21,6 +22,18 @@ public partial class MapPanelViewModel : ObservableObject
     public void Update(Room currentRoom, int floor)
     {
         CurrentFloor = floor;
-        MapText = MapRenderer.BuildPlainTextMap(currentRoom, floor);
+        var plainMap = MapRenderer.BuildPlainTextMap(currentRoom, floor);
+        MapText = ColorizeMap(plainMap);
+    }
+
+    /// <summary>
+    /// Applies ANSI color codes to map markers for rendering in AnsiTextBlock.
+    /// </summary>
+    private static string ColorizeMap(string plainMap)
+    {
+        var result = plainMap.Replace("[X]", $"{ColorCodes.BrightWhite}[X]{ColorCodes.Reset}");
+        result = result.Replace("[?]", $"{ColorCodes.Gray}[?]{ColorCodes.Reset}");
+        result = result.Replace("[E]", $"{ColorCodes.Green}[E]{ColorCodes.Reset}");
+        return result;
     }
 }

@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using Dungnz.Models;
+using Dungnz.Systems;
 using System.Text;
 
 namespace Dungnz.Display.Avalonia.ViewModels;
@@ -32,16 +33,18 @@ public partial class StatsPanelViewModel : ObservableObject
     private static string BuildPlayerStatsText(Player player, IReadOnlyList<(string name, int turnsRemaining)> cooldowns)
     {
         var sb = new StringBuilder();
-        sb.AppendLine($"{player.Name}  Lv {player.Level}  {player.Class}");
+        sb.AppendLine($"{ColorCodes.BrightWhite}{player.Name}{ColorCodes.Reset}  {ColorCodes.Yellow}Lv {player.Level}{ColorCodes.Reset}  {player.Class}");
         sb.AppendLine();
 
+        var hpColor = ColorCodes.HealthColor(player.HP, player.MaxHP);
         var hpBar = BuildPlainHpBar(player.HP, player.MaxHP);
-        sb.AppendLine($"HP {hpBar} {player.HP}/{player.MaxHP}");
+        sb.AppendLine($"HP {hpColor}{hpBar} {player.HP}/{player.MaxHP}{ColorCodes.Reset}");
 
         if (player.MaxMana > 0)
         {
+            var mpColor = ColorCodes.ManaColor(player.Mana, player.MaxMana);
             var mpBar = BuildPlainMpBar(player.Mana, player.MaxMana);
-            sb.AppendLine($"MP {mpBar} {player.Mana}/{player.MaxMana}");
+            sb.AppendLine($"MP {mpColor}{mpBar} {player.Mana}/{player.MaxMana}{ColorCodes.Reset}");
         }
 
         if (cooldowns.Count > 0)
@@ -76,7 +79,7 @@ public partial class StatsPanelViewModel : ObservableObject
                 _                   => "Momentum"
             };
             var dots = new string('●', momentum.Current) + new string('○', momentum.Maximum - momentum.Current);
-            var chargedSuffix = momentum.IsCharged ? " [CHARGED]" : string.Empty;
+            var chargedSuffix = momentum.IsCharged ? $" {ColorCodes.Yellow}[CHARGED]{ColorCodes.Reset}" : string.Empty;
             sb.AppendLine($"❖ {label} {dots}{chargedSuffix}");
         }
 
