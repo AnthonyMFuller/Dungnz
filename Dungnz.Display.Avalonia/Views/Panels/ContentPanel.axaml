@@ -4,7 +4,7 @@
              xmlns:controls="using:Dungnz.Display.Avalonia.Controls"
              x:Class="Dungnz.Display.Avalonia.Views.Panels.ContentPanel"
              x:DataType="vm:ContentPanelViewModel">
-  <ScrollViewer>
+  <ScrollViewer Name="ContentScrollViewer">
     <ItemsControl ItemsSource="{Binding ContentLines}">
       <ItemsControl.ItemTemplate>
         <DataTemplate>
