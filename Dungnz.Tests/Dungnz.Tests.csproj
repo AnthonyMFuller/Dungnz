@@ -37,6 +37,7 @@
     <ProjectReference Include="..\Dungnz.Systems\Dungnz.Systems.csproj" />
     <ProjectReference Include="..\Dungnz.Display\Dungnz.Display.csproj" />
     <ProjectReference Include="..\Dungnz.Engine\Dungnz.Engine.csproj" />
+    <ProjectReference Include="..\Dungnz.Display.Avalonia\Dungnz.Display.Avalonia.csproj" />
   </ItemGroup>
 
   <ItemGroup>
