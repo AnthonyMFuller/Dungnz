@@ -37,6 +37,13 @@ jobs:
       - name: Build
         run: dotnet build --no-restore
 
+      # Avalonia is excluded from coverage (GUI, untestable in headless CI) but must
+      # still compile.  Building it explicitly surfaces Avalonia-specific failures
+      # (XAML compilation, NuGet package issues) with a clear step name instead of
+      # burying them in the solution-wide build output.
+      - name: Build Avalonia project
+        run: dotnet build Dungnz.Display.Avalonia/Dungnz.Display.Avalonia.csproj --configuration Release --no-restore
+
       - name: Run tests with coverage
         # COVERAGE FLOOR: 80% total line coverage required (#878).
         # ThresholdStat=total checks aggregate coverage across all modules (not per-module minimum).
