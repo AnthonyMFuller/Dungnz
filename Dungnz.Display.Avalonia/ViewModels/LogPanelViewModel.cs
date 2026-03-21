@@ -1,4 +1,5 @@
 using CommunityToolkit.Mvvm.ComponentModel;
+using Dungnz.Systems;
 using System.Collections.ObjectModel;
 
 namespace Dungnz.Display.Avalonia.ViewModels;
@@ -16,28 +17,34 @@ public partial class LogPanelViewModel : ObservableObject
     private const int MaxDisplayedLog = 12;
 
     /// <summary>
-    /// Appends a log entry with timestamp and type classification.
+    /// Appends a log entry with timestamp, type icon, and ANSI color classification.
     /// </summary>
     public void AppendLog(string message, string type = "info")
     {
         var timestamp = DateTime.Now.ToString("HH:mm");
         string icon;
+        string color;
 
         if (type == "combat")
         {
             icon = ClassifyCombatLogIcon(message);
+            color = ClassifyCombatLogColor(message);
         }
         else
         {
-            icon = type switch
+            (icon, color) = type switch
             {
-                "error" => "❌",
-                "loot"  => "💰",
-                _       => "ℹ"
+                "error" => ("❌", ColorCodes.BrightRed),
+                "loot"  => ("💰", ColorCodes.Yellow),
+                _       => ("ℹ", "")
             };
         }
 
-        _logHistory.Add($"{timestamp} {icon} {message}");
+        var logLine = string.IsNullOrEmpty(color)
+            ? $"{timestamp} {icon} {message}"
+            : $"{timestamp} {icon} {color}{message}{ColorCodes.Reset}";
+
+        _logHistory.Add(logLine);
         if (_logHistory.Count > MaxLogHistory)
             _logHistory.RemoveAt(0);
 
@@ -59,4 +66,15 @@ public partial class LogPanelViewModel : ObservableObject
         message.Contains("Poison", StringComparison.OrdinalIgnoreCase) ? "☠" :
         message.Contains("Burn", StringComparison.OrdinalIgnoreCase) ? "🔥" :
         "⚔";
+
+    /// <summary>
+    /// Returns the ANSI color code appropriate for a combat log message based on
+    /// keyword classification (critical hits, healing, status effects).
+    /// </summary>
+    private static string ClassifyCombatLogColor(string message) =>
+        message.Contains("Critical", StringComparison.OrdinalIgnoreCase) ? ColorCodes.BrightRed :
+        message.Contains("Healed", StringComparison.OrdinalIgnoreCase) ? ColorCodes.Green :
+        message.Contains("Poison", StringComparison.OrdinalIgnoreCase) ? ColorCodes.Magenta :
+        message.Contains("Burn", StringComparison.OrdinalIgnoreCase) ? ColorCodes.Yellow :
+        ColorCodes.Red;
 }

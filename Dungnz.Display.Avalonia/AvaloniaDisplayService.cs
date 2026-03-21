@@ -276,8 +276,12 @@ public class AvaloniaDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowColoredCombatMessage(string message, string color)
     {
-        // For plain text, ignore color
-        ShowCombatMessage(message);
+        var coloredMsg = $"{color}{StripAnsi(message)}{ColorCodes.Reset}";
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _vm.Content.AppendMessage($"  {coloredMsg}");
+            _vm.Log.AppendLog(coloredMsg, "combat");
+        });
     }
 
     /// <inheritdoc/>
@@ -649,8 +653,12 @@ public class AvaloniaDisplayService : IDisplayService
     /// <inheritdoc/>
     public void ShowColoredMessage(string message, string color)
     {
-        // For plain text, ignore color
-        ShowMessage(message);
+        var coloredMsg = $"{color}{StripAnsi(message)}{ColorCodes.Reset}";
+        Dispatcher.UIThread.InvokeAsync(() =>
+        {
+            _vm.Content.AppendMessage(coloredMsg);
+            _vm.Log.AppendLog(coloredMsg, "info");
+        });
     }
 
     /// <inheritdoc/>
@@ -658,7 +666,8 @@ public class AvaloniaDisplayService : IDisplayService
     {
         var cleanLabel = StripAnsi(label);
         var cleanValue = StripAnsi(value);
-        Dispatcher.UIThread.InvokeAsync(() => _vm.Content.AppendMessage($"{cleanLabel,-8} {cleanValue}"));
+        var line = $"{cleanLabel,-8} {valueColor}{cleanValue}{ColorCodes.Reset}";
+        Dispatcher.UIThread.InvokeAsync(() => _vm.Content.AppendMessage(line));
     }
 
     /// <inheritdoc/>
@@ -1000,10 +1009,10 @@ public class AvaloniaDisplayService : IDisplayService
 
         var options = new (string Label, string Value)[]
         {
-            ("⚔  Attack",  "A"),
-            ("✨ Ability",  "B"),
-            ("🏃 Flee",     "F"),
-            ("🧪 Use Item", "I"),
+            ($"{ColorCodes.Yellow}[A]{ColorCodes.Reset} ⚔  Attack",  "A"),
+            ($"{ColorCodes.Yellow}[B]{ColorCodes.Reset} ✨ Ability",  "B"),
+            ($"{ColorCodes.Yellow}[F]{ColorCodes.Reset} 🏃 Flee",     "F"),
+            ($"{ColorCodes.Yellow}[I]{ColorCodes.Reset} 🧪 Use Item", "I"),
         };
 
         // Build combined menu text
@@ -1047,9 +1056,9 @@ public class AvaloniaDisplayService : IDisplayService
         foreach (var (ability, onCooldown, cooldownTurns, notEnoughMana) in unavailableAbilities)
         {
             if (onCooldown)
-                sb.AppendLine($"  ○ {ability.Name} — Cooldown: {cooldownTurns} turns (Cost: {ability.ManaCost} MP)");
+                sb.AppendLine($"  {ColorCodes.Gray}○ {ability.Name} — {ColorCodes.Yellow}[COOLDOWN: {cooldownTurns}t]{ColorCodes.Reset}");
             else if (notEnoughMana)
-                sb.AppendLine($"  ○ {ability.Name} — Need {ability.ManaCost} MP");
+                sb.AppendLine($"  {ColorCodes.Gray}○ {ability.Name} — {ColorCodes.BrightRed}[NEED {ability.ManaCost} MP]{ColorCodes.Reset}");
         }
 
         sb.AppendLine();
