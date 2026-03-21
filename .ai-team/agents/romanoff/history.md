@@ -1627,3 +1627,39 @@ Comprehensive tests for the BFS-based ASCII map renderer:
 - **Legend symbol counting trap:** `CountOccurrences("[@]")` on full map text double-counts legend entries like `[@] You`. Must extract grid section before legend for exact room counts.
 - **Namespace collision:** Creating `Dungnz.Tests.Architecture` namespace conflicts with ArchUnitNET `Architecture` type used in existing `ArchitectureTests.cs`. Used `Dungnz.Tests.ArchRules` to match existing convention.
 - **BFS visibility model:** Rooms visible = visited ∪ current ∪ neighbors-of-(visited ∪ current). Rooms 2+ hops from any visited room are hidden (fog of war).
+
+---
+
+## Regression Wave 2 — ViewModel Unit Tests + Console Regression Suite
+
+**Date:** 2025-07-18
+**Branch:** `squad/regression-wave2-romanoff`
+**PR:** test: ViewModel unit tests + console regression suite (Regression Wave 2)
+**Issue:** #1420
+
+### What Was Done
+1. Added `Dungnz.Display.Avalonia` ProjectReference to `Dungnz.Tests.csproj` — enables headless testing of Avalonia ViewModels without Avalonia runtime
+2. Created 7 ViewModel test files under `Dungnz.Tests/ViewModels/`:
+   - `ContentPanelViewModelTests.cs` (7 tests) — append, clear, set content, max-lines trim, header change, PropertyChanged
+   - `StatsPanelViewModelTests.cs` (6 tests) — default text, player stats, cooldowns, combat mode, mana bar, PropertyChanged
+   - `GearPanelViewModelTests.cs` (6 tests) — default text, empty slots, weapon display, enemy stats, status effects, PropertyChanged
+   - `LogPanelViewModelTests.cs` (9 tests) — info/error/loot/combat icons, display trim, history trim, timestamp format
+   - `MapPanelViewModelTests.cs` (4 tests) — default text, floor update, map text, PropertyChanged
+   - `InputPanelViewModelTests.cs` (9 tests) — default state, submit fires event, clears text, disables input, trims whitespace, empty submit, no subscriber, PropertyChanged for CommandText and IsInputEnabled
+   - `MainWindowViewModelTests.cs` (3 tests) — all panels initialized, distinct instances, independent usage
+3. Created `Dungnz.Tests/Regression/ConsoleRegressionTests.cs` (10 tests):
+   - Game initialization, room navigation, combat vs weak enemy, equipment equip/unequip, display method coverage (23 display methods), game loop smoke test, sequential combats, output capture consistency, player stats display, room with items
+
+### Test Counts
+- **Before:** 2,190 passing (2,154 baseline + 36 Wave 1)
+- **After:** 2,244 passing (+54 new)
+- **Skipped:** 4 pre-existing momentum integration skips
+- **Total:** 2,248 (2,244 passed + 4 skipped)
+
+### Key Decisions
+- Avalonia ViewModels are testable as plain C# — `CommunityToolkit.Mvvm` `ObservableObject` requires no Avalonia runtime
+- No AXAML source generator conflicts when test project references the Avalonia project
+- Console regression tests use existing `FakeDisplayService` + `FakeInputReader` + `ControlledRandom` — no new test infrastructure needed
+- `EquipmentManager.HandleEquip(player, itemName)` / `HandleUnequip(player, slotName)` are the correct APIs (not `Equip`/`Unequip`)
+- `DungeonVariant.ForFloor(n)` creates variants — it's a class with static factory, not an enum
+- `GameLoop.Run(Player, Room)` is the correct overload for smoke tests
