@@ -4,7 +4,7 @@
              xmlns:controls="using:Dungnz.Display.Avalonia.Controls"
              x:Class="Dungnz.Display.Avalonia.Views.Panels.LogPanel"
              x:DataType="vm:LogPanelViewModel">
-  <ScrollViewer>
+  <ScrollViewer Name="LogScrollViewer">
     <ItemsControl ItemsSource="{Binding LogLines}">
       <ItemsControl.ItemTemplate>
         <DataTemplate>
