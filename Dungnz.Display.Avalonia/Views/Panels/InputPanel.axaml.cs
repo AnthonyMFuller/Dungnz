@@ -21,10 +21,15 @@ public partial class InputPanel : UserControl
         CommandInput.AddHandler(KeyDownEvent, OnCommandInputKeyDown, RoutingStrategies.Tunnel);
 
         // Auto-focus the TextBox whenever IsEnabled flips to true
+        // and dim/restore opacity to give visual feedback
         CommandInput.PropertyChanged += (_, e) =>
         {
-            if (e.Property == IsEnabledProperty && e.NewValue is true)
-                CommandInput.Focus();
+            if (e.Property == IsEnabledProperty)
+            {
+                CommandInput.Opacity = e.NewValue is true ? 1.0 : 0.5;
+                if (e.NewValue is true)
+                    CommandInput.Focus();
+            }
         };
     }
 

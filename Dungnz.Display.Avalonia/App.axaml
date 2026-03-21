@@ -5,4 +5,15 @@
   <Application.Styles>
     <FluentTheme />
   </Application.Styles>
+  <Application.Resources>
+    <SolidColorBrush x:Key="GameBackground" Color="#1a1a1a" />
+    <SolidColorBrush x:Key="PanelBorder" Color="#444444" />
+    <SolidColorBrush x:Key="MapBorder" Color="#334466" />
+    <SolidColorBrush x:Key="StatsBorder" Color="#336644" />
+    <SolidColorBrush x:Key="ContentBorder" Color="#555555" />
+    <SolidColorBrush x:Key="GearBorder" Color="#554433" />
+    <SolidColorBrush x:Key="LogBorder" Color="#3a3a3a" />
+    <SolidColorBrush x:Key="InputBorder" Color="#446688" />
+    <SolidColorBrush x:Key="InputActiveBorder" Color="#6688aa" />
+  </Application.Resources>
 </Application>

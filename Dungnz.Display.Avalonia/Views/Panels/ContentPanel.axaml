@@ -4,13 +4,21 @@
              xmlns:controls="using:Dungnz.Display.Avalonia.Controls"
              x:Class="Dungnz.Display.Avalonia.Views.Panels.ContentPanel"
              x:DataType="vm:ContentPanelViewModel">
-  <ScrollViewer Name="ContentScrollViewer">
-    <ItemsControl ItemsSource="{Binding ContentLines}">
-      <ItemsControl.ItemTemplate>
-        <DataTemplate>
-          <controls:AnsiTextBlock FormattedText="{Binding}" FontFamily="Consolas,Courier New,monospace" />
-        </DataTemplate>
-      </ItemsControl.ItemTemplate>
-    </ItemsControl>
-  </ScrollViewer>
+  <DockPanel>
+    <controls:AnsiTextBlock DockPanel.Dock="Top"
+                            FormattedText="{Binding HeaderText}"
+                            FontFamily="Consolas,Courier New,monospace"
+                            FontWeight="Bold"
+                            FontSize="14"
+                            Margin="4,2,4,4" />
+    <ScrollViewer Name="ContentScrollViewer" Padding="4,2">
+      <ItemsControl ItemsSource="{Binding ContentLines}">
+        <ItemsControl.ItemTemplate>
+          <DataTemplate>
+            <controls:AnsiTextBlock FormattedText="{Binding}" FontFamily="Consolas,Courier New,monospace" />
+          </DataTemplate>
+        </ItemsControl.ItemTemplate>
+      </ItemsControl>
+    </ScrollViewer>
+  </DockPanel>
 </UserControl>
