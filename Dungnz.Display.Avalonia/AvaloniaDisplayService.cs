@@ -804,7 +804,7 @@ public class AvaloniaDisplayService : IDisplayService
     private T SelectFromMenu<T>(string header, IReadOnlyList<(string Label, T Value)> options,
         bool allowCancel = false, T? cancelValue = default)
     {
-        // Build the menu text
+        // Build the menu text once (it doesn't change between iterations)
         var sb = new StringBuilder();
         sb.AppendLine(header);
         sb.AppendLine();
@@ -812,13 +812,13 @@ public class AvaloniaDisplayService : IDisplayService
             sb.AppendLine($"  [{i + 1}] {options[i].Label}");
         if (allowCancel)
             sb.AppendLine($"  [0] Cancel");
+        var menuText = sb.ToString().TrimEnd();
 
-        // Display in content panel
-        Dispatcher.UIThread.InvokeAsync(() => _vm.Content.SetContent(sb.ToString().TrimEnd(), header));
-
-        // Input loop — re-prompt until valid
+        // Input loop — re-display menu and re-prompt until valid
         while (true)
         {
+            Dispatcher.UIThread.InvokeAsync(() => _vm.Content.SetContent(menuText, header));
+
             var input = WaitForTextInput("Choice: ");
 
             // Cancel path
@@ -828,7 +828,7 @@ public class AvaloniaDisplayService : IDisplayService
             if (int.TryParse(input, out int choice) && choice >= 1 && choice <= options.Count)
                 return options[choice - 1].Value;
 
-            // Invalid — show error briefly in the log, re-display menu
+            // Invalid — log error, loop will re-display menu
             Dispatcher.UIThread.InvokeAsync(() =>
                 _vm.Log.AppendLog($"Invalid choice. Enter 1–{options.Count}{(allowCancel ? " or 0 to cancel" : "")}.", "error"));
         }
