@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.RegularExpressions;
+using System.Threading;
 using Avalonia.Threading;
 using Dungnz.Display.Avalonia.ViewModels;
 using Dungnz.Models;
@@ -764,8 +765,7 @@ public class AvaloniaDisplayService : IDisplayService
 
         void OnSubmitted(string text)
         {
-            var pending = _pendingCommand;
-            _pendingCommand = null;
+            var pending = Interlocked.Exchange(ref _pendingCommand, null);
             _vm.Input.InputSubmitted -= OnSubmitted;
             pending?.TrySetResult(text);
         }

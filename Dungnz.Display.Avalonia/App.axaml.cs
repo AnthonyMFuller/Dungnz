@@ -43,7 +43,7 @@ public class App : Application
             // Start game loop on background thread after window is shown
             mainWindow.Opened += async (s, e) =>
             {
-                // TODO P3-P8: Full startup flow (StartupOrchestrator, SelectClass, SelectDifficulty)
+                // TODO(P3-P8): Full startup flow (StartupOrchestrator, SelectClass, SelectDifficulty)
                 // For P2: launch with default player for smoke test
                 
                 var defaultDiff = DifficultySettings.For(Difficulty.Normal);

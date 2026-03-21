@@ -1,3 +1,4 @@
+using System.Threading;
 using Avalonia.Threading;
 using Dungnz.Display.Avalonia.ViewModels;
 using Dungnz.Models;
@@ -65,8 +66,7 @@ public class AvaloniaInputReader : IInputReader
 
     private void OnInputSubmitted(string text)
     {
-        var pending = _pendingLine;
-        _pendingLine = null;
+        var pending = Interlocked.Exchange(ref _pendingLine, null);
         pending?.TrySetResult(text);
     }
 }
