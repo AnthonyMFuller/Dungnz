@@ -1,7 +1,8 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Dungnz.Display.Avalonia.ViewModels"
+             xmlns:controls="using:Dungnz.Display.Avalonia.Controls"
              x:Class="Dungnz.Display.Avalonia.Views.Panels.MapPanel"
              x:DataType="vm:MapPanelViewModel">
-  <TextBlock Text="{Binding MapText}" FontFamily="Consolas,Courier New,monospace" />
+  <controls:AnsiTextBlock FormattedText="{Binding MapText}" FontFamily="Consolas,Courier New,monospace" />
 </UserControl>
