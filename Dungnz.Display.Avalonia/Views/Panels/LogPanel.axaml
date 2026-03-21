@@ -1,13 +1,14 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Dungnz.Display.Avalonia.ViewModels"
+             xmlns:controls="using:Dungnz.Display.Avalonia.Controls"
              x:Class="Dungnz.Display.Avalonia.Views.Panels.LogPanel"
              x:DataType="vm:LogPanelViewModel">
-  <ScrollViewer Name="LogScrollViewer">
+  <ScrollViewer>
     <ItemsControl ItemsSource="{Binding LogLines}">
       <ItemsControl.ItemTemplate>
         <DataTemplate>
-          <TextBlock Text="{Binding}" FontFamily="Consolas,Courier New,monospace" FontSize="12" />
+          <controls:AnsiTextBlock FormattedText="{Binding}" FontFamily="Consolas,Courier New,monospace" FontSize="12" />
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>

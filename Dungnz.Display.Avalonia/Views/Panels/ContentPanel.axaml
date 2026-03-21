@@ -1,13 +1,14 @@
 <UserControl xmlns="https://github.com/avaloniaui"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:vm="using:Dungnz.Display.Avalonia.ViewModels"
+             xmlns:controls="using:Dungnz.Display.Avalonia.Controls"
              x:Class="Dungnz.Display.Avalonia.Views.Panels.ContentPanel"
              x:DataType="vm:ContentPanelViewModel">
-  <ScrollViewer Name="ContentScrollViewer">
+  <ScrollViewer>
     <ItemsControl ItemsSource="{Binding ContentLines}">
       <ItemsControl.ItemTemplate>
         <DataTemplate>
-          <TextBlock Text="{Binding}" FontFamily="Consolas,Courier New,monospace" />
+          <controls:AnsiTextBlock FormattedText="{Binding}" FontFamily="Consolas,Courier New,monospace" />
         </DataTemplate>
       </ItemsControl.ItemTemplate>
     </ItemsControl>
